@@ -1,11 +1,5 @@
 import type { CollectionConfig } from 'payload'
 
-import {
-  FixedToolbarFeature,
-  InlineToolbarFeature,
-  lexicalEditor,
-} from '@payloadcms/richtext-lexical'
-
 import { anyone } from '../access/anyone'
 import { authenticated } from '../access/authenticated'
 
@@ -34,7 +28,7 @@ export const Media: CollectionConfig = {
     // },
   ],
   upload: {
-    staticDir: 'media', // Local storage path
+    staticDir: 'media', // Local storage path for development
     mimeTypes: ['image/*', 'video/*', 'application/pdf'], // Allowed file types
   },
 }

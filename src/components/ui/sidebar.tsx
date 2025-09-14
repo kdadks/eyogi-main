@@ -5,13 +5,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import { IconMenu2, IconX } from '@tabler/icons-react'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion'
 import Link from 'next/link'
-import { Button } from './button'
-
-interface Links {
-  label: string
-  href: string
-  // icon: React.JSX.Element | React.ReactNode
-}
 
 interface SidebarContextProps {
   open: boolean

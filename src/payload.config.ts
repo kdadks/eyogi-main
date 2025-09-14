@@ -14,7 +14,7 @@ import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { PrivacyPolicy } from './collections/PrivacyPolicy/config'
-import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
+// import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
 import { Faq } from './collections/faq'
 import { CategoriesFaq } from './collections/faq/categoriesFaq'
 import { Membership } from './collections/membership'
@@ -74,15 +74,17 @@ export default buildConfig({
   globals: [AboutUs, PrivacyPolicy, Donation],
   plugins: [
     ...plugins,
-    uploadthingStorage({
-      collections: {
-        media: true,
-      },
-      options: {
-        token: process.env.UPLOADTHING_TOKEN,
-        acl: 'public-read',
-      },
-    }),
+    // Temporarily disabled UploadThing due to invalid token
+    // Re-enable when UPLOADTHING_TOKEN is properly configured
+    // uploadthingStorage({
+    //   collections: {
+    //     media: true,
+    //   },
+    //   options: {
+    //     token: process.env.UPLOADTHING_TOKEN,
+    //     acl: 'public-read',
+    //   },
+    // }),
   ],
   secret: process.env.PAYLOAD_SECRET,
   sharp,

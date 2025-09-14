@@ -80,6 +80,8 @@ export default function Footer() {
   useEffect(() => {
     if (!sceneRef.current || dimensions.width === 0 || dimensions.height === 0) return
 
+    const currentScene = sceneRef.current
+
     const Engine = Matter.Engine
     const Render = Matter.Render
     const Runner = Matter.Runner
@@ -298,8 +300,8 @@ export default function Footer() {
       Composite.clear(world, false)
       Engine.clear(engine)
 
-      if (sceneRef.current) {
-        sceneRef.current.innerHTML = ''
+      if (currentScene) {
+        currentScene.innerHTML = ''
       }
       // Clear the render reference
       renderRef.current = null
@@ -323,7 +325,13 @@ export default function Footer() {
           </p>
 
           <div className="relative hidden justify-start aspect-square w-[8vw] h-[8vw] md:flex max-w-[180px] max-h-[180px]">
-            <Image src={'/eyogiTextLess.png'} alt={'eyogi Gurukul'} fill className="rounded-full" />
+            <Image
+              src={'/eyogiTextLess.png'}
+              alt={'eyogi Gurukul'}
+              fill
+              sizes="(max-width: 768px) 0px, (max-width: 1024px) 8vw, 180px"
+              className="rounded-full"
+            />
           </div>
         </div>
 

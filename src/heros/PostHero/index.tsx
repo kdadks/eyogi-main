@@ -4,7 +4,6 @@ import React from 'react'
 import type { Post } from '@/payload-types'
 
 import { formatAuthors } from '@/utilities/formatAuthors'
-import { Link } from 'next-transition-router'
 
 export const PostHero: React.FC<{
   post: Post

@@ -12,8 +12,9 @@ export default function Hero() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[200px] min-h-[200px] xl:w-[20vw] xl:h-[20vw] ">
           <Image
             src={'/eyogiTextLess.png'}
-            alt={''}
+            alt="eYogi Gurukul Logo"
             fill
+            sizes="(max-width: 768px) 200px, (max-width: 1280px) 200px, 20vw"
             className="border-4 border-white rounded-full"
           />
 

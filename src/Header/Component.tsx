@@ -30,7 +30,6 @@ const links: NavLink[] = [
   {
     name: 'SSH Portal',
     href: '/ssh-app/',
-    external: true,
   },
   {
     name: 'Membership',
@@ -80,7 +79,6 @@ const linksDesktop: DesktopNavLink[] = [
     name: 'SSH Portal',
     href: '/ssh-app/',
     subLinks: [],
-    external: true,
   },
   {
     name: 'About us',
@@ -179,8 +177,10 @@ export function Navbar() {
               <div className="relative aspect-square h-full max-h-16 lg:max-h-24">
                 <Image
                   src={'/eyogiTextLess.png'}
-                  alt={''}
+                  alt="eYogi Gurukul Logo"
                   fill
+                  priority
+                  sizes="(max-width: 768px) 64px, 96px"
                   className="border-2 border-white rounded-full object-scale-down"
                 />
               </div>
@@ -190,8 +190,10 @@ export function Navbar() {
               <div className="relative aspect-square h-full max-h-16 lg:max-h-24">
                 <Image
                   src={'/eyogiTextLess.png'}
-                  alt={''}
+                  alt="eYogi Gurukul Logo"
                   fill
+                  priority
+                  sizes="(max-width: 768px) 64px, 96px"
                   className="border-2 border-white rounded-full object-scale-down"
                 />
               </div>
@@ -275,9 +277,9 @@ export function Navbar() {
                     )}
                   >
                     {link.external ? (
-                      <a 
-                        href={link.href} 
-                        target="_blank" 
+                      <a
+                        href={link.href}
+                        target="_blank"
                         rel="noopener noreferrer"
                         onClick={handleOpen}
                       >
