@@ -8,7 +8,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { HoveredLink, Menu, MenuItem } from '@/components/ui/navbar-menu'
 
-const links = [
+interface NavLink {
+  name: string
+  href: string
+  external?: boolean
+}
+
+const links: NavLink[] = [
   {
     name: 'Home',
     href: '/',
@@ -20,6 +26,11 @@ const links = [
   {
     name: 'Hinduism',
     href: '/hinduism',
+  },
+  {
+    name: 'SSH Portal',
+    href: '/ssh-app/',
+    external: true,
   },
   {
     name: 'Membership',
@@ -47,7 +58,14 @@ const links = [
   },
 ]
 
-const linksDesktop = [
+interface DesktopNavLink {
+  name: string
+  href: string
+  subLinks: { name: string; href: string }[]
+  external?: boolean
+}
+
+const linksDesktop: DesktopNavLink[] = [
   {
     name: 'Home',
     href: '/',
@@ -57,6 +75,12 @@ const linksDesktop = [
     name: 'Hinduism',
     href: '/hinduism',
     subLinks: [],
+  },
+  {
+    name: 'SSH Portal',
+    href: '/ssh-app/',
+    subLinks: [],
+    external: true,
   },
   {
     name: 'About us',
@@ -182,6 +206,7 @@ export function Navbar() {
                 active={active}
                 href={link.href}
                 name={link.name}
+                external={link.external}
               >
                 <div className="flex flex-col gap-4 text-lg">
                   {link.subLinks.map((subLink) => (
@@ -249,9 +274,20 @@ export function Navbar() {
                       path === link.href && 'font-medium border-b-2 border-black',
                     )}
                   >
-                    <Link href={link.href} onClick={handleOpen}>
-                      {link.name}
-                    </Link>
+                    {link.external ? (
+                      <a 
+                        href={link.href} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={handleOpen}
+                      >
+                        {link.name}
+                      </a>
+                    ) : (
+                      <Link href={link.href} onClick={handleOpen}>
+                        {link.name}
+                      </Link>
+                    )}
                   </motion.div>
                 </div>
               ))}

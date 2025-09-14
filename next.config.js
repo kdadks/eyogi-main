@@ -23,6 +23,19 @@ const nextConfig = {
   },
   reactStrictMode: true,
   redirects,
+  async rewrites() {
+    return [
+      // Handle SSH app routes (except for assets)
+      {
+        source: '/ssh-app',
+        destination: '/ssh-app/index.html',
+      },
+      {
+        source: '/ssh-app/((?!assets|Images|.*\\..*).*)',
+        destination: '/ssh-app/index.html',
+      },
+    ]
+  },
 }
 
 export default withPayload(nextConfig)

@@ -20,12 +20,13 @@ export const MenuItem = ({
   name,
   href,
   children,
+  external,
 }: {
   setActive: (name: string) => void
   active: string | null
   name: string
   href: string
-
+  external?: boolean
   children?: React.ReactNode
 }) => {
   const path = usePathname()
@@ -34,6 +35,8 @@ export const MenuItem = ({
     <div onMouseEnter={() => setActive(name)} className="relative">
       {path === href ? (
         <div className="cursor-pointer">{name}</div>
+      ) : external ? (
+        <a href={href} target="_blank" rel="noopener noreferrer">{name}</a>
       ) : (
         <Link href={href}>{name}</Link>
       )}
