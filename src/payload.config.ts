@@ -66,7 +66,7 @@ export default buildConfig({
   editor: defaultLexical,
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URI || '',
+      connectionString: process.env.DATABASE_URI || 'postgresql://localhost:5432/payload',
     },
   }),
   collections: [Pages, Posts, Media, Categories, CategoriesFaq, Faq, Users, Membership, FormLinks],
@@ -79,12 +79,12 @@ export default buildConfig({
         media: true,
       },
       options: {
-        token: process.env.UPLOADTHING_TOKEN,
+        token: process.env.UPLOADTHING_TOKEN || 'dummy-token-for-build',
         acl: 'public-read',
       },
     }),
   ],
-  secret: process.env.PAYLOAD_SECRET,
+  secret: process.env.PAYLOAD_SECRET || 'fallback-secret-for-build-only',
   sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
