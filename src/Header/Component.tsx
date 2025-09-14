@@ -30,7 +30,6 @@ const links: NavLink[] = [
   {
     name: 'SSH Portal',
     href: '/ssh-app/',
-    external: true,
   },
   {
     name: 'Membership',
@@ -80,7 +79,6 @@ const linksDesktop: DesktopNavLink[] = [
     name: 'SSH Portal',
     href: '/ssh-app/',
     subLinks: [],
-    external: true,
   },
   {
     name: 'About us',
