@@ -13,7 +13,7 @@ console.log('🚀 Integrating SSH application...');
 try {
   // Build SSH application
   console.log('📦 Building SSH application...');
-  execSync('cd SSH && npm run build', { stdio: 'inherit' });
+  execSync('cd src/SSH && npm run build', { stdio: 'inherit' });
   
   // Remove old SSH app files
   const sshAppPath = path.join(__dirname, 'public', 'ssh-app');
@@ -23,7 +23,7 @@ try {
   
   // Copy new build files
   console.log('📂 Copying SSH build files...');
-  execSync('cp -r SSH/dist public/ssh-app', { stdio: 'inherit' });
+  execSync('cp -r src/SSH/dist public/ssh-app', { stdio: 'inherit' });
   
   console.log('✅ SSH integration complete!');
   console.log('🌐 SSH Portal is now available at /ssh-app/index.html');
