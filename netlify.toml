@@ -1,0 +1,103 @@
+[build]
+  publish = ".next"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--prefix=/opt/buildhome/.nodejs/lib/node_modules/npm/lib"
+  NODE_OPTIONS = "--no-deprecation"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Production context: all deploys from the Production branch
+[context.production]
+  publish = ".next"
+  command = "npm run build"
+  [context.production.environment]
+    NODE_ENV = "production"
+
+# Deploy Preview context: all Deploy Previews
+[context.deploy-preview]
+  publish = ".next"  
+  command = "npm run build"
+  [context.deploy-preview.environment]
+    NODE_ENV = "production"
+
+# Branch deploy context: all deploys that are not from a pull/merge request or from the Production branch
+[context.branch-deploy]
+  publish = ".next"
+  command = "npm run build"
+
+# Next.js serverless functions
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirect rules for Next.js and SSH app
+[[redirects]]
+  from = "/ssh-app"
+  to = "/ssh-app/"
+  status = 301
+
+[[redirects]]
+  from = "/ssh-app/*"
+  to = "/ssh-app/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/_next/static/*"
+  to = "/_next/static/:splat"
+  status = 200
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    cache-control = "max-age=0,no-cache,no-store,must-revalidate"
+
+# Static assets caching
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    cache-control = "public,max-age=31536000,immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    cache-control = "public,max-age=31536000"
+
+[[headers]]  
+  for = "/*.png"
+  [headers.values]
+    cache-control = "public,max-age=31536000"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    cache-control = "public,max-age=31536000"
+
+[[headers]]
+  for = "/*.jpeg"
+  [headers.values]
+    cache-control = "public,max-age=31536000"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    cache-control = "public,max-age=31536000"
+
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    cache-control = "public,max-age=31536000"
