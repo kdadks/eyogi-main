@@ -12,6 +12,15 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
+    ignores: [
+      'src/SSH/.next/**/*',
+      'src/SSH/node_modules/**/*',
+      'src/SSH/dist/**/*',
+      'src/SSH/build/**/*',
+      '.next/**/*',
+      'node_modules/**/*',
+      'out/**/*',
+    ],
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
