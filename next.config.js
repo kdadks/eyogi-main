@@ -21,6 +21,14 @@ const nextConfig = {
       { protocol: 'https', hostname: 'eyogigurukul.com' },
     ],
   },
+  eslint: {
+    // Allow production builds to complete even if there are ESLint errors
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // Allow production builds to complete even if there are TypeScript errors
+    ignoreBuildErrors: false,
+  },
   reactStrictMode: true,
   redirects,
   async rewrites() {

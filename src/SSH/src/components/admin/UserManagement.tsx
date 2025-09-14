@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/Badge'
 import { User } from '@/types'
 import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api/users'

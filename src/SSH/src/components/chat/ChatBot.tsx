@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ChatService } from '@/lib/ai/ChatService'

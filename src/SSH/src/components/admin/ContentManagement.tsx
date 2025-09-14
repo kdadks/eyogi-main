@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
+import { Input } from '@/components/ui/input'
 import { formatDate, generateSlug } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import {

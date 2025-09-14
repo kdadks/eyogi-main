@@ -6,7 +6,7 @@ import ScrollLink from '../ui/ScrollLink'
 import { useAuth } from '../providers/AuthProvider'
 import { getUserDisplayName, getUserInitials, getRoleDisplayName } from '../../lib/auth/authUtils'
 import { Bars3Icon, XMarkIcon, UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
-import { Button } from '../ui/Button'
+import { Button } from '@/components/ui/button'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

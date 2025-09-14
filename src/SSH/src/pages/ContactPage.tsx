@@ -5,8 +5,8 @@ import { z } from 'zod'
 import toast from 'react-hot-toast'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { 
   EnvelopeIcon,
