@@ -1,0 +1,404 @@
+@import "tailwindcss";
+
+/* Ensure scroll behavior works properly */
+html {
+  scroll-behavior: auto !important;
+}
+
+/* SEO-optimized content styling */
+.seo-content h1,
+.seo-content h2,
+.seo-content h3 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.seo-content h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.seo-content h2 {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.seo-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.seo-content p {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.seo-content strong {
+  font-weight: 600;
+  color: #f97316;
+}
+
+.seo-content em {
+  font-style: italic;
+  color: #dc2626;
+}
+
+/* Custom styles */
+.container-max {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 640px) {
+  .container-max {
+    padding: 0 0.75rem;
+  }
+  
+  /* Hero section mobile improvements */
+  .section-padding {
+    padding: 2rem 0;
+  }
+  
+  .section-padding-first {
+    padding: 3rem 0 2rem 0;
+  }
+  
+  /* Mobile button improvements */
+  .mobile-button-spacing {
+    gap: 0.75rem;
+  }
+}
+
+.section-padding {
+  padding: 3rem 0;
+}
+
+.section-padding-first {
+  padding: 5rem 0 3rem 0;
+}
+
+/* Mobile-specific section padding */
+@media (max-width: 640px) {
+  .section-padding {
+    padding: 2rem 0;
+  }
+  
+  .section-padding-first {
+    padding: 3rem 0 2rem 0;
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #f97316, #dc2626);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #f97316, #dc2626);
+}
+
+.card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #f97316;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Rolling text animation */
+.rolling-text-container {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #f97316, #dc2626);
+  position: relative;
+}
+
+/* When rolling text is the first element on a page with fixed header */
+.rolling-text-container.first-element {
+  margin-top: 5rem; /* Account for fixed header height (80px) */
+}
+
+.rolling-text {
+  display: inline-flex;
+  animation: roll 20s linear infinite;
+  color: white;
+  font-weight: 600;
+  padding: 12px 0;
+  font-size: 1.1rem;
+  will-change: transform;
+}
+
+.rolling-text-item {
+  flex-shrink: 0;
+  padding-right: 2rem;
+}
+
+@keyframes roll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Logo pop animation for hero / mission images */
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.logo-pop {
+  animation: pop 700ms cubic-bezier(.2,.8,.2,1) both;
+  transform-origin: center;
+  transition: transform 180ms ease;
+}
+.logo-pop:hover {
+  transform: scale(1.05);
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .logo-pop {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Glass card utility with subtle border, blur and sheen */
+.glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.32), rgba(255,255,255,0.08));
+  border: 1px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sheen overlay that moves across the card */
+.card-sheen {
+  position: absolute;
+  left: -90%;
+  top: -20%;
+  width: 80%;
+  height: 140%;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.12) 60%, rgba(255,255,255,0) 100%);
+  transform: rotate(18deg);
+  opacity: 0.6;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  animation: sheen 1600ms linear infinite;
+}
+
+@keyframes sheen {
+  0% { transform: translateX(-220%) rotate(18deg); }
+  100% { transform: translateX(260%) rotate(18deg); }
+}
+
+/* Reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .card-sheen { animation: none; opacity: 0.35; }
+}
+
+/* Premium Header Styles */
+.header-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-glass.scrolled {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure content is not hidden behind fixed header */
+body {
+  scroll-padding-top: 5rem; /* 80px header height */
+}
+
+/* For pages with immediate content */
+.page-content {
+  padding-top: 2rem;
+}
+
+/* Page content that needs to start below fixed header */
+.page-with-header {
+  padding-top: 5rem; /* 80px header height */
+}
+
+/* Navigation hover effects */
+.nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f97316, #dc2626);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-item:hover::before {
+  width: 100%;
+}
+
+/* User menu dropdown animation */
+.user-dropdown {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  animation: fadeInUp 0.2s ease forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile menu slide animation */
+.mobile-menu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.mobile-menu.open {
+  max-height: 500px;
+}
+
+/* Enhanced mobile touch targets */
+@media (max-width: 768px) {
+  .mobile-menu a,
+  .mobile-menu button {
+    min-height: 44px; /* iOS recommended touch target */
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Improve button touch targets on mobile */
+  button, .btn, a[role="button"] {
+    min-height: 44px;
+  }
+  
+  /* Better mobile typography */
+  body {
+    font-size: 16px; /* Prevent zoom on iOS inputs */
+  }
+  
+  input, textarea, select {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Badge mobile improvements */
+  .hero-badge {
+    max-width: calc(100vw - 48px);
+    text-align: center;
+    line-height: 1.3;
+    white-space: normal;
+  }
+  
+  /* Ensure badges don't overflow on mobile */
+  .badge-container {
+    max-width: calc(100vw - 32px);
+    overflow: hidden;
+  }
+  
+  /* Hero section certificate card mobile fix */
+  .hero-certificate-card {
+    max-width: calc(100vw - 32px);
+    left: 8px !important;
+  }
+  
+  /* Prevent hero section overflow */
+  .hero-section {
+    overflow-x: hidden;
+  }
+  
+  /* ChatBot mobile improvements */
+  .chatbot-container {
+    max-height: calc(100vh - 64px - 16px); /* Mobile: viewport - header - bottom margin */
+  }
+  
+  .chatbot-input {
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+  
+  .chatbot-message {
+    max-width: 90%;
+  }
+  
+  .chatbot-quick-button {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Adjust chatbot height for larger screens */
+@media (min-width: 640px) {
+  .chatbot-container {
+    max-height: calc(100vh - 80px - 16px); /* SM+: viewport - larger header - bottom margin */
+  }
+}
+
+/* Desktop chatbot - reset to auto sizing */
+@media (min-width: 768px) {
+  .chatbot-container {
+    max-height: none;
+  }
+}

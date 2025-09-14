@@ -1,0 +1,39 @@
+# Node
+node_modules/
+
+# build artifacts
+.next/
+dist/
+build/
+
+# lockfile
+package-lock.json
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# env
+.env
+.env.*
+
+# caches
+.cache/
+
+# logs
+logs/
+*.log
+
+# local system folders accidentally added
+Desktop/
+Downloads/
+Pictures/
+Movies/
+Music/
+Library/
+OneDrive/
+
