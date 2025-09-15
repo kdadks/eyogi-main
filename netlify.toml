@@ -1,10 +1,10 @@
 [build]
   publish = ".next"
-  command = "npm ci --prefer-offline --no-audit && npm run build"
+  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--prefix=/opt/buildhome/.nodejs/lib/node_modules/npm/lib"
+  YARN_FLAGS = "--prefer-offline"
   NODE_OPTIONS = "--no-deprecation"
   NEXT_TELEMETRY_DISABLED = "1"
   NPM_CONFIG_PRODUCTION = "false"
@@ -12,7 +12,7 @@
 # Production context: all deploys from the Production branch
 [context.production]
   publish = ".next"
-  command = "npm ci --prefer-offline --no-audit && npm run build"
+  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
   [context.production.environment]
     NODE_ENV = "production"
     NPM_CONFIG_PRODUCTION = "false"
@@ -20,7 +20,7 @@
 # Deploy Preview context: all Deploy Previews
 [context.deploy-preview]
   publish = ".next"  
-  command = "npm ci --prefer-offline --no-audit && npm run build"
+  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
   [context.deploy-preview.environment]
     NODE_ENV = "production"
     NPM_CONFIG_PRODUCTION = "false"
@@ -28,7 +28,7 @@
 # Branch deploy context: all deploys that are not from a pull/merge request or from the Production branch
 [context.branch-deploy]
   publish = ".next"
-  command = "npm ci --prefer-offline --no-audit && npm run build"
+  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
 
 # Next.js serverless functions
 [[plugins]]

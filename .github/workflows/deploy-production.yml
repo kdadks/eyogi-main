@@ -20,20 +20,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+        run: yarn install --frozen-lockfile --prefer-offline
 
       - name: Build application
-        run: npm run build
+        run: yarn build
         env:
           NODE_ENV: production
           NODE_OPTIONS: --no-deprecation
           NEXT_TELEMETRY_DISABLED: 1
 
       - name: Run tests (if available)
-        run: npm test --if-present
+        run: yarn test --if-present
         continue-on-error: true
 
       - name: Deploy to Netlify
