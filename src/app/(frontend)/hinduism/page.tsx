@@ -132,7 +132,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       // Ignore logging failures
     }
 
-    // Return a fallback UI when there's an error
+    // Return a fallback UI when there's an error with debug info
     return (
       <div className="flex flex-grow h-full">
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 pt-4 pb-4 gap-5 container h-full">
@@ -141,6 +141,23 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
             <p className="text-base lg:text-lg text-white text-center">
               Sorry, there was an issue loading the content. Please try again later.
             </p>
+            {/* Debug info for production */}
+            <details className="mt-4 text-white text-sm max-w-2xl">
+              <summary className="cursor-pointer">Debug Information</summary>
+              <pre className="mt-2 p-4 bg-gray-800 rounded overflow-auto">
+                {JSON.stringify({
+                  error: error instanceof Error ? error.message : String(error),
+                  stack: error instanceof Error ? error.stack : undefined,
+                  env: {
+                    NODE_ENV: process.env.NODE_ENV,
+                    DATABASE_URI: process.env.DATABASE_URI ? 'present' : 'missing',
+                    PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'present' : 'missing',
+                    NETLIFY: process.env.NETLIFY || 'false',
+                    URL: process.env.URL || 'missing',
+                  }
+                }, null, 2)}
+              </pre>
+            </details>
           </div>
         </div>
       </div>
