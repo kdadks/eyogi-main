@@ -145,17 +145,21 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
             <details className="mt-4 text-white text-sm max-w-2xl">
               <summary className="cursor-pointer">Debug Information</summary>
               <pre className="mt-2 p-4 bg-gray-800 rounded overflow-auto">
-                {JSON.stringify({
-                  error: error instanceof Error ? error.message : String(error),
-                  stack: error instanceof Error ? error.stack : undefined,
-                  env: {
-                    NODE_ENV: process.env.NODE_ENV,
-                    DATABASE_URI: process.env.DATABASE_URI ? 'present' : 'missing',
-                    PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'present' : 'missing',
-                    NETLIFY: process.env.NETLIFY || 'false',
-                    URL: process.env.URL || 'missing',
-                  }
-                }, null, 2)}
+                {JSON.stringify(
+                  {
+                    error: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                    env: {
+                      NODE_ENV: process.env.NODE_ENV,
+                      DATABASE_URI: process.env.DATABASE_URI ? 'present' : 'missing',
+                      PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'present' : 'missing',
+                      NETLIFY: process.env.NETLIFY || 'false',
+                      URL: process.env.URL || 'missing',
+                    },
+                  },
+                  null,
+                  2,
+                )}
               </pre>
             </details>
           </div>
