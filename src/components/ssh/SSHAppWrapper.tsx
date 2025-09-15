@@ -91,7 +91,7 @@ const SSHAppWrapper: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-          <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
             <span className="text-white font-bold text-xl">📚</span>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Ancient Wisdom</h3>
@@ -101,7 +101,7 @@ const SSHAppWrapper: React.FC = () => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-          <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mb-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
             <span className="text-white font-bold text-xl">🧘</span>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Spiritual Practice</h3>
@@ -111,7 +111,7 @@ const SSHAppWrapper: React.FC = () => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-          <div className="w-12 h-12 bg-pink-500 rounded-lg flex items-center justify-center mb-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
             <span className="text-white font-bold text-xl">👨‍🏫</span>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Expert Teachers</h3>
@@ -133,7 +133,7 @@ const SSHAppWrapper: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {courses.map((course) => (
           <div key={course.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-            <div className="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+            <div className="h-48 bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
               <span className="text-white text-6xl">🕉️</span>
             </div>
             <div className="p-6">
@@ -144,7 +144,7 @@ const SSHAppWrapper: React.FC = () => {
                 <span>📊 {course.level}</span>
                 <span>👥 {course.students}</span>
               </div>
-              <button className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-lg hover:from-orange-600 hover:to-red-600 transition-colors">
+              <button className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                 Learn More
               </button>
             </div>
@@ -180,7 +180,7 @@ const SSHAppWrapper: React.FC = () => {
                 <span>👨‍🏫 {gurukul.teachers} Teachers</span>
               </div>
             </div>
-            <button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-lg hover:from-orange-600 hover:to-red-600 transition-colors">
+            <button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-4 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
               Explore Gurukul
             </button>
           </div>
@@ -195,13 +195,22 @@ const SSHAppWrapper: React.FC = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                eYogi Gurukul - SSH Portal
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Ancient Hindu Wisdom, Modern Vedic Learning
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="relative aspect-square h-16 max-h-16">
+                <img
+                  src="/eyogiTextLess.png"
+                  alt="eYogi Logo"
+                  className="h-full w-full border-2 border-white rounded-full object-scale-down"
+                />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  eYogi Gurukul - SSH Portal
+                </h1>
+                <p className="mt-2 text-gray-600">
+                  Ancient Hindu Wisdom, Modern Vedic Learning
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
@@ -209,7 +218,7 @@ const SSHAppWrapper: React.FC = () => {
               </span>
               <Link
                 href="/"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
               >
                 ← Back to Main Site
               </Link>
@@ -233,7 +242,7 @@ const SSHAppWrapper: React.FC = () => {
                 className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-300'
                 }`}
               >
                 <span>{tab.icon}</span>

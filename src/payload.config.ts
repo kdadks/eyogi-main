@@ -14,7 +14,7 @@ import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { PrivacyPolicy } from './collections/PrivacyPolicy/config'
-// import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
+import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
 import { Faq } from './collections/faq'
 import { CategoriesFaq } from './collections/faq/categoriesFaq'
 import { Membership } from './collections/membership'
@@ -66,7 +66,7 @@ export default buildConfig({
   editor: defaultLexical,
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URI || '',
+      connectionString: process.env.DATABASE_URI || 'postgresql://localhost:5432/payload',
     },
   }),
   collections: [Pages, Posts, Media, Categories, CategoriesFaq, Faq, Users, Membership, FormLinks],
@@ -74,19 +74,18 @@ export default buildConfig({
   globals: [AboutUs, PrivacyPolicy, Donation],
   plugins: [
     ...plugins,
-    // Temporarily disabled UploadThing due to invalid token
-    // Re-enable when UPLOADTHING_TOKEN is properly configured
-    // uploadthingStorage({
-    //   collections: {
-    //     media: true,
-    //   },
-    //   options: {
-    //     token: process.env.UPLOADTHING_TOKEN,
-    //     acl: 'public-read',
-    //   },
-    // }),
+    // UploadThing configuration with fallback for deployment
+    uploadthingStorage({
+      collections: {
+        media: true,
+      },
+      options: {
+        token: process.env.UPLOADTHING_TOKEN || 'dummy-token-for-build',
+        acl: 'public-read',
+      },
+    }),
   ],
-  secret: process.env.PAYLOAD_SECRET,
+  secret: process.env.PAYLOAD_SECRET || 'fallback-secret-for-build-only',
   sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

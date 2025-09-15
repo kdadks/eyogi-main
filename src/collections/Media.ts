@@ -28,7 +28,7 @@ export const Media: CollectionConfig = {
     // },
   ],
   upload: {
-    staticDir: 'media', // Local storage path for development
+    // UploadThing handles the storage, no staticDir needed
     mimeTypes: ['image/*', 'video/*', 'application/pdf'], // Allowed file types
   },
 }
