@@ -10,10 +10,16 @@ const compat = new FlatCompat({
 })
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  // Ensure ignores are applied globally before any configs
   {
     ignores: [
+      'src/SSH',
+      'src/SSH/**',
       'src/SSH/**/*',
+      './src/SSH/**',
+      './src/SSH/**/*',
+      '**/src/SSH/**',
+      '**/src/SSH/**/*',
       'src/SSH/.next/**/*',
       'src/SSH/node_modules/**/*',
       'src/SSH/dist/**/*',
@@ -22,6 +28,9 @@ const eslintConfig = [
       'node_modules/**/*',
       'out/**/*',
     ],
+  },
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  {
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',

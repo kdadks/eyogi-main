@@ -16,7 +16,7 @@ export async function GET(
   },
 ): Promise<Response> {
   const payload = await getPayload({ config: configPromise })
-  const token = req.cookies.get(payloadToken)?.value
+  const _token = req.cookies.get(payloadToken)?.value
   const { searchParams } = new URL(req.url)
   const path = searchParams.get('path')
   const collection = searchParams.get('collection') as CollectionSlug

@@ -20,7 +20,7 @@ const placeholderBlur =
 export const ImageMedia: React.FC<MediaProps> = (props) => {
   const {
     alt: altFromProps,
-    fill,
+    fill: _fill,
     imgClassName,
     priority,
     resource,
@@ -29,22 +29,22 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     loading: loadingFromProps,
   } = props
 
-  let width: number | undefined
-  let height: number | undefined
+  let _width: number | undefined
+  let _height: number | undefined
   let alt = altFromProps
   let src: StaticImageData | string = srcFromProps || ''
 
   if (!src && resource && typeof resource === 'object') {
     const {
       alt: altFromResource,
-      filename: fullFilename,
+      filename: _fullFilename,
       height: fullHeight,
       url,
       width: fullWidth,
     } = resource
 
-    width = fullWidth!
-    height = fullHeight!
+    _width = fullWidth!
+    _height = fullHeight!
     alt = altFromResource || ''
 
     src = `${getClientSideURL()}${url}`

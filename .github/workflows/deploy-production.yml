@@ -1,8 +1,6 @@
 name: Production Deployment
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -37,9 +35,9 @@ jobs:
         continue-on-error: true
 
       - name: Deploy to Netlify
-        uses: netlify/actions/cli@master
+        uses: netlify/actions/cli@v4
         with:
-          args: deploy --prod --dir=.next
+          args: deploy --prod --build --message "Manual production deploy"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
