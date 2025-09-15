@@ -74,16 +74,20 @@ export default buildConfig({
   globals: [AboutUs, PrivacyPolicy, Donation],
   plugins: [
     ...plugins,
-    // UploadThing configuration with fallback for deployment
-    uploadthingStorage({
-      collections: {
-        media: true,
-      },
-      options: {
-        token: process.env.UPLOADTHING_TOKEN || 'dummy-token-for-build',
-        acl: 'public-read',
-      },
-    }),
+    // Only enable UploadThing when a real token is provided
+    ...(process.env.UPLOADTHING_TOKEN &&
+    process.env.UPLOADTHING_TOKEN !== 'placeholder' &&
+    process.env.UPLOADTHING_TOKEN !== 'dummy-token-for-build'
+      ? [
+          uploadthingStorage({
+            collections: { media: true },
+            options: {
+              token: process.env.UPLOADTHING_TOKEN,
+              acl: 'public-read',
+            },
+          }),
+        ]
+      : []),
   ],
   secret: process.env.PAYLOAD_SECRET || 'fallback-secret-for-build-only',
   sharp,
