@@ -4,6 +4,17 @@ node_modules
 .DS_Store
 .env
 .next
+
+# Next.js build cache
+.next/cache
+.swc/
+
+# Yarn cache
+.yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+.pnp.*
+
 .vercel
 
 # Payload default media upload directory
