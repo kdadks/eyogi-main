@@ -113,6 +113,25 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       name: error instanceof Error ? error.name : undefined,
     })
 
+    // Send error to logging endpoint for persistent storage
+    try {
+      await fetch('/api/debug/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page: '/hinduism',
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          details: {
+            name: error instanceof Error ? error.name : undefined,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+          },
+        }),
+      }).catch(() => {}) // Ignore logging failures
+    } catch {
+      // Ignore logging failures
+    }
+
     // Return a fallback UI when there's an error
     return (
       <div className="flex flex-grow h-full">
