@@ -3,6 +3,7 @@ import type { Metadata } from 'next/types'
 import { CollectionArchive } from '@/components/CollectionArchive'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
+import type { Where } from 'payload'
 import React from 'react'
 import BlogsFilters from '@/components/Blogs/BlogsFilters'
 import { Pagination } from '@/components/Pagination'
@@ -21,20 +22,46 @@ type Args = {
 export default async function Page({ searchParams: searchParamsPromise }: Args) {
   try {
     const sp = await searchParamsPromise
-    const page = Number(sp?.page) || 1
+    const page = Math.max(1, Number(sp?.page) || 1)
     const limit = 12
     const search = (sp?.search ?? '') as string
     const category = (sp?.category ?? '') as string
     const config = await configPromise
     const payload = await getPayload({ config })
 
-    const categoris = await payload.find({
+    const categoriesRes = await payload.find({
       collection: 'categories',
       limit: 999,
       select: {
         title: true,
       },
     })
+
+    // Build where conditions only when filters are provided to avoid invalid empty objects
+  const orConditions: Where[] = []
+    if (search) {
+      orConditions.push(
+        { title: { like: search } },
+        { description: { like: search } },
+        { slug: { like: search } },
+      )
+    }
+
+  const andConditions: Where[] = []
+    if (category) {
+      andConditions.push({ 'categories.title': { equals: category } })
+    }
+
+  let where: Where | undefined
+    if (orConditions.length || andConditions.length) {
+      if (andConditions.length && orConditions.length) {
+        where = { and: [{ or: orConditions }, ...andConditions] }
+      } else if (andConditions.length) {
+        where = { and: andConditions }
+      } else {
+        where = { or: orConditions }
+      }
+    }
 
     const posts = await payload.find({
       collection: 'posts',
@@ -49,42 +76,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
         publishedAt: true,
         description: true,
       },
-      where: {
-        and: [
-          {
-            or: [
-              search
-                ? {
-                    title: {
-                      like: search,
-                    },
-                  }
-                : {},
-              search
-                ? {
-                    description: {
-                      like: search,
-                    },
-                  }
-                : {},
-              search
-                ? {
-                    slug: {
-                      like: search,
-                    },
-                  }
-                : {},
-            ],
-          },
-          category
-            ? {
-                'categories.title': {
-                  equals: category,
-                },
-              }
-            : {},
-        ],
-      },
+      ...(where ? { where } : {}),
     })
 
     return (
@@ -98,7 +90,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
           </div>
 
           <BlogsFilters
-            data={categoris.docs}
+            data={categoriesRes.docs}
             defaultSearch={search}
             defaultCategory={category as string}
           />
