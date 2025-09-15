@@ -7,6 +7,9 @@ import React from 'react'
 import BlogsFilters from '@/components/Blogs/BlogsFilters'
 import { Pagination } from '@/components/Pagination'
 
+// Force this page to be dynamic to support search params
+export const dynamic = 'force-dynamic'
+
 type Args = {
   searchParams: Promise<{
     page?: string

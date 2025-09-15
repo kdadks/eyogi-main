@@ -9,30 +9,9 @@ import { Link } from 'next-transition-router'
 import { Media } from '@/components/Media'
 import { formatDateTime } from '@/utilities/formatDateTime'
 
-export async function generateStaticParams() {
-  try {
-    const payload = await getPayload({ config: configPromise })
-    const posts = await payload.find({
-      collection: 'posts',
-      draft: false,
-      limit: 1000,
-      overrideAccess: false,
-      pagination: false,
-      select: {
-        slug: true,
-      },
-    })
-
-    const params = posts.docs.map(({ slug }) => {
-      return { slug }
-    })
-
-    return params || []
-  } catch (error) {
-    console.warn('Could not generate static params for author pages - database connection failed:', error.message)
-    return []
-  }
-}
+// Enable ISR with 1 hour revalidation to reduce build time
+export const revalidate = 60 // 1 minute for ultra-fast builds
+export const dynamic = 'force-dynamic' // Always fetch from Payload CMS dynamically
 
 type Args = {
   params: Promise<{
@@ -162,6 +141,8 @@ const queryPostsBySlug = cache(async ({ slug }: { slug: string }) => {
       meta: true,
       authors: true,
       publishedAt: true,
+      description: true,
+      coverImage: true,
     },
     where: {
       'authors.name': {

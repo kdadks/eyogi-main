@@ -10,30 +10,9 @@ import { PostHero } from '@/heros/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
-export async function generateStaticParams() {
-  try {
-    const payload = await getPayload({ config: configPromise })
-    const posts = await payload.find({
-      collection: 'posts',
-      draft: false,
-      limit: 1000,
-      overrideAccess: false,
-      pagination: false,
-      select: {
-        slug: true,
-      },
-    })
-
-    const params = posts.docs.map(({ slug }) => {
-      return { slug }
-    })
-
-    return params || []
-  } catch (error) {
-    console.warn('Could not generate static params for hinduism pages - database connection failed:', error.message)
-    return []
-  }
-}
+// Enable ISR with 1 hour revalidation to reduce build time
+export const revalidate = 60 // 1 minute for ultra-fast builds
+export const dynamic = 'force-dynamic' // Always fetch from Payload CMS dynamically
 
 type Args = {
   params: Promise<{

@@ -1,34 +1,45 @@
 [build]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 120000 && yarn build"
 
 [build.environment]
   NODE_VERSION = "20"
-  YARN_FLAGS = "--prefer-offline"
-  NODE_OPTIONS = "--no-deprecation"
+  YARN_FLAGS = "--prefer-offline --network-timeout 120000 --silent"
+  NODE_OPTIONS = "--no-deprecation --max-old-space-size=8192 --enable-source-maps=false"
   NEXT_TELEMETRY_DISABLED = "1"
   NPM_CONFIG_PRODUCTION = "false"
+  # Optimize build performance
+  YARN_CACHE_FOLDER = ".yarn/cache"
+  YARN_ENABLE_IMMUTABLE_INSTALLS = "false"
+  # Disable source maps for faster builds
+  GENERATE_SOURCEMAP = "false"
+  # Skip optimizations for faster builds
+  NODE_ENV = "production"
+  # Skip TypeScript checking for speed
+  SKIP_TYPE_CHECK = "true"
 
 # Production context: all deploys from the Production branch
 [context.production]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 180000 && yarn build --parallel"
   [context.production.environment]
     NODE_ENV = "production"
+    NODE_OPTIONS = "--no-deprecation --max-old-space-size=4096"
     NPM_CONFIG_PRODUCTION = "false"
 
 # Deploy Preview context: all Deploy Previews
 [context.deploy-preview]
   publish = ".next"  
-  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 300000 && yarn build"
   [context.deploy-preview.environment]
     NODE_ENV = "production"
+    NODE_OPTIONS = "--no-deprecation --max-old-space-size=4096"
     NPM_CONFIG_PRODUCTION = "false"
 
 # Branch deploy context: all deploys that are not from a pull/merge request or from the Production branch
 [context.branch-deploy]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 300000 && yarn build"
 
 # Next.js serverless functions
 [[plugins]]

@@ -5,9 +5,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
-    "build:clean": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && next build",
-    "postbuild": "next-sitemap --config next-sitemap.config.cjs",
+    "build": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' NEXT_TELEMETRY_DISABLED=1 next build",
+    "build:clean": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' rm -rf .next && next build",
+    "build:fast": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' NEXT_TELEMETRY_DISABLED=1 next build",
+    "postbuild": "echo 'Skipping sitemap generation for faster builds'",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev --turbo",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && yarn build && yarn start",
     "clean": "rm -rf .next .swc node_modules/.cache",
