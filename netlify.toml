@@ -21,7 +21,7 @@
 # Production context: all deploys from the Production branch
 [context.production]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 180000 && yarn build --parallel"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 180000 && yarn build"
   [context.production.environment]
     NODE_ENV = "production"
     NODE_OPTIONS = "--no-deprecation --max-old-space-size=4096"
