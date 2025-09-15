@@ -107,6 +107,11 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
     )
   } catch (error) {
     console.error('Error loading Hinduism page:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    })
 
     // Return a fallback UI when there's an error
     return (
