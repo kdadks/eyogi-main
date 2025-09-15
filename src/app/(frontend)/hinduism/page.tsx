@@ -38,7 +38,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
     })
 
     // Build where conditions only when filters are provided to avoid invalid empty objects
-  const orConditions: Where[] = []
+    const orConditions: Where[] = []
     if (search) {
       orConditions.push(
         { title: { like: search } },
@@ -47,12 +47,12 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       )
     }
 
-  const andConditions: Where[] = []
+    const andConditions: Where[] = []
     if (category) {
       andConditions.push({ 'categories.title': { equals: category } })
     }
 
-  let where: Where | undefined
+    let where: Where | undefined
     if (orConditions.length || andConditions.length) {
       if (andConditions.length && orConditions.length) {
         where = { and: [{ or: orConditions }, ...andConditions] }

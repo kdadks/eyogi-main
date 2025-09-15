@@ -40,9 +40,6 @@ export async function GET() {
     const ok = results.every((r) => r.ok)
     return NextResponse.json({ ok, count: results.length, results })
   } catch (err) {
-    return NextResponse.json(
-      { ok: false, error: (err as Error).message },
-      { status: 500 },
-    )
+    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 500 })
   }
 }

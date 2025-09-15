@@ -23,8 +23,8 @@ export const slugField: Slug = (fieldToUse = 'title', overrides = {}) => {
     ...checkboxOverrides,
   }
 
-  // Expect ts error here because of typescript mismatching Partial<TextField> with TextField
-  // @ts-expect-error
+  // Expect TS error due to Payload's typings: Partial<TextField> merging into TextField is not structurally compatible
+  // @ts-expect-error - Payload field overrides are merged at runtime; type mismatch is expected and safe here
   const slugField: TextField = {
     name: 'slug',
     type: 'text',
