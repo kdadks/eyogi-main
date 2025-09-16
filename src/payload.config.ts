@@ -75,20 +75,16 @@ export default buildConfig({
   globals: [AboutUs, PrivacyPolicy, Donation],
   plugins: [
     ...plugins,
-    // UploadThing storage plugin - try basic configuration
-    ...(process.env.UPLOADTHING_TOKEN
-      ? [
-          uploadthingStorage({
-            collections: {
-              media: true,
-            },
-            options: {
-              token: process.env.UPLOADTHING_TOKEN,
-              acl: 'public-read',
-            },
-          }),
-        ]
-      : []),
+    // UploadThing storage plugin - force enable for all environments
+    uploadthingStorage({
+      collections: {
+        media: true,
+      },
+      options: {
+        token: process.env.UPLOADTHING_TOKEN || '',
+        acl: 'public-read',
+      },
+    }),
   ],
   secret: process.env.PAYLOAD_SECRET || 'fallback-secret-for-build-only',
   sharp,
