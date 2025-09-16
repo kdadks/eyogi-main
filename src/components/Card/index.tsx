@@ -22,6 +22,15 @@ export const Card: React.FC<{
 
   const { slug, categories, publishedAt, description, coverImage, title } = doc || {}
 
+  // Debug: Log card data
+  console.log('Card render:', {
+    title,
+    slug,
+    hasCoverImage: !!coverImage,
+    coverImageType: typeof coverImage,
+    coverImageUrl: coverImage && typeof coverImage === 'object' ? coverImage.url : 'N/A',
+  })
+
   const hasCategories = categories && Array.isArray(categories) && categories.length > 0
   const titleToUse = titleFromProps || title
   const sanitizedDescription = description?.replace(/\s/g, ' ') // replace non-breaking space with white space

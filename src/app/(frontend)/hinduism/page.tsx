@@ -65,35 +65,39 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
 
     const posts = await payload.find({
       collection: 'posts',
-      depth: 2, // Increase depth to ensure coverImage is fully populated
+      depth: 3, // Further increase depth to ensure all relationships are populated
       limit,
       page,
-      select: {
-        title: true,
-        slug: true,
-        categories: true,
-        coverImage: true,
-        publishedAt: true,
-        description: true,
-      },
+      // Remove select to ensure all fields are fetched
+      // select: {
+      //   title: true,
+      //   slug: true,
+      //   categories: true,
+      //   coverImage: true,
+      //   publishedAt: true,
+      //   description: true,
+      // },
       ...(where ? { where } : {}),
     })
 
-    // Debug: Log image data for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`=== DEBUG: Page ${page} ===`)
-      console.log('Total posts:', posts.docs.length)
-      console.log('Posts with images:', posts.docs.filter((post) => post.coverImage).length)
-      posts.docs.forEach((post, index) => {
-        if (post.coverImage && typeof post.coverImage === 'object') {
-          console.log(`Post ${index + 1} (${post.title}):`, {
-            hasImage: !!post.coverImage,
-            imageUrl: post.coverImage.url,
-            imageFilename: post.coverImage.filename,
-          })
-        }
-      })
-    }
+    // Debug: Log image data for debugging (works in production too)
+    console.log(`=== DEBUG: Page ${page} (Production) ===`)
+    console.log('Total posts:', posts.docs.length)
+    console.log('Posts with images:', posts.docs.filter((post) => post.coverImage).length)
+    console.log(
+      'Posts details:',
+      posts.docs.map((post, index) => ({
+        index: index + 1,
+        title: post.title,
+        slug: post.slug,
+        hasCoverImage: !!post.coverImage,
+        coverImageType: typeof post.coverImage,
+        coverImageId:
+          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.id : 'N/A',
+        coverImageUrl:
+          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.url : 'N/A',
+      })),
+    )
 
     return (
       <div className="flex flex-grow h-full">
