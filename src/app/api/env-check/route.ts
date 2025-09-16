@@ -7,7 +7,7 @@ export async function GET() {
   const envCheck = {
     NODE_ENV: process.env.NODE_ENV,
     DATABASE_URI: process.env.DATABASE_URI ? 'SET' : 'MISSING',
-    PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'SET' : 'MISSING', 
+    PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'SET' : 'MISSING',
     UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN ? 'SET' : 'MISSING',
     NEXT_PUBLIC_SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL || 'MISSING',
     NETLIFY: process.env.NETLIFY || 'false',
