@@ -9,7 +9,6 @@ import React from 'react'
 import type { Props as MediaProps } from '../types'
 
 import { cssVariables } from '@/cssVariables'
-import { getClientSideURL } from '@/utilities/getURL'
 
 const { breakpoints } = cssVariables
 
@@ -47,7 +46,8 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     _height = fullHeight!
     alt = altFromResource || ''
 
-    src = `${getClientSideURL()}${url}`
+    // UploadThing provides full URLs, no need to prefix with site URL
+    src = url || ''
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
