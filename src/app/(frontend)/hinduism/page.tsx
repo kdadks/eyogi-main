@@ -71,19 +71,6 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       ...(where ? { where } : {}),
     })
 
-    // Debug: Log for page 2 specifically
-    if (page === 2) {
-      console.log('🔍 Page 2 Server Debug:', {
-        totalPosts: posts.docs.length,
-        postsWithImages: posts.docs.filter(post => post.coverImage).length,
-        firstPostData: posts.docs[0] ? {
-          title: posts.docs[0].title,
-          coverImage: posts.docs[0].coverImage,
-          coverImageType: typeof posts.docs[0].coverImage
-        } : 'No posts'
-      })
-    }
-
     return (
       <div className="flex flex-grow h-full">
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 pt-4 pb-4 gap-5 container h-full">

@@ -22,17 +22,6 @@ export const Card: React.FC<{
 
   const { slug, categories, publishedAt, description, coverImage, title } = doc || {}
 
-  // Debug: Add temporary logging for page 2 issue
-  if (typeof window !== 'undefined' && window.location.search.includes('page=2')) {
-    console.log('🔍 Page 2 Card Debug:', {
-      title,
-      slug,
-      hasCoverImage: !!coverImage,
-      coverImageType: typeof coverImage,
-      coverImageData: coverImage,
-    })
-  }
-
   const hasCategories = categories && Array.isArray(categories) && categories.length > 0
   const titleToUse = titleFromProps || title
   const sanitizedDescription = description?.replace(/\s/g, ' ') // replace non-breaking space with white space
@@ -50,7 +39,7 @@ export const Card: React.FC<{
         <Media
           resource={coverImage}
           imgClassName="object-cover"
-          className="absolute w-full aspect-[4/3] h-40 lg:h-60 xl:h-80 group-hover:h-full transition-all duration-300 opacity100 group-hover:opacity-30"
+          className="absolute w-full aspect-[4/3] h-40 lg:h-60 xl:h-80 group-hover:h-full transition-all duration-300 opacity-100 group-hover:opacity-30"
         />
       )}
       <div className="relative w-full aspect-[4/3] h-40 lg:h-60 xl:h-80">
@@ -79,7 +68,7 @@ export const Card: React.FC<{
                       key={index}
                     >
                       {categoryTitle}
-                      {!isLast && <div>, &nbsp;</div>}
+                      {!isLast && ', '}
                     </div>
                   )
                 }
