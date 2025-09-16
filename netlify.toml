@@ -1,6 +1,6 @@
 [build]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 120000 && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 120000 && npm rebuild sharp --platform=linux --arch=x64 && yarn build"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -21,7 +21,7 @@
 # Production context: all deploys from the Production branch
 [context.production]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 180000 && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 180000 && npm rebuild sharp --platform=linux --arch=x64 && yarn build"
   [context.production.environment]
     NODE_ENV = "production"
     NODE_OPTIONS = "--no-deprecation --max-old-space-size=4096"
@@ -30,7 +30,7 @@
 # Deploy Preview context: all Deploy Previews
 [context.deploy-preview]
   publish = ".next"  
-  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 300000 && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 300000 && npm rebuild sharp --platform=linux --arch=x64 && yarn build"
   [context.deploy-preview.environment]
     NODE_ENV = "production"
     NODE_OPTIONS = "--no-deprecation --max-old-space-size=4096"
@@ -39,7 +39,7 @@
 # Branch deploy context: all deploys that are not from a pull/merge request or from the Production branch
 [context.branch-deploy]
   publish = ".next"
-  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 300000 && yarn build"
+  command = "yarn install --frozen-lockfile --prefer-offline --network-timeout 300000 && npm rebuild sharp --platform=linux --arch=x64 && yarn build"
 
 # Next.js serverless functions
 [[plugins]]

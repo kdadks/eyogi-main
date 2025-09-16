@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 export default async function DiagnosticPage() {
   let payloadTest = 'Not tested'
   let dbTest = 'Not tested'
-  
+
   // Environment check
   const envCheck = {
     NODE_ENV: process.env.NODE_ENV,
@@ -50,13 +50,11 @@ export default async function DiagnosticPage() {
   return (
     <div className="container mx-auto p-8 text-white">
       <h1 className="text-3xl font-bold mb-8">Production Diagnostics</h1>
-      
+
       <div className="space-y-6">
         <div className="bg-gray-800 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Environment Variables</h2>
-          <pre className="text-sm overflow-auto">
-            {JSON.stringify(envCheck, null, 2)}
-          </pre>
+          <pre className="text-sm overflow-auto">{JSON.stringify(envCheck, null, 2)}</pre>
         </div>
 
         <div className="bg-gray-800 p-6 rounded-lg">
