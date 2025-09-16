@@ -53,8 +53,16 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         const baseUrl =
           typeof window !== 'undefined'
             ? window.location.origin
-            : process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogimain.netlify.app'
+            : process.env.NEXT_PUBLIC_SERVER_URL ||
+              (process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : 'http://localhost:3000')
         src = `${baseUrl}${url}`
+
+        // Debug: Log image URL generation
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Image URL generated:', { originalUrl: url, finalSrc: src, baseUrl })
+        }
       }
       // If URL starts with http (UploadThing URL), use as-is
       else if (url.startsWith('http')) {

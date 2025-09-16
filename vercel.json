@@ -1,0 +1,23 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "yarn build",
+  "installCommand": "yarn install",
+  "functions": {
+    "src/app/api/**/*.js": {
+      "maxDuration": 60
+    },
+    "src/app/api/[...slug]/route.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/admin/:path*",
+      "destination": "/admin/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+}

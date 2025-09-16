@@ -65,7 +65,7 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
 
     const posts = await payload.find({
       collection: 'posts',
-      depth: 1,
+      depth: 2, // Increase depth to ensure coverImage is fully populated
       limit,
       page,
       select: {
@@ -78,6 +78,22 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       },
       ...(where ? { where } : {}),
     })
+
+    // Debug: Log image data for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`=== DEBUG: Page ${page} ===`)
+      console.log('Total posts:', posts.docs.length)
+      console.log('Posts with images:', posts.docs.filter((post) => post.coverImage).length)
+      posts.docs.forEach((post, index) => {
+        if (post.coverImage && typeof post.coverImage === 'object') {
+          console.log(`Post ${index + 1} (${post.title}):`, {
+            hasImage: !!post.coverImage,
+            imageUrl: post.coverImage.url,
+            imageFilename: post.coverImage.filename,
+          })
+        }
+      })
+    }
 
     return (
       <div className="flex flex-grow h-full">
