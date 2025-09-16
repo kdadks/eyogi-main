@@ -46,20 +46,24 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     _height = fullHeight!
     alt = altFromResource || ''
 
-    // UploadThing provides full URLs, no need to prefix with site URL
-    src = url || ''
+    // Handle different URL formats
+    if (url) {
+      // If URL starts with /api/media (Payload API endpoint), prefix with base URL
+      if (url.startsWith('/api/media/')) {
+        src = `https://eyogimain.netlify.app${url}`
+      }
+      // If URL starts with http (UploadThing URL), use as-is
+      else if (url.startsWith('http')) {
+        src = url
+      }
+      // For any other format, use as-is
+      else {
+        src = url
+      }
+    }
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
-
-  // Debug logging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('ImageMedia Debug:', {
-      src,
-      resource,
-      url: resource && typeof resource === 'object' ? resource.url : 'N/A',
-    })
-  }
 
   // If we don't have a valid src, show placeholder
   if (!src || src === '') {

@@ -24,6 +24,23 @@ export const VideoMedia: React.FC<MediaProps> = (props) => {
   if (resource && typeof resource === 'object') {
     const { url } = resource
 
+    // Handle different URL formats
+    let videoSrc = ''
+    if (url) {
+      // If URL starts with /api/media (Payload API endpoint), prefix with base URL
+      if (url.startsWith('/api/media/')) {
+        videoSrc = `https://eyogimain.netlify.app${url}`
+      }
+      // If URL starts with http (UploadThing URL), use as-is
+      else if (url.startsWith('http')) {
+        videoSrc = url
+      }
+      // For any other format, use as-is
+      else {
+        videoSrc = url
+      }
+    }
+
     return (
       <video
         autoPlay
@@ -35,7 +52,7 @@ export const VideoMedia: React.FC<MediaProps> = (props) => {
         playsInline
         ref={videoRef}
       >
-        <source src={url || ''} />
+        <source src={videoSrc} />
       </video>
     )
   }
