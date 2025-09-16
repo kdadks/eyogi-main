@@ -9,21 +9,6 @@ export type Props = {
 export const CollectionArchive: React.FC<Props> = (props) => {
   const { posts } = props
 
-  // Debug: Log posts data
-  console.log('CollectionArchive received posts:', posts.length)
-  console.log('Posts with cover images:', posts.filter((post) => post.coverImage).length)
-  posts.forEach((post, index) => {
-    console.log(`Archive Post ${index + 1}:`, {
-      title: post.title,
-      hasCoverImage: !!post.coverImage,
-      coverImageType: typeof post.coverImage,
-      coverImageData:
-        post.coverImage && typeof post.coverImage === 'object'
-          ? { id: post.coverImage.id, url: post.coverImage.url, filename: post.coverImage.filename }
-          : post.coverImage,
-    })
-  })
-
   return (
     <>
       {posts?.map((result, index) => {

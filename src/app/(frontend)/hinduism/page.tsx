@@ -65,39 +65,11 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
 
     const posts = await payload.find({
       collection: 'posts',
-      depth: 3, // Further increase depth to ensure all relationships are populated
+      depth: 3,
       limit,
       page,
-      // Remove select to ensure all fields are fetched
-      // select: {
-      //   title: true,
-      //   slug: true,
-      //   categories: true,
-      //   coverImage: true,
-      //   publishedAt: true,
-      //   description: true,
-      // },
       ...(where ? { where } : {}),
     })
-
-    // Debug: Log image data for debugging (works in production too)
-    console.log(`=== DEBUG: Page ${page} (Production) ===`)
-    console.log('Total posts:', posts.docs.length)
-    console.log('Posts with images:', posts.docs.filter((post) => post.coverImage).length)
-    console.log(
-      'Posts details:',
-      posts.docs.map((post, index) => ({
-        index: index + 1,
-        title: post.title,
-        slug: post.slug,
-        hasCoverImage: !!post.coverImage,
-        coverImageType: typeof post.coverImage,
-        coverImageId:
-          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.id : 'N/A',
-        coverImageUrl:
-          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.url : 'N/A',
-      })),
-    )
 
     return (
       <div className="flex flex-grow h-full">

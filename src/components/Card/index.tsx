@@ -22,15 +22,6 @@ export const Card: React.FC<{
 
   const { slug, categories, publishedAt, description, coverImage, title } = doc || {}
 
-  // Debug: Log card data
-  console.log('Card render:', {
-    title,
-    slug,
-    hasCoverImage: !!coverImage,
-    coverImageType: typeof coverImage,
-    coverImageUrl: coverImage && typeof coverImage === 'object' ? coverImage.url : 'N/A',
-  })
-
   const hasCategories = categories && Array.isArray(categories) && categories.length > 0
   const titleToUse = titleFromProps || title
   const sanitizedDescription = description?.replace(/\s/g, ' ') // replace non-breaking space with white space
@@ -62,9 +53,7 @@ export const Card: React.FC<{
         <div className="flex justify-between">
           {showCategories && hasCategories && (
             <div className="uppercase text-sm mb-4">
-              {showCategories && hasCategories && (
-                <div>
-                  {categories?.map((category, index) => {
+              {categories?.map((category, index) => {
                     if (typeof category === 'object') {
                       const { title: titleFromCategory } = category
 
@@ -86,8 +75,6 @@ export const Card: React.FC<{
 
                     return null
                   })}
-                </div>
-              )}
             </div>
           )}
           <div>
