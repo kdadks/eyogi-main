@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
     for (const media of mediaRecords.docs) {
       try {
         console.log(`🔄 Processing: ${media.filename}`)
-        
+
         const extendedMedia = media as ExtendedMedia
-        
+
         console.log('📋 Media record structure:', {
           id: media.id,
           filename: media.filename,
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           filesize: media.filesize,
           hasKey: !!extendedMedia._key,
           hasPrefix: !!extendedMedia.prefix,
-          allFields: Object.keys(media)
+          allFields: Object.keys(media),
         })
 
         const result: MigrationResult = {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         if (dryRun) {
           result.status = 'dry-run-success'
           result.method = 'key-based-simulation'
-          
+
           // Check if we have a file key to work with
           if (extendedMedia._key) {
             result.newUrl = `https://utfs.io/f/${extendedMedia._key}`
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
             result.fileKey = potentialKey
             console.log(`🔍 DRY RUN: Would generate new key ${potentialKey}`)
           }
-          
+
           migrationResults.push(result)
           successCount++
           continue
@@ -119,11 +119,11 @@ export async function POST(request: NextRequest) {
         if (extendedMedia._key && !migrationSuccess) {
           try {
             console.log(`🔑 Attempting migration using existing key: ${extendedMedia._key}`)
-            
+
             // For now, just update the URL to use the existing key
             // This assumes the file is already in UploadThing but with wrong URL
             const potentialUrl = `https://utfs.io/f/${extendedMedia._key}`
-            
+
             // Test if this URL works
             const testResponse = await fetch(potentialUrl, { method: 'HEAD' })
             if (testResponse.ok) {
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
                   url: potentialUrl,
                 },
               })
-              
+
               result.status = 'success'
               result.newUrl = potentialUrl
               result.method = 'existing-key-relink'
@@ -152,13 +152,13 @@ export async function POST(request: NextRequest) {
         if (!migrationSuccess && media.filename) {
           try {
             console.log(`📥 Downloading ${media.filename} for re-upload...`)
-            
+
             // Try to download the file from the current URL
             const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogi-main.vercel.app'
             const imageUrl = media.url?.startsWith('http') ? media.url : `${baseUrl}${media.url}`
-            
+
             console.log(`🔗 Fetching from: ${imageUrl}`)
-            
+
             const imageResponse = await fetch(imageUrl, {
               method: 'GET',
               headers: {
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 
             // Create File object for upload
             const file = new File([imageBuffer], media.filename, {
-              type: media.mimeType || 'application/octet-stream'
+              type: media.mimeType || 'application/octet-stream',
             })
 
             // Upload to UploadThing
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
 
             if (uploadResult.data) {
               console.log(`✅ Upload successful: ${uploadResult.data.url}`)
-              
+
               // Update the database record
               await payload.update({
                 collection: 'media',
@@ -204,7 +204,6 @@ export async function POST(request: NextRequest) {
             } else {
               throw new Error('UploadThing upload failed - no data returned')
             }
-
           } catch (error) {
             console.log(`❌ Download/reupload method failed: ${error}`)
             result.error = error instanceof Error ? error.message : 'Unknown error'
@@ -218,7 +217,6 @@ export async function POST(request: NextRequest) {
         }
 
         migrationResults.push(result)
-
       } catch (error) {
         console.error(`❌ Error processing ${media.filename}:`, error)
         migrationResults.push({
@@ -227,7 +225,7 @@ export async function POST(request: NextRequest) {
           originalUrl: media.url,
           status: 'error',
           newUrl: null,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
         errorCount++
       }
@@ -249,14 +247,13 @@ export async function POST(request: NextRequest) {
         limit,
         offset,
       },
-      nextAction: dryRun 
+      nextAction: dryRun
         ? 'Review results and run with dryRun: false to execute migration'
         : `Migration completed. ${successCount} successful, ${errorCount} errors`,
     }
 
     console.log('📊 Migration Summary:', response.migrationSummary)
     return NextResponse.json(response)
-
   } catch (error) {
     console.error('❌ Key-based migration error:', error)
     return NextResponse.json(
@@ -265,7 +262,7 @@ export async function POST(request: NextRequest) {
         error: 'Key-based migration failed',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -274,10 +271,11 @@ export async function GET(_request: NextRequest) {
   return NextResponse.json({
     message: 'Key-based migration endpoint',
     usage: 'POST with { dryRun: boolean, limit: number, offset: number }',
-    description: 'Migrates images using existing file keys when available, or downloads and re-uploads with new keys',
+    description:
+      'Migrates images using existing file keys when available, or downloads and re-uploads with new keys',
     methods: [
       'existing-key-relink: Use existing _key to construct UploadThing URL',
-      'download-reupload: Download from database and upload to UploadThing with new key'
-    ]
+      'download-reupload: Download from database and upload to UploadThing with new key',
+    ],
   })
 }

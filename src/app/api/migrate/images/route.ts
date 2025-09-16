@@ -83,21 +83,50 @@ export async function POST(request: NextRequest) {
           try {
             console.log(`📥 Downloading ${media.filename} from database...`)
 
-            // Fetch the image data from PayloadCMS
-            const imageResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogi-main.vercel.app'}${media.url}`,
-            )
+            // Properly construct the image URL with encoding
+            const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogi-main.vercel.app'
+            const imageUrl = media.url?.startsWith('http') ? media.url : `${baseUrl}${media.url}`
 
-            if (!imageResponse.ok) {
-              throw new Error(`Failed to download image: ${imageResponse.status}`)
-            }
+            console.log(`🔗 Fetching from: ${imageUrl}`)
 
-            const imageBuffer = await imageResponse.arrayBuffer()
-            const imageFile = new File([imageBuffer], media.filename || 'unknown.jpg', {
-              type: media.mimeType || 'image/jpeg',
+            // Fetch the image data from PayloadCMS with proper headers
+            const imageResponse = await fetch(imageUrl, {
+              method: 'GET',
+              headers: {
+                'User-Agent': 'Migration Bot',
+              },
+              // Add timeout to prevent hanging
+              signal: AbortSignal.timeout(30000), // 30 second timeout
             })
 
-            console.log(`📤 Uploading ${media.filename} to UploadThing...`)
+            if (!imageResponse.ok) {
+              console.error(
+                `❌ Fetch failed for ${media.filename}: ${imageResponse.status} ${imageResponse.statusText}`,
+              )
+              throw new Error(
+                `Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`,
+              )
+            }
+
+            const contentType =
+              imageResponse.headers.get('content-type') || media.mimeType || 'image/jpeg'
+            console.log(
+              `📄 Content-Type: ${contentType}, Size: ${imageResponse.headers.get('content-length')} bytes`,
+            )
+
+            const imageBuffer = await imageResponse.arrayBuffer()
+
+            if (imageBuffer.byteLength === 0) {
+              throw new Error('Downloaded image is empty')
+            }
+
+            const imageFile = new File([imageBuffer], media.filename || 'unknown.jpg', {
+              type: contentType,
+            })
+
+            console.log(
+              `📤 Uploading ${media.filename} (${imageBuffer.byteLength} bytes) to UploadThing...`,
+            )
 
             // Upload to UploadThing
             const uploadResult = await utapi.uploadFiles([imageFile])
