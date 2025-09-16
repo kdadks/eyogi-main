@@ -23,6 +23,13 @@ export default async function AboutUsPage() {
       slug: 'about-us',
     })
 
+    // Debug: Check if we have any media items
+    const _mediaItems = await payload.find({
+      collection: 'media',
+      limit: 3,
+      sort: '-createdAt'
+    })
+
     if (!result) {
       throw new Error('About Us content not found')
     }
@@ -38,6 +45,13 @@ export default async function AboutUsPage() {
             </p>
           </div>
         </section>
+
+        {/* Debug section - temporary */}
+        <div className="bg-yellow-100 p-4 text-sm text-black">
+          <strong>Debug Info:</strong> Media items: {_mediaItems.docs.length} | 
+          Gallery images: {result?.gallery?.galleryImages?.length || 0} |
+          Sample media URL: {_mediaItems.docs[0]?.url || 'No media found'}
+        </div>
 
         {/* What is Gurukul Section */}
         <div className="bg-white">
