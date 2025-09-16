@@ -52,6 +52,24 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
 
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('ImageMedia Debug:', {
+      src,
+      resource,
+      url: resource && typeof resource === 'object' ? resource.url : 'N/A',
+    })
+  }
+
+  // If we don't have a valid src, show placeholder
+  if (!src || src === '') {
+    return (
+      <div className={cn('bg-gray-200 flex items-center justify-center', imgClassName)}>
+        <span className="text-gray-500 text-sm">No image</span>
+      </div>
+    )
+  }
+
   // NOTE: this is used by the browser to determine which image to download at different screen sizes
   const sizes = sizeFromProps
     ? sizeFromProps
