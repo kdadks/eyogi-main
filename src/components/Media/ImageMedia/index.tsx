@@ -72,7 +72,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       }
       // If URL starts with http (UploadThing URL), use as-is
       else if (url.startsWith('http')) {
-        if (url.includes('uploadthing')) {
+        if (url.includes('uploadthing') || url.includes('ufs.sh')) {
           imageSource = 'UploadThing_CDN'
         } else {
           imageSource = 'External_HTTP_URL'
@@ -82,7 +82,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         console.log('🌐 External Image:', {
           url: src,
           source: imageSource,
-          isUploadThing: url.includes('uploadthing'),
+          isUploadThing: url.includes('uploadthing') || url.includes('ufs.sh'),
         })
       }
       // For any other format, use as-is

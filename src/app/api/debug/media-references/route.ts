@@ -88,8 +88,8 @@ export async function GET(_request: NextRequest) {
         mediaRef.referencedBy.pages = pageReferences
 
         // Determine if safe to delete
-        mediaRef.canDeleteSafely = mediaRef.referencedBy.posts === 0 && mediaRef.referencedBy.pages === 0
-
+        mediaRef.canDeleteSafely =
+          mediaRef.referencedBy.posts === 0 && mediaRef.referencedBy.pages === 0
       } catch (error) {
         console.error(`Error checking references for media ${media.id}:`, error)
         mediaRef.canDeleteSafely = false
@@ -99,11 +99,15 @@ export async function GET(_request: NextRequest) {
     }
 
     // Analyze bulk deletion issues
-    const referencedMedia = referenceCheck.references.filter(ref => !ref.canDeleteSafely)
+    const referencedMedia = referenceCheck.references.filter((ref) => !ref.canDeleteSafely)
     if (referencedMedia.length > 0) {
-      referenceCheck.bulkDeletionIssues.push(`${referencedMedia.length} media files are referenced by other content`)
+      referenceCheck.bulkDeletionIssues.push(
+        `${referencedMedia.length} media files are referenced by other content`,
+      )
       referenceCheck.bulkDeletionIssues.push('Foreign key constraints will prevent bulk deletion')
-      referenceCheck.recommendations.push('Remove media references from posts/pages before bulk deletion')
+      referenceCheck.recommendations.push(
+        'Remove media references from posts/pages before bulk deletion',
+      )
       referenceCheck.recommendations.push('Or delete only unreferenced media files')
     }
 
@@ -118,7 +122,7 @@ export async function GET(_request: NextRequest) {
 
     console.log('📊 Reference check complete:', {
       total: referenceCheck.totalMedia,
-      safe: referenceCheck.references.filter(ref => ref.canDeleteSafely).length,
+      safe: referenceCheck.references.filter((ref) => ref.canDeleteSafely).length,
       referenced: referencedMedia.length,
     })
 
@@ -127,21 +131,23 @@ export async function GET(_request: NextRequest) {
       message: 'Media reference check completed',
       referenceCheck,
       bulkDeletionAdvice: {
-        safeToDelete: referenceCheck.references.filter(ref => ref.canDeleteSafely).map(ref => ({
-          id: ref.mediaId,
-          filename: ref.filename,
-        })),
-        requiresCleanup: referencedMedia.map(ref => ({
+        safeToDelete: referenceCheck.references
+          .filter((ref) => ref.canDeleteSafely)
+          .map((ref) => ({
+            id: ref.mediaId,
+            filename: ref.filename,
+          })),
+        requiresCleanup: referencedMedia.map((ref) => ({
           id: ref.mediaId,
           filename: ref.filename,
           referencedBy: ref.referencedBy,
         })),
-        explanation: referencedMedia.length > 0 
-          ? 'Some media files are referenced by content and cannot be bulk deleted'
-          : 'All checked media files appear safe for bulk deletion',
+        explanation:
+          referencedMedia.length > 0
+            ? 'Some media files are referenced by content and cannot be bulk deleted'
+            : 'All checked media files appear safe for bulk deletion',
       },
     })
-
   } catch (error) {
     console.error('❌ Reference check error:', error)
     return NextResponse.json(

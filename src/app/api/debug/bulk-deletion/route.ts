@@ -76,18 +76,25 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for potential issues
-      const inaccessibleRecords = results.individualTests.filter(test => !test.canAccess)
+      const inaccessibleRecords = results.individualTests.filter((test) => !test.canAccess)
       if (inaccessibleRecords.length > 0) {
-        results.recommendations.push(`${inaccessibleRecords.length} records cannot be accessed - these might cause bulk deletion to fail`)
+        results.recommendations.push(
+          `${inaccessibleRecords.length} records cannot be accessed - these might cause bulk deletion to fail`,
+        )
       }
 
       if (mediaIds.length > 10) {
-        results.recommendations.push('Large bulk operations might timeout - consider smaller batches')
+        results.recommendations.push(
+          'Large bulk operations might timeout - consider smaller batches',
+        )
       }
 
-      results.recommendations.push('Bulk deletion might fail due to database constraints or foreign key references')
-      results.recommendations.push('Some media might be referenced by posts, pages, or other content')
-
+      results.recommendations.push(
+        'Bulk deletion might fail due to database constraints or foreign key references',
+      )
+      results.recommendations.push(
+        'Some media might be referenced by posts, pages, or other content',
+      )
     } else {
       // Attempt actual bulk deletion
       try {
@@ -111,15 +118,16 @@ export async function POST(request: NextRequest) {
           result: deleteResult,
         }
         console.log(`✅ Bulk deletion successful`)
-
       } catch (bulkError) {
         console.error('❌ Bulk deletion failed:', bulkError)
         results.bulkDeletion.success = false
-        results.bulkDeletion.error = bulkError instanceof Error ? bulkError.message : 'Unknown bulk deletion error'
+        results.bulkDeletion.error =
+          bulkError instanceof Error ? bulkError.message : 'Unknown bulk deletion error'
         results.bulkDeletion.details = {
           errorName: bulkError instanceof Error ? bulkError.name : 'Unknown',
           errorStack: bulkError instanceof Error ? bulkError.stack : null,
-          errorCause: bulkError instanceof Error ? (bulkError as Error & { cause?: unknown }).cause : null,
+          errorCause:
+            bulkError instanceof Error ? (bulkError as Error & { cause?: unknown }).cause : null,
           suggestion: 'Try deleting records one by one instead of bulk operation',
         }
 
@@ -151,7 +159,6 @@ export async function POST(request: NextRequest) {
             individualErrors,
             note: 'Bulk deletion failed but individual deletions were attempted',
           }
-
         } catch (fallbackError) {
           console.error('❌ Fallback individual deletions also failed:', fallbackError)
         }
@@ -160,17 +167,32 @@ export async function POST(request: NextRequest) {
 
     // Analyze potential causes
     if (!results.bulkDeletion.success && results.bulkDeletion.attempted) {
-      if (results.bulkDeletion.error?.includes('foreign key') || results.bulkDeletion.error?.includes('constraint')) {
-        results.recommendations.push('Foreign key constraint violation - media files are referenced by other content')
-        results.recommendations.push('Check if these media are used in posts, pages, or other collections')
+      if (
+        results.bulkDeletion.error?.includes('foreign key') ||
+        results.bulkDeletion.error?.includes('constraint')
+      ) {
+        results.recommendations.push(
+          'Foreign key constraint violation - media files are referenced by other content',
+        )
+        results.recommendations.push(
+          'Check if these media are used in posts, pages, or other collections',
+        )
       }
 
-      if (results.bulkDeletion.error?.includes('timeout') || results.bulkDeletion.error?.includes('time')) {
+      if (
+        results.bulkDeletion.error?.includes('timeout') ||
+        results.bulkDeletion.error?.includes('time')
+      ) {
         results.recommendations.push('Operation timed out - try smaller batches')
       }
 
-      if (results.bulkDeletion.error?.includes('permission') || results.bulkDeletion.error?.includes('access')) {
-        results.recommendations.push('Permission issue - check user authentication and access rights')
+      if (
+        results.bulkDeletion.error?.includes('permission') ||
+        results.bulkDeletion.error?.includes('access')
+      ) {
+        results.recommendations.push(
+          'Permission issue - check user authentication and access rights',
+        )
       }
     }
 
@@ -178,15 +200,16 @@ export async function POST(request: NextRequest) {
       success: true,
       message: testOnly ? 'Bulk deletion test completed' : 'Bulk deletion attempt completed',
       totalRequested: mediaIds.length,
-      accessibleRecords: results.individualTests.filter(test => test.canAccess).length,
+      accessibleRecords: results.individualTests.filter((test) => test.canAccess).length,
       results,
-      quickFix: results.bulkDeletion.error ? [
-        'Try deleting records one by one instead of bulk selection',
-        'Check if media files are referenced by posts/pages',
-        'Use smaller batch sizes for bulk operations',
-      ] : [],
+      quickFix: results.bulkDeletion.error
+        ? [
+            'Try deleting records one by one instead of bulk selection',
+            'Check if media files are referenced by posts/pages',
+            'Use smaller batch sizes for bulk operations',
+          ]
+        : [],
     })
-
   } catch (error) {
     console.error('❌ Bulk deletion test error:', error)
     return NextResponse.json(
@@ -216,7 +239,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Bulk deletion test endpoint',
-      availableMedia: mediaList.docs.map(media => ({
+      availableMedia: mediaList.docs.map((media) => ({
         id: media.id,
         filename: media.filename,
         url: media.url,
@@ -235,7 +258,6 @@ export async function GET(_request: NextRequest) {
         'PayloadCMS bulk operation limitations',
       ],
     })
-
   } catch (error) {
     return NextResponse.json(
       {
