@@ -56,8 +56,8 @@ const nextConfig = {
   // Skip optimizations for faster builds
   // Reduce build size
   compiler: {
-    // Remove console statements in production for smaller bundles
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Keep console statements for debugging - removing this line temporarily
+    // removeConsole: process.env.NODE_ENV === 'production',
   },
   images: {
     remotePatterns: [

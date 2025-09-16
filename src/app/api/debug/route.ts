@@ -3,16 +3,21 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json({
+  console.log('🔥 DEBUG API CALLED!')
+
+  const response = {
     ok: true,
-    message: 'Debug endpoint is working',
+    message: 'Debug endpoint is working - Console logs enabled!',
     timestamp: new Date().toISOString(),
+    consoleLogsEnabled: true,
     env: {
       NODE_ENV: process.env.NODE_ENV,
-      NETLIFY: process.env.NETLIFY || 'false',
+      VERCEL_URL: process.env.VERCEL_URL || 'missing',
       DATABASE_URI: process.env.DATABASE_URI ? 'present' : 'missing',
       PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'present' : 'missing',
-      URL: process.env.URL || 'missing',
     },
-  })
+  }
+
+  console.log('📊 DEBUG API Response:', response)
+  return NextResponse.json(response)
 }

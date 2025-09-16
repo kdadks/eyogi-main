@@ -75,6 +75,13 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
     console.log('🔍 IMAGE SOURCE ANALYSIS - Page', page)
     console.log('📋 Total posts fetched:', posts.docs.length)
 
+    // Force debugging in production
+    if (typeof window === 'undefined') {
+      console.log('='.repeat(50))
+      console.log('🚀 PRODUCTION DEBUG - SERVER SIDE')
+      console.log('='.repeat(50))
+    }
+
     const imageAnalysis = posts.docs.map((post, index) => {
       const coverImage = post.coverImage
       let source = 'none'
