@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
     for (const media of brokenImages.docs) {
       try {
         const originalUrl = `/api/media/file/${encodeURIComponent(media.filename || '')}`
-        
+
         if (dryRun) {
           revertResults.push({
             id: media.id,
             filename: media.filename,
             currentUrl: media.url,
             wouldRevertTo: originalUrl,
-            status: 'dry-run'
+            status: 'dry-run',
           })
           revertCount++
         } else {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
             filename: media.filename,
             oldUrl: media.url,
             newUrl: originalUrl,
-            status: 'reverted'
+            status: 'reverted',
           })
           revertCount++
           console.log(`✅ Reverted: ${media.filename}`)
@@ -78,14 +78,14 @@ export async function POST(request: NextRequest) {
           id: media.id,
           filename: media.filename,
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: dryRun 
+      message: dryRun
         ? `Dry run: Would revert ${revertCount} URLs back to database`
         : `Successfully reverted ${revertCount} URLs back to database`,
       revertSummary: {
@@ -97,19 +97,18 @@ export async function POST(request: NextRequest) {
       explanation: {
         problem: 'URLs point to non-existent UploadThing files',
         solution: 'Revert to original /api/media/ URLs so images work again',
-        nextStep: 'Use recovery migration to properly upload to UploadThing'
-      }
+        nextStep: 'Use recovery migration to properly upload to UploadThing',
+      },
     })
-
   } catch (error) {
     console.error('❌ Revert error:', error)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to revert URLs',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -118,6 +117,6 @@ export async function GET(_request: NextRequest) {
   return NextResponse.json({
     message: 'URL revert endpoint',
     purpose: 'Revert broken UploadThing URLs back to working database URLs',
-    usage: 'POST with { dryRun: boolean, limit: number }'
+    usage: 'POST with { dryRun: boolean, limit: number }',
   })
 }

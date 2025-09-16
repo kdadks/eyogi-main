@@ -22,13 +22,13 @@ export async function GET(_request: NextRequest) {
     const urlCounts = {
       uploadthing: 0,
       database: 0,
-      other: 0
+      other: 0,
     }
 
     const urlSamples = {
       uploadthing: [] as string[],
       database: [] as string[],
-      other: [] as string[]
+      other: [] as string[],
     }
 
     for (const media of allMedia.docs) {
@@ -54,38 +54,42 @@ export async function GET(_request: NextRequest) {
 
     const migrationStatus = {
       isComplete: urlCounts.database === 0,
-      completionPercentage: urlCounts.uploadthing / (urlCounts.uploadthing + urlCounts.database + urlCounts.other) * 100,
+      completionPercentage:
+        (urlCounts.uploadthing / (urlCounts.uploadthing + urlCounts.database + urlCounts.other)) *
+        100,
       totalImages: allMedia.docs.length,
       imageSources: urlCounts,
       urlSamples,
-      summary: urlCounts.database === 0 
-        ? '✅ Migration Complete! All images now use UploadThing CDN'
-        : `⚠️ Migration In Progress: ${urlCounts.database} images still need migration`,
+      summary:
+        urlCounts.database === 0
+          ? '✅ Migration Complete! All images now use UploadThing CDN'
+          : `⚠️ Migration In Progress: ${urlCounts.database} images still need migration`,
       benefits: [
         '🚀 Faster image loading via CDN',
         '🔒 Reliable file serving on Vercel',
         '📱 Better mobile performance',
         '🌍 Global edge distribution',
-        '💾 Reduced database load'
+        '💾 Reduced database load',
       ],
-      nextSteps: urlCounts.database === 0 
-        ? [
-            'All images successfully migrated to UploadThing',
-            'Website images now load from CDN for better performance',
-            'No further action needed - migration complete!'
-          ]
-        : [
-            `Run migration for remaining ${urlCounts.database} images`,
-            'Test website functionality across all pages',
-            'Monitor image loading performance'
-          ]
+      nextSteps:
+        urlCounts.database === 0
+          ? [
+              'All images successfully migrated to UploadThing',
+              'Website images now load from CDN for better performance',
+              'No further action needed - migration complete!',
+            ]
+          : [
+              `Run migration for remaining ${urlCounts.database} images`,
+              'Test website functionality across all pages',
+              'Monitor image loading performance',
+            ],
     }
 
     console.log('📋 Migration Summary:', {
       total: migrationStatus.totalImages,
       uploadthing: urlCounts.uploadthing,
       database: urlCounts.database,
-      complete: migrationStatus.isComplete
+      complete: migrationStatus.isComplete,
     })
 
     return NextResponse.json({
@@ -93,18 +97,17 @@ export async function GET(_request: NextRequest) {
       message: 'Migration summary generated',
       migrationStatus,
       timestamp: new Date().toISOString(),
-      adminPanel: 'https://eyogi-main.vercel.app/admin/collections/media'
+      adminPanel: 'https://eyogi-main.vercel.app/admin/collections/media',
     })
-
   } catch (error) {
     console.error('❌ Migration summary error:', error)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to generate migration summary',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

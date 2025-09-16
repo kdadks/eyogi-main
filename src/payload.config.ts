@@ -14,7 +14,7 @@ import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { PrivacyPolicy } from './collections/PrivacyPolicy/config'
-import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
+// import { uploadthingStorage } from '@payloadcms/storage-uploadthing' // Temporarily disabled
 import { Faq } from './collections/faq'
 import { CategoriesFaq } from './collections/faq/categoriesFaq'
 import { Membership } from './collections/membership'
@@ -75,7 +75,9 @@ export default buildConfig({
   globals: [AboutUs, PrivacyPolicy, Donation],
   plugins: [
     ...plugins,
-    // UploadThing storage plugin - force enable for all environments
+    // UploadThing storage plugin - temporarily disabled to allow media deletion
+    // TODO: Re-enable after cleaning up unwanted media records
+    /*
     uploadthingStorage({
       collections: {
         media: true,
@@ -85,6 +87,7 @@ export default buildConfig({
         acl: 'public-read',
       },
     }),
+    */
   ],
   secret: process.env.PAYLOAD_SECRET || 'fallback-secret-for-build-only',
   sharp,

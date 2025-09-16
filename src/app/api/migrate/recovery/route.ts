@@ -28,10 +28,7 @@ export async function POST(request: NextRequest) {
     const payload = await getPayload({ config })
 
     const body = await request.json().catch(() => ({}))
-    const {
-      dryRun = true,
-      limit = 3,
-    } = body
+    const { dryRun = true, limit = 3 } = body
 
     // Find images that have UploadThing URLs but files don't exist in UploadThing
     const brokenImages = await payload.find({
@@ -62,7 +59,7 @@ export async function POST(request: NextRequest) {
           status: 'pending',
           newUrl: null,
           error: null,
-          method: 'recovery'
+          method: 'recovery',
         }
 
         if (dryRun) {
@@ -76,10 +73,10 @@ export async function POST(request: NextRequest) {
 
         // Recovery strategy: revert to original database URL then properly upload
         console.log(`🔙 Reverting ${media.filename} to database URL...`)
-        
+
         // Try to construct original database URL
         const originalUrl = `/api/media/file/${encodeURIComponent(media.filename || '')}`
-        
+
         // Update to original URL first
         await payload.update({
           collection: 'media',
@@ -90,18 +87,18 @@ export async function POST(request: NextRequest) {
         })
 
         console.log(`📥 Now downloading ${media.filename} from database...`)
-        
+
         // Try to download from the database URL
         const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogi-main.vercel.app'
         const downloadUrl = `${baseUrl}${originalUrl}`
-        
+
         console.log(`🔗 Fetching from: ${downloadUrl}`)
-        
+
         const imageResponse = await fetch(downloadUrl, {
           method: 'GET',
           headers: {
             'User-Agent': 'Recovery-Migration-Bot',
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache',
           },
           signal: AbortSignal.timeout(30000),
         })
@@ -115,7 +112,7 @@ export async function POST(request: NextRequest) {
 
         // Now upload to UploadThing properly
         const file = new File([imageBuffer], media.filename || 'unknown.jpg', {
-          type: media.mimeType || 'image/jpeg'
+          type: media.mimeType || 'image/jpeg',
         })
 
         console.log(`📤 Uploading ${media.filename} to UploadThing...`)
@@ -123,7 +120,7 @@ export async function POST(request: NextRequest) {
 
         if (uploadResult.data) {
           console.log(`✅ Successfully uploaded: ${uploadResult.data.url}`)
-          
+
           // Update with the real UploadThing URL
           await payload.update({
             collection: 'media',
@@ -142,10 +139,9 @@ export async function POST(request: NextRequest) {
         }
 
         recoveryResults.push(result)
-
       } catch (error) {
         console.error(`❌ Recovery failed for ${media.filename}:`, error)
-        
+
         // Try to revert to original URL if upload failed
         try {
           const originalUrl = `/api/media/file/${encodeURIComponent(media.filename || '')}`
@@ -168,7 +164,7 @@ export async function POST(request: NextRequest) {
           status: 'error',
           newUrl: null,
           error: error instanceof Error ? error.message : 'Unknown error',
-          method: 'recovery-failed'
+          method: 'recovery-failed',
         })
         errorCount++
       }
@@ -176,7 +172,7 @@ export async function POST(request: NextRequest) {
 
     const response = {
       success: successCount > 0 || dryRun,
-      message: dryRun 
+      message: dryRun
         ? `Dry run: Would recover ${brokenImages.docs.length} broken images`
         : `Recovery complete: ${successCount} successful, ${errorCount} failed`,
       recoverySummary: {
@@ -190,16 +186,15 @@ export async function POST(request: NextRequest) {
       explanation: {
         problem: 'Previous migration only changed URLs but did not upload files to UploadThing',
         solution: 'Revert to database URLs, download files, then properly upload to UploadThing',
-        note: 'This will create actual files in UploadThing storage'
+        note: 'This will create actual files in UploadThing storage',
       },
-      nextSteps: dryRun 
+      nextSteps: dryRun
         ? ['Review results', 'Run with dryRun: false to execute recovery']
-        : ['Check UploadThing portal for uploaded files', 'Test image loading on website']
+        : ['Check UploadThing portal for uploaded files', 'Test image loading on website'],
     }
 
     console.log('🚑 Recovery Summary:', response.recoverySummary)
     return NextResponse.json(response)
-
   } catch (error) {
     console.error('❌ Recovery migration error:', error)
     return NextResponse.json(
@@ -207,9 +202,9 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Recovery migration failed',
         message: error instanceof Error ? error.message : 'Unknown error',
-        suggestion: 'Check database connectivity and UploadThing configuration'
+        suggestion: 'Check database connectivity and UploadThing configuration',
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
@@ -219,6 +214,7 @@ export async function GET(_request: NextRequest) {
     message: 'Recovery migration endpoint',
     purpose: 'Fix broken UploadThing URLs by actually uploading files',
     usage: 'POST with { dryRun: boolean, limit: number }',
-    description: 'Reverts broken UploadThing URLs back to database, downloads files, then properly uploads to UploadThing'
+    description:
+      'Reverts broken UploadThing URLs back to database, downloads files, then properly uploads to UploadThing',
   })
 }
