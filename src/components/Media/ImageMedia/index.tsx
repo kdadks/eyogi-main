@@ -46,10 +46,14 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     _height = fullHeight!
     alt = altFromResource || ''
 
+    // 📊 IMAGE SOURCE DETECTION
+    let imageSource = 'unknown'
+
     // Handle different URL formats
     if (url) {
       // If URL starts with /api/media (Payload API endpoint), prefix with base URL
       if (url.startsWith('/api/media/')) {
+        imageSource = 'PayloadCMS_API_Endpoint'
         const baseUrl =
           typeof window !== 'undefined'
             ? window.location.origin
@@ -59,18 +63,75 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
                 : 'http://localhost:3000')
         src = `${baseUrl}${url}`
 
-        // Debug: Log image URL generation
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Image URL generated:', { originalUrl: url, finalSrc: src, baseUrl })
-        }
+        console.log('🔗 PayloadCMS API Image:', {
+          originalUrl: url,
+          finalSrc: src,
+          baseUrl,
+          source: imageSource,
+        })
       }
       // If URL starts with http (UploadThing URL), use as-is
       else if (url.startsWith('http')) {
+        if (url.includes('uploadthing')) {
+          imageSource = 'UploadThing_CDN'
+        } else {
+          imageSource = 'External_HTTP_URL'
+        }
         src = url
+
+        console.log('🌐 External Image:', {
+          url: src,
+          source: imageSource,
+          isUploadThing: url.includes('uploadthing'),
+        })
       }
       // For any other format, use as-is
       else {
+        imageSource = 'Local_or_Relative_Path'
         src = url
+
+        console.log('📁 Local Image:', {
+          url: src,
+          source: imageSource,
+        })
+      }
+
+      // Track image source globally using sessionStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const statsKey = 'imageSourceStats'
+          const currentStats = JSON.parse(sessionStorage.getItem(statsKey) || '{}')
+
+          const stats = {
+            payloadCMS: currentStats.payloadCMS || 0,
+            uploadThing: currentStats.uploadThing || 0,
+            external: currentStats.external || 0,
+            local: currentStats.local || 0,
+            unknown: currentStats.unknown || 0,
+          }
+
+          switch (imageSource) {
+            case 'PayloadCMS_API_Endpoint':
+              stats.payloadCMS++
+              break
+            case 'UploadThing_CDN':
+              stats.uploadThing++
+              break
+            case 'External_HTTP_URL':
+              stats.external++
+              break
+            case 'Local_or_Relative_Path':
+              stats.local++
+              break
+            default:
+              stats.unknown++
+          }
+
+          sessionStorage.setItem(statsKey, JSON.stringify(stats))
+          console.log('📊 RUNNING IMAGE STATS:', stats)
+        } catch (_e) {
+          // Ignore storage errors
+        }
       }
     }
   }

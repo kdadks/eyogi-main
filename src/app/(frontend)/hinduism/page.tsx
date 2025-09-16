@@ -71,6 +71,68 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       ...(where ? { where } : {}),
     })
 
+    // 📊 IMAGE SOURCE ANALYTICS
+    console.log('🔍 IMAGE SOURCE ANALYSIS - Page', page)
+    console.log('📋 Total posts fetched:', posts.docs.length)
+
+    const imageAnalysis = posts.docs.map((post, index) => {
+      const coverImage = post.coverImage
+      let source = 'none'
+      let url: string | null = null
+      let storageLocation = 'none'
+
+      if (coverImage && typeof coverImage === 'object') {
+        url = coverImage.url || null
+
+        if (url && typeof url === 'string') {
+          if (url.startsWith('/api/media/')) {
+            source = 'PayloadCMS_API'
+            storageLocation = 'Neon_Database'
+          } else if (url.startsWith('http') && url.includes('uploadthing')) {
+            source = 'UploadThing'
+            storageLocation = 'UploadThing_CDN'
+          } else if (url.startsWith('http')) {
+            source = 'External_HTTP'
+            storageLocation = 'External_Server'
+          } else {
+            source = 'Local_Path'
+            storageLocation = 'Local_Filesystem'
+          }
+        }
+      }
+
+      return {
+        postIndex: index + 1,
+        title: post.title,
+        slug: post.slug,
+        hasImage: !!coverImage,
+        imageSource: source,
+        storageLocation,
+        imageUrl: url,
+        imageId: coverImage && typeof coverImage === 'object' ? coverImage.id : null,
+        imageFilename: coverImage && typeof coverImage === 'object' ? coverImage.filename : null,
+      }
+    })
+
+    // Count by source
+    const sourceCounts = {
+      none: imageAnalysis.filter((item) => item.imageSource === 'none').length,
+      payloadCMS: imageAnalysis.filter((item) => item.imageSource === 'PayloadCMS_API').length,
+      uploadThing: imageAnalysis.filter((item) => item.imageSource === 'UploadThing').length,
+      external: imageAnalysis.filter((item) => item.imageSource === 'External_HTTP').length,
+      local: imageAnalysis.filter((item) => item.imageSource === 'Local_Path').length,
+    }
+
+    console.log('📊 IMAGE SOURCE SUMMARY:')
+    console.log('├── No Images:', sourceCounts.none)
+    console.log('├── PayloadCMS API (Neon DB):', sourceCounts.payloadCMS)
+    console.log('├── UploadThing CDN:', sourceCounts.uploadThing)
+    console.log('├── External HTTP:', sourceCounts.external)
+    console.log('└── Local Files:', sourceCounts.local)
+    console.log('')
+    console.log('🗂️ DETAILED BREAKDOWN:', imageAnalysis)
+    console.log('=====================================')
+
     return (
       <div className="flex flex-grow h-full">
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 pt-4 pb-4 gap-5 container h-full">
