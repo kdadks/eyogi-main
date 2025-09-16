@@ -29,7 +29,11 @@ export const VideoMedia: React.FC<MediaProps> = (props) => {
     if (url) {
       // If URL starts with /api/media (Payload API endpoint), prefix with base URL
       if (url.startsWith('/api/media/')) {
-        videoSrc = `https://eyogimain.netlify.app${url}`
+        const baseUrl =
+          typeof window !== 'undefined'
+            ? window.location.origin
+            : process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogimain.netlify.app'
+        videoSrc = `${baseUrl}${url}`
       }
       // If URL starts with http (UploadThing URL), use as-is
       else if (url.startsWith('http')) {
