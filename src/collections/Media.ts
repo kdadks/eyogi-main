@@ -27,8 +27,5 @@ export const Media: CollectionConfig = {
     //   }),
     // },
   ],
-  upload: {
-    // UploadThing handles the storage, no staticDir needed
-    mimeTypes: ['image/*', 'video/*', 'application/pdf'], // Allowed file types
-  },
+  upload: true, // Let UploadThing plugin handle all upload configuration
 }

@@ -75,13 +75,13 @@ export default buildConfig({
   globals: [AboutUs, PrivacyPolicy, Donation],
   plugins: [
     ...plugins,
-    // Only enable UploadThing when a real token is provided
-    ...(process.env.UPLOADTHING_TOKEN &&
-    process.env.UPLOADTHING_TOKEN !== 'placeholder' &&
-    process.env.UPLOADTHING_TOKEN !== 'dummy-token-for-build'
+    // UploadThing storage plugin - try basic configuration
+    ...(process.env.UPLOADTHING_TOKEN
       ? [
           uploadthingStorage({
-            collections: { media: true },
+            collections: {
+              media: true,
+            },
             options: {
               token: process.env.UPLOADTHING_TOKEN,
               acl: 'public-read',

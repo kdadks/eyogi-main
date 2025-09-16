@@ -50,9 +50,10 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     if (url) {
       // If URL starts with /api/media (Payload API endpoint), prefix with base URL
       if (url.startsWith('/api/media/')) {
-        const baseUrl = typeof window !== 'undefined' 
-          ? window.location.origin 
-          : process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogimain.netlify.app'
+        const baseUrl =
+          typeof window !== 'undefined'
+            ? window.location.origin
+            : process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogimain.netlify.app'
         src = `${baseUrl}${url}`
       }
       // If URL starts with http (UploadThing URL), use as-is
@@ -71,18 +72,32 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   // If we don't have a valid src, show placeholder
   if (!src || src === '') {
     return (
-      <div className={cn('bg-gray-200 flex items-center justify-center', imgClassName)}>
-        <span className="text-gray-500 text-sm">No image</span>
+      <div
+        className={cn(
+          'bg-gray-200 flex items-center justify-center relative overflow-hidden',
+          imgClassName,
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-300"></div>
+        <div className="relative z-10 text-center p-4">
+          <svg
+            className="w-12 h-12 mx-auto mb-2 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <span className="text-gray-500 text-sm">Image Loading...</span>
+        </div>
       </div>
     )
   }
-
-  // NOTE: this is used by the browser to determine which image to download at different screen sizes
-  const sizes = sizeFromProps
-    ? sizeFromProps
-    : Object.entries(breakpoints)
-        .map(([, value]) => `(max-width: ${value}px) ${value * 2}w`)
-        .join(', ')
 
   return (
     <NextImage
@@ -94,8 +109,17 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       priority={priority}
       quality={100}
       loading={loading}
-      sizes={sizes}
+      sizes={
+        sizeFromProps ||
+        Object.entries(breakpoints)
+          .map(([, value]) => `(max-width: ${value}px) ${value * 2}w`)
+          .join(', ')
+      }
       src={src}
+      onError={() => {
+        // Handle image loading errors gracefully
+        console.warn('Failed to load image:', src)
+      }}
     />
   )
 }
