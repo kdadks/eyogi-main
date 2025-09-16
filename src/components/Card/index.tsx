@@ -22,6 +22,17 @@ export const Card: React.FC<{
 
   const { slug, categories, publishedAt, description, coverImage, title } = doc || {}
 
+  // Debug: Add temporary logging for page 2 issue
+  if (typeof window !== 'undefined' && window.location.search.includes('page=2')) {
+    console.log('🔍 Page 2 Card Debug:', {
+      title,
+      slug,
+      hasCoverImage: !!coverImage,
+      coverImageType: typeof coverImage,
+      coverImageData: coverImage,
+    })
+  }
+
   const hasCategories = categories && Array.isArray(categories) && categories.length > 0
   const titleToUse = titleFromProps || title
   const sanitizedDescription = description?.replace(/\s/g, ' ') // replace non-breaking space with white space
@@ -54,27 +65,27 @@ export const Card: React.FC<{
           {showCategories && hasCategories && (
             <div className="uppercase text-sm mb-4">
               {categories?.map((category, index) => {
-                    if (typeof category === 'object') {
-                      const { title: titleFromCategory } = category
+                if (typeof category === 'object') {
+                  const { title: titleFromCategory } = category
 
-                      const categoryTitle = titleFromCategory || 'Untitled category'
+                  const categoryTitle = titleFromCategory || 'Untitled category'
 
-                      const isLast = index === categories.length - 1
+                  const isLast = index === categories.length - 1
 
-                      return (
-                        <div
-                          className="text-lg text-[#B1571C] font-bold"
-                          style={{ textShadow: '1px 1px 2px white' }}
-                          key={index}
-                        >
-                          {categoryTitle}
-                          {!isLast && <div>, &nbsp;</div>}
-                        </div>
-                      )
-                    }
+                  return (
+                    <div
+                      className="text-lg text-[#B1571C] font-bold"
+                      style={{ textShadow: '1px 1px 2px white' }}
+                      key={index}
+                    >
+                      {categoryTitle}
+                      {!isLast && <div>, &nbsp;</div>}
+                    </div>
+                  )
+                }
 
-                    return null
-                  })}
+                return null
+              })}
             </div>
           )}
           <div>

@@ -60,8 +60,8 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         src = `${baseUrl}${url}`
 
         // Debug: Log image URL generation
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Image URL generated:', { originalUrl: url, finalSrc: src, baseUrl })
+        if (process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window.location.search.includes('page=2'))) {
+          console.log('🖼️ Image URL Debug:', { originalUrl: url, finalSrc: src, baseUrl })
         }
       }
       // If URL starts with http (UploadThing URL), use as-is
