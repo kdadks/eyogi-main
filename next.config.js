@@ -54,12 +54,6 @@ const nextConfig = {
   // Optimize output - disable standalone for Netlify
   ...(process.env.NETLIFY ? {} : { output: 'standalone' }),
   // Skip optimizations for faster builds
-  // Disable image optimization during build
-  images: {
-    unoptimized: true,
-    loader: 'custom',
-    loaderFile: './src/utilities/imageLoader.js',
-  },
   // Reduce build size
   compiler: {
     // Remove console statements in production for smaller bundles
@@ -76,6 +70,8 @@ const nextConfig = {
         }
       }),
       { protocol: 'https', hostname: 'eyogigurukul.com' },
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'localhost' },
     ],
   },
   eslint: {
