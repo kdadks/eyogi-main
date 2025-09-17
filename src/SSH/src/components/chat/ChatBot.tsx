@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ChatService } from '@/lib/ai/ChatService'
@@ -16,7 +16,7 @@ import {
   QuestionMarkCircleIcon,
   ArrowPathIcon,
   MicrophoneIcon,
-  StopIcon
+  StopIcon,
 } from '@heroicons/react/24/outline'
 
 interface ChatMessage {
@@ -55,10 +55,10 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         content: `🙏 Namaste ${user?.full_name?.split(' ')[0] || 'friend'}! I'm your eYogi AI assistant. I'm here to help you with questions about our courses, Gurukuls, enrollment, and anything related to your learning journey. How can I assist you today?`,
         timestamp: new Date(),
         persona: 'student',
-        intent: 'greeting'
+        intent: 'greeting',
       }
       setMessages([welcomeMessage])
-      
+
       // Focus input with preventScroll
       setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100)
     }
@@ -77,7 +77,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
           e.preventDefault()
         }
       }
-      
+
       document.addEventListener('keydown', handleKeyDown)
       return () => {
         document.removeEventListener('keydown', handleKeyDown)
@@ -96,10 +96,10 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
   }, [messages])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ 
-      behavior: 'smooth', 
+    messagesEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
       block: 'end',
-      inline: 'nearest'
+      inline: 'nearest',
     })
   }
 
@@ -111,10 +111,10 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       id: `user-${Date.now()}`,
       type: 'user',
       content: messageText,
-      timestamp: new Date()
+      timestamp: new Date(),
     }
 
-    setMessages(prev => [...prev, userMessage])
+    setMessages((prev) => [...prev, userMessage])
     setInputMessage('')
     setIsTyping(true)
 
@@ -126,9 +126,9 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
     try {
       // Process message through AI service
       const response = await chatService.processMessage(messageText, user)
-      
+
       // Simulate typing delay
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000))
 
       const botMessage: ChatMessage = {
         id: `bot-${Date.now()}`,
@@ -138,19 +138,20 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         persona: response.persona,
         intent: response.intent,
         confidence: response.confidence,
-        didYouKnow: response.didYouKnow
+        didYouKnow: response.didYouKnow,
       }
 
-      setMessages(prev => [...prev, botMessage])
+      setMessages((prev) => [...prev, botMessage])
     } catch (error) {
       console.error('Error processing message:', error)
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         type: 'bot',
-        content: 'I apologize, but I encountered an error processing your message. Please try again or contact our support team for assistance.',
-        timestamp: new Date()
+        content:
+          'I apologize, but I encountered an error processing your message. Please try again or contact our support team for assistance.',
+        timestamp: new Date(),
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsTyping(false)
     }
@@ -166,9 +167,10 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
 
   const handleVoiceInput = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+      const SpeechRecognition =
+        (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
       const recognition = new SpeechRecognition()
-      
+
       recognition.continuous = false
       recognition.interimResults = false
       recognition.lang = 'en-US'
@@ -207,26 +209,26 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       id: 'welcome-new',
       type: 'bot',
       content: `🙏 Chat cleared! I'm ready to help you with any questions about eYogi Gurukul. What would you like to know?`,
-      timestamp: new Date()
+      timestamp: new Date(),
     }
     setMessages([welcomeMessage])
   }
 
   const quickQuestions = [
-    "What courses are available for my age?",
-    "How do I enroll in a course?",
-    "What is the fee structure?",
-    "Tell me about Hinduism Gurukul",
-    "How do I get certificates?",
-    "What are the different Gurukuls?",
-    "Tell me an interesting fact",
-    "Share some Sanskrit wisdom"
+    'What courses are available for my age?',
+    'How do I enroll in a course?',
+    'What is the fee structure?',
+    'Tell me about Hinduism Gurukul',
+    'How do I get certificates?',
+    'What are the different Gurukuls?',
+    'Tell me an interesting fact',
+    'Share some Sanskrit wisdom',
   ]
 
   if (!isOpen) return null
 
   return (
-    <div 
+    <div
       className="fixed z-50 animate-in slide-in-from-bottom-4 slide-in-from-right-4 duration-300 
                  md:bottom-6 md:right-6 md:w-96 md:h-[600px] md:top-auto md:left-auto
                  top-16 bottom-4 left-4 right-4
@@ -245,7 +247,9 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold">eYogi AI Assistant</h3>
-                <p className="text-orange-100 text-xs sm:text-sm hidden sm:block">Your personal learning companion</p>
+                <p className="text-orange-100 text-xs sm:text-sm hidden sm:block">
+                  Your personal learning companion
+                </p>
                 <p className="text-orange-100 text-xs sm:hidden">Learning companion</p>
               </div>
             </div>
@@ -273,15 +277,24 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         {/* Chat Messages */}
         <CardContent className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-800">
           {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] sm:max-w-[85%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                <div className={`flex items-start space-x-2 sm:space-x-3 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+            <div
+              key={message.id}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[90%] sm:max-w-[85%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}
+              >
+                <div
+                  className={`flex items-start space-x-2 sm:space-x-3 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}
+                >
                   {/* Avatar */}
-                  <div className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    message.type === 'user' 
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
-                      : 'bg-gradient-to-r from-orange-500 to-red-500'
-                  }`}>
+                  <div
+                    className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      message.type === 'user'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500'
+                        : 'bg-gradient-to-r from-orange-500 to-red-500'
+                    }`}
+                  >
                     {message.type === 'user' ? (
                       <UserIcon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                     ) : (
@@ -290,24 +303,31 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                   </div>
 
                   {/* Message Content */}
-                  <div className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
-                    message.type === 'user'
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                      : 'bg-gray-700 text-gray-100'
-                  }`}>
+                  <div
+                    className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
+                      message.type === 'user'
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                        : 'bg-gray-700 text-gray-100'
+                    }`}
+                  >
                     <div className="text-sm sm:text-sm leading-relaxed whitespace-pre-wrap">
                       {message.type === 'bot' ? (
-                        <div dangerouslySetInnerHTML={{ 
-                          __html: message.content
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:text-blue-800 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>')
-                            .replace(/\n/g, '<br>')
-                        }} />
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: message.content
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(
+                                /\[([^\]]+)\]\(([^)]+)\)/g,
+                                '<a href="$2" class="text-blue-600 hover:text-blue-800 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>',
+                              )
+                              .replace(/\n/g, '<br>'),
+                          }}
+                        />
                       ) : (
                         message.content
                       )}
                     </div>
-                    
+
                     {/* AI Metadata */}
                     {message.type === 'bot' && (message.persona || message.intent) && (
                       <div className="mt-2 pt-2 border-t border-gray-600 flex items-center space-x-2">
@@ -334,7 +354,9 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                       <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-600">
                         <div className="flex items-center space-x-2 mb-2">
                           <LightBulbIcon className="h-4 w-4 text-purple-400" />
-                          <span className="text-sm font-semibold text-purple-300">Did You Know?</span>
+                          <span className="text-sm font-semibold text-purple-300">
+                            Did You Know?
+                          </span>
                         </div>
                         <p className="text-sm text-purple-200">{message.didYouKnow}</p>
                       </div>
@@ -343,7 +365,9 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                 </div>
 
                 {/* Timestamp */}
-                <div className={`mt-1 text-xs text-gray-400 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
+                <div
+                  className={`mt-1 text-xs text-gray-400 ${message.type === 'user' ? 'text-right' : 'text-left'}`}
+                >
                   {formatDateTime(message.timestamp)}
                 </div>
               </div>
@@ -360,8 +384,14 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                 <div className="bg-gray-700 rounded-2xl px-4 py-3">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.1s' }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: '0.2s' }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -396,7 +426,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
 
         {/* Chat Input */}
         <div className="p-2 sm:p-4 border-t border-gray-600 bg-gray-900 rounded-b-lg">
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -419,8 +449,8 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
               <button
                 onClick={handleVoiceInput}
                 className={`absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-1 rounded-full transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center ${
-                  isListening 
-                    ? 'text-red-400 bg-red-900/30' 
+                  isListening
+                    ? 'text-red-400 bg-red-900/30'
                     : 'text-gray-400 hover:text-orange-400 hover:bg-orange-900/30'
                 }`}
               >
@@ -440,9 +470,11 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
               <PaperAirplaneIcon className="h-4 w-4" />
             </Button>
           </form>
-          
+
           <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-400 space-y-1 sm:space-y-0">
-            <span className="text-center sm:text-left">Press Enter to send • Shift+Enter for new line</span>
+            <span className="text-center sm:text-left">
+              Press Enter to send • Shift+Enter for new line
+            </span>
             <span className="flex items-center justify-center sm:justify-end space-x-1">
               <ComputerDesktopIcon className="h-3 w-3" />
               <span>AI-powered by eYogi</span>

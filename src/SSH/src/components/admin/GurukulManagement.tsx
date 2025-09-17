@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Gurukul } from '@/types'
 import { getGurukuls, createGurukul, updateGurukul, deleteGurukul } from '@/lib/api/gurukuls'
 import { getCourses } from '@/lib/api/courses'
@@ -17,7 +17,7 @@ import {
   MagnifyingGlassIcon,
   BookOpenIcon,
   XMarkIcon,
-  CheckIcon
+  CheckIcon,
 } from '@heroicons/react/24/outline'
 
 interface GurukulFormData {
@@ -40,7 +40,7 @@ export default function GurukulManagement() {
     name: '',
     slug: '',
     description: '',
-    image_url: ''
+    image_url: '',
   })
   const [formLoading, setFormLoading] = useState(false)
 
@@ -55,25 +55,22 @@ export default function GurukulManagement() {
   useEffect(() => {
     // Auto-generate slug when name changes
     if (formData.name && !editingGurukul) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        slug: generateSlug(formData.name)
+        slug: generateSlug(formData.name),
       }))
     }
   }, [formData.name, editingGurukul])
 
   const loadData = async () => {
     try {
-      const [gurukulData, coursesData] = await Promise.all([
-        getGurukuls(),
-        getCourses()
-      ])
-      
+      const [gurukulData, coursesData] = await Promise.all([getGurukuls(), getCourses()])
+
       setGurukuls(gurukulData)
-      
+
       // Count courses per gurukul
       const counts: Record<string, number> = {}
-      coursesData.forEach(course => {
+      coursesData.forEach((course) => {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
@@ -90,17 +87,18 @@ export default function GurukulManagement() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(gurukul =>
-        gurukul.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gurukul.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gurukul.description.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (gurukul) =>
+          gurukul.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          gurukul.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          gurukul.description.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Filter by status
     if (statusFilter !== 'all') {
       const isActive = statusFilter === 'active'
-      filtered = filtered.filter(gurukul => gurukul.is_active === isActive)
+      filtered = filtered.filter((gurukul) => gurukul.is_active === isActive)
     }
 
     setFilteredGurukuls(filtered)
@@ -111,7 +109,7 @@ export default function GurukulManagement() {
       name: '',
       slug: '',
       description: '',
-      image_url: ''
+      image_url: '',
     })
     setShowCreateForm(false)
     setEditingGurukul(null)
@@ -129,7 +127,7 @@ export default function GurukulManagement() {
         await createGurukul({ ...formData, is_active: true })
         toast.success('Gurukul created successfully')
       }
-      
+
       await loadData()
       resetForm()
     } catch (error) {
@@ -146,7 +144,7 @@ export default function GurukulManagement() {
       name: gurukul.name,
       slug: gurukul.slug,
       description: gurukul.description,
-      image_url: gurukul.image_url || ''
+      image_url: gurukul.image_url || '',
     })
     setShowCreateForm(true)
   }
@@ -179,9 +177,9 @@ export default function GurukulManagement() {
 
   const stats = {
     total: gurukuls.length,
-    active: gurukuls.filter(g => g.is_active).length,
-    inactive: gurukuls.filter(g => g.is_active === false).length,
-    totalCourses: Object.values(courseCounts).reduce((sum, count) => sum + count, 0)
+    active: gurukuls.filter((g) => g.is_active).length,
+    inactive: gurukuls.filter((g) => g.is_active === false).length,
+    totalCourses: Object.values(courseCounts).reduce((sum, count) => sum + count, 0),
   }
 
   if (loading) {
@@ -241,25 +239,25 @@ export default function GurukulManagement() {
                 <Input
                   label="Gurukul Name"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   required
                 />
                 <Input
                   label="Slug"
                   value={formData.slug}
-                  onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
                   required
                   helperText="URL-friendly identifier"
                 />
               </div>
-              
+
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  }
                   rows={3}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   required
@@ -269,7 +267,7 @@ export default function GurukulManagement() {
               <Input
                 label="Image URL"
                 value={formData.image_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
                 helperText="Optional: URL to gurukul image"
               />
 
@@ -292,7 +290,7 @@ export default function GurukulManagement() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">Gurukul Management</h2>
-            
+
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -364,18 +362,14 @@ export default function GurukulManagement() {
                         <div className="flex items-center">
                           <GlobeAltIcon className="h-5 w-5 text-gray-400 mr-3" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {gurukul.name}
-                            </div>
+                            <div className="text-sm font-medium text-gray-900">{gurukul.name}</div>
                             <div className="text-sm text-gray-500 line-clamp-2">
                               {gurukul.description}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">
-                        /{gurukul.slug}
-                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">/{gurukul.slug}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1" />
@@ -385,7 +379,13 @@ export default function GurukulManagement() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge className={gurukul.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                        <Badge
+                          className={
+                            gurukul.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }
+                        >
                           {gurukul.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </td>
@@ -397,16 +397,12 @@ export default function GurukulManagement() {
                           <Button size="sm" variant="ghost">
                             <EyeIcon className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => handleEdit(gurukul)}
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(gurukul)}>
                             <PencilIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
-                            variant={gurukul.is_active ? "ghost" : "secondary"}
+                            variant={gurukul.is_active ? 'ghost' : 'secondary'}
                             onClick={() => handleToggleStatus(gurukul.id, gurukul.is_active)}
                           >
                             {gurukul.is_active ? 'Deactivate' : 'Activate'}

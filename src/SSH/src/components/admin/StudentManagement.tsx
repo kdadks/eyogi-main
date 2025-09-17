@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { User, Course, Enrollment, Gurukul } from '@/types'
 import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api/users'
 import { getCourses } from '@/lib/api/courses'
@@ -34,7 +34,7 @@ import {
   InformationCircleIcon,
   XMarkIcon,
   PlusIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline'
 
 interface StudentWithEnrollments extends User {
@@ -63,15 +63,17 @@ export default function StudentManagement() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [filteredStudents, setFilteredStudents] = useState<StudentWithEnrollments[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'by-course' | 'details' | 'communication'>('overview')
-  
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'by-course' | 'details' | 'communication'
+  >('overview')
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [courseFilter, setCourseFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [ageGroupFilter, setAgeGroupFilter] = useState<string>('all')
   const [gurukulFilter, setGurukulFilter] = useState<string>('all')
-  
+
   // Student Details
   const [viewingStudent, setViewingStudent] = useState<StudentWithEnrollments | null>(null)
   const [editingStudent, setEditingStudent] = useState<StudentWithEnrollments | null>(null)
@@ -85,7 +87,7 @@ export default function StudentManagement() {
     parent_guardian_name: '',
     parent_guardian_email: '',
     parent_guardian_phone: '',
-    role: 'student'
+    role: 'student',
   })
   const [formLoading, setFormLoading] = useState(false)
 
@@ -95,7 +97,7 @@ export default function StudentManagement() {
   const [communicationData, setCommunicationData] = useState({
     subject: '',
     message: '',
-    type: 'email' as 'email' | 'sms'
+    type: 'email' as 'email' | 'sms',
   })
 
   useEffect(() => {
@@ -112,19 +114,19 @@ export default function StudentManagement() {
         getAllUsers(),
         getCourses(),
         getAllEnrollments(),
-        getGurukuls()
+        getGurukuls(),
       ])
 
       setCourses(coursesData)
       setGurukuls(gurukulData)
 
       // Filter only students and enrich with enrollment data
-      const studentsOnly = usersData.filter(user => user.role === 'student')
-      
-      const enrichedStudents: StudentWithEnrollments[] = studentsOnly.map(student => {
-        const studentEnrollments = enrollmentsData.filter(e => e.student_id === student.id)
-        const completedCourses = studentEnrollments.filter(e => e.status === 'completed').length
-        const pendingEnrollments = studentEnrollments.filter(e => e.status === 'pending').length
+      const studentsOnly = usersData.filter((user) => user.role === 'student')
+
+      const enrichedStudents: StudentWithEnrollments[] = studentsOnly.map((student) => {
+        const studentEnrollments = enrollmentsData.filter((e) => e.student_id === student.id)
+        const completedCourses = studentEnrollments.filter((e) => e.status === 'completed').length
+        const pendingEnrollments = studentEnrollments.filter((e) => e.status === 'pending').length
         const totalSpent = studentEnrollments.reduce((sum, e) => sum + (e.course?.fee || 0), 0)
 
         return {
@@ -133,7 +135,7 @@ export default function StudentManagement() {
           total_enrollments: studentEnrollments.length,
           completed_courses: completedCourses,
           pending_enrollments: pendingEnrollments,
-          total_spent: totalSpent
+          total_spent: totalSpent,
         }
       })
 
@@ -151,40 +153,41 @@ export default function StudentManagement() {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(student =>
-        student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (student) =>
+          student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          student.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          student.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Course filter
     if (courseFilter !== 'all') {
-      filtered = filtered.filter(student =>
-        student.enrollments.some(e => e.course_id === courseFilter)
+      filtered = filtered.filter((student) =>
+        student.enrollments.some((e) => e.course_id === courseFilter),
       )
     }
 
     // Status filter (enrollment status)
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(student =>
-        student.enrollments.some(e => e.status === statusFilter)
+      filtered = filtered.filter((student) =>
+        student.enrollments.some((e) => e.status === statusFilter),
       )
     }
 
     // Age group filter
     if (ageGroupFilter !== 'all') {
       const [minAge, maxAge] = ageGroupFilter.split('-').map(Number)
-      filtered = filtered.filter(student =>
-        student.age && student.age >= minAge && student.age <= maxAge
+      filtered = filtered.filter(
+        (student) => student.age && student.age >= minAge && student.age <= maxAge,
       )
     }
 
     // Gurukul filter
     if (gurukulFilter !== 'all') {
-      filtered = filtered.filter(student =>
-        student.enrollments.some(e => e.course?.gurukul_id === gurukulFilter)
+      filtered = filtered.filter((student) =>
+        student.enrollments.some((e) => e.course?.gurukul_id === gurukulFilter),
       )
     }
 
@@ -206,13 +209,17 @@ export default function StudentManagement() {
       parent_guardian_name: student.parent_guardian_name || '',
       parent_guardian_email: student.parent_guardian_email || '',
       parent_guardian_phone: student.parent_guardian_phone || '',
-      role: student.role
+      role: student.role,
     })
     setShowStudentForm(true)
   }
 
   const handleDeleteStudent = async (studentId: string) => {
-    if (!confirm('Are you sure you want to delete this student? This will also remove all their enrollments and cannot be undone.')) {
+    if (
+      !confirm(
+        'Are you sure you want to delete this student? This will also remove all their enrollments and cannot be undone.',
+      )
+    ) {
       return
     }
 
@@ -251,7 +258,7 @@ export default function StudentManagement() {
     if (selectedStudents.size === filteredStudents.length) {
       setSelectedStudents(new Set())
     } else {
-      setSelectedStudents(new Set(filteredStudents.map(s => s.id)))
+      setSelectedStudents(new Set(filteredStudents.map((s) => s.id)))
     }
   }
 
@@ -266,8 +273,10 @@ export default function StudentManagement() {
   const handleSendCommunication = async () => {
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      toast.success(`${communicationData.type === 'email' ? 'Email' : 'SMS'} sent to ${selectedStudents.size} students`)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      toast.success(
+        `${communicationData.type === 'email' ? 'Email' : 'SMS'} sent to ${selectedStudents.size} students`,
+      )
       setShowCommunicationPanel(false)
       setSelectedStudents(new Set())
       setCommunicationData({ subject: '', message: '', type: 'email' })
@@ -277,19 +286,19 @@ export default function StudentManagement() {
   }
 
   const exportStudentData = () => {
-    const csvData = filteredStudents.map(student => ({
+    const csvData = filteredStudents.map((student) => ({
       'Student ID': student.student_id,
       'Full Name': student.full_name,
-      'Email': student.email,
-      'Age': student.age,
-      'Phone': student.phone,
+      Email: student.email,
+      Age: student.age,
+      Phone: student.phone,
       'Total Enrollments': student.total_enrollments,
       'Completed Courses': student.completed_courses,
       'Pending Enrollments': student.pending_enrollments,
       'Total Spent': `€${student.total_spent}`,
-      'Joined Date': formatDate(student.created_at)
+      'Joined Date': formatDate(student.created_at),
     }))
-    
+
     // In a real app, this would generate and download a CSV file
     console.log('Exporting student data:', csvData)
     toast.success('Student data exported successfully')
@@ -305,7 +314,7 @@ export default function StudentManagement() {
       parent_guardian_name: '',
       parent_guardian_email: '',
       parent_guardian_phone: '',
-      role: 'student'
+      role: 'student',
     })
     setShowStudentForm(false)
     setEditingStudent(null)
@@ -336,60 +345,70 @@ export default function StudentManagement() {
 
   const getStudentsByGurukul = () => {
     const gurukulGroups: Record<string, StudentWithEnrollments[]> = {}
-    
-    filteredStudents.forEach(student => {
-      student.enrollments.forEach(enrollment => {
+
+    filteredStudents.forEach((student) => {
+      student.enrollments.forEach((enrollment) => {
         const gurukulName = enrollment.course?.gurukul?.name || 'Unknown Gurukul'
         if (!gurukulGroups[gurukulName]) {
           gurukulGroups[gurukulName] = []
         }
-        if (!gurukulGroups[gurukulName].find(s => s.id === student.id)) {
+        if (!gurukulGroups[gurukulName].find((s) => s.id === student.id)) {
           gurukulGroups[gurukulName].push(student)
         }
       })
     })
-    
+
     return gurukulGroups
   }
 
   const getStudentsByCourse = () => {
-    const courseGroups: Record<string, { course: Course & { gurukul?: Gurukul }, students: StudentWithEnrollments[] }> = {}
-    
-    filteredStudents.forEach(student => {
-      student.enrollments.forEach(enrollment => {
+    const courseGroups: Record<
+      string,
+      { course: Course & { gurukul?: Gurukul }; students: StudentWithEnrollments[] }
+    > = {}
+
+    filteredStudents.forEach((student) => {
+      student.enrollments.forEach((enrollment) => {
         if (enrollment.course) {
           const courseKey = enrollment.course.id
           if (!courseGroups[courseKey]) {
             courseGroups[courseKey] = {
               course: enrollment.course,
-              students: []
+              students: [],
             }
           }
-          if (!courseGroups[courseKey].students.find(s => s.id === student.id)) {
+          if (!courseGroups[courseKey].students.find((s) => s.id === student.id)) {
             courseGroups[courseKey].students.push(student)
           }
         }
       })
     })
-    
+
     return courseGroups
   }
 
   const stats = {
     totalStudents: students.length,
-    activeStudents: students.filter(s => s.enrollments.some(e => e.status === 'approved')).length,
-    newStudents: students.filter(s => {
+    activeStudents: students.filter((s) => s.enrollments.some((e) => e.status === 'approved'))
+      .length,
+    newStudents: students.filter((s) => {
       const weekAgo = new Date()
       weekAgo.setDate(weekAgo.getDate() - 7)
       return new Date(s.created_at) > weekAgo
     }).length,
-    studentsWithCertificates: students.filter(s => s.enrollments.some(e => e.certificate_issued)).length,
+    studentsWithCertificates: students.filter((s) =>
+      s.enrollments.some((e) => e.certificate_issued),
+    ).length,
     averageAge: Math.round(students.reduce((sum, s) => sum + (s.age || 0), 0) / students.length),
     totalRevenue: students.reduce((sum, s) => sum + s.total_spent, 0),
-    completionRate: students.length > 0 ? Math.round(
-      (students.reduce((sum, s) => sum + s.completed_courses, 0) / 
-       students.reduce((sum, s) => sum + s.total_enrollments, 0)) * 100
-    ) : 0
+    completionRate:
+      students.length > 0
+        ? Math.round(
+            (students.reduce((sum, s) => sum + s.completed_courses, 0) /
+              students.reduce((sum, s) => sum + s.total_enrollments, 0)) *
+              100,
+          )
+        : 0,
   }
 
   const ageGroups = [
@@ -397,7 +416,7 @@ export default function StudentManagement() {
     { value: '8-11', label: 'Basic (8-11)' },
     { value: '12-15', label: 'Intermediate (12-15)' },
     { value: '16-19', label: 'Advanced (16-19)' },
-    { value: '20-100', label: 'Adult (20+)' }
+    { value: '20-100', label: 'Adult (20+)' },
   ]
 
   if (loading) {
@@ -422,7 +441,7 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Total Students</div>
           </CardContent>
         </Card>
-        
+
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <CheckCircleIcon className="h-6 w-6 text-green-600 mx-auto mb-2" />
@@ -430,7 +449,7 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Active Students</div>
           </CardContent>
         </Card>
-        
+
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <PlusIcon className="h-6 w-6 text-purple-600 mx-auto mb-2" />
@@ -438,15 +457,17 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">New (7 days)</div>
           </CardContent>
         </Card>
-        
+
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <DocumentTextIcon className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-orange-600">{stats.studentsWithCertificates}</div>
+            <div className="text-2xl font-bold text-orange-600">
+              {stats.studentsWithCertificates}
+            </div>
             <div className="text-xs text-gray-600">With Certificates</div>
           </CardContent>
         </Card>
-        
+
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <CalendarIcon className="h-6 w-6 text-indigo-600 mx-auto mb-2" />
@@ -454,7 +475,7 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Average Age</div>
           </CardContent>
         </Card>
-        
+
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <ChartBarIcon className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
@@ -462,7 +483,7 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Completion Rate</div>
           </CardContent>
         </Card>
-        
+
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-bold text-red-600">€{stats.totalRevenue}</div>
@@ -478,7 +499,7 @@ export default function StudentManagement() {
             { id: 'overview', name: 'Student Overview', icon: UserGroupIcon },
             { id: 'by-course', name: 'Students by Course', icon: BookOpenIcon },
             { id: 'details', name: 'Detailed View', icon: EyeIcon },
-            { id: 'communication', name: 'Communication', icon: EnvelopeIcon }
+            { id: 'communication', name: 'Communication', icon: EnvelopeIcon },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -519,7 +540,7 @@ export default function StudentManagement() {
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
             >
               <option value="all">All Gurukuls</option>
-              {gurukuls.map(gurukul => (
+              {gurukuls.map((gurukul) => (
                 <option key={gurukul.id} value={gurukul.id}>
                   {gurukul.name}
                 </option>
@@ -532,7 +553,7 @@ export default function StudentManagement() {
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
             >
               <option value="all">All Courses</option>
-              {courses.map(course => (
+              {courses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.course_number} - {course.title}
                 </option>
@@ -545,7 +566,7 @@ export default function StudentManagement() {
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
             >
               <option value="all">All Ages</option>
-              {ageGroups.map(group => (
+              {ageGroups.map((group) => (
                 <option key={group.value} value={group.value}>
                   {group.label}
                 </option>
@@ -602,7 +623,7 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Personal Information */}
                 <div>
@@ -621,7 +642,7 @@ export default function StudentManagement() {
                         <p className="text-xs text-gray-500">ID: {viewingStudent.student_id}</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4 pt-4">
                       <div>
                         <p className="text-gray-600">Age:</p>
@@ -642,7 +663,7 @@ export default function StudentManagement() {
                         <p className="font-medium">{formatDate(viewingStudent.created_at)}</p>
                       </div>
                     </div>
-                    
+
                     {viewingStudent.address && (
                       <div>
                         <p className="text-gray-600">Address:</p>
@@ -661,19 +682,27 @@ export default function StudentManagement() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg text-center">
-                        <div className="text-xl font-bold text-blue-600">{viewingStudent.total_enrollments}</div>
+                        <div className="text-xl font-bold text-blue-600">
+                          {viewingStudent.total_enrollments}
+                        </div>
                         <div className="text-xs text-blue-800">Total Enrollments</div>
                       </div>
                       <div className="bg-green-50 p-3 rounded-lg text-center">
-                        <div className="text-xl font-bold text-green-600">{viewingStudent.completed_courses}</div>
+                        <div className="text-xl font-bold text-green-600">
+                          {viewingStudent.completed_courses}
+                        </div>
                         <div className="text-xs text-green-800">Completed</div>
                       </div>
                       <div className="bg-yellow-50 p-3 rounded-lg text-center">
-                        <div className="text-xl font-bold text-yellow-600">{viewingStudent.pending_enrollments}</div>
+                        <div className="text-xl font-bold text-yellow-600">
+                          {viewingStudent.pending_enrollments}
+                        </div>
                         <div className="text-xs text-yellow-800">Pending</div>
                       </div>
                       <div className="bg-purple-50 p-3 rounded-lg text-center">
-                        <div className="text-xl font-bold text-purple-600">€{viewingStudent.total_spent}</div>
+                        <div className="text-xl font-bold text-purple-600">
+                          €{viewingStudent.total_spent}
+                        </div>
                         <div className="text-xs text-purple-800">Total Spent</div>
                       </div>
                     </div>
@@ -682,19 +711,28 @@ export default function StudentManagement() {
                       <h4 className="font-medium mb-2">Course Enrollments</h4>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {viewingStudent.enrollments.map((enrollment) => (
-                          <div key={enrollment.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div
+                            key={enrollment.id}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                          >
                             <div className="flex-1">
                               <p className="text-sm font-medium">{enrollment.course?.title}</p>
                               <p className="text-xs text-gray-600">
-                                {enrollment.course?.course_number} • {enrollment.course?.gurukul?.name}
+                                {enrollment.course?.course_number} •{' '}
+                                {enrollment.course?.gurukul?.name}
                               </p>
                             </div>
-                            <Badge className={`text-xs ${
-                              enrollment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              enrollment.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                              enrollment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <Badge
+                              className={`text-xs ${
+                                enrollment.status === 'completed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : enrollment.status === 'approved'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : enrollment.status === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {enrollment.status}
                             </Badge>
                           </div>
@@ -706,30 +744,36 @@ export default function StudentManagement() {
               </div>
 
               {/* Parent/Guardian Information for Minors */}
-              {(viewingStudent.age && viewingStudent.age < 18) && (
-                viewingStudent.parent_guardian_name || viewingStudent.parent_guardian_email
-              ) && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="font-semibold mb-4 flex items-center">
-                    <UserIcon className="h-5 w-5 mr-2" />
-                    Parent/Guardian Information
-                  </h3>
-                  <div className="grid md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">Name:</p>
-                      <p className="font-medium">{viewingStudent.parent_guardian_name || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Email:</p>
-                      <p className="font-medium">{viewingStudent.parent_guardian_email || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Phone:</p>
-                      <p className="font-medium">{viewingStudent.parent_guardian_phone || 'Not provided'}</p>
+              {viewingStudent.age &&
+                viewingStudent.age < 18 &&
+                (viewingStudent.parent_guardian_name || viewingStudent.parent_guardian_email) && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h3 className="font-semibold mb-4 flex items-center">
+                      <UserIcon className="h-5 w-5 mr-2" />
+                      Parent/Guardian Information
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Name:</p>
+                        <p className="font-medium">
+                          {viewingStudent.parent_guardian_name || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Email:</p>
+                        <p className="font-medium">
+                          {viewingStudent.parent_guardian_email || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Phone:</p>
+                        <p className="font-medium">
+                          {viewingStudent.parent_guardian_phone || 'Not provided'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         </div>
@@ -748,20 +792,24 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <form onSubmit={handleStudentSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
                     label="Full Name"
                     value={studentFormData.full_name}
-                    onChange={(e) => setStudentFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                    onChange={(e) =>
+                      setStudentFormData((prev) => ({ ...prev, full_name: e.target.value }))
+                    }
                     required
                   />
                   <Input
                     label="Email Address"
                     type="email"
                     value={studentFormData.email}
-                    onChange={(e) => setStudentFormData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setStudentFormData((prev) => ({ ...prev, email: e.target.value }))
+                    }
                     required
                   />
                 </div>
@@ -771,7 +819,9 @@ export default function StudentManagement() {
                     label="Age"
                     type="number"
                     value={studentFormData.age}
-                    onChange={(e) => setStudentFormData(prev => ({ ...prev, age: parseInt(e.target.value) }))}
+                    onChange={(e) =>
+                      setStudentFormData((prev) => ({ ...prev, age: parseInt(e.target.value) }))
+                    }
                     required
                     min="4"
                     max="100"
@@ -780,13 +830,17 @@ export default function StudentManagement() {
                     label="Phone"
                     type="tel"
                     value={studentFormData.phone}
-                    onChange={(e) => setStudentFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setStudentFormData((prev) => ({ ...prev, phone: e.target.value }))
+                    }
                   />
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700">Role</label>
                     <select
                       value={studentFormData.role}
-                      onChange={(e) => setStudentFormData(prev => ({ ...prev, role: e.target.value as any }))}
+                      onChange={(e) =>
+                        setStudentFormData((prev) => ({ ...prev, role: e.target.value as any }))
+                      }
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                     >
                       <option value="student">Student</option>
@@ -800,7 +854,9 @@ export default function StudentManagement() {
                   <label className="block text-sm font-medium text-gray-700">Address</label>
                   <textarea
                     value={studentFormData.address}
-                    onChange={(e) => setStudentFormData(prev => ({ ...prev, address: e.target.value }))}
+                    onChange={(e) =>
+                      setStudentFormData((prev) => ({ ...prev, address: e.target.value }))
+                    }
                     rows={2}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   />
@@ -814,19 +870,34 @@ export default function StudentManagement() {
                       <Input
                         label="Parent/Guardian Name"
                         value={studentFormData.parent_guardian_name}
-                        onChange={(e) => setStudentFormData(prev => ({ ...prev, parent_guardian_name: e.target.value }))}
+                        onChange={(e) =>
+                          setStudentFormData((prev) => ({
+                            ...prev,
+                            parent_guardian_name: e.target.value,
+                          }))
+                        }
                       />
                       <Input
                         label="Parent/Guardian Email"
                         type="email"
                         value={studentFormData.parent_guardian_email}
-                        onChange={(e) => setStudentFormData(prev => ({ ...prev, parent_guardian_email: e.target.value }))}
+                        onChange={(e) =>
+                          setStudentFormData((prev) => ({
+                            ...prev,
+                            parent_guardian_email: e.target.value,
+                          }))
+                        }
                       />
                       <Input
                         label="Parent/Guardian Phone"
                         type="tel"
                         value={studentFormData.parent_guardian_phone}
-                        onChange={(e) => setStudentFormData(prev => ({ ...prev, parent_guardian_phone: e.target.value }))}
+                        onChange={(e) =>
+                          setStudentFormData((prev) => ({
+                            ...prev,
+                            parent_guardian_phone: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -857,10 +928,11 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  Sending to {selectedStudents.size} selected student{selectedStudents.size !== 1 ? 's' : ''}
+                  Sending to {selectedStudents.size} selected student
+                  {selectedStudents.size !== 1 ? 's' : ''}
                 </p>
               </div>
 
@@ -871,7 +943,9 @@ export default function StudentManagement() {
                       type="radio"
                       value="email"
                       checked={communicationData.type === 'email'}
-                      onChange={(e) => setCommunicationData(prev => ({ ...prev, type: e.target.value as any }))}
+                      onChange={(e) =>
+                        setCommunicationData((prev) => ({ ...prev, type: e.target.value as any }))
+                      }
                       className="mr-2"
                     />
                     Email
@@ -881,7 +955,9 @@ export default function StudentManagement() {
                       type="radio"
                       value="sms"
                       checked={communicationData.type === 'sms'}
-                      onChange={(e) => setCommunicationData(prev => ({ ...prev, type: e.target.value as any }))}
+                      onChange={(e) =>
+                        setCommunicationData((prev) => ({ ...prev, type: e.target.value as any }))
+                      }
                       className="mr-2"
                     />
                     SMS
@@ -892,7 +968,9 @@ export default function StudentManagement() {
                   <Input
                     label="Subject"
                     value={communicationData.subject}
-                    onChange={(e) => setCommunicationData(prev => ({ ...prev, subject: e.target.value }))}
+                    onChange={(e) =>
+                      setCommunicationData((prev) => ({ ...prev, subject: e.target.value }))
+                    }
                     required
                   />
                 )}
@@ -901,7 +979,9 @@ export default function StudentManagement() {
                   <label className="block text-sm font-medium text-gray-700">Message</label>
                   <textarea
                     value={communicationData.message}
-                    onChange={(e) => setCommunicationData(prev => ({ ...prev, message: e.target.value }))}
+                    onChange={(e) =>
+                      setCommunicationData((prev) => ({ ...prev, message: e.target.value }))
+                    }
                     rows={5}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                     required
@@ -939,9 +1019,7 @@ export default function StudentManagement() {
                       <p className="text-xs text-gray-500">{student.email}</p>
                     </div>
                   </div>
-                  <Badge className={getRoleColor(student.role)}>
-                    {student.role}
-                  </Badge>
+                  <Badge className={getRoleColor(student.role)}>{student.role}</Badge>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-4 text-center">
@@ -990,12 +1068,17 @@ export default function StudentManagement() {
                       </p>
                     </div>
                   </div>
-                  <Badge className={`${
-                    course.level === 'elementary' ? 'bg-green-100 text-green-800' :
-                    course.level === 'basic' ? 'bg-blue-100 text-blue-800' :
-                    course.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                  <Badge
+                    className={`${
+                      course.level === 'elementary'
+                        ? 'bg-green-100 text-green-800'
+                        : course.level === 'basic'
+                          ? 'bg-blue-100 text-blue-800'
+                          : course.level === 'intermediate'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                    }`}
+                  >
                     {course.level}
                   </Badge>
                 </div>
@@ -1003,9 +1086,12 @@ export default function StudentManagement() {
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {students.map((student) => {
-                    const enrollment = student.enrollments.find(e => e.course_id === courseId)
+                    const enrollment = student.enrollments.find((e) => e.course_id === courseId)
                     return (
-                      <div key={student.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div
+                        key={student.id}
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      >
                         <div className="flex items-center space-x-3">
                           <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                             <UserIcon className="h-4 w-4 text-white" />
@@ -1016,15 +1102,24 @@ export default function StudentManagement() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge className={`text-xs ${
-                            enrollment?.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            enrollment?.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                            enrollment?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
+                          <Badge
+                            className={`text-xs ${
+                              enrollment?.status === 'completed'
+                                ? 'bg-green-100 text-green-800'
+                                : enrollment?.status === 'approved'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : enrollment?.status === 'pending'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-red-100 text-red-800'
+                            }`}
+                          >
                             {enrollment?.status}
                           </Badge>
-                          <Button size="sm" variant="ghost" onClick={() => handleViewStudent(student)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleViewStudent(student)}
+                          >
                             <EyeIcon className="h-4 w-4" />
                           </Button>
                         </div>
@@ -1073,7 +1168,10 @@ export default function StudentManagement() {
                       <th className="px-6 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedStudents.size === filteredStudents.length && filteredStudents.length > 0}
+                          checked={
+                            selectedStudents.size === filteredStudents.length &&
+                            filteredStudents.length > 0
+                          }
                           onChange={handleSelectAll}
                           className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                         />
@@ -1118,9 +1216,7 @@ export default function StudentManagement() {
                               <div className="text-sm font-medium text-gray-900">
                                 {student.full_name || 'Unknown'}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                ID: {student.student_id}
-                              </div>
+                              <div className="text-sm text-gray-500">ID: {student.student_id}</div>
                               <div className="text-xs text-gray-400">
                                 Age: {student.age || 'N/A'}
                               </div>
@@ -1144,24 +1240,33 @@ export default function StudentManagement() {
                         <td className="px-6 py-4">
                           <div className="text-sm">
                             <div className="font-medium">{student.total_enrollments} total</div>
-                            <div className="text-gray-600">{student.completed_courses} completed</div>
+                            <div className="text-gray-600">
+                              {student.completed_courses} completed
+                            </div>
                             {student.pending_enrollments > 0 && (
-                              <div className="text-yellow-600">{student.pending_enrollments} pending</div>
+                              <div className="text-yellow-600">
+                                {student.pending_enrollments} pending
+                              </div>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center">
                             <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-green-500 h-2 rounded-full" 
-                                style={{ 
-                                  width: `${student.total_enrollments > 0 ? (student.completed_courses / student.total_enrollments) * 100 : 0}%` 
+                              <div
+                                className="bg-green-500 h-2 rounded-full"
+                                style={{
+                                  width: `${student.total_enrollments > 0 ? (student.completed_courses / student.total_enrollments) * 100 : 0}%`,
                                 }}
                               />
                             </div>
                             <span className="text-sm text-gray-600">
-                              {student.total_enrollments > 0 ? Math.round((student.completed_courses / student.total_enrollments) * 100) : 0}%
+                              {student.total_enrollments > 0
+                                ? Math.round(
+                                    (student.completed_courses / student.total_enrollments) * 100,
+                                  )
+                                : 0}
+                              %
                             </span>
                           </div>
                         </td>
@@ -1170,13 +1275,25 @@ export default function StudentManagement() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="ghost" onClick={() => handleViewStudent(student)}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleViewStudent(student)}
+                            >
                               <EyeIcon className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => handleEditStudent(student)}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditStudent(student)}
+                            >
                               <PencilIcon className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="danger" onClick={() => handleDeleteStudent(student.id)}>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteStudent(student.id)}
+                            >
                               <TrashIcon className="h-4 w-4" />
                             </Button>
                           </div>
@@ -1197,12 +1314,12 @@ export default function StudentManagement() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Student Communication</h2>
               <div className="flex space-x-2">
-                <Button onClick={() => setSelectedStudents(new Set(filteredStudents.map(s => s.id)))}>
+                <Button
+                  onClick={() => setSelectedStudents(new Set(filteredStudents.map((s) => s.id)))}
+                >
                   Select All Visible
                 </Button>
-                <Button onClick={() => setSelectedStudents(new Set())}>
-                  Clear Selection
-                </Button>
+                <Button onClick={() => setSelectedStudents(new Set())}>Clear Selection</Button>
               </div>
             </div>
             {selectedStudents.size > 0 && (
@@ -1222,7 +1339,10 @@ export default function StudentManagement() {
           <CardContent>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredStudents.map((student) => (
-                <div key={student.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div
+                  key={student.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <input
@@ -1240,7 +1360,7 @@ export default function StudentManagement() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-1 text-xs text-gray-600">
                     <div className="flex items-center">
                       <EnvelopeIcon className="h-3 w-3 mr-1" />

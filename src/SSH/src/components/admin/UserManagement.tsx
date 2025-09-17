@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { User } from '@/types'
 import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api/users'
@@ -14,7 +14,7 @@ import {
   MagnifyingGlassIcon,
   UserGroupIcon,
   AcademicCapIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
 
 export default function UserManagement() {
@@ -50,16 +50,17 @@ export default function UserManagement() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.student_id?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Filter by role
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.role === roleFilter)
+      filtered = filtered.filter((user) => user.role === roleFilter)
     }
 
     setFilteredUsers(filtered)
@@ -94,9 +95,9 @@ export default function UserManagement() {
 
   const stats = {
     total: users.length,
-    students: users.filter(u => u.role === 'student').length,
-    teachers: users.filter(u => u.role === 'teacher').length,
-    admins: users.filter(u => u.role === 'admin').length
+    students: users.filter((u) => u.role === 'student').length,
+    teachers: users.filter((u) => u.role === 'teacher').length,
+    admins: users.filter((u) => u.role === 'admin').length,
   }
 
   if (loading) {
@@ -146,7 +147,7 @@ export default function UserManagement() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">User Management</h2>
-            
+
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -216,13 +217,9 @@ export default function UserManagement() {
                             <div className="text-sm font-medium text-gray-900">
                               {user.full_name || 'Unknown'}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {user.email}
-                            </div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
                             {user.age && (
-                              <div className="text-xs text-gray-400">
-                                Age: {user.age}
-                              </div>
+                              <div className="text-xs text-gray-400">Age: {user.age}</div>
                             )}
                           </div>
                         </div>
@@ -232,10 +229,12 @@ export default function UserManagement() {
                           <div className="flex items-center space-x-2">
                             <select
                               value={editingUser.role}
-                              onChange={(e) => setEditingUser({
-                                ...editingUser,
-                                role: e.target.value as User['role']
-                              })}
+                              onChange={(e) =>
+                                setEditingUser({
+                                  ...editingUser,
+                                  role: e.target.value as User['role'],
+                                })
+                              }
                               className="text-sm border border-gray-300 rounded px-2 py-1"
                             >
                               <option value="student">Student</option>
@@ -248,33 +247,21 @@ export default function UserManagement() {
                             >
                               Save
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setEditingUser(null)}
-                            >
+                            <Button size="sm" variant="ghost" onClick={() => setEditingUser(null)}>
                               Cancel
                             </Button>
                           </div>
                         ) : (
-                          <Badge className={getRoleColor(user.role)}>
-                            {user.role}
-                          </Badge>
+                          <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {user.student_id || '-'}
-                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{user.student_id || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingUser(user)}
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => setEditingUser(user)}>
                             <PencilIcon className="h-4 w-4" />
                           </Button>
                           <Button

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, User } from '@/types'
 import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
@@ -20,7 +20,7 @@ import {
   ClockIcon,
   CurrencyEuroIcon,
   XMarkIcon,
-  CheckIcon
+  CheckIcon,
 } from '@heroicons/react/24/outline'
 
 interface CourseFormData {
@@ -67,7 +67,7 @@ export default function CourseManagement() {
     delivery_method: 'remote',
     entry_requirements: '',
     learning_outcomes: [],
-    teacher_id: ''
+    teacher_id: '',
   })
   const [formLoading, setFormLoading] = useState(false)
   const [learningOutcomeInput, setLearningOutcomeInput] = useState('')
@@ -85,11 +85,11 @@ export default function CourseManagement() {
       const [coursesData, gurukulData, usersData] = await Promise.all([
         getCourses(),
         getGurukuls(),
-        getAllUsers()
+        getAllUsers(),
       ])
       setCourses(coursesData)
       setGurukuls(gurukulData)
-      setTeachers(usersData.filter(u => u.role === 'teacher'))
+      setTeachers(usersData.filter((u) => u.role === 'teacher'))
     } catch (error) {
       console.error('Error loading data:', error)
       toast.error('Failed to load course data')
@@ -103,27 +103,28 @@ export default function CourseManagement() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(course =>
-        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.course_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (course) =>
+          course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.course_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.description.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Filter by gurukul
     if (gurukulFilter !== 'all') {
-      filtered = filtered.filter(course => course.gurukul_id === gurukulFilter)
+      filtered = filtered.filter((course) => course.gurukul_id === gurukulFilter)
     }
 
     // Filter by level
     if (levelFilter !== 'all') {
-      filtered = filtered.filter(course => course.level === levelFilter)
+      filtered = filtered.filter((course) => course.level === levelFilter)
     }
 
     // Filter by status
     if (statusFilter !== 'all') {
       const isActive = statusFilter === 'active'
-      filtered = filtered.filter(course => course.is_active === isActive)
+      filtered = filtered.filter((course) => course.is_active === isActive)
     }
 
     setFilteredCourses(filtered)
@@ -144,7 +145,7 @@ export default function CourseManagement() {
       delivery_method: 'remote',
       entry_requirements: '',
       learning_outcomes: [],
-      teacher_id: ''
+      teacher_id: '',
     })
     setLearningOutcomeInput('')
     setShowCreateForm(false)
@@ -161,14 +162,14 @@ export default function CourseManagement() {
         await updateCourse(editingCourse.id, formData)
         toast.success('Course updated successfully')
       } else {
-        await createCourse({ 
-          ...formData, 
-          syllabus: [], 
-          is_active: true 
+        await createCourse({
+          ...formData,
+          syllabus: [],
+          is_active: true,
         })
         toast.success('Course created successfully')
       }
-      
+
       await loadData()
       resetForm()
     } catch (error) {
@@ -195,7 +196,7 @@ export default function CourseManagement() {
       delivery_method: course.delivery_method,
       entry_requirements: course.entry_requirements || '',
       learning_outcomes: course.learning_outcomes,
-      teacher_id: course.teacher_id || ''
+      teacher_id: course.teacher_id || '',
     })
     setShowCreateForm(true)
   }
@@ -206,18 +207,18 @@ export default function CourseManagement() {
 
   const addLearningOutcome = () => {
     if (learningOutcomeInput.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        learning_outcomes: [...prev.learning_outcomes, learningOutcomeInput.trim()]
+        learning_outcomes: [...prev.learning_outcomes, learningOutcomeInput.trim()],
       }))
       setLearningOutcomeInput('')
     }
   }
 
   const removeLearningOutcome = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      learning_outcomes: prev.learning_outcomes.filter((_, i) => i !== index)
+      learning_outcomes: prev.learning_outcomes.filter((_, i) => i !== index),
     }))
   }
 
@@ -249,12 +250,12 @@ export default function CourseManagement() {
 
   const stats = {
     total: courses.length,
-    active: courses.filter(c => c.is_active).length,
-    inactive: courses.filter(c => c.is_active === false).length,
-    elementary: courses.filter(c => c.level === 'elementary').length,
-    basic: courses.filter(c => c.level === 'basic').length,
-    intermediate: courses.filter(c => c.level === 'intermediate').length,
-    advanced: courses.filter(c => c.level === 'advanced').length
+    active: courses.filter((c) => c.is_active).length,
+    inactive: courses.filter((c) => c.is_active === false).length,
+    elementary: courses.filter((c) => c.level === 'elementary').length,
+    basic: courses.filter((c) => c.level === 'basic').length,
+    intermediate: courses.filter((c) => c.level === 'intermediate').length,
+    advanced: courses.filter((c) => c.level === 'advanced').length,
   }
 
   if (loading) {
@@ -289,7 +290,9 @@ export default function CourseManagement() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.basic + stats.intermediate}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.basic + stats.intermediate}
+            </div>
             <div className="text-sm text-gray-600">Popular Levels</div>
           </CardContent>
         </Card>
@@ -306,35 +309,61 @@ export default function CourseManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold mb-2">Basic Information</h3>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Course Number:</strong> {viewingCourse.course_number}</p>
-                    <p><strong>Title:</strong> {viewingCourse.title}</p>
-                    <p><strong>Gurukul:</strong> {viewingCourse.gurukul?.name}</p>
-                    <p><strong>Level:</strong> <Badge className={getLevelColor(viewingCourse.level)}>{viewingCourse.level}</Badge></p>
-                    <p><strong>Age Group:</strong> {getAgeGroupLabel(viewingCourse.age_group_min, viewingCourse.age_group_max)}</p>
-                    <p><strong>Duration:</strong> {viewingCourse.duration_weeks} weeks</p>
-                    <p><strong>Fee:</strong> {formatCurrency(viewingCourse.fee)}</p>
-                    <p><strong>Max Students:</strong> {viewingCourse.max_students}</p>
-                    <p><strong>Delivery:</strong> {viewingCourse.delivery_method}</p>
-                    <p><strong>Teacher:</strong> {viewingCourse.teacher?.full_name || 'Unassigned'}</p>
+                    <p>
+                      <strong>Course Number:</strong> {viewingCourse.course_number}
+                    </p>
+                    <p>
+                      <strong>Title:</strong> {viewingCourse.title}
+                    </p>
+                    <p>
+                      <strong>Gurukul:</strong> {viewingCourse.gurukul?.name}
+                    </p>
+                    <p>
+                      <strong>Level:</strong>{' '}
+                      <Badge className={getLevelColor(viewingCourse.level)}>
+                        {viewingCourse.level}
+                      </Badge>
+                    </p>
+                    <p>
+                      <strong>Age Group:</strong>{' '}
+                      {getAgeGroupLabel(viewingCourse.age_group_min, viewingCourse.age_group_max)}
+                    </p>
+                    <p>
+                      <strong>Duration:</strong> {viewingCourse.duration_weeks} weeks
+                    </p>
+                    <p>
+                      <strong>Fee:</strong> {formatCurrency(viewingCourse.fee)}
+                    </p>
+                    <p>
+                      <strong>Max Students:</strong> {viewingCourse.max_students}
+                    </p>
+                    <p>
+                      <strong>Delivery:</strong> {viewingCourse.delivery_method}
+                    </p>
+                    <p>
+                      <strong>Teacher:</strong> {viewingCourse.teacher?.full_name || 'Unassigned'}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold mb-2">Description</h3>
                   <p className="text-sm text-gray-600 mb-4">{viewingCourse.description}</p>
-                  
+
                   {viewingCourse.entry_requirements && (
                     <>
                       <h3 className="font-semibold mb-2">Entry Requirements</h3>
-                      <p className="text-sm text-gray-600 mb-4">{viewingCourse.entry_requirements}</p>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {viewingCourse.entry_requirements}
+                      </p>
                     </>
                   )}
-                  
+
                   <h3 className="font-semibold mb-2">Learning Outcomes</h3>
                   <ul className="text-sm text-gray-600 space-y-1">
                     {viewingCourse.learning_outcomes.map((outcome, index) => (
@@ -371,23 +400,27 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700">Gurukul</label>
                   <select
                     value={formData.gurukul_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, gurukul_id: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, gurukul_id: e.target.value }))
+                    }
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                     required
                   >
                     <option value="">Select Gurukul</option>
-                    {gurukuls.map(gurukul => (
+                    {gurukuls.map((gurukul) => (
                       <option key={gurukul.id} value={gurukul.id}>
                         {gurukul.name}
                       </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <Input
                   label="Course Number"
                   value={formData.course_number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, course_number: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, course_number: e.target.value }))
+                  }
                   required
                   placeholder="e.g., C1001"
                 />
@@ -396,7 +429,7 @@ export default function CourseManagement() {
               <Input
                 label="Course Title"
                 value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                 required
               />
 
@@ -404,7 +437,9 @@ export default function CourseManagement() {
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  }
                   rows={3}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   required
@@ -416,7 +451,9 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700">Level</label>
                   <select
                     value={formData.level}
-                    onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value as any }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, level: e.target.value as any }))
+                    }
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   >
                     <option value="elementary">Elementary</option>
@@ -425,22 +462,26 @@ export default function CourseManagement() {
                     <option value="advanced">Advanced</option>
                   </select>
                 </div>
-                
+
                 <Input
                   label="Min Age"
                   type="number"
                   value={formData.age_group_min}
-                  onChange={(e) => setFormData(prev => ({ ...prev, age_group_min: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, age_group_min: parseInt(e.target.value) }))
+                  }
                   required
                   min="4"
                   max="100"
                 />
-                
+
                 <Input
                   label="Max Age"
                   type="number"
                   value={formData.age_group_max}
-                  onChange={(e) => setFormData(prev => ({ ...prev, age_group_max: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, age_group_max: parseInt(e.target.value) }))
+                  }
                   required
                   min="4"
                   max="100"
@@ -452,26 +493,32 @@ export default function CourseManagement() {
                   label="Duration (weeks)"
                   type="number"
                   value={formData.duration_weeks}
-                  onChange={(e) => setFormData(prev => ({ ...prev, duration_weeks: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, duration_weeks: parseInt(e.target.value) }))
+                  }
                   required
                   min="1"
                 />
-                
+
                 <Input
                   label="Fee (€)"
                   type="number"
                   step="0.01"
                   value={formData.fee}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fee: parseFloat(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, fee: parseFloat(e.target.value) }))
+                  }
                   required
                   min="0"
                 />
-                
+
                 <Input
                   label="Max Students"
                   type="number"
                   value={formData.max_students}
-                  onChange={(e) => setFormData(prev => ({ ...prev, max_students: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, max_students: parseInt(e.target.value) }))
+                  }
                   required
                   min="1"
                 />
@@ -482,7 +529,9 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700">Delivery Method</label>
                   <select
                     value={formData.delivery_method}
-                    onChange={(e) => setFormData(prev => ({ ...prev, delivery_method: e.target.value as any }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, delivery_method: e.target.value as any }))
+                    }
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   >
                     <option value="remote">Remote</option>
@@ -490,16 +539,18 @@ export default function CourseManagement() {
                     <option value="hybrid">Hybrid</option>
                   </select>
                 </div>
-                
+
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Teacher</label>
                   <select
                     value={formData.teacher_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, teacher_id: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, teacher_id: e.target.value }))
+                    }
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   >
                     <option value="">Unassigned</option>
-                    {teachers.map(teacher => (
+                    {teachers.map((teacher) => (
                       <option key={teacher.id} value={teacher.id}>
                         {teacher.full_name}
                       </option>
@@ -509,10 +560,14 @@ export default function CourseManagement() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700">Entry Requirements</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Entry Requirements
+                </label>
                 <textarea
                   value={formData.entry_requirements}
-                  onChange={(e) => setFormData(prev => ({ ...prev, entry_requirements: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, entry_requirements: e.target.value }))
+                  }
                   rows={2}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   placeholder="Optional entry requirements..."
@@ -528,7 +583,9 @@ export default function CourseManagement() {
                     onChange={(e) => setLearningOutcomeInput(e.target.value)}
                     placeholder="Add learning outcome..."
                     className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLearningOutcome())}
+                    onKeyPress={(e) =>
+                      e.key === 'Enter' && (e.preventDefault(), addLearningOutcome())
+                    }
                   />
                   <Button type="button" onClick={addLearningOutcome}>
                     Add
@@ -537,7 +594,10 @@ export default function CourseManagement() {
                 {formData.learning_outcomes.length > 0 && (
                   <div className="space-y-2">
                     {formData.learning_outcomes.map((outcome, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      >
                         <span className="text-sm">{outcome}</span>
                         <Button
                           type="button"
@@ -572,7 +632,7 @@ export default function CourseManagement() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">Course Management</h2>
-            
+
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -593,7 +653,7 @@ export default function CourseManagement() {
                 className="px-4 py-3 border border-gray-300 rounded-md text-base focus:ring-orange-500 focus:border-orange-500"
               >
                 <option value="all">All Gurukuls</option>
-                {gurukuls.map(gurukul => (
+                {gurukuls.map((gurukul) => (
                   <option key={gurukul.id} value={gurukul.id}>
                     {gurukul.name}
                   </option>
@@ -674,12 +734,8 @@ export default function CourseManagement() {
                         <div className="flex items-center">
                           <BookOpenIcon className="h-5 w-5 text-gray-400 mr-3" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {course.title}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {course.course_number}
-                            </div>
+                            <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                            <div className="text-sm text-gray-500">{course.course_number}</div>
                           </div>
                         </div>
                       </td>
@@ -687,15 +743,15 @@ export default function CourseManagement() {
                         {course.gurukul?.name || 'Unknown'}
                       </td>
                       <td className="px-6 py-4">
-                        <Badge className={getLevelColor(course.level)}>
-                          {course.level}
-                        </Badge>
+                        <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <div className="space-y-1">
                           <div className="flex items-center">
                             <UserIcon className="h-4 w-4 mr-1" />
-                            <span>Ages {getAgeGroupLabel(course.age_group_min, course.age_group_max)}</span>
+                            <span>
+                              Ages {getAgeGroupLabel(course.age_group_min, course.age_group_max)}
+                            </span>
                           </div>
                           <div className="flex items-center">
                             <ClockIcon className="h-4 w-4 mr-1" />
@@ -711,7 +767,13 @@ export default function CourseManagement() {
                         {course.teacher?.full_name || 'Unassigned'}
                       </td>
                       <td className="px-6 py-4">
-                        <Badge className={course.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                        <Badge
+                          className={
+                            course.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }
+                        >
                           {course.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </td>
@@ -720,16 +782,12 @@ export default function CourseManagement() {
                           <Button size="sm" variant="ghost">
                             <EyeIcon className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => handleEdit(course)}
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(course)}>
                             <PencilIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
-                            variant={course.is_active ? "ghost" : "secondary"}
+                            variant={course.is_active ? 'ghost' : 'secondary'}
                             onClick={() => handleToggleStatus(course.id, course.is_active)}
                           >
                             {course.is_active ? 'Deactivate' : 'Activate'}

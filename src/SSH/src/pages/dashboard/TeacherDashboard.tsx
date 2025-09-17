@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Course, Enrollment, Certificate } from '@/types'
 import { getTeacherCourses, createCourse } from '@/lib/api/courses'
-import { getTeacherEnrollments, updateEnrollmentStatus, bulkUpdateEnrollments } from '@/lib/api/enrollments'
+import {
+  getTeacherEnrollments,
+  updateEnrollmentStatus,
+  bulkUpdateEnrollments,
+} from '@/lib/api/enrollments'
 import { issueCertificate, bulkIssueCertificates } from '@/lib/api/certificates'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { formatCurrency, formatDate, getStatusColor, getLevelColor } from '@/lib/utils'
@@ -36,7 +40,7 @@ import {
   GiftIcon,
   StarIcon,
   FireIcon,
-  LightBulbIcon
+  LightBulbIcon,
 } from '@heroicons/react/24/outline'
 
 const courseSchema = z.object({
@@ -52,7 +56,7 @@ const courseSchema = z.object({
   max_students: z.number().min(1, 'Must allow at least 1 student'),
   delivery_method: z.enum(['physical', 'remote', 'hybrid']),
   entry_requirements: z.string().optional(),
-  learning_outcomes: z.array(z.string()).min(1, 'At least one learning outcome is required')
+  learning_outcomes: z.array(z.string()).min(1, 'At least one learning outcome is required'),
 })
 
 type CourseForm = z.infer<typeof courseSchema>
@@ -65,7 +69,9 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)
-  const [activeView, setActiveView] = useState<'overview' | 'courses' | 'students' | 'certificates' | 'analytics'>('overview')
+  const [activeView, setActiveView] = useState<
+    'overview' | 'courses' | 'students' | 'certificates' | 'analytics'
+  >('overview')
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
 
   const {
@@ -80,8 +86,8 @@ export default function TeacherDashboard() {
     defaultValues: {
       level: 'basic',
       delivery_method: 'remote',
-      learning_outcomes: ['']
-    }
+      learning_outcomes: [''],
+    },
   })
 
   useEffect(() => {
@@ -95,7 +101,7 @@ export default function TeacherDashboard() {
       const [coursesData, enrollmentsData, gurukulData] = await Promise.all([
         getTeacherCourses(user!.id),
         getTeacherEnrollments(user!.id),
-        getGurukuls()
+        getGurukuls(),
       ])
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
@@ -114,7 +120,8 @@ export default function TeacherDashboard() {
         ...data,
         teacher_id: user!.id,
         is_active: true,
-        learning_outcomes: learningOutcomes.filter(outcome => outcome.trim() !== '')
+        learning_outcomes: learningOutcomes.filter((outcome) => outcome.trim() !== ''),
+        syllabus: null, // or {} or "" depending on your requirements
       }
       await createCourse(courseData)
       await loadDashboardData()
@@ -173,17 +180,17 @@ export default function TeacherDashboard() {
   }
 
   const handleBulkIssueCertificates = async () => {
-    const eligibleEnrollments = enrollments.filter(e => 
-      e.status === 'completed' && !e.certificate_issued
+    const eligibleEnrollments = enrollments.filter(
+      (e) => e.status === 'completed' && !e.certificate_issued,
     )
-    
+
     if (eligibleEnrollments.length === 0) {
       toast.error('No eligible students for certificate issuance')
       return
     }
 
     try {
-      await bulkIssueCertificates(eligibleEnrollments.map(e => e.id))
+      await bulkIssueCertificates(eligibleEnrollments.map((e) => e.id))
       await loadDashboardData()
       toast.success(`${eligibleEnrollments.length} certificates issued!`)
     } catch (error) {
@@ -212,19 +219,38 @@ export default function TeacherDashboard() {
   const stats = {
     totalCourses: courses.length,
     totalStudents: enrollments.length,
-    pendingApprovals: enrollments.filter(e => e.status === 'pending').length,
-    completedCourses: enrollments.filter(e => e.status === 'completed').length,
-    certificatesIssued: enrollments.filter(e => e.certificate_issued).length,
-    pendingCertificates: enrollments.filter(e => e.status === 'completed' && !e.certificate_issued).length,
-    totalRevenue: enrollments.filter(e => e.payment_status === 'paid').reduce((sum, e) => sum + (e.course?.fee || 0), 0),
-    averageRating: 4.8 // Mock data
+    pendingApprovals: enrollments.filter((e) => e.status === 'pending').length,
+    completedCourses: enrollments.filter((e) => e.status === 'completed').length,
+    certificatesIssued: enrollments.filter((e) => e.certificate_issued).length,
+    pendingCertificates: enrollments.filter(
+      (e) => e.status === 'completed' && !e.certificate_issued,
+    ).length,
+    totalRevenue: enrollments
+      .filter((e) => e.payment_status === 'paid')
+      .reduce((sum, e) => sum + (e.course?.fee || 0), 0),
+    averageRating: 4.8, // Mock data
   }
 
   const recentActivity = [
-    { type: 'enrollment', message: 'New enrollment in Hindu Philosophy', time: '2 minutes ago', icon: UserGroupIcon },
-    { type: 'completion', message: 'Student completed Sanskrit Basics', time: '1 hour ago', icon: CheckCircleIcon },
-    { type: 'certificate', message: 'Certificate issued to Sarah Johnson', time: '3 hours ago', icon: DocumentTextIcon },
-    { type: 'course', message: 'Course materials updated', time: '1 day ago', icon: BookOpenIcon }
+    {
+      type: 'enrollment',
+      message: 'New enrollment in Hindu Philosophy',
+      time: '2 minutes ago',
+      icon: UserGroupIcon,
+    },
+    {
+      type: 'completion',
+      message: 'Student completed Sanskrit Basics',
+      time: '1 hour ago',
+      icon: CheckCircleIcon,
+    },
+    {
+      type: 'certificate',
+      message: 'Certificate issued to Sarah Johnson',
+      time: '3 hours ago',
+      icon: DocumentTextIcon,
+    },
+    { type: 'course', message: 'Course materials updated', time: '1 day ago', icon: BookOpenIcon },
   ]
 
   const quickActions = [
@@ -234,7 +260,7 @@ export default function TeacherDashboard() {
       icon: PlusIcon,
       action: () => setShowCreateCourse(true),
       color: 'bg-gradient-to-r from-blue-500 to-blue-600',
-      highlight: true
+      highlight: true,
     },
     {
       title: 'Review Enrollments',
@@ -242,7 +268,7 @@ export default function TeacherDashboard() {
       icon: ClockIcon,
       action: () => setActiveView('students'),
       color: 'bg-gradient-to-r from-orange-500 to-orange-600',
-      badge: stats.pendingApprovals
+      badge: stats.pendingApprovals,
     },
     {
       title: 'Issue Certificates',
@@ -250,15 +276,15 @@ export default function TeacherDashboard() {
       icon: TrophyIcon,
       action: () => setActiveView('certificates'),
       color: 'bg-gradient-to-r from-green-500 to-green-600',
-      badge: stats.pendingCertificates
+      badge: stats.pendingCertificates,
     },
     {
       title: 'View Analytics',
       description: 'Track your teaching performance',
       icon: ChartBarIcon,
       action: () => setActiveView('analytics'),
-      color: 'bg-gradient-to-r from-purple-500 to-purple-600'
-    }
+      color: 'bg-gradient-to-r from-purple-500 to-purple-600',
+    },
   ]
 
   if (loading) {
@@ -312,7 +338,7 @@ export default function TeacherDashboard() {
               { id: 'courses', name: 'My Courses', icon: BookOpenIcon },
               { id: 'students', name: 'Students', icon: UserGroupIcon },
               { id: 'certificates', name: 'Certificates', icon: DocumentTextIcon },
-              { id: 'analytics', name: 'Analytics', icon: ArrowTrendingUpIcon }
+              { id: 'analytics', name: 'Analytics', icon: ArrowTrendingUpIcon },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -433,7 +459,10 @@ export default function TeacherDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {recentActivity.map((activity, index) => (
-                      <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50/50 rounded-lg hover:bg-gray-100/50 transition-colors">
+                      <div
+                        key={index}
+                        className="flex items-center space-x-4 p-3 bg-gray-50/50 rounded-lg hover:bg-gray-100/50 transition-colors"
+                      >
                         <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                           <activity.icon className="h-5 w-5 text-white" />
                         </div>
@@ -460,25 +489,37 @@ export default function TeacherDashboard() {
                     <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
                       <div className="flex items-center space-x-2 mb-2">
                         <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                        <span className="font-semibold text-green-800">Excellent Completion Rate</span>
+                        <span className="font-semibold text-green-800">
+                          Excellent Completion Rate
+                        </span>
                       </div>
-                      <p className="text-sm text-green-700">85% of your students complete courses successfully</p>
+                      <p className="text-sm text-green-700">
+                        85% of your students complete courses successfully
+                      </p>
                     </div>
-                    
+
                     <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                       <div className="flex items-center space-x-2 mb-2">
                         <StarIcon className="h-5 w-5 text-blue-600" />
-                        <span className="font-semibold text-blue-800">High Student Satisfaction</span>
+                        <span className="font-semibold text-blue-800">
+                          High Student Satisfaction
+                        </span>
                       </div>
-                      <p className="text-sm text-blue-700">Average rating of {stats.averageRating}/5.0 from students</p>
+                      <p className="text-sm text-blue-700">
+                        Average rating of {stats.averageRating}/5.0 from students
+                      </p>
                     </div>
-                    
+
                     <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
                       <div className="flex items-center space-x-2 mb-2">
                         <TrophyIcon className="h-5 w-5 text-purple-600" />
-                        <span className="font-semibold text-purple-800">Certificate Achievement</span>
+                        <span className="font-semibold text-purple-800">
+                          Certificate Achievement
+                        </span>
                       </div>
-                      <p className="text-sm text-purple-700">{stats.certificatesIssued} certificates issued this month</p>
+                      <p className="text-sm text-purple-700">
+                        {stats.certificatesIssued} certificates issued this month
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -522,11 +563,16 @@ export default function TeacherDashboard() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => {
-                  const courseEnrollments = enrollments.filter(e => e.course_id === course.id)
-                  const pendingCertificates = courseEnrollments.filter(e => e.status === 'completed' && !e.certificate_issued).length
-                  
+                  const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
+                  const pendingCertificates = courseEnrollments.filter(
+                    (e) => e.status === 'completed' && !e.certificate_issued,
+                  ).length
+
                   return (
-                    <Card key={course.id} className="border-0 shadow-xl bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group">
+                    <Card
+                      key={course.id}
+                      className="border-0 shadow-xl bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group"
+                    >
                       <div className="h-32 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
                         <div className="absolute inset-0 bg-black/20"></div>
                         <div className="absolute bottom-4 left-4 text-white">
@@ -541,7 +587,7 @@ export default function TeacherDashboard() {
                           </div>
                         )}
                       </div>
-                      
+
                       <CardContent className="p-6">
                         <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors">
                           {course.title}
@@ -549,7 +595,7 @@ export default function TeacherDashboard() {
                         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                           {course.description}
                         </p>
-                        
+
                         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                           <div className="flex items-center space-x-2">
                             <UsersIcon className="h-4 w-4 text-gray-400" />
@@ -565,10 +611,13 @@ export default function TeacherDashboard() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <TrophyIcon className="h-4 w-4 text-gray-400" />
-                            <span>{courseEnrollments.filter(e => e.certificate_issued).length} certified</span>
+                            <span>
+                              {courseEnrollments.filter((e) => e.certificate_issued).length}{' '}
+                              certified
+                            </span>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <Link to={`/courses/${course.id}`} className="flex-1">
                             <Button variant="outline" size="sm" className="w-full">
@@ -580,9 +629,11 @@ export default function TeacherDashboard() {
                             <Button
                               size="sm"
                               onClick={() => {
-                                const eligibleEnrollments = courseEnrollments.filter(e => e.status === 'completed' && !e.certificate_issued)
+                                const eligibleEnrollments = courseEnrollments.filter(
+                                  (e) => e.status === 'completed' && !e.certificate_issued,
+                                )
                                 if (eligibleEnrollments.length > 0) {
-                                  bulkIssueCertificates(eligibleEnrollments.map(e => e.id))
+                                  bulkIssueCertificates(eligibleEnrollments.map((e) => e.id))
                                 }
                               }}
                               className="bg-gradient-to-r from-green-500 to-green-600"
@@ -629,7 +680,7 @@ export default function TeacherDashboard() {
                   <div className="text-sm text-blue-700">Total Students</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                 <CardContent className="p-4 text-center">
                   <ClockIcon className="h-8 w-8 text-orange-600 mx-auto mb-2" />
@@ -637,15 +688,17 @@ export default function TeacherDashboard() {
                   <div className="text-sm text-orange-700">Pending Approvals</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                 <CardContent className="p-4 text-center">
                   <CheckCircleIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-green-900">{enrollments.filter(e => e.status === 'approved').length}</div>
+                  <div className="text-2xl font-bold text-green-900">
+                    {enrollments.filter((e) => e.status === 'approved').length}
+                  </div>
                   <div className="text-sm text-green-700">Active Students</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
                 <CardContent className="p-4 text-center">
                   <TrophyIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
@@ -662,7 +715,9 @@ export default function TeacherDashboard() {
                   <div className="text-center py-12">
                     <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No students yet</h3>
-                    <p className="text-gray-600">Students will appear here once they enroll in your courses.</p>
+                    <p className="text-gray-600">
+                      Students will appear here once they enroll in your courses.
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -674,7 +729,11 @@ export default function TeacherDashboard() {
                               type="checkbox"
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedEnrollments(enrollments.filter(e => e.status === 'pending').map(e => e.id))
+                                  setSelectedEnrollments(
+                                    enrollments
+                                      .filter((e) => e.status === 'pending')
+                                      .map((e) => e.id),
+                                  )
                                 } else {
                                   setSelectedEnrollments([])
                                 }
@@ -691,7 +750,10 @@ export default function TeacherDashboard() {
                       </thead>
                       <tbody>
                         {enrollments.map((enrollment) => (
-                          <tr key={enrollment.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                          <tr
+                            key={enrollment.id}
+                            className="border-b border-gray-100 hover:bg-gray-50/50"
+                          >
                             <td className="py-3 px-4">
                               {enrollment.status === 'pending' && (
                                 <input
@@ -699,9 +761,14 @@ export default function TeacherDashboard() {
                                   checked={selectedEnrollments.includes(enrollment.id)}
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      setSelectedEnrollments([...selectedEnrollments, enrollment.id])
+                                      setSelectedEnrollments([
+                                        ...selectedEnrollments,
+                                        enrollment.id,
+                                      ])
                                     } else {
-                                      setSelectedEnrollments(selectedEnrollments.filter(id => id !== enrollment.id))
+                                      setSelectedEnrollments(
+                                        selectedEnrollments.filter((id) => id !== enrollment.id),
+                                      )
                                     }
                                   }}
                                   className="rounded border-gray-300"
@@ -717,14 +784,18 @@ export default function TeacherDashboard() {
                                 </div>
                                 <div>
                                   <p className="font-medium">{enrollment.student?.full_name}</p>
-                                  <p className="text-sm text-gray-500">{enrollment.student?.email}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {enrollment.student?.email}
+                                  </p>
                                 </div>
                               </div>
                             </td>
                             <td className="py-3 px-4">
                               <div>
                                 <p className="font-medium">{enrollment.course?.title}</p>
-                                <p className="text-sm text-gray-500">{enrollment.course?.course_number}</p>
+                                <p className="text-sm text-gray-500">
+                                  {enrollment.course?.course_number}
+                                </p>
                               </div>
                             </td>
                             <td className="py-3 px-4">
@@ -756,16 +827,17 @@ export default function TeacherDashboard() {
                                     </Button>
                                   </>
                                 )}
-                                {enrollment.status === 'completed' && !enrollment.certificate_issued && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleIssueCertificate(enrollment.id)}
-                                    className="bg-gradient-to-r from-purple-500 to-purple-600"
-                                  >
-                                    <TrophyIcon className="h-4 w-4 mr-1" />
-                                    Issue Certificate
-                                  </Button>
-                                )}
+                                {enrollment.status === 'completed' &&
+                                  !enrollment.certificate_issued && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleIssueCertificate(enrollment.id)}
+                                      className="bg-gradient-to-r from-purple-500 to-purple-600"
+                                    >
+                                      <TrophyIcon className="h-4 w-4 mr-1" />
+                                      Issue Certificate
+                                    </Button>
+                                  )}
                               </div>
                             </td>
                           </tr>
@@ -803,19 +875,23 @@ export default function TeacherDashboard() {
               <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                 <CardContent className="p-6 text-center">
                   <TrophyIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-green-900">{stats.certificatesIssued}</div>
+                  <div className="text-3xl font-bold text-green-900">
+                    {stats.certificatesIssued}
+                  </div>
                   <div className="text-sm text-green-700">Certificates Issued</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                 <CardContent className="p-6 text-center">
                   <ClockIcon className="h-10 w-10 text-orange-600 mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-orange-900">{stats.pendingCertificates}</div>
+                  <div className="text-3xl font-bold text-orange-900">
+                    {stats.pendingCertificates}
+                  </div>
                   <div className="text-sm text-orange-700">Pending Certificates</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                 <CardContent className="p-6 text-center">
                   <CheckCircleIcon className="h-10 w-10 text-blue-600 mx-auto mb-3" />
@@ -837,9 +913,12 @@ export default function TeacherDashboard() {
                 <CardContent>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {enrollments
-                      .filter(e => e.status === 'completed' && !e.certificate_issued)
+                      .filter((e) => e.status === 'completed' && !e.certificate_issued)
                       .map((enrollment) => (
-                        <div key={enrollment.id} className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+                        <div
+                          key={enrollment.id}
+                          className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200"
+                        >
                           <div className="flex items-center space-x-3 mb-3">
                             <div className="h-10 w-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
                               <span className="text-white font-bold">
@@ -847,12 +926,15 @@ export default function TeacherDashboard() {
                               </span>
                             </div>
                             <div>
-                              <p className="font-medium text-orange-900">{enrollment.student?.full_name}</p>
+                              <p className="font-medium text-orange-900">
+                                {enrollment.student?.full_name}
+                              </p>
                               <p className="text-sm text-orange-700">{enrollment.course?.title}</p>
                             </div>
                           </div>
                           <div className="text-xs text-orange-600 mb-3">
-                            Completed: {formatDate(enrollment.completed_at || enrollment.enrolled_at)}
+                            Completed:{' '}
+                            {formatDate(enrollment.completed_at || enrollment.enrolled_at)}
                           </div>
                           <Button
                             size="sm"
@@ -881,21 +963,30 @@ export default function TeacherDashboard() {
                 {stats.certificatesIssued === 0 ? (
                   <div className="text-center py-12">
                     <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No certificates issued yet</h3>
-                    <p className="text-gray-600">Certificates will appear here once you issue them to students.</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No certificates issued yet
+                    </h3>
+                    <p className="text-gray-600">
+                      Certificates will appear here once you issue them to students.
+                    </p>
                   </div>
                 ) : (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {enrollments
-                      .filter(e => e.certificate_issued)
+                      .filter((e) => e.certificate_issued)
                       .map((enrollment) => (
-                        <div key={enrollment.id} className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                        <div
+                          key={enrollment.id}
+                          className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200"
+                        >
                           <div className="flex items-center space-x-3 mb-3">
                             <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
                               <TrophyIcon className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-medium text-green-900">{enrollment.student?.full_name}</p>
+                              <p className="font-medium text-green-900">
+                                {enrollment.student?.full_name}
+                              </p>
                               <p className="text-sm text-green-700">{enrollment.course?.title}</p>
                             </div>
                           </div>
@@ -940,7 +1031,9 @@ export default function TeacherDashboard() {
               <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 shadow-xl">
                 <CardContent className="p-6 text-center">
                   <UserGroupIcon className="h-10 w-10 mx-auto mb-3 text-purple-200" />
-                  <div className="text-3xl font-bold">{Math.round(stats.totalStudents / stats.totalCourses) || 0}</div>
+                  <div className="text-3xl font-bold">
+                    {Math.round(stats.totalStudents / stats.totalCourses) || 0}
+                  </div>
                   <div className="text-sm text-purple-100">Avg Students/Course</div>
                 </CardContent>
               </Card>
@@ -948,7 +1041,9 @@ export default function TeacherDashboard() {
               <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 shadow-xl">
                 <CardContent className="p-6 text-center">
                   <CurrencyEuroIcon className="h-10 w-10 mx-auto mb-3 text-orange-200" />
-                  <div className="text-3xl font-bold">{formatCurrency(stats.totalRevenue / stats.totalCourses || 0)}</div>
+                  <div className="text-3xl font-bold">
+                    {formatCurrency(stats.totalRevenue / stats.totalCourses || 0)}
+                  </div>
                   <div className="text-sm text-orange-100">Avg Revenue/Course</div>
                 </CardContent>
               </Card>
@@ -962,16 +1057,29 @@ export default function TeacherDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {courses.map((course) => {
-                    const courseEnrollments = enrollments.filter(e => e.course_id === course.id)
-                    const completionRate = courseEnrollments.length > 0 
-                      ? Math.round((courseEnrollments.filter(e => e.status === 'completed').length / courseEnrollments.length) * 100)
-                      : 0
-                    
+                    const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
+                    const completionRate =
+                      courseEnrollments.length > 0
+                        ? Math.round(
+                            (courseEnrollments.filter((e) => e.status === 'completed').length /
+                              courseEnrollments.length) *
+                              100,
+                          )
+                        : 0
+
                     return (
                       <div key={course.id} className="p-4 bg-gray-50 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-medium">{course.title}</h4>
-                          <Badge className={completionRate >= 80 ? 'bg-green-100 text-green-800' : completionRate >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                          <Badge
+                            className={
+                              completionRate >= 80
+                                ? 'bg-green-100 text-green-800'
+                                : completionRate >= 60
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                            }
+                          >
                             {completionRate}% completion
                           </Badge>
                         </div>
@@ -982,15 +1090,25 @@ export default function TeacherDashboard() {
                           </div>
                           <div>
                             <span className="text-gray-600">Completed:</span>
-                            <div className="font-semibold">{courseEnrollments.filter(e => e.status === 'completed').length}</div>
+                            <div className="font-semibold">
+                              {courseEnrollments.filter((e) => e.status === 'completed').length}
+                            </div>
                           </div>
                           <div>
                             <span className="text-gray-600">Certificates:</span>
-                            <div className="font-semibold">{courseEnrollments.filter(e => e.certificate_issued).length}</div>
+                            <div className="font-semibold">
+                              {courseEnrollments.filter((e) => e.certificate_issued).length}
+                            </div>
                           </div>
                           <div>
                             <span className="text-gray-600">Revenue:</span>
-                            <div className="font-semibold">{formatCurrency(courseEnrollments.filter(e => e.payment_status === 'paid').reduce((sum, e) => sum + (e.course?.fee || 0), 0))}</div>
+                            <div className="font-semibold">
+                              {formatCurrency(
+                                courseEnrollments
+                                  .filter((e) => e.payment_status === 'paid')
+                                  .reduce((sum, e) => sum + (e.course?.fee || 0), 0),
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1035,7 +1153,7 @@ export default function TeacherDashboard() {
                     className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
                     <option value="">Select a Gurukul</option>
-                    {gurukuls.map(gurukul => (
+                    {gurukuls.map((gurukul) => (
                       <option key={gurukul.id} value={gurukul.id}>
                         {gurukul.name}
                       </option>
@@ -1088,9 +1206,7 @@ export default function TeacherDashboard() {
                     <option value="intermediate">Intermediate (12-15 years)</option>
                     <option value="advanced">Advanced (16-19 years)</option>
                   </select>
-                  {errors.level && (
-                    <p className="text-sm text-red-600">{errors.level.message}</p>
-                  )}
+                  {errors.level && <p className="text-sm text-red-600">{errors.level.message}</p>}
                 </div>
 
                 <div className="space-y-1">
@@ -1157,13 +1273,10 @@ export default function TeacherDashboard() {
               {/* Learning Outcomes */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">Learning Outcomes</label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addLearningOutcome}
-                  >
+                  <label className="block text-sm font-medium text-gray-700">
+                    Learning Outcomes
+                  </label>
+                  <Button type="button" variant="outline" size="sm" onClick={addLearningOutcome}>
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add Outcome
                   </Button>

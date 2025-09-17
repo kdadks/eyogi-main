@@ -19,31 +19,62 @@ export default function SEOHead({
   ogImage,
   ogType = 'website',
   structuredData,
-  noIndex = false
+  noIndex = false,
 }: SEOHeadProps) {
   const siteTitle = 'eYogi Gurukul - Ancient Hindu Wisdom, Modern Vedic Learning'
-  const siteDescription = 'Learn authentic Hindu traditions, Vedic philosophy, Sanskrit, mantras, and yoga through comprehensive online courses. Discover Sanatan Dharma wisdom with expert teachers in our traditional Gurukul system.'
-  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://eyogi-gurukul.vercel.app'
-  
+  const siteDescription =
+    'Learn authentic Hindu traditions, Vedic philosophy, Sanskrit, mantras, and yoga through comprehensive online courses. Discover Sanatan Dharma wisdom with expert teachers in our traditional Gurukul system.'
+  const siteUrl =
+    typeof window !== 'undefined' ? window.location.origin : 'https://eyogi-gurukul.vercel.app'
+
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle
   const fullDescription = description || siteDescription
   const fullCanonicalUrl = canonicalUrl ? `${siteUrl}${canonicalUrl}` : siteUrl
   const fullOgImage = ogImage || `${siteUrl}/og-image.jpg`
-  
+
   // Core SEO keywords for Hindu/Vedic content
   const coreKeywords = [
-    'Hindu', 'Hinduism', 'Vedic', 'Hindu Religion', 'Hindu Culture', 
-    'Indian Hindu Culture', 'Sanatan', 'Sanatan Dharma', 'Vedic Education',
-    'Hindu Philosophy', 'Hindu Traditions', 'Hindu Learning', 'Vedic Wisdom',
-    'Hindu Courses', 'Vedic Studies', 'Hindu Gurukul', 'Sanatan Dharma Education',
-    'Hindu Online Learning', 'Vedic Knowledge', 'Hindu Spiritual Education',
-    'Traditional Hindu Education', 'Authentic Hindu Teaching', 'Hindu Heritage',
-    'Vedic Philosophy', 'Hindu Scriptures', 'Dharma Education', 'Hindu Values',
-    'Sanskrit Learning', 'Mantra Education', 'Yoga Philosophy', 'Hindu Festivals',
-    'Hindu Rituals', 'Hindu Practices', 'Vedic Science', 'Hindu Mythology',
-    'Hindu Ethics', 'Dharmic Living', 'Hindu Spirituality', 'Vedic Lifestyle'
+    'Hindu',
+    'Hinduism',
+    'Vedic',
+    'Hindu Religion',
+    'Hindu Culture',
+    'Indian Hindu Culture',
+    'Sanatan',
+    'Sanatan Dharma',
+    'Vedic Education',
+    'Hindu Philosophy',
+    'Hindu Traditions',
+    'Hindu Learning',
+    'Vedic Wisdom',
+    'Hindu Courses',
+    'Vedic Studies',
+    'Hindu Gurukul',
+    'Sanatan Dharma Education',
+    'Hindu Online Learning',
+    'Vedic Knowledge',
+    'Hindu Spiritual Education',
+    'Traditional Hindu Education',
+    'Authentic Hindu Teaching',
+    'Hindu Heritage',
+    'Vedic Philosophy',
+    'Hindu Scriptures',
+    'Dharma Education',
+    'Hindu Values',
+    'Sanskrit Learning',
+    'Mantra Education',
+    'Yoga Philosophy',
+    'Hindu Festivals',
+    'Hindu Rituals',
+    'Hindu Practices',
+    'Vedic Science',
+    'Hindu Mythology',
+    'Hindu Ethics',
+    'Dharmic Living',
+    'Hindu Spirituality',
+    'Vedic Lifestyle',
   ]
-  
+
   const allKeywords = [...coreKeywords, ...keywords].join(', ')
 
   React.useEffect(() => {
@@ -73,7 +104,7 @@ export default function SEOHead({
     }
 
     // Update canonical URL
-    let canonicalLink = document.querySelector('link[rel="canonical"]')
+    let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
     if (canonicalLink) {
       canonicalLink.setAttribute('href', fullCanonicalUrl)
     } else {
@@ -123,7 +154,9 @@ export default function SEOHead({
 
     // Update robots meta
     const robotsTag = document.querySelector('meta[name="robots"]')
-    const robotsContent = noIndex ? 'noindex, nofollow' : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+    const robotsContent = noIndex
+      ? 'noindex, nofollow'
+      : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
     if (robotsTag) {
       robotsTag.setAttribute('content', robotsContent)
     } else {
@@ -137,7 +170,7 @@ export default function SEOHead({
     if (structuredData) {
       // Remove existing structured data
       const existingScripts = document.querySelectorAll('script[type="application/ld+json"]')
-      existingScripts.forEach(script => script.remove())
+      existingScripts.forEach((script) => script.remove())
 
       // Add new structured data
       const schemaArray = Array.isArray(structuredData) ? structuredData : [structuredData]
@@ -149,7 +182,16 @@ export default function SEOHead({
         document.head.appendChild(script)
       })
     }
-  }, [fullTitle, fullDescription, allKeywords, fullCanonicalUrl, fullOgImage, ogType, structuredData, noIndex])
+  }, [
+    fullTitle,
+    fullDescription,
+    allKeywords,
+    fullCanonicalUrl,
+    fullOgImage,
+    ogType,
+    structuredData,
+    noIndex,
+  ])
 
   return null
 }

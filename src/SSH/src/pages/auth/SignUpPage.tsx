@@ -4,35 +4,41 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { Button } from '@/components/ui/button''
+import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { signUp } from '../../lib/auth'
 
-const signUpSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-  age: z.number().min(4, 'Age must be at least 4').max(100, 'Age must be less than 100'),
-  role: z.enum(['student', 'teacher']),
-  phone: z.string().optional(),
-  parent_guardian_name: z.string().optional(),
-  parent_guardian_email: z.string().email().optional().or(z.literal('')),
-  parent_guardian_phone: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-}).refine((data) => {
-  if (data.age < 18 && data.role === 'student') {
-    return data.parent_guardian_name && data.parent_guardian_email
-  }
-  return true
-}, {
-  message: "Parent/Guardian information is required for students under 18",
-  path: ["parent_guardian_name"],
-})
+const signUpSchema = z
+  .object({
+    email: z.string().email('Please enter a valid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string(),
+    full_name: z.string().min(2, 'Full name must be at least 2 characters'),
+    age: z.number().min(4, 'Age must be at least 4').max(100, 'Age must be less than 100'),
+    role: z.enum(['student', 'teacher']),
+    phone: z.string().optional(),
+    parent_guardian_name: z.string().optional(),
+    parent_guardian_email: z.string().email().optional().or(z.literal('')),
+    parent_guardian_phone: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  })
+  .refine(
+    (data) => {
+      if (data.age < 18 && data.role === 'student') {
+        return data.parent_guardian_name && data.parent_guardian_email
+      }
+      return true
+    },
+    {
+      message: 'Parent/Guardian information is required for students under 18',
+      path: ['parent_guardian_name'],
+    },
+  )
 
 type SignUpForm = z.infer<typeof signUpSchema>
 
@@ -84,9 +90,7 @@ export default function SignUpPage() {
               <span className="text-white font-bold text-lg">eY</span>
             </div>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Create your account
-          </h2>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">Create your account</h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{' '}
             <Link to="/auth/signin" className="font-medium text-orange-600 hover:text-orange-500">
@@ -124,9 +128,7 @@ export default function SignUpPage() {
                 />
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Role
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Role</label>
                   <select
                     {...register('role')}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
@@ -134,9 +136,7 @@ export default function SignUpPage() {
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
                   </select>
-                  {errors.role && (
-                    <p className="text-sm text-red-600">{errors.role.message}</p>
-                  )}
+                  {errors.role && <p className="text-sm text-red-600">{errors.role.message}</p>}
                 </div>
 
                 <Input
@@ -215,11 +215,7 @@ export default function SignUpPage() {
                 </label>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                loading={loading}
-              >
+              <Button type="submit" className="w-full" loading={loading}>
                 Create Account
               </Button>
             </form>

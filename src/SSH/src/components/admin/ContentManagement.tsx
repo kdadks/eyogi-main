@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { formatDate, generateSlug } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import {
@@ -21,7 +21,7 @@ import {
   HomeIcon,
   InformationCircleIcon,
   PhoneIcon,
-  AcademicCapIcon
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline'
 
 interface ContentPage {
@@ -75,7 +75,7 @@ export default function ContentManagement() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<'pages' | 'menu'>('pages')
-  
+
   // Page Management States
   const [showPageForm, setShowPageForm] = useState(false)
   const [editingPage, setEditingPage] = useState<ContentPage | null>(null)
@@ -86,7 +86,7 @@ export default function ContentManagement() {
     type: 'page',
     status: 'draft',
     content: '',
-    meta_description: ''
+    meta_description: '',
   })
   const [pageFormLoading, setPageFormLoading] = useState(false)
 
@@ -98,7 +98,7 @@ export default function ContentManagement() {
     href: '',
     icon: '',
     parent_id: '',
-    is_active: true
+    is_active: true,
   })
   const [menuFormLoading, setMenuFormLoading] = useState(false)
 
@@ -113,9 +113,9 @@ export default function ContentManagement() {
   useEffect(() => {
     // Auto-generate slug when title changes
     if (pageFormData.title && !editingPage) {
-      setPageFormData(prev => ({
+      setPageFormData((prev) => ({
         ...prev,
-        slug: generateSlug(pageFormData.title)
+        slug: generateSlug(pageFormData.title),
       }))
     }
   }, [pageFormData.title, editingPage])
@@ -124,8 +124,8 @@ export default function ContentManagement() {
     setLoading(true)
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       // Mock pages data
       const mockPages: ContentPage[] = [
         {
@@ -136,10 +136,11 @@ export default function ContentManagement() {
           status: 'published',
           author: 'Admin',
           content: '<h1>About Us</h1><p>Welcome to eYogi Gurukul...</p>',
-          meta_description: 'Learn about eYogi Gurukul and our mission to connect ancient wisdom with modern learning.',
+          meta_description:
+            'Learn about eYogi Gurukul and our mission to connect ancient wisdom with modern learning.',
           created_at: '2025-01-15T10:00:00Z',
           updated_at: '2025-01-20T14:30:00Z',
-          views: 1250
+          views: 1250,
         },
         {
           id: '2',
@@ -149,10 +150,11 @@ export default function ContentManagement() {
           status: 'published',
           author: 'Content Manager',
           content: '<h1>Hinduism Gurukul</h1><p>Explore Hindu traditions...</p>',
-          meta_description: 'Discover Hindu traditions, philosophy, and practices through our comprehensive courses.',
+          meta_description:
+            'Discover Hindu traditions, philosophy, and practices through our comprehensive courses.',
           created_at: '2025-01-10T09:00:00Z',
           updated_at: '2025-01-18T16:45:00Z',
-          views: 890
+          views: 890,
         },
         {
           id: '3',
@@ -165,7 +167,7 @@ export default function ContentManagement() {
           meta_description: 'A comprehensive guide to starting your Vedic learning journey.',
           created_at: '2025-01-22T11:15:00Z',
           updated_at: '2025-01-22T11:15:00Z',
-          views: 0
+          views: 0,
         },
         {
           id: '4',
@@ -178,8 +180,8 @@ export default function ContentManagement() {
           meta_description: 'Contact eYogi Gurukul for questions about courses and enrollment.',
           created_at: '2025-01-05T08:30:00Z',
           updated_at: '2025-01-19T13:20:00Z',
-          views: 567
-        }
+          views: 567,
+        },
       ]
 
       // Mock menu items data
@@ -190,7 +192,7 @@ export default function ContentManagement() {
           href: '/',
           order: 1,
           is_active: true,
-          icon: 'HomeIcon'
+          icon: 'HomeIcon',
         },
         {
           id: '2',
@@ -198,7 +200,7 @@ export default function ContentManagement() {
           href: '/gurukuls',
           order: 2,
           is_active: true,
-          icon: 'GlobeAltIcon'
+          icon: 'GlobeAltIcon',
         },
         {
           id: '3',
@@ -206,7 +208,7 @@ export default function ContentManagement() {
           href: '/courses',
           order: 3,
           is_active: true,
-          icon: 'AcademicCapIcon'
+          icon: 'AcademicCapIcon',
         },
         {
           id: '4',
@@ -214,7 +216,7 @@ export default function ContentManagement() {
           href: '/about',
           order: 4,
           is_active: true,
-          icon: 'InformationCircleIcon'
+          icon: 'InformationCircleIcon',
         },
         {
           id: '5',
@@ -222,10 +224,10 @@ export default function ContentManagement() {
           href: '/contact',
           order: 5,
           is_active: true,
-          icon: 'PhoneIcon'
-        }
+          icon: 'PhoneIcon',
+        },
       ]
-      
+
       setPages(mockPages)
       setMenuItems(mockMenuItems)
     } catch (error) {
@@ -241,21 +243,22 @@ export default function ContentManagement() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(page =>
-        page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        page.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        page.content.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (page) =>
+          page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          page.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          page.content.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Filter by type
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(page => page.type === typeFilter)
+      filtered = filtered.filter((page) => page.type === typeFilter)
     }
 
     // Filter by status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(page => page.status === statusFilter)
+      filtered = filtered.filter((page) => page.status === statusFilter)
     }
 
     setFilteredPages(filtered)
@@ -269,7 +272,7 @@ export default function ContentManagement() {
       type: 'page',
       status: 'draft',
       content: '',
-      meta_description: ''
+      meta_description: '',
     })
     setShowPageForm(false)
     setEditingPage(null)
@@ -282,18 +285,18 @@ export default function ContentManagement() {
 
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       if (editingPage) {
         // Update existing page
-        const updatedPages = pages.map(page =>
+        const updatedPages = pages.map((page) =>
           page.id === editingPage.id
             ? {
                 ...page,
                 ...pageFormData,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
               }
-            : page
+            : page,
         )
         setPages(updatedPages)
         toast.success('Page updated successfully')
@@ -305,12 +308,12 @@ export default function ContentManagement() {
           author: 'Admin',
           views: 0,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         }
         setPages([...pages, newPage])
         toast.success('Page created successfully')
       }
-      
+
       resetPageForm()
     } catch (error) {
       console.error('Error saving page:', error)
@@ -328,7 +331,7 @@ export default function ContentManagement() {
       type: page.type,
       status: page.status,
       content: page.content,
-      meta_description: page.meta_description
+      meta_description: page.meta_description,
     })
     setShowPageForm(true)
   }
@@ -344,9 +347,9 @@ export default function ContentManagement() {
 
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      const updatedPages = pages.filter(page => page.id !== pageId)
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      const updatedPages = pages.filter((page) => page.id !== pageId)
       setPages(updatedPages)
       toast.success('Page deleted successfully')
     } catch (error) {
@@ -362,7 +365,7 @@ export default function ContentManagement() {
       href: '',
       icon: '',
       parent_id: '',
-      is_active: true
+      is_active: true,
     })
     setShowMenuForm(false)
     setEditingMenuItem(null)
@@ -374,18 +377,18 @@ export default function ContentManagement() {
 
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       if (editingMenuItem) {
         // Update existing menu item
-        const updatedMenuItems = menuItems.map(item =>
+        const updatedMenuItems = menuItems.map((item) =>
           item.id === editingMenuItem.id
             ? {
                 ...item,
                 ...menuFormData,
-                order: item.order
+                order: item.order,
               }
-            : item
+            : item,
         )
         setMenuItems(updatedMenuItems)
         toast.success('Menu item updated successfully')
@@ -394,12 +397,12 @@ export default function ContentManagement() {
         const newMenuItem: HeaderMenuItem = {
           id: Math.random().toString(36).substr(2, 9),
           ...menuFormData,
-          order: menuItems.length + 1
+          order: menuItems.length + 1,
         }
         setMenuItems([...menuItems, newMenuItem])
         toast.success('Menu item created successfully')
       }
-      
+
       resetMenuForm()
     } catch (error) {
       console.error('Error saving menu item:', error)
@@ -416,7 +419,7 @@ export default function ContentManagement() {
       href: menuItem.href,
       icon: menuItem.icon || '',
       parent_id: menuItem.parent_id || '',
-      is_active: menuItem.is_active
+      is_active: menuItem.is_active,
     })
     setShowMenuForm(true)
   }
@@ -428,9 +431,9 @@ export default function ContentManagement() {
 
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      const updatedMenuItems = menuItems.filter(item => item.id !== menuItemId)
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      const updatedMenuItems = menuItems.filter((item) => item.id !== menuItemId)
       setMenuItems(updatedMenuItems)
       toast.success('Menu item deleted successfully')
     } catch (error) {
@@ -442,12 +445,10 @@ export default function ContentManagement() {
   const handleToggleMenuStatus = async (menuItemId: string, currentStatus: boolean) => {
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 200))
-      
-      const updatedMenuItems = menuItems.map(item =>
-        item.id === menuItemId
-          ? { ...item, is_active: !currentStatus }
-          : item
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
+      const updatedMenuItems = menuItems.map((item) =>
+        item.id === menuItemId ? { ...item, is_active: !currentStatus } : item,
       )
       setMenuItems(updatedMenuItems)
       toast.success(`Menu item ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
@@ -461,7 +462,7 @@ export default function ContentManagement() {
     const colors = {
       published: 'bg-green-100 text-green-800',
       draft: 'bg-yellow-100 text-yellow-800',
-      archived: 'bg-gray-100 text-gray-800'
+      archived: 'bg-gray-100 text-gray-800',
     }
     return colors[status as keyof typeof colors] || colors.draft
   }
@@ -486,17 +487,17 @@ export default function ContentManagement() {
     { value: 'InformationCircleIcon', label: 'Info' },
     { value: 'PhoneIcon', label: 'Phone' },
     { value: 'BookOpenIcon', label: 'Book' },
-    { value: 'UserGroupIcon', label: 'Users' }
+    { value: 'UserGroupIcon', label: 'Users' },
   ]
 
   const stats = {
     totalPages: pages.length,
-    published: pages.filter(p => p.status === 'published').length,
-    draft: pages.filter(p => p.status === 'draft').length,
-    archived: pages.filter(p => p.status === 'archived').length,
+    published: pages.filter((p) => p.status === 'published').length,
+    draft: pages.filter((p) => p.status === 'draft').length,
+    archived: pages.filter((p) => p.status === 'archived').length,
     totalViews: pages.reduce((sum, p) => sum + p.views, 0),
     totalMenuItems: menuItems.length,
-    activeMenuItems: menuItems.filter(m => m.is_active).length
+    activeMenuItems: menuItems.filter((m) => m.is_active).length,
   }
 
   if (loading) {
@@ -534,7 +535,9 @@ export default function ContentManagement() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.totalViews.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.totalViews.toLocaleString()}
+            </div>
             <div className="text-sm text-gray-600">Total Views</div>
           </CardContent>
         </Card>
@@ -579,25 +582,41 @@ export default function ContentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">Page Information</h3>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <p><strong>Title:</strong> {viewingPage.title}</p>
-                    <p><strong>Slug:</strong> /{viewingPage.slug}</p>
-                    <p><strong>Type:</strong> <Badge className={getStatusColor(viewingPage.type)}>{viewingPage.type}</Badge></p>
-                    <p><strong>Status:</strong> <Badge className={getStatusColor(viewingPage.status)}>{viewingPage.status}</Badge></p>
-                    <p><strong>Author:</strong> {viewingPage.author}</p>
-                    <p><strong>Views:</strong> {viewingPage.views.toLocaleString()}</p>
+                    <p>
+                      <strong>Title:</strong> {viewingPage.title}
+                    </p>
+                    <p>
+                      <strong>Slug:</strong> /{viewingPage.slug}
+                    </p>
+                    <p>
+                      <strong>Type:</strong>{' '}
+                      <Badge className={getStatusColor(viewingPage.type)}>{viewingPage.type}</Badge>
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{' '}
+                      <Badge className={getStatusColor(viewingPage.status)}>
+                        {viewingPage.status}
+                      </Badge>
+                    </p>
+                    <p>
+                      <strong>Author:</strong> {viewingPage.author}
+                    </p>
+                    <p>
+                      <strong>Views:</strong> {viewingPage.views.toLocaleString()}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold mb-2">Meta Description</h3>
                   <p className="text-sm text-gray-600">{viewingPage.meta_description}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold mb-2">Content Preview</h3>
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
@@ -632,13 +651,17 @@ export default function ContentManagement() {
                     <Input
                       label="Page Title"
                       value={pageFormData.title}
-                      onChange={(e) => setPageFormData(prev => ({ ...prev, title: e.target.value }))}
+                      onChange={(e) =>
+                        setPageFormData((prev) => ({ ...prev, title: e.target.value }))
+                      }
                       required
                     />
                     <Input
                       label="URL Slug"
                       value={pageFormData.slug}
-                      onChange={(e) => setPageFormData(prev => ({ ...prev, slug: e.target.value }))}
+                      onChange={(e) =>
+                        setPageFormData((prev) => ({ ...prev, slug: e.target.value }))
+                      }
                       required
                       helperText="URL-friendly identifier"
                     />
@@ -649,7 +672,9 @@ export default function ContentManagement() {
                       <label className="block text-sm font-medium text-gray-700">Page Type</label>
                       <select
                         value={pageFormData.type}
-                        onChange={(e) => setPageFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                        onChange={(e) =>
+                          setPageFormData((prev) => ({ ...prev, type: e.target.value as any }))
+                        }
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       >
                         <option value="page">Page</option>
@@ -657,12 +682,14 @@ export default function ContentManagement() {
                         <option value="gurukul">Gurukul Page</option>
                       </select>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Status</label>
                       <select
                         value={pageFormData.status}
-                        onChange={(e) => setPageFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                        onChange={(e) =>
+                          setPageFormData((prev) => ({ ...prev, status: e.target.value as any }))
+                        }
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       >
                         <option value="draft">Draft</option>
@@ -673,10 +700,14 @@ export default function ContentManagement() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Meta Description</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Meta Description
+                    </label>
                     <textarea
                       value={pageFormData.meta_description}
-                      onChange={(e) => setPageFormData(prev => ({ ...prev, meta_description: e.target.value }))}
+                      onChange={(e) =>
+                        setPageFormData((prev) => ({ ...prev, meta_description: e.target.value }))
+                      }
                       rows={2}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       placeholder="Brief description for search engines..."
@@ -687,7 +718,9 @@ export default function ContentManagement() {
                     <label className="block text-sm font-medium text-gray-700">Content</label>
                     <textarea
                       value={pageFormData.content}
-                      onChange={(e) => setPageFormData(prev => ({ ...prev, content: e.target.value }))}
+                      onChange={(e) =>
+                        setPageFormData((prev) => ({ ...prev, content: e.target.value }))
+                      }
                       rows={10}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       placeholder="Page content (HTML supported)..."
@@ -714,7 +747,7 @@ export default function ContentManagement() {
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
                 <h2 className="text-xl font-bold">Pages & Content</h2>
-                
+
                 <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
                   {/* Search */}
                   <div className="relative">
@@ -807,25 +840,17 @@ export default function ContentManagement() {
                                   <div className="text-sm font-medium text-gray-900">
                                     {page.title}
                                   </div>
-                                  <div className="text-sm text-gray-500">
-                                    /{page.slug}
-                                  </div>
+                                  <div className="text-sm text-gray-500">/{page.slug}</div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="capitalize text-sm text-gray-600">
-                                {page.type}
-                              </span>
+                              <span className="capitalize text-sm text-gray-600">{page.type}</span>
                             </td>
                             <td className="px-6 py-4">
-                              <Badge className={getStatusColor(page.status)}>
-                                {page.status}
-                              </Badge>
+                              <Badge className={getStatusColor(page.status)}>{page.status}</Badge>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {page.author}
-                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{page.author}</td>
                             <td className="px-6 py-4 text-sm text-gray-600">
                               {page.views.toLocaleString()}
                             </td>
@@ -834,13 +859,25 @@ export default function ContentManagement() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex space-x-2">
-                                <Button size="sm" variant="ghost" onClick={() => handleViewPage(page)}>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewPage(page)}
+                                >
                                   <EyeIcon className="h-4 w-4" />
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleEditPage(page)}>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditPage(page)}
+                                >
                                   <PencilIcon className="h-4 w-4" />
                                 </Button>
-                                <Button size="sm" variant="danger" onClick={() => handleDeletePage(page.id)}>
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleDeletePage(page.id)}
+                                >
                                   <TrashIcon className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -879,13 +916,17 @@ export default function ContentManagement() {
                     <Input
                       label="Menu Name"
                       value={menuFormData.name}
-                      onChange={(e) => setMenuFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setMenuFormData((prev) => ({ ...prev, name: e.target.value }))
+                      }
                       required
                     />
                     <Input
                       label="Link URL"
                       value={menuFormData.href}
-                      onChange={(e) => setMenuFormData(prev => ({ ...prev, href: e.target.value }))}
+                      onChange={(e) =>
+                        setMenuFormData((prev) => ({ ...prev, href: e.target.value }))
+                      }
                       required
                       placeholder="/page-url"
                     />
@@ -896,11 +937,13 @@ export default function ContentManagement() {
                       <label className="block text-sm font-medium text-gray-700">Icon</label>
                       <select
                         value={menuFormData.icon}
-                        onChange={(e) => setMenuFormData(prev => ({ ...prev, icon: e.target.value }))}
+                        onChange={(e) =>
+                          setMenuFormData((prev) => ({ ...prev, icon: e.target.value }))
+                        }
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       >
                         <option value="">No Icon</option>
-                        {iconOptions.map(icon => (
+                        {iconOptions.map((icon) => (
                           <option key={icon.value} value={icon.value}>
                             {icon.label}
                           </option>
@@ -913,7 +956,9 @@ export default function ContentManagement() {
                         type="checkbox"
                         id="is_active"
                         checked={menuFormData.is_active}
-                        onChange={(e) => setMenuFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                        onChange={(e) =>
+                          setMenuFormData((prev) => ({ ...prev, is_active: e.target.checked }))
+                        }
                         className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                       />
                       <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
@@ -972,7 +1017,7 @@ export default function ContentManagement() {
                             <Bars3Icon className="h-4 w-4 text-gray-400 cursor-move" />
                             <span className="text-sm text-gray-500">#{menuItem.order}</span>
                           </div>
-                          
+
                           <div className="flex items-center space-x-3">
                             {menuItem.icon && (
                               <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -987,22 +1032,38 @@ export default function ContentManagement() {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                          <Badge className={menuItem.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                          <Badge
+                            className={
+                              menuItem.is_active
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }
+                          >
                             {menuItem.is_active ? 'Active' : 'Inactive'}
                           </Badge>
-                          
+
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="ghost" onClick={() => handleEditMenuItem(menuItem)}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditMenuItem(menuItem)}
+                            >
                               <PencilIcon className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
-                              variant={menuItem.is_active ? "ghost" : "secondary"}
-                              onClick={() => handleToggleMenuStatus(menuItem.id, menuItem.is_active)}
+                              variant={menuItem.is_active ? 'ghost' : 'secondary'}
+                              onClick={() =>
+                                handleToggleMenuStatus(menuItem.id, menuItem.is_active)
+                              }
                             >
                               {menuItem.is_active ? 'Deactivate' : 'Activate'}
                             </Button>
-                            <Button size="sm" variant="danger" onClick={() => handleDeleteMenuItem(menuItem.id)}>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteMenuItem(menuItem.id)}
+                            >
                               <TrashIcon className="h-4 w-4" />
                             </Button>
                           </div>

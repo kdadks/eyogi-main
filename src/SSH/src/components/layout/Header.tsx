@@ -6,7 +6,7 @@ import ScrollLink from '../ui/ScrollLink'
 import { useAuth } from '../providers/AuthProvider'
 import { getUserDisplayName, getUserInitials, getRoleDisplayName } from '../../lib/auth/authUtils'
 import { Bars3Icon, XMarkIcon, UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
-import { Button } from '../ui/button'
+import { Button } from '../ui/Button'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -54,11 +54,13 @@ export default function Header() {
   // Show loading state while auth is initializing
   if (!user && loading) {
     return (
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-white/80 backdrop-blur-lg shadow-xl border-b border-white/20' 
-          : 'bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-100'
-      }`}>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-white/80 backdrop-blur-lg shadow-xl border-b border-white/20'
+            : 'bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-100'
+        }`}
+      >
         <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Top">
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center">
@@ -67,7 +69,9 @@ export default function Header() {
                   <span className="text-white font-bold text-lg">eY</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">SSH University</span>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    SSH University
+                  </span>
                   <span className="text-xs text-gray-500 font-medium">Excellence in Education</span>
                 </div>
               </Link>
@@ -82,27 +86,33 @@ export default function Header() {
   }
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled 
-        ? 'bg-white/80 backdrop-blur-lg shadow-xl border-b border-white/20' 
-        : 'bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-100'
-    }`}>
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-white/80 backdrop-blur-lg shadow-xl border-b border-white/20'
+          : 'bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-100'
+      }`}
+    >
       <nav className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8" aria-label="Top">
         <div className="flex h-16 sm:h-20 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
               <div className="relative">
-                <img 
-                  src="/Images/Logo.png" 
-                  alt="eYogi Gurukul logo" 
-                  className="h-8 w-8 sm:h-12 sm:w-12 object-contain rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105" 
+                <img
+                  src="/Images/Logo.png"
+                  alt="eYogi Gurukul logo"
+                  className="h-8 w-8 sm:h-12 sm:w-12 object-contain rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
               <div className="flex flex-col">
-                <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-red-600 transition-all duration-300">SSH University</span>
-                <span className="text-xs sm:text-xs text-gray-500 font-medium group-hover:text-orange-500 transition-colors duration-300 hidden sm:block">Excellence in Education</span>
+                <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-red-600 transition-all duration-300">
+                  SSH University
+                </span>
+                <span className="text-xs sm:text-xs text-gray-500 font-medium group-hover:text-orange-500 transition-colors duration-300 hidden sm:block">
+                  Excellence in Education
+                </span>
               </div>
             </Link>
           </div>
@@ -131,7 +141,7 @@ export default function Header() {
                 >
                   Dashboard
                 </ScrollLink>
-                
+
                 {/* User Profile Dropdown */}
                 <div className="relative user-menu-container">
                   <button
@@ -147,17 +157,23 @@ export default function Header() {
                       <div className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-400 rounded-full border-2 border-white"></div>
                     </div>
                     <div className="hidden md:block text-left">
-                      <div className="text-sm font-semibold text-gray-900">{getUserDisplayName(user)}</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {getUserDisplayName(user)}
+                      </div>
                       <div className="text-xs text-gray-500">{getRoleDisplayName(user.role)}</div>
                     </div>
-                    <ChevronDownIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-gray-400 transition-transform duration-200 hidden sm:block ${userMenuOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon
+                      className={`h-3 w-3 sm:h-4 sm:w-4 text-gray-400 transition-transform duration-200 hidden sm:block ${userMenuOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
 
                   {/* Dropdown Menu */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-lg rounded-xl shadow-xl border border-gray-200/50 py-2 z-50 user-dropdown">
                       <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{getUserDisplayName(user)}</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {getUserDisplayName(user)}
+                        </p>
                         <p className="text-xs text-gray-500">{getRoleDisplayName(user.role)}</p>
                       </div>
                       <ScrollLink
@@ -183,17 +199,17 @@ export default function Header() {
             ) : (
               <div className="hidden md:flex items-center space-x-2 sm:space-x-3">
                 <Link to="/auth/signin">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="font-semibold hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                   >
                     Sign In
                   </Button>
                 </Link>
                 <Link to="/auth/signup">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                   >
                     Sign Up
@@ -222,7 +238,9 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className={`md:hidden border-t border-gray-200/50 mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+          <div
+            className={`md:hidden border-t border-gray-200/50 mobile-menu ${mobileMenuOpen ? 'open' : ''}`}
+          >
             <div className="bg-white/95 backdrop-blur-lg px-3 pt-3 pb-4 space-y-1">
               {navigation.map((item) => (
                 <ScrollLink
@@ -248,9 +266,9 @@ export default function Header() {
               {!user && (
                 <div className="pt-4 space-y-3">
                   <Link to="/auth/signin" className="block">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="w-full justify-center font-semibold py-3"
                       style={{ minHeight: '44px' }}
                       onClick={() => setMobileMenuOpen(false)}
@@ -259,8 +277,8 @@ export default function Header() {
                     </Button>
                   </Link>
                   <Link to="/auth/signup" className="block">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3"
                       style={{ minHeight: '44px' }}
                       onClick={() => setMobileMenuOpen(false)}

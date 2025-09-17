@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Certificate } from '@/types'
-import { getStudentCertificates, issueCertificate, bulkIssueCertificates } from '@/lib/api/certificates'
+import {
+  getStudentCertificates,
+  issueCertificate,
+  bulkIssueCertificates,
+} from '@/lib/api/certificates'
 import { getAllEnrollments } from '@/lib/api/enrollments'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -14,7 +18,7 @@ import {
   ArrowDownTrayIcon,
   CheckCircleIcon,
   ClockIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 
 interface CertificateTemplate {
@@ -42,12 +46,12 @@ export default function CertificateManagement() {
     try {
       // Load all certificates (we'll need to aggregate from all students)
       const allEnrollments = await getAllEnrollments()
-      const completedWithoutCerts = allEnrollments.filter(e => 
-        e.status === 'completed' && !e.certificate_issued
+      const completedWithoutCerts = allEnrollments.filter(
+        (e) => e.status === 'completed' && !e.certificate_issued,
       )
-      
+
       setCompletedEnrollments(completedWithoutCerts)
-      
+
       // Mock templates data
       setTemplates([
         {
@@ -55,27 +59,26 @@ export default function CertificateManagement() {
           name: 'Student Course Completion - Traditional',
           type: 'student',
           is_active: true,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         {
           id: 'template-2',
           name: 'Student Course Completion - Modern',
           type: 'student',
           is_active: true,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         {
           id: 'template-3',
           name: 'Teacher Qualification Certificate',
           type: 'teacher',
           is_active: false,
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ])
 
       // Mock recent certificates
       setCertificates([])
-      
     } catch (error) {
       console.error('Error loading certificate data:', error)
       toast.error('Failed to load certificate data')
@@ -126,13 +129,14 @@ export default function CertificateManagement() {
     if (selectedEnrollments.size === completedEnrollments.length) {
       setSelectedEnrollments(new Set())
     } else {
-      setSelectedEnrollments(new Set(completedEnrollments.map(e => e.id)))
+      setSelectedEnrollments(new Set(completedEnrollments.map((e) => e.id)))
     }
   }
 
-  const filteredEnrollments = completedEnrollments.filter(enrollment =>
-    enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEnrollments = completedEnrollments.filter(
+    (enrollment) =>
+      enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   if (loading) {
@@ -151,7 +155,7 @@ export default function CertificateManagement() {
           {[
             { id: 'certificates', name: 'Recent Certificates', icon: DocumentTextIcon },
             { id: 'templates', name: 'Templates', icon: DocumentTextIcon },
-            { id: 'issue', name: 'Issue Certificates', icon: PlusIcon }
+            { id: 'issue', name: 'Issue Certificates', icon: PlusIcon },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -179,8 +183,12 @@ export default function CertificateManagement() {
             {certificates.length === 0 ? (
               <div className="text-center py-8">
                 <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No certificates issued yet</h3>
-                <p className="text-gray-600">Certificates will appear here once they are issued to students.</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No certificates issued yet
+                </h3>
+                <p className="text-gray-600">
+                  Certificates will appear here once they are issued to students.
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -210,12 +218,8 @@ export default function CertificateManagement() {
                         <td className="px-6 py-4 text-sm font-mono">
                           {certificate.certificate_number}
                         </td>
-                        <td className="px-6 py-4 text-sm">
-                          {certificate.student?.full_name}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          {certificate.course?.title}
-                        </td>
+                        <td className="px-6 py-4 text-sm">{certificate.student?.full_name}</td>
+                        <td className="px-6 py-4 text-sm">{certificate.course?.title}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {formatDate(certificate.issued_at)}
                         </td>
@@ -258,13 +262,20 @@ export default function CertificateManagement() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <DocumentTextIcon className="h-8 w-8 text-orange-600" />
-                      <Badge className={template.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                      <Badge
+                        className={
+                          template.is_active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }
+                      >
                         {template.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
                     <h3 className="font-semibold mb-2">{template.name}</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      Type: {template.type === 'student' ? 'Student Certificate' : 'Teacher Certificate'}
+                      Type:{' '}
+                      {template.type === 'student' ? 'Student Certificate' : 'Teacher Certificate'}
                     </p>
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
@@ -289,7 +300,7 @@ export default function CertificateManagement() {
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
               <h2 className="text-xl font-bold">Issue Certificates</h2>
-              
+
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -307,14 +318,16 @@ export default function CertificateManagement() {
             {selectedEnrollments.size > 0 && (
               <div className="flex items-center space-x-4 p-4 bg-green-50 rounded-lg">
                 <span className="text-sm font-medium">
-                  {selectedEnrollments.size} enrollment{selectedEnrollments.size !== 1 ? 's' : ''} selected
+                  {selectedEnrollments.size} enrollment{selectedEnrollments.size !== 1 ? 's' : ''}{' '}
+                  selected
                 </span>
                 <Button
                   onClick={handleBulkIssueCertificates}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <CheckCircleIcon className="h-4 w-4 mr-2" />
-                  Issue {selectedEnrollments.size} Certificate{selectedEnrollments.size !== 1 ? 's' : ''}
+                  Issue {selectedEnrollments.size} Certificate
+                  {selectedEnrollments.size !== 1 ? 's' : ''}
                 </Button>
               </div>
             )}
@@ -325,7 +338,9 @@ export default function CertificateManagement() {
               <div className="text-center py-8">
                 <ClockIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No completed courses</h3>
-                <p className="text-gray-600">No completed courses are waiting for certificate issuance.</p>
+                <p className="text-gray-600">
+                  No completed courses are waiting for certificate issuance.
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -335,7 +350,10 @@ export default function CertificateManagement() {
                       <th className="px-6 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedEnrollments.size === filteredEnrollments.length && filteredEnrollments.length > 0}
+                          checked={
+                            selectedEnrollments.size === filteredEnrollments.length &&
+                            filteredEnrollments.length > 0
+                          }
                           onChange={handleSelectAll}
                           className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                         />

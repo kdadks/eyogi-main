@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Enrollment, Certificate, Course } from '@/types'
 import { getStudentEnrollments } from '@/lib/api/enrollments'
 import { getStudentCertificates } from '@/lib/api/certificates'
@@ -37,7 +37,7 @@ import {
   HeartIcon,
   BoltIcon,
   GiftIcon,
-  PlusIcon
+  PlusIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '@/components/chat/ChatBotTrigger'
 
@@ -56,7 +56,9 @@ interface StudentStats {
 
 export default function StudentDashboard() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'home' | 'courses' | 'certificates' | 'profile'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'courses' | 'certificates' | 'profile'>(
+    'home',
+  )
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
@@ -72,7 +74,7 @@ export default function StudentDashboard() {
     learningStreak: 7,
     xpPoints: 1250,
     level: 'Intermediate',
-    completionRate: 0
+    completionRate: 0,
   })
 
   // Filters
@@ -91,7 +93,7 @@ export default function StudentDashboard() {
       const [enrollmentsData, certificatesData, coursesData] = await Promise.all([
         getStudentEnrollments(user!.id),
         getStudentCertificates(user!.id),
-        getCourses()
+        getCourses(),
       ])
 
       setEnrollments(enrollmentsData)
@@ -99,10 +101,11 @@ export default function StudentDashboard() {
       setAvailableCourses(coursesData)
 
       // Calculate stats
-      const completedCount = enrollmentsData.filter(e => e.status === 'completed').length
-      const activeCount = enrollmentsData.filter(e => e.status === 'approved').length
+      const completedCount = enrollmentsData.filter((e) => e.status === 'completed').length
+      const activeCount = enrollmentsData.filter((e) => e.status === 'approved').length
       const totalSpent = enrollmentsData.reduce((sum, e) => sum + (e.course?.fee || 0), 0)
-      const completionRate = enrollmentsData.length > 0 ? (completedCount / enrollmentsData.length) * 100 : 0
+      const completionRate =
+        enrollmentsData.length > 0 ? (completedCount / enrollmentsData.length) * 100 : 0
 
       setStats({
         totalEnrollments: enrollmentsData.length,
@@ -112,9 +115,9 @@ export default function StudentDashboard() {
         totalSpent,
         averageGrade: 85,
         learningStreak: 7,
-        xpPoints: 1250 + (completedCount * 100),
+        xpPoints: 1250 + completedCount * 100,
         level: completedCount < 3 ? 'Beginner' : completedCount < 8 ? 'Intermediate' : 'Advanced',
-        completionRate
+        completionRate,
       })
     } catch (error) {
       console.error('Error loading student data:', error)
@@ -125,42 +128,42 @@ export default function StudentDashboard() {
   }
 
   const tabs = [
-    { 
-      id: 'home', 
-      name: 'Home', 
-      icon: HomeIcon, 
+    {
+      id: 'home',
+      name: 'Home',
+      icon: HomeIcon,
       description: 'Your Learning Hub',
-      gradient: 'from-blue-500 to-purple-600'
+      gradient: 'from-blue-500 to-purple-600',
     },
-    { 
-      id: 'courses', 
-      name: 'My Courses', 
-      icon: BookOpenIcon, 
+    {
+      id: 'courses',
+      name: 'My Courses',
+      icon: BookOpenIcon,
       description: 'Learning Journey',
       gradient: 'from-green-500 to-teal-600',
-      badge: stats.activeCourses > 0 ? stats.activeCourses : undefined
+      badge: stats.activeCourses > 0 ? stats.activeCourses : undefined,
     },
-    { 
-      id: 'certificates', 
-      name: 'Achievements', 
-      icon: TrophyIcon, 
+    {
+      id: 'certificates',
+      name: 'Achievements',
+      icon: TrophyIcon,
       description: 'Your Success Story',
       gradient: 'from-yellow-500 to-orange-600',
-      badge: stats.certificatesEarned > 0 ? stats.certificatesEarned : undefined
+      badge: stats.certificatesEarned > 0 ? stats.certificatesEarned : undefined,
     },
-    { 
-      id: 'profile', 
-      name: 'Profile', 
-      icon: UserIcon, 
+    {
+      id: 'profile',
+      name: 'Profile',
+      icon: UserIcon,
       description: 'Personal Settings',
-      gradient: 'from-pink-500 to-rose-600'
-    }
+      gradient: 'from-pink-500 to-rose-600',
+    },
   ]
 
   const getXPForNextLevel = () => {
     const currentLevel = stats.level
     const xpThresholds = { Beginner: 1000, Intermediate: 2500, Advanced: 5000 }
-    
+
     if (currentLevel === 'Beginner') return xpThresholds.Intermediate
     if (currentLevel === 'Intermediate') return xpThresholds.Advanced
     return xpThresholds.Advanced
@@ -171,17 +174,19 @@ export default function StudentDashboard() {
     return (stats.xpPoints / nextLevelXP) * 100
   }
 
-  const filteredEnrollments = enrollments.filter(enrollment => {
-    const matchesSearch = enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         enrollment.course?.course_number?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEnrollments = enrollments.filter((enrollment) => {
+    const matchesSearch =
+      enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      enrollment.course?.course_number?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || enrollment.status === statusFilter
-    const matchesGurukul = gurukulFilter === 'all' || enrollment.course?.gurukul_id === gurukulFilter
+    const matchesGurukul =
+      gurukulFilter === 'all' || enrollment.course?.gurukul_id === gurukulFilter
 
     return matchesSearch && matchesStatus && matchesGurukul
   })
 
-  const activeCourses = enrollments.filter(e => e.status === 'approved')
-  const completedCourses = enrollments.filter(e => e.status === 'completed')
+  const activeCourses = enrollments.filter((e) => e.status === 'approved')
+  const completedCourses = enrollments.filter((e) => e.status === 'completed')
   const recentCertificates = certificates.slice(0, 3)
 
   if (loading) {
@@ -198,7 +203,9 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex page-with-header">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-20'} bg-white shadow-xl transition-all duration-300 flex flex-col relative z-30`}>
+      <div
+        className={`${sidebarOpen ? 'w-80' : 'w-20'} bg-white shadow-xl transition-all duration-300 flex flex-col relative z-30`}
+      >
         {/* Student Profile Header */}
         <div className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
           <div className="flex items-center justify-between mb-4">
@@ -220,11 +227,7 @@ export default function StudentDashboard() {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
             >
-              {sidebarOpen ? (
-                <XMarkIcon className="h-5 w-5" />
-              ) : (
-                <Bars3Icon className="h-5 w-5" />
-              )}
+              {sidebarOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
             </button>
           </div>
 
@@ -237,7 +240,7 @@ export default function StudentDashboard() {
                   <span className="text-sm">{stats.xpPoints} XP</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-white rounded-full h-2 transition-all duration-500"
                     style={{ width: `${Math.min(getProgressToNextLevel(), 100)}%` }}
                   />
@@ -282,11 +285,13 @@ export default function StudentDashboard() {
               }`}
             >
               <div className="relative">
-                <div className={`p-2 rounded-lg ${
-                  activeTab === tab.id 
-                    ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg` 
-                    : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
-                }`}>
+                <div
+                  className={`p-2 rounded-lg ${
+                    activeTab === tab.id
+                      ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg`
+                      : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
+                  }`}
+                >
                   <tab.icon className="h-5 w-5" />
                 </div>
                 {tab.badge && (
@@ -323,7 +328,7 @@ export default function StudentDashboard() {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -411,23 +416,28 @@ export default function StudentDashboard() {
                       <h2 className="text-2xl font-bold text-gray-900">Continue Learning</h2>
                       <div className="flex-1 h-px bg-gradient-to-r from-orange-200 to-transparent"></div>
                     </div>
-                    
+
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {activeCourses.slice(0, 3).map((enrollment) => (
-                        <Card key={enrollment.id} className="card-hover overflow-hidden border-2 border-transparent hover:border-orange-200">
+                        <Card
+                          key={enrollment.id}
+                          className="card-hover overflow-hidden border-2 border-transparent hover:border-orange-200"
+                        >
                           <div className="h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
                               <Badge className={getLevelColor(enrollment.course?.level || 'basic')}>
                                 {enrollment.course?.level}
                               </Badge>
-                              <span className="text-sm text-gray-500">{enrollment.course?.course_number}</span>
+                              <span className="text-sm text-gray-500">
+                                {enrollment.course?.course_number}
+                              </span>
                             </div>
-                            
+
                             <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
                               {enrollment.course?.title}
                             </h3>
-                            
+
                             <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                               {enrollment.course?.description}
                             </p>
@@ -439,7 +449,10 @@ export default function StudentDashboard() {
                                 <span className="font-medium text-orange-600">65%</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style={{ width: '65%' }}></div>
+                                <div
+                                  className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
+                                  style={{ width: '65%' }}
+                                ></div>
                               </div>
                             </div>
 
@@ -467,10 +480,13 @@ export default function StudentDashboard() {
                       <h2 className="text-2xl font-bold text-gray-900">Recent Achievements</h2>
                       <div className="flex-1 h-px bg-gradient-to-r from-purple-200 to-transparent"></div>
                     </div>
-                    
+
                     <div className="grid md:grid-cols-3 gap-6">
                       {recentCertificates.map((certificate) => (
-                        <Card key={certificate.id} className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 card-hover">
+                        <Card
+                          key={certificate.id}
+                          className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 card-hover"
+                        >
                           <CardContent className="p-6 text-center">
                             <TrophyIcon className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
                             <h3 className="font-bold text-gray-900 mb-2">
@@ -502,22 +518,23 @@ export default function StudentDashboard() {
                     <h2 className="text-2xl font-bold text-gray-900">Recommended for You</h2>
                     <div className="flex-1 h-px bg-gradient-to-r from-blue-200 to-transparent"></div>
                   </div>
-                  
+
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {availableCourses.slice(0, 3).map((course) => (
-                      <Card key={course.id} className="card-hover border-2 border-transparent hover:border-blue-200">
+                      <Card
+                        key={course.id}
+                        className="card-hover border-2 border-transparent hover:border-blue-200"
+                      >
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">
-                            <Badge className={getLevelColor(course.level)}>
-                              {course.level}
-                            </Badge>
+                            <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
                             <span className="text-sm text-gray-500">{course.course_number}</span>
                           </div>
-                          
+
                           <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
                             {course.title}
                           </h3>
-                          
+
                           <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                             {course.description}
                           </p>
@@ -594,11 +611,14 @@ export default function StudentDashboard() {
                         <option value="gurukul-5">Yoga & Wellness</option>
                       </select>
 
-                      <Button variant="outline" onClick={() => {
-                        setSearchTerm('')
-                        setStatusFilter('all')
-                        setGurukulFilter('all')
-                      }}>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSearchTerm('')
+                          setStatusFilter('all')
+                          setGurukulFilter('all')
+                        }}
+                      >
                         Clear Filters
                       </Button>
                     </div>
@@ -612,10 +632,9 @@ export default function StudentDashboard() {
                       <BookOpenIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses found</h3>
                       <p className="text-gray-600 mb-6">
-                        {enrollments.length === 0 
+                        {enrollments.length === 0
                           ? "You haven't enrolled in any courses yet. Start your learning journey today!"
-                          : "No courses match your current filters."
-                        }
+                          : 'No courses match your current filters.'}
                       </p>
                       <Link to="/courses">
                         <Button>
@@ -629,24 +648,34 @@ export default function StudentDashboard() {
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredEnrollments.map((enrollment) => (
                       <Card key={enrollment.id} className="card-hover overflow-hidden">
-                        <div className={`h-2 ${
-                          enrollment.status === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                          enrollment.status === 'approved' ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
-                          enrollment.status === 'pending' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                          'bg-gradient-to-r from-gray-400 to-gray-500'
-                        }`}></div>
-                        
+                        <div
+                          className={`h-2 ${
+                            enrollment.status === 'completed'
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                              : enrollment.status === 'approved'
+                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                : enrollment.status === 'pending'
+                                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                                  : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                          }`}
+                        ></div>
+
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between mb-4">
                             <Badge className={getLevelColor(enrollment.course?.level || 'basic')}>
                               {enrollment.course?.level}
                             </Badge>
-                            <Badge className={
-                              enrollment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              enrollment.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                              enrollment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }>
+                            <Badge
+                              className={
+                                enrollment.status === 'completed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : enrollment.status === 'approved'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : enrollment.status === 'pending'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-gray-100 text-gray-800'
+                              }
+                            >
                               {enrollment.status}
                             </Badge>
                           </div>
@@ -662,15 +691,21 @@ export default function StudentDashboard() {
                           <div className="space-y-2 mb-4 text-sm text-gray-500">
                             <div className="flex items-center justify-between">
                               <span>Gurukul:</span>
-                              <span className="font-medium">{enrollment.course?.gurukul?.name}</span>
+                              <span className="font-medium">
+                                {enrollment.course?.gurukul?.name}
+                              </span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span>Duration:</span>
-                              <span className="font-medium">{enrollment.course?.duration_weeks} weeks</span>
+                              <span className="font-medium">
+                                {enrollment.course?.duration_weeks} weeks
+                              </span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span>Enrolled:</span>
-                              <span className="font-medium">{formatDate(enrollment.enrolled_at)}</span>
+                              <span className="font-medium">
+                                {formatDate(enrollment.enrolled_at)}
+                              </span>
                             </div>
                           </div>
 
@@ -681,7 +716,10 @@ export default function StudentDashboard() {
                                 <span className="font-medium text-orange-600">65%</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style={{ width: '65%' }}></div>
+                                <div
+                                  className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
+                                  style={{ width: '65%' }}
+                                ></div>
                               </div>
                             </div>
                           )}
@@ -723,9 +761,12 @@ export default function StudentDashboard() {
                       <div className="bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
                         <TrophyIcon className="h-12 w-12 text-orange-500" />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-4">Your First Certificate Awaits! ✨</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                        Your First Certificate Awaits! ✨
+                      </h3>
                       <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                        Complete your first course to earn your certificate and join our community of achievers!
+                        Complete your first course to earn your certificate and join our community
+                        of achievers!
                       </p>
                       <Link to="/courses">
                         <Button size="lg">
@@ -738,21 +779,24 @@ export default function StudentDashboard() {
                 ) : (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {certificates.map((certificate) => (
-                      <Card key={certificate.id} className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 card-hover overflow-hidden">
+                      <Card
+                        key={certificate.id}
+                        className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 card-hover overflow-hidden"
+                      >
                         <div className="h-2 bg-gradient-to-r from-yellow-500 to-orange-500"></div>
                         <CardContent className="p-6 text-center">
                           <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
                             <TrophyIcon className="h-8 w-8 text-white" />
                           </div>
-                          
+
                           <h3 className="text-lg font-bold text-gray-900 mb-2">
                             {certificate.course?.title}
                           </h3>
-                          
+
                           <p className="text-sm text-gray-600 mb-3">
                             Certificate #{certificate.certificate_number}
                           </p>
-                          
+
                           <p className="text-sm text-gray-500 mb-4">
                             Issued on {formatDate(certificate.issued_at)}
                           </p>
@@ -785,7 +829,7 @@ export default function StudentDashboard() {
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-                
+
                 <div className="grid lg:grid-cols-3 gap-8">
                   {/* Profile Information */}
                   <div className="lg:col-span-2">
@@ -795,38 +839,14 @@ export default function StudentDashboard() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
-                          <Input
-                            label="Full Name"
-                            value={user?.full_name || ''}
-                            readOnly
-                          />
-                          <Input
-                            label="Email Address"
-                            value={user?.email || ''}
-                            readOnly
-                          />
-                          <Input
-                            label="Student ID"
-                            value={user?.student_id || ''}
-                            readOnly
-                          />
-                          <Input
-                            label="Age"
-                            value={user?.age?.toString() || ''}
-                            readOnly
-                          />
-                          <Input
-                            label="Phone"
-                            value={user?.phone || ''}
-                            readOnly
-                          />
-                          <Input
-                            label="Role"
-                            value={user?.role || ''}
-                            readOnly
-                          />
+                          <Input label="Full Name" value={user?.full_name || ''} readOnly />
+                          <Input label="Email Address" value={user?.email || ''} readOnly />
+                          <Input label="Student ID" value={user?.student_id || ''} readOnly />
+                          <Input label="Age" value={user?.age?.toString() || ''} readOnly />
+                          <Input label="Phone" value={user?.phone || ''} readOnly />
+                          <Input label="Role" value={user?.role || ''} readOnly />
                         </div>
-                        
+
                         <Button>
                           <Cog6ToothIcon className="h-4 w-4 mr-2" />
                           Edit Profile
@@ -855,7 +875,9 @@ export default function StudentDashboard() {
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-gray-600">Courses Completed:</span>
-                            <span className="font-bold text-green-600">{stats.completedCourses}</span>
+                            <span className="font-bold text-green-600">
+                              {stats.completedCourses}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Active Courses:</span>
@@ -863,15 +885,21 @@ export default function StudentDashboard() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Certificates:</span>
-                            <span className="font-bold text-purple-600">{stats.certificatesEarned}</span>
+                            <span className="font-bold text-purple-600">
+                              {stats.certificatesEarned}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Learning Streak:</span>
-                            <span className="font-bold text-orange-600">{stats.learningStreak} days</span>
+                            <span className="font-bold text-orange-600">
+                              {stats.learningStreak} days
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Completion Rate:</span>
-                            <span className="font-bold text-green-600">{Math.round(stats.completionRate)}%</span>
+                            <span className="font-bold text-green-600">
+                              {Math.round(stats.completionRate)}%
+                            </span>
                           </div>
                         </div>
                       </CardContent>
@@ -883,7 +911,7 @@ export default function StudentDashboard() {
           </div>
         </main>
       </div>
-      
+
       {/* AI Chat Assistant */}
       <ChatBotTrigger />
     </div>

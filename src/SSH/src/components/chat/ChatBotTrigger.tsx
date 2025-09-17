@@ -1,11 +1,7 @@
 import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import ChatBot from './ChatBot'
-import {
-  ChatBubbleLeftRightIcon,
-  SparklesIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline'
+import { ChatBubbleLeftRightIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 interface ChatBotTriggerProps {
   className?: string
@@ -20,13 +16,15 @@ export default function ChatBotTrigger({ className, initialMessage }: ChatBotTri
     <>
       {/* Floating Chat Button */}
       {!isOpen && (
-        <div className={`fixed bottom-6 right-6 z-40 
+        <div
+          className={`fixed bottom-6 right-6 z-40 
                          sm:bottom-4 sm:right-4
-                         xs:bottom-3 xs:right-3 ${className}`}>
+                         xs:bottom-3 xs:right-3 ${className}`}
+        >
           <div className="relative">
             {/* Pulse Animation */}
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full animate-ping opacity-20"></div>
-            
+
             {/* Main Button */}
             <button
               onClick={() => setIsOpen(true)}
@@ -60,11 +58,7 @@ export default function ChatBotTrigger({ className, initialMessage }: ChatBotTri
       )}
 
       {/* Chat Interface */}
-      <ChatBot 
-        isOpen={isOpen} 
-        onClose={() => setIsOpen(false)}
-        initialMessage={initialMessage}
-      />
+      <ChatBot isOpen={isOpen} onClose={() => setIsOpen(false)} initialMessage={initialMessage} />
     </>
   )
 }

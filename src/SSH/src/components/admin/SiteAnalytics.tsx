@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
 import {
@@ -16,7 +16,7 @@ import {
   MapPinIcon,
   LinkIcon,
   CalendarIcon,
-  FunnelIcon
+  FunnelIcon,
 } from '@heroicons/react/24/outline'
 
 interface AnalyticsData {
@@ -68,7 +68,9 @@ export default function SiteAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState('7d')
-  const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content'>(
+    'overview',
+  )
 
   useEffect(() => {
     loadAnalyticsData()
@@ -78,8 +80,8 @@ export default function SiteAnalytics() {
     setLoading(true)
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
       // Mock analytics data - in real app, this would come from Google Analytics API or similar
       const mockData: AnalyticsData = {
         totalUsers: 12847,
@@ -94,7 +96,7 @@ export default function SiteAnalytics() {
           { page: '/courses', views: 6543, uniqueViews: 4321, avgTime: '3m 45s' },
           { page: '/gurukuls', views: 4321, uniqueViews: 3456, avgTime: '2m 58s' },
           { page: '/about', views: 3456, uniqueViews: 2987, avgTime: '1m 42s' },
-          { page: '/contact', views: 2345, uniqueViews: 1876, avgTime: '1m 23s' }
+          { page: '/contact', views: 2345, uniqueViews: 1876, avgTime: '1m 23s' },
         ],
         userLocations: [
           { country: 'Ireland', city: 'Dublin', users: 4234, percentage: 32.9 },
@@ -102,7 +104,7 @@ export default function SiteAnalytics() {
           { country: 'United Kingdom', city: 'London', users: 1987, percentage: 15.5 },
           { country: 'United States', city: 'New York', users: 1543, percentage: 12.0 },
           { country: 'India', city: 'Bangalore', users: 1234, percentage: 9.6 },
-          { country: 'Canada', city: 'Toronto', users: 973, percentage: 7.6 }
+          { country: 'Canada', city: 'Toronto', users: 973, percentage: 7.6 },
         ],
         referralSources: [
           { source: 'Direct', users: 5432, percentage: 42.3, type: 'direct' },
@@ -110,12 +112,12 @@ export default function SiteAnalytics() {
           { source: 'Facebook', users: 1876, percentage: 14.6, type: 'social' },
           { source: 'YouTube', users: 987, percentage: 7.7, type: 'social' },
           { source: 'Twitter', users: 654, percentage: 5.1, type: 'social' },
-          { source: 'Other Websites', users: 442, percentage: 3.4, type: 'referral' }
+          { source: 'Other Websites', users: 442, percentage: 3.4, type: 'referral' },
         ],
         deviceTypes: [
           { device: 'Desktop', users: 7234, percentage: 56.3 },
           { device: 'Mobile', users: 4321, percentage: 33.6 },
-          { device: 'Tablet', users: 1292, percentage: 10.1 }
+          { device: 'Tablet', users: 1292, percentage: 10.1 },
         ],
         trafficTrends: [
           { date: '2025-01-20', users: 1234, sessions: 1876, pageViews: 4532 },
@@ -124,16 +126,16 @@ export default function SiteAnalytics() {
           { date: '2025-01-23', users: 2134, sessions: 3234, pageViews: 7234 },
           { date: '2025-01-24', users: 1987, sessions: 2987, pageViews: 6876 },
           { date: '2025-01-25', users: 2345, sessions: 3456, pageViews: 7654 },
-          { date: '2025-01-26', users: 2876, sessions: 4234, pageViews: 8934 }
+          { date: '2025-01-26', users: 2876, sessions: 4234, pageViews: 8934 },
         ],
         userEngagement: {
           returningUsers: 8234,
           newUsers: 4613,
           avgPagesPerSession: 2.4,
-          conversionRate: 12.3
-        }
+          conversionRate: 12.3,
+        },
       }
-      
+
       setAnalyticsData(mockData)
     } catch (error) {
       console.error('Error loading analytics data:', error)
@@ -144,18 +146,25 @@ export default function SiteAnalytics() {
 
   const getSourceIcon = (type: string) => {
     switch (type) {
-      case 'search': return '🔍'
-      case 'social': return '📱'
-      case 'referral': return '🔗'
-      default: return '🌐'
+      case 'search':
+        return '🔍'
+      case 'social':
+        return '📱'
+      case 'referral':
+        return '🔗'
+      default:
+        return '🌐'
     }
   }
 
   const getDeviceIcon = (device: string) => {
     switch (device.toLowerCase()) {
-      case 'mobile': return DevicePhoneMobileIcon
-      case 'desktop': return ComputerDesktopIcon
-      default: return ComputerDesktopIcon
+      case 'mobile':
+        return DevicePhoneMobileIcon
+      case 'desktop':
+        return ComputerDesktopIcon
+      default:
+        return ComputerDesktopIcon
     }
   }
 
@@ -169,7 +178,7 @@ export default function SiteAnalytics() {
     const growth = ((current - previous) / previous) * 100
     return {
       percentage: Math.abs(growth).toFixed(1),
-      isPositive: growth > 0
+      isPositive: growth > 0,
     }
   }
 
@@ -202,7 +211,7 @@ export default function SiteAnalytics() {
           <h2 className="text-2xl font-bold text-gray-900">Site Analytics</h2>
           <p className="text-gray-600">Comprehensive insights into your website performance</p>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <select
             value={dateRange}
@@ -215,7 +224,7 @@ export default function SiteAnalytics() {
             <option value="90d">Last 90 days</option>
             <option value="1y">Last year</option>
           </select>
-          
+
           <Button variant="outline" size="sm">
             <CalendarIcon className="h-4 w-4 mr-2" />
             Custom Range
@@ -230,7 +239,7 @@ export default function SiteAnalytics() {
             { id: 'overview', name: 'Overview', icon: ChartBarIcon },
             { id: 'traffic', name: 'Traffic Sources', icon: LinkIcon },
             { id: 'users', name: 'User Insights', icon: UserGroupIcon },
-            { id: 'content', name: 'Content Performance', icon: EyeIcon }
+            { id: 'content', name: 'Content Performance', icon: EyeIcon },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -258,7 +267,9 @@ export default function SiteAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-900">{formatNumber(analyticsData.totalUsers)}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {formatNumber(analyticsData.totalUsers)}
+                    </p>
                     <div className="flex items-center mt-2">
                       <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                       <span className="text-sm text-green-600">+12.5% from last period</span>
@@ -276,7 +287,9 @@ export default function SiteAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Active Users</p>
-                    <p className="text-3xl font-bold text-gray-900">{formatNumber(analyticsData.activeUsers)}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {formatNumber(analyticsData.activeUsers)}
+                    </p>
                     <div className="flex items-center mt-2">
                       <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                       <span className="text-sm text-green-600">+8.2% from last period</span>
@@ -294,7 +307,9 @@ export default function SiteAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Page Views</p>
-                    <p className="text-3xl font-bold text-gray-900">{formatNumber(analyticsData.pageViews)}</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {formatNumber(analyticsData.pageViews)}
+                    </p>
                     <div className="flex items-center mt-2">
                       <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                       <span className="text-sm text-green-600">+15.3% from last period</span>
@@ -335,13 +350,17 @@ export default function SiteAnalytics() {
               <div className="h-64 flex items-end justify-between space-x-2">
                 {analyticsData.trafficTrends.map((day, index) => (
                   <div key={index} className="flex-1 flex flex-col items-center">
-                    <div 
+                    <div
                       className="w-full bg-gradient-to-t from-orange-500 to-orange-300 rounded-t-md transition-all duration-300 hover:from-orange-600 hover:to-orange-400"
-                      style={{ height: `${(day.users / Math.max(...analyticsData.trafficTrends.map(d => d.users))) * 200}px` }}
+                      style={{
+                        height: `${(day.users / Math.max(...analyticsData.trafficTrends.map((d) => d.users))) * 200}px`,
+                      }}
                     />
                     <div className="mt-2 text-xs text-gray-600 text-center">
                       <div className="font-medium">{formatNumber(day.users)}</div>
-                      <div>{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                      <div>
+                        {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -353,25 +372,33 @@ export default function SiteAnalytics() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-gray-900">{formatNumber(analyticsData.sessions)}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatNumber(analyticsData.sessions)}
+                </div>
                 <div className="text-sm text-gray-600">Total Sessions</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-gray-900">{analyticsData.avgSessionDuration}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {analyticsData.avgSessionDuration}
+                </div>
                 <div className="text-sm text-gray-600">Avg Session Duration</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-gray-900">{analyticsData.userEngagement.avgPagesPerSession}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {analyticsData.userEngagement.avgPagesPerSession}
+                </div>
                 <div className="text-sm text-gray-600">Pages per Session</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-gray-900">{analyticsData.userEngagement.conversionRate}%</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {analyticsData.userEngagement.conversionRate}%
+                </div>
                 <div className="text-sm text-gray-600">Conversion Rate</div>
               </CardContent>
             </Card>
@@ -394,7 +421,10 @@ export default function SiteAnalytics() {
               <CardContent>
                 <div className="space-y-4">
                   {analyticsData.referralSources.map((source, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex items-center space-x-3">
                         <span className="text-lg">{getSourceIcon(source.type)}</span>
                         <div>
@@ -425,21 +455,26 @@ export default function SiteAnalytics() {
                   {analyticsData.deviceTypes.map((device, index) => {
                     const IconComponent = getDeviceIcon(device.device)
                     return (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
                         <div className="flex items-center space-x-3">
                           <IconComponent className="h-5 w-5 text-gray-600" />
                           <div>
                             <p className="font-medium text-gray-900">{device.device}</p>
                             <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
-                              <div 
-                                className="bg-orange-500 h-2 rounded-full" 
+                              <div
+                                className="bg-orange-500 h-2 rounded-full"
                                 style={{ width: `${device.percentage}%` }}
                               />
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-gray-900">{formatNumber(device.users)}</p>
+                          <p className="font-semibold text-gray-900">
+                            {formatNumber(device.users)}
+                          </p>
                           <p className="text-sm text-gray-600">{device.percentage}%</p>
                         </div>
                       </div>
@@ -459,25 +494,33 @@ export default function SiteAnalytics() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-blue-600">{formatNumber(analyticsData.userEngagement.newUsers)}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatNumber(analyticsData.userEngagement.newUsers)}
+                </div>
                 <div className="text-sm text-gray-600">New Users</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-green-600">{formatNumber(analyticsData.userEngagement.returningUsers)}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatNumber(analyticsData.userEngagement.returningUsers)}
+                </div>
                 <div className="text-sm text-gray-600">Returning Users</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-purple-600">{analyticsData.userEngagement.avgPagesPerSession}</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {analyticsData.userEngagement.avgPagesPerSession}
+                </div>
                 <div className="text-sm text-gray-600">Pages per Session</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-orange-600">{analyticsData.userEngagement.conversionRate}%</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {analyticsData.userEngagement.conversionRate}%
+                </div>
                 <div className="text-sm text-gray-600">Conversion Rate</div>
               </CardContent>
             </Card>
@@ -494,7 +537,10 @@ export default function SiteAnalytics() {
             <CardContent>
               <div className="space-y-4">
                 {analyticsData.userLocations.map((location, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs font-bold">
@@ -502,10 +548,12 @@ export default function SiteAnalytics() {
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{location.city}, {location.country}</p>
+                        <p className="font-medium text-gray-900">
+                          {location.city}, {location.country}
+                        </p>
                         <div className="w-48 bg-gray-200 rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-orange-500 h-2 rounded-full" 
+                          <div
+                            className="bg-orange-500 h-2 rounded-full"
                             style={{ width: `${location.percentage}%` }}
                           />
                         </div>
@@ -569,13 +617,23 @@ export default function SiteAnalytics() {
                           <div className="text-sm text-gray-900">{formatNumber(page.views)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{formatNumber(page.uniqueViews)}</div>
+                          <div className="text-sm text-gray-900">
+                            {formatNumber(page.uniqueViews)}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{page.avgTime}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={index < 2 ? 'bg-green-100 text-green-800' : index < 4 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}>
+                          <Badge
+                            className={
+                              index < 2
+                                ? 'bg-green-100 text-green-800'
+                                : index < 4
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }
+                          >
                             {index < 2 ? 'Excellent' : index < 4 ? 'Good' : 'Average'}
                           </Badge>
                         </td>

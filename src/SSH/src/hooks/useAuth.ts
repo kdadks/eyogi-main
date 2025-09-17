@@ -15,7 +15,7 @@ export function useAuth() {
 
     // Initialize auth state if not already done
     if (!state.initialized) {
-      initializeAuth()
+      void initializeAuth()
     }
 
     return unsubscribe
@@ -25,7 +25,7 @@ export function useAuth() {
     try {
       authStore.setLoading(true)
       const session = getCurrentSession()
-      
+
       if (session?.user) {
         authStore.setUser(session.user)
       } else {
@@ -45,7 +45,7 @@ export function useAuth() {
       authStore.setLoading(true)
       await localSignOut()
       authStore.clearAuth()
-      
+
       // Redirect to home page after sign out
       window.location.href = '/'
     } catch (error) {
@@ -69,6 +69,6 @@ export function useAuth() {
     initialized: state.initialized,
     signOut,
     refreshUser,
-    updateUser
+    updateUser,
   }
 }

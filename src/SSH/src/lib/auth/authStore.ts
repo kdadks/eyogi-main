@@ -18,7 +18,7 @@ class AuthStateManager {
   private state: AuthState = {
     user: null,
     loading: true,
-    initialized: false
+    initialized: false,
   }
 
   private listeners: Set<() => void> = new Set()
@@ -34,11 +34,13 @@ class AuthStateManager {
 
   subscribe(listener: () => void) {
     this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
   }
 
   private notifyListeners() {
-    this.listeners.forEach(listener => listener())
+    this.listeners.forEach((listener) => listener())
   }
 
   // Auth actions

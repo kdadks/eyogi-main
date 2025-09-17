@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { Button } from '@/components/ui/button''
+import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -57,9 +57,7 @@ export default function SignInPage() {
               <span className="text-white font-bold text-lg">eY</span>
             </div>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Sign in to your account
-          </h2>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">Sign in to your account</h2>
           <p className="mt-2 text-sm text-gray-600">
             Or{' '}
             <Link to="/auth/signup" className="font-medium text-orange-600 hover:text-orange-500">
@@ -78,9 +76,15 @@ export default function SignInPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <h4 className="font-semibold text-blue-900 mb-2">Test Login Credentials</h4>
                 <div className="text-sm text-blue-800 space-y-1">
-                  <p><strong>Student:</strong> student@test.com (password: 123456)</p>
-                  <p><strong>Teacher:</strong> teacher@test.com (password: 123456)</p>
-                  <p><strong>Admin:</strong> admin@test.com (password: 123456)</p>
+                  <p>
+                    <strong>Student:</strong> student@test.com (password: 123456)
+                  </p>
+                  <p>
+                    <strong>Teacher:</strong> teacher@test.com (password: 123456)
+                  </p>
+                  <p>
+                    <strong>Admin:</strong> admin@test.com (password: 123456)
+                  </p>
                 </div>
               </div>
 
@@ -114,17 +118,16 @@ export default function SignInPage() {
                 </div>
 
                 <div className="text-sm">
-                  <Link to="/auth/forgot-password" className="font-medium text-orange-600 hover:text-orange-500">
+                  <Link
+                    to="/auth/forgot-password"
+                    className="font-medium text-orange-600 hover:text-orange-500"
+                  >
                     Forgot your password?
                   </Link>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                loading={loading}
-              >
+              <Button type="submit" className="w-full" loading={loading}>
                 Sign in
               </Button>
             </form>

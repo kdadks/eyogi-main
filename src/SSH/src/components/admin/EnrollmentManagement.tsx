@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Enrollment } from '@/types'
-import { getAllEnrollments, updateEnrollmentStatus, bulkUpdateEnrollments } from '@/lib/api/enrollments'
+import {
+  getAllEnrollments,
+  updateEnrollmentStatus,
+  bulkUpdateEnrollments,
+} from '@/lib/api/enrollments'
 import { formatDate, getStatusColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import {
@@ -13,7 +17,7 @@ import {
   UserIcon,
   BookOpenIcon,
   CurrencyEuroIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 
 export default function EnrollmentManagement() {
@@ -50,18 +54,19 @@ export default function EnrollmentManagement() {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(enrollment =>
-        enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        enrollment.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        enrollment.student?.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        enrollment.course?.course_number?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (enrollment) =>
+          enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          enrollment.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          enrollment.student?.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          enrollment.course?.course_number?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Filter by status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(enrollment => enrollment.status === statusFilter)
+      filtered = filtered.filter((enrollment) => enrollment.status === statusFilter)
     }
 
     setFilteredEnrollments(filtered)
@@ -81,7 +86,7 @@ export default function EnrollmentManagement() {
     if (selectedEnrollments.size === filteredEnrollments.length) {
       setSelectedEnrollments(new Set())
     } else {
-      setSelectedEnrollments(new Set(filteredEnrollments.map(e => e.id)))
+      setSelectedEnrollments(new Set(filteredEnrollments.map((e) => e.id)))
     }
   }
 
@@ -118,10 +123,10 @@ export default function EnrollmentManagement() {
 
   const stats = {
     total: enrollments.length,
-    pending: enrollments.filter(e => e.status === 'pending').length,
-    approved: enrollments.filter(e => e.status === 'approved').length,
-    completed: enrollments.filter(e => e.status === 'completed').length,
-    rejected: enrollments.filter(e => e.status === 'rejected').length
+    pending: enrollments.filter((e) => e.status === 'pending').length,
+    approved: enrollments.filter((e) => e.status === 'approved').length,
+    completed: enrollments.filter((e) => e.status === 'completed').length,
+    rejected: enrollments.filter((e) => e.status === 'rejected').length,
   }
 
   if (loading) {
@@ -173,7 +178,7 @@ export default function EnrollmentManagement() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">Enrollment Management</h2>
-            
+
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -206,7 +211,8 @@ export default function EnrollmentManagement() {
           {selectedEnrollments.size > 0 && (
             <div className="flex items-center space-x-4 p-4 bg-blue-50 rounded-lg">
               <span className="text-sm font-medium">
-                {selectedEnrollments.size} enrollment{selectedEnrollments.size !== 1 ? 's' : ''} selected
+                {selectedEnrollments.size} enrollment{selectedEnrollments.size !== 1 ? 's' : ''}{' '}
+                selected
               </span>
               <div className="flex space-x-2">
                 <Button
@@ -247,7 +253,10 @@ export default function EnrollmentManagement() {
                     <th className="px-6 py-3 text-left">
                       <input
                         type="checkbox"
-                        checked={selectedEnrollments.size === filteredEnrollments.length && filteredEnrollments.length > 0}
+                        checked={
+                          selectedEnrollments.size === filteredEnrollments.length &&
+                          filteredEnrollments.length > 0
+                        }
                         onChange={handleSelectAll}
                         className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                       />
@@ -292,9 +301,7 @@ export default function EnrollmentManagement() {
                             <div className="text-sm font-medium text-gray-900">
                               {enrollment.student?.full_name || 'Unknown'}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {enrollment.student?.email}
-                            </div>
+                            <div className="text-sm text-gray-500">{enrollment.student?.email}</div>
                             <div className="text-xs text-gray-400">
                               ID: {enrollment.student?.student_id}
                             </div>
@@ -309,7 +316,8 @@ export default function EnrollmentManagement() {
                               {enrollment.course?.title}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {enrollment.course?.course_number} • {enrollment.course?.gurukul?.name}
+                              {enrollment.course?.course_number} •{' '}
+                              {enrollment.course?.gurukul?.name}
                             </div>
                           </div>
                         </div>
