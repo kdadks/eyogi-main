@@ -12,6 +12,10 @@
   },
   "rewrites": [
     {
+      "source": "/ssh-app/:path*",
+      "destination": "/ssh-app/:path*"
+    },
+    {
       "source": "/admin/:path*",
       "destination": "/admin/:path*"
     },

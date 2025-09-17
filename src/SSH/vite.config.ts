@@ -1,10 +1,11 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/ssh-app/',
   plugins: [
     react(),
     visualizer({
@@ -12,7 +13,7 @@ export default defineConfig({
       open: true,
       gzipSize: true,
       brotliSize: true,
-    })
+    }),
   ],
   build: {
     rollupOptions: {
@@ -20,30 +21,30 @@ export default defineConfig({
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor';
+              return 'vendor'
             }
             if (id.includes('react-router')) {
-              return 'router';
+              return 'router'
             }
             if (id.includes('@heroicons')) {
-              return 'ui';
+              return 'ui'
             }
             if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
-              return 'forms';
+              return 'forms'
             }
             if (id.includes('clsx') || id.includes('tailwind-merge')) {
-              return 'utils';
+              return 'utils'
             }
-            return 'vendor';
+            return 'vendor'
           }
           if (id.includes('pages/dashboard')) {
-            return 'dashboard';
+            return 'dashboard'
           }
           if (id.includes('pages/auth')) {
-            return 'auth';
+            return 'auth'
           }
-        }
-      }
+        },
+      },
     },
     chunkSizeWarningLimit: 500,
     minify: 'terser',
@@ -56,7 +57,7 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
-    'process.env': {}
+    'process.env': {},
   },
   resolve: {
     alias: {
@@ -66,4 +67,4 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
-});
+})
