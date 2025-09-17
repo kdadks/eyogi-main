@@ -68,6 +68,14 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       depth: 3,
       limit,
       page,
+      select: {
+        title: true,
+        slug: true,
+        description: true,
+        publishedAt: true,
+        coverImage: true,
+        categories: true,
+      },
       ...(where ? { where } : {}),
     })
 
@@ -84,12 +92,29 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
         hasCoverImage: !!post.coverImage,
         coverImageType: typeof post.coverImage,
         coverImageValue: post.coverImage,
-        coverImageId: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.id : null,
-        coverImageUrl: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.url : null,
-        coverImageFilename: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.filename : null,
-        coverImageKey: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage._key : null,
+        coverImageId:
+          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.id : null,
+        coverImageUrl:
+          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.url : null,
+        coverImageFilename:
+          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.filename : null,
+        coverImageKey:
+          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage._key : null,
+        // Check if coverImage is just an ID string
+        coverImageAsString: typeof post.coverImage === 'string' ? post.coverImage : null,
       })
     })
+
+    // 🔍 ADDITIONAL DEBUG: Check if ANY posts have coverImages
+    const postsWithImages = posts.docs.filter((post) => !!post.coverImage)
+    console.log(`📊 Posts with coverImages: ${postsWithImages.length}/${posts.docs.length}`)
+
+    if (postsWithImages.length > 0) {
+      console.log('📸 Sample post with coverImage:', {
+        title: postsWithImages[0].title,
+        coverImage: postsWithImages[0].coverImage,
+      })
+    }
 
     // Force debugging in production
     if (typeof window === 'undefined') {
