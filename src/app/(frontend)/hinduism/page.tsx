@@ -52,17 +52,18 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       andConditions.push({ 'categories.title': { equals: category } })
     }
 
-    let where: Where | undefined
-    if (orConditions.length || andConditions.length) {
-      if (andConditions.length && orConditions.length) {
-        where = { and: [{ or: orConditions }, ...andConditions] }
-      } else if (andConditions.length) {
-        where = { and: andConditions }
-      } else {
-        where = { or: orConditions }
-      }
-    }
+    // let where: Where | undefined
+    // if (orConditions.length || andConditions.length) {
+    //   if (andConditions.length && orConditions.length) {
+    //     where = { and: [{ or: orConditions }, ...andConditions] }
+    //   } else if (andConditions.length) {
+    //     where = { and: andConditions }
+    //   } else {
+    //     where = { or: orConditions }
+    //   }
+    // }
 
+    // 🚨 TEMPORARY: Query ALL posts to check if ANY have coverImages
     const posts = await payload.find({
       collection: 'posts',
       depth: 3,
@@ -76,7 +77,8 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
         coverImage: true,
         categories: true,
       },
-      ...(where ? { where } : {}),
+      // Temporarily disable filtering to see all posts
+      // ...(where ? { where } : {}),
     })
 
     // 📊 IMAGE SOURCE ANALYTICS
