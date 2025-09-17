@@ -95,7 +95,10 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
           if (url.startsWith('/api/media/')) {
             source = 'PayloadCMS_API'
             storageLocation = 'Neon_Database'
-          } else if (url.startsWith('http') && url.includes('uploadthing')) {
+          } else if (
+            url.startsWith('http') &&
+            (url.includes('uploadthing') || url.includes('ufs.sh'))
+          ) {
             source = 'UploadThing'
             storageLocation = 'UploadThing_CDN'
           } else if (url.startsWith('http')) {
