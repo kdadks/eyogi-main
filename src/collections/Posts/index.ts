@@ -35,6 +35,7 @@ export const Posts: CollectionConfig<'posts'> = {
     title: true,
     slug: true,
     categories: true,
+    coverImage: true,
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],

@@ -22,12 +22,15 @@ export const Card: React.FC<{
 
   const { slug, categories, publishedAt, description, coverImage, title } = doc || {}
 
-  // TEMPORARY: Add visible debugging
-  if (typeof window !== 'undefined' && window.location.href.includes('page=2')) {
-    console.log('🚨 CARD COMPONENT DEBUG - PAGE 2:', {
+  // TEMPORARY: Add visible debugging for ALL cards
+  if (typeof window !== 'undefined') {
+    console.log('🚨 CARD COMPONENT DEBUG:', {
       title,
       hasCoverImage: !!coverImage,
       coverImageData: coverImage,
+      coverImageType: typeof coverImage,
+      hasUrl: coverImage && typeof coverImage === 'object' ? !!coverImage.url : false,
+      url: coverImage && typeof coverImage === 'object' ? coverImage.url : null,
     })
   }
 

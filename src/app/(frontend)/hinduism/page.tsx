@@ -75,6 +75,22 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
     console.log('🔍 IMAGE SOURCE ANALYSIS - Page', page)
     console.log('📋 Total posts fetched:', posts.docs.length)
 
+    // 🚨 DEEP DEBUGGING: Log first few posts structure
+    console.log('🧪 DEEP POST STRUCTURE DEBUG:')
+    posts.docs.slice(0, 3).forEach((post, index) => {
+      console.log(`📄 Post ${index + 1}:`, {
+        title: post.title,
+        slug: post.slug,
+        hasCoverImage: !!post.coverImage,
+        coverImageType: typeof post.coverImage,
+        coverImageValue: post.coverImage,
+        coverImageId: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.id : null,
+        coverImageUrl: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.url : null,
+        coverImageFilename: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.filename : null,
+        coverImageKey: post.coverImage && typeof post.coverImage === 'object' ? post.coverImage._key : null,
+      })
+    })
+
     // Force debugging in production
     if (typeof window === 'undefined') {
       console.log('='.repeat(50))
