@@ -52,18 +52,17 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       andConditions.push({ 'categories.title': { equals: category } })
     }
 
-    // let where: Where | undefined
-    // if (orConditions.length || andConditions.length) {
-    //   if (andConditions.length && orConditions.length) {
-    //     where = { and: [{ or: orConditions }, ...andConditions] }
-    //   } else if (andConditions.length) {
-    //     where = { and: andConditions }
-    //   } else {
-    //     where = { or: orConditions }
-    //   }
-    // }
+    let where: Where | undefined
+    if (orConditions.length || andConditions.length) {
+      if (andConditions.length && orConditions.length) {
+        where = { and: [{ or: orConditions }, ...andConditions] }
+      } else if (andConditions.length) {
+        where = { and: andConditions }
+      } else {
+        where = { or: orConditions }
+      }
+    }
 
-    // 🚨 TEMPORARY: Query ALL posts to check if ANY have coverImages
     const posts = await payload.find({
       collection: 'posts',
       depth: 3,
@@ -77,44 +76,24 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
         coverImage: true,
         categories: true,
       },
-      // Temporarily disable filtering to see all posts
-      // ...(where ? { where } : {}),
+      ...(where ? { where } : {}),
     })
 
     // 📊 IMAGE SOURCE ANALYTICS
     console.log('🔍 IMAGE SOURCE ANALYSIS - Page', page)
     console.log('📋 Total posts fetched:', posts.docs.length)
 
-    // 🚨 DEEP DEBUGGING: Log first few posts structure
-    console.log('🧪 DEEP POST STRUCTURE DEBUG:')
-    posts.docs.slice(0, 3).forEach((post, index) => {
-      console.log(`📄 Post ${index + 1}:`, {
-        title: post.title,
-        slug: post.slug,
-        hasCoverImage: !!post.coverImage,
-        coverImageType: typeof post.coverImage,
-        coverImageValue: post.coverImage,
-        coverImageId:
-          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.id : null,
-        coverImageUrl:
-          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.url : null,
-        coverImageFilename:
-          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage.filename : null,
-        coverImageKey:
-          post.coverImage && typeof post.coverImage === 'object' ? post.coverImage._key : null,
-        // Check if coverImage is just an ID string
-        coverImageAsString: typeof post.coverImage === 'string' ? post.coverImage : null,
-      })
-    })
-
-    // 🔍 ADDITIONAL DEBUG: Check if ANY posts have coverImages
+    // Check image coverage
     const postsWithImages = posts.docs.filter((post) => !!post.coverImage)
     console.log(`📊 Posts with coverImages: ${postsWithImages.length}/${posts.docs.length}`)
 
     if (postsWithImages.length > 0) {
       console.log('📸 Sample post with coverImage:', {
         title: postsWithImages[0].title,
-        coverImage: postsWithImages[0].coverImage,
+        coverImageUrl:
+          postsWithImages[0].coverImage && typeof postsWithImages[0].coverImage === 'object'
+            ? postsWithImages[0].coverImage.url
+            : null,
       })
     }
 
