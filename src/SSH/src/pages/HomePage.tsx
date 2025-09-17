@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import ScrollLink from '../components/ui/ScrollLink'
 import SEOHead from '../components/seo/SEOHead'
 import { generateOrganizationSchema, generateWebsiteSchema } from '../components/seo/StructuredData'
-import { Button } from '@/components/ui/Button'
+import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import RollingText from '../components/ui/RollingText'
@@ -15,7 +15,7 @@ import {
   ArrowRightIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
-import ChatBotTrigger from '../components/chat/ChatBotTrigger'
+import Footer from '../components/layout/Footer'
 
 export default function HomePage() {
   const structuredData = [
@@ -163,6 +163,84 @@ export default function HomePage() {
         structuredData={structuredData}
       />
       <div>
+        {/* Header Navigation */}
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              {/* Logo */}
+              <div className="flex items-center">
+                <Link to="/" className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xl font-bold">🕉️</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xl font-bold text-gray-900">eYogi Gurukul</span>
+                    <span className="text-xs text-gray-500">Hindu Education Platform</span>
+                  </div>
+                </Link>
+              </div>
+
+              {/* Navigation */}
+              <nav className="hidden md:flex items-center space-x-8">
+                <Link
+                  to="/"
+                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors"
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/gurukuls"
+                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors"
+                >
+                  Gurukuls
+                </Link>
+                <Link
+                  to="/courses"
+                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors"
+                >
+                  Courses
+                </Link>
+                <Link
+                  to="/about"
+                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors"
+                >
+                  About
+                </Link>
+                <Link
+                  to="/contact"
+                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors"
+                >
+                  Contact
+                </Link>
+              </nav>
+
+              {/* Auth Buttons */}
+              <div className="hidden md:flex items-center space-x-4">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+                <Button variant="primary" size="sm">
+                  Sign Up
+                </Button>
+              </div>
+
+              {/* Mobile menu button */}
+              <div className="md:hidden">
+                <button className="text-gray-700 hover:text-orange-600">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
         {/* Rolling Text Banner */}
         <RollingText
           text="🕉️ Spirituality and Science of Hinduism University - Discover Ancient Wisdom Through Modern Learning 🕉️"
@@ -170,7 +248,10 @@ export default function HomePage() {
         />
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section">
+        <section
+          id="hero"
+          className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section"
+        >
           {/* Enhanced Glossy Glass Background Layers */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm"></div>
@@ -255,7 +336,7 @@ export default function HomePage() {
                   {/* Glossy Shine Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent rounded-2xl"></div>
                   <img
-                    src="/Images/Logo.png"
+                    src="/ssh-app/Images/Logo.png"
                     alt="eYogi Gurukul logo"
                     className="w-full h-full object-contain logo-pop relative z-10"
                   />
@@ -281,7 +362,7 @@ export default function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section className="section-padding bg-white">
+        <section id="courses" className="section-padding bg-white">
           <div className="container-max">
             <div className="text-center mb-12 lg:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
@@ -311,7 +392,7 @@ export default function HomePage() {
         </section>
 
         {/* Gurukuls Section */}
-        <section className="section-padding bg-gray-50">
+        <section id="gurukuls" className="section-padding bg-gray-50">
           <div className="container-max">
             <div className="text-center mb-12 lg:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
@@ -355,7 +436,7 @@ export default function HomePage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="section-padding bg-white">
+        <section id="about" className="section-padding bg-white">
           <div className="container-max">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -388,7 +469,7 @@ export default function HomePage() {
         </section>
 
         {/* CTA Section */}
-        <section className="section-padding gradient-bg text-white">
+        <section id="contact" className="section-padding gradient-bg text-white">
           <div className="container-max text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 px-4">
               Begin Your Hindu Education Journey Today
@@ -419,10 +500,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
-        {/* AI Chat Assistant */}
-        <ChatBotTrigger />
       </div>
+      <Footer />
     </>
   )
 }

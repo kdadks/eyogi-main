@@ -2,8 +2,10 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
+import { Button } from '../components/ui/Button'
+import { Card, CardContent } from '../components/ui/Card'
+import HeaderNew from '../components/layout/HeaderNew'
+import Footer from '../components/layout/Footer'
 import {
   AcademicCapIcon,
   BookOpenIcon,
@@ -74,6 +76,7 @@ export default function AboutPage() {
 
   return (
     <>
+      <HeaderNew />
       <SEOHead
         title="About eYogi Gurukul - Hindu Education & Vedic Learning Mission"
         description="Discover eYogi Gurukul's mission to connect ancient Hindu wisdom with modern learning. Learn about our authentic Vedic education approach, expert teachers, and global community of Sanatan Dharma learners."
@@ -181,7 +184,7 @@ export default function AboutPage() {
               </div>
               <div className="relative">
                 <img
-                  src="/Images/Logo.png"
+                  src="/ssh-app/Images/Logo.png"
                   alt="eYogi Gurukul logo - Ancient wisdom meets modern learning"
                   className="rounded-2xl shadow-2xl object-contain bg-white p-6 logo-pop"
                 />
@@ -338,6 +341,7 @@ export default function AboutPage() {
           </div>
         </section>
       </div>
+      <Footer />
     </>
   )
 }

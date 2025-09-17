@@ -1,5 +1,5 @@
-import * as localGurukuls from '@/lib/local-data/gurukuls'
-import { Gurukul } from '@/types'
+import * as localGurukuls from '../local-data/gurukuls'
+import { Gurukul } from '../../types'
 
 export async function getGurukuls(): Promise<Gurukul[]> {
   return await localGurukuls.getGurukuls()
@@ -9,7 +9,9 @@ export async function getGurukul(slug: string): Promise<Gurukul | null> {
   return await localGurukuls.getGurukul(slug)
 }
 
-export async function createGurukul(gurukul: Omit<Gurukul, 'id' | 'created_at' | 'updated_at'>): Promise<Gurukul> {
+export async function createGurukul(
+  gurukul: Omit<Gurukul, 'id' | 'created_at' | 'updated_at'>,
+): Promise<Gurukul> {
   return await localGurukuls.createGurukul(gurukul)
 }
 

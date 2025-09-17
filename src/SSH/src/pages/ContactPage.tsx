@@ -5,9 +5,11 @@ import { z } from 'zod'
 import toast from 'react-hot-toast'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import HeaderNew from '../components/layout/HeaderNew'
+import Footer from '../components/layout/Footer'
 import {
   EnvelopeIcon,
   PhoneIcon,
@@ -113,6 +115,7 @@ export default function ContactPage() {
 
   return (
     <>
+      <HeaderNew />
       <SEOHead
         title="Contact eYogi Gurukul - Hindu Education Support & Information"
         description="Contact eYogi Gurukul for questions about Hindu courses, Vedic education, enrollment, or Sanatan Dharma learning. Get support for your spiritual education journey."
@@ -326,6 +329,7 @@ export default function ContactPage() {
           </div>
         </section>
       </div>
+      <Footer />
     </>
   )
 }

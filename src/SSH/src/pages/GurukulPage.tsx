@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import ScrollLink from '../components/ui/ScrollLink'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { Gurukul } from '@/types'
-import { getGurukuls } from '@/lib/api/gurukuls'
-import { getCourses } from '@/lib/api/courses'
+import { Card, CardContent } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
+import { Gurukul } from '../types'
+import { getGurukuls } from '../lib/api/gurukuls'
+import { getCourses } from '../lib/api/courses'
+import HeaderNew from '../components/layout/HeaderNew'
+import Footer from '../components/layout/Footer'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -56,6 +58,7 @@ export default function GurukulPage() {
 
   return (
     <>
+      <HeaderNew />
       <SEOHead
         title="Hindu Gurukuls - Traditional Vedic Learning Centers"
         description="Explore our 5 specialized Hindu Gurukuls offering authentic Vedic education: Hinduism, Mantra, Philosophy, Sanskrit, and Yoga & Wellness. Traditional Gurukul system meets modern online learning."
@@ -277,6 +280,7 @@ export default function GurukulPage() {
           </div>
         </section>
       </div>
+      <Footer />
     </>
   )
 }

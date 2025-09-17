@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Card, CardContent } from '../components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
+import HeaderNew from '../components/layout/HeaderNew'
+import Footer from '../components/layout/Footer'
 import { Course, Gurukul } from '../types'
 import { getCourses } from '../lib/api/courses'
 import { getGurukuls } from '../lib/api/gurukuls'
@@ -16,7 +18,6 @@ import {
   UserGroupIcon,
   CurrencyEuroIcon,
 } from '@heroicons/react/24/outline'
-import ChatBotTrigger from '../components/chat/ChatBotTrigger'
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([])
@@ -76,6 +77,7 @@ export default function CoursesPage() {
 
   return (
     <>
+      <HeaderNew />
       <SEOHead
         title="Hindu Courses & Vedic Education Programs"
         description="Explore comprehensive Hindu education courses covering Vedic philosophy, Sanskrit, mantras, yoga, and Sanatan Dharma. Expert-led online classes for all age groups from traditional Gurukuls."
@@ -272,10 +274,8 @@ export default function CoursesPage() {
             </div>
           )}
         </div>
-
-        {/* AI Chat Assistant */}
-        <ChatBotTrigger />
       </div>
+      <Footer />
     </>
   )
 }

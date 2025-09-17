@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import SEOHead from '../components/seo/SEOHead'
 import { generateCourseSchema, generateBreadcrumbSchema } from '../components/seo/StructuredData'
-import { Course } from '@/types'
-import { getCourse, getEnrolledCount } from '@/lib/api/courses'
-import { enrollInCourse } from '@/lib/api/enrollments'
-import { useAuth } from '@/components/providers/AuthProvider'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
+import { Course } from '../types'
+import { getCourse, getEnrolledCount } from '../lib/api/courses'
+import { enrollInCourse } from '../lib/api/enrollments'
+import { Button } from '../components/ui/Button'
+import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { Badge } from '../components/ui/Badge'
+import { formatCurrency, getAgeGroupLabel, getLevelColor } from '../lib/utils'
 import toast from 'react-hot-toast'
 import {
   ClockIcon,
@@ -19,11 +18,9 @@ import {
   CheckCircleIcon,
   BookOpenIcon,
 } from '@heroicons/react/24/outline'
-import ChatBotTrigger from '@/components/chat/ChatBotTrigger'
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
   const [course, setCourse] = useState<Course | null>(null)
   const [enrolledCount, setEnrolledCount] = useState(0)
   const [loading, setLoading] = useState(true)

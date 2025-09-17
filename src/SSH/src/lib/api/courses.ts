@@ -1,5 +1,5 @@
-import * as localCourses from '@/lib/local-data/courses'
-import { Course } from '@/types'
+import * as localCourses from '../local-data/courses'
+import { Course } from '../../types'
 
 export async function getCourses(filters?: {
   gurukul_id?: string
@@ -18,7 +18,9 @@ export async function getEnrolledCount(courseId: string): Promise<number> {
   return await localCourses.getEnrolledCount(courseId)
 }
 
-export async function createCourse(course: Omit<Course, 'id' | 'created_at' | 'updated_at'>): Promise<Course> {
+export async function createCourse(
+  course: Omit<Course, 'id' | 'created_at' | 'updated_at'>,
+): Promise<Course> {
   return await localCourses.createCourse(course)
 }
 

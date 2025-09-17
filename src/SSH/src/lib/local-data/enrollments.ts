@@ -1,4 +1,4 @@
-import { Enrollment } from '@/types'
+import { Enrollment } from '../../types'
 
 const STORAGE_KEYS = {
   ENROLLMENTS: 'eyogi_enrollments',

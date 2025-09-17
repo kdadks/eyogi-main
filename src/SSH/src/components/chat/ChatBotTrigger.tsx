@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '../ui/Button'
 import ChatBot from './ChatBot'
 import { ChatBubbleLeftRightIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 

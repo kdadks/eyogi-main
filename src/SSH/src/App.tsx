@@ -7,6 +7,12 @@ import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 
 // SSH Website Components
 import HomePage from './pages/HomePage'
+import AboutPage from './pages/AboutPage'
+import ContactPage from './pages/ContactPage'
+import CoursesPage from './pages/CoursesPage'
+import GurukulPage from './pages/GurukulPage'
+// import GurukulDetailPage from './pages/GurukulDetailPage'
+// import CourseDetailPage from './pages/CourseDetailPage'
 
 // Admin Components
 import AdminLogin from './components/auth/AdminLogin'
@@ -29,8 +35,15 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
-              {/* SSH Website Homepage */}
+              {/* SSH Website Pages */}
               <Route path="/" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/courses" element={<CoursesPage />} />
+              <Route path="/gurukuls" element={<GurukulPage />} />
+              {/* Detail pages temporarily disabled due to auth dependencies */}
+              {/* <Route path="/gurukuls/:slug" element={<GurukulDetailPage />} /> */}
+              {/* <Route path="/courses/:id" element={<CourseDetailPage />} /> */}
 
               {/* Public route for admin login */}
               <Route path="/admin/login" element={<AdminLogin />} />
