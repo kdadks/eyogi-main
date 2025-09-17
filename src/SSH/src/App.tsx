@@ -6,7 +6,7 @@ import { PermissionProvider } from './contexts/PermissionContext'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 
 // SSH Website Components
-import SSHHomepage from './pages/SSHHomepage'
+import HomePage from './pages/HomePage'
 
 // Admin Components
 import AdminLogin from './components/auth/AdminLogin'
@@ -30,7 +30,7 @@ function App() {
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               {/* SSH Website Homepage */}
-              <Route path="/" element={<SSHHomepage />} />
+              <Route path="/" element={<HomePage />} />
 
               {/* Public route for admin login */}
               <Route path="/admin/login" element={<AdminLogin />} />
