@@ -402,3 +402,136 @@ body {
     max-height: none;
   }
 }
+
+/* Glossy Header Effects */
+.glossy-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.glossy-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Enhanced backdrop blur support */
+@supports (backdrop-filter: blur(20px)) {
+  .glossy-header {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+/* Fallback for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(20px)) {
+  .glossy-header {
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* Navigation link shine effect */
+.nav-link-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.nav-link-shine:hover::after {
+  left: 100%;
+}
+
+/* Logo glow animation */
+.logo-glow {
+  filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.3));
+  transition: filter 0.3s ease;
+}
+
+.logo-glow:hover {
+  filter: drop-shadow(0 0 16px rgba(255, 165, 0, 0.6));
+}
+
+/* Gradient text with enhanced shine */
+.gradient-text-enhanced {
+  background: linear-gradient(135deg, #f97316, #dc2626, #f97316);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 3s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Premium button with glow effect */
+.btn-glow {
+  position: relative;
+  background: linear-gradient(135deg, #f97316, #dc2626);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-glow:hover {
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.6);
+  transform: translateY(-2px);
+}
+
+.btn-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-glow:hover::before {
+  left: 100%;
+}
+
+/* Mobile menu improvements */
+.mobile-menu-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .glossy-header::before,
+  .nav-link-shine::after,
+  .gradient-text-enhanced,
+  .btn-glow::before {
+    animation: none;
+    transition: none;
+  }
+
+  .logo-glow {
+    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.3));
+  }
+}

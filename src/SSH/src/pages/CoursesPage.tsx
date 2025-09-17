@@ -5,7 +5,6 @@ import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
-import HeaderNew from '../components/layout/HeaderNew'
 import Footer from '../components/layout/Footer'
 import { Course, Gurukul } from '../types'
 import { getCourses } from '../lib/api/courses'
@@ -77,7 +76,6 @@ export default function CoursesPage() {
 
   return (
     <>
-      <HeaderNew />
       <SEOHead
         title="Hindu Courses & Vedic Education Programs"
         description="Explore comprehensive Hindu education courses covering Vedic philosophy, Sanskrit, mantras, yoga, and Sanatan Dharma. Expert-led online classes for all age groups from traditional Gurukuls."

@@ -8,7 +8,6 @@ import { Button } from '../components/ui/Button'
 import { Gurukul } from '../types'
 import { getGurukuls } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
-import HeaderNew from '../components/layout/HeaderNew'
 import Footer from '../components/layout/Footer'
 import {
   BookOpenIcon,
@@ -58,7 +57,6 @@ export default function GurukulPage() {
 
   return (
     <>
-      <HeaderNew />
       <SEOHead
         title="Hindu Gurukuls - Traditional Vedic Learning Centers"
         description="Explore our 5 specialized Hindu Gurukuls offering authentic Vedic education: Hinduism, Mantra, Philosophy, Sanskrit, and Yoga & Wellness. Traditional Gurukul system meets modern online learning."
