@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast'
 // Layout Components
 import { GlossyHeader } from './components/layout/GlossyHeader'
 import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
+import AuthRedirect from './components/auth/AuthRedirect'
 
 // SSH Website Components
 import HomePage from './pages/HomePage'
@@ -12,8 +13,6 @@ import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import CoursesPage from './pages/CoursesPage'
 import GurukulPage from './pages/GurukulPage'
-import SignInPage from './pages/auth/SignInPage'
-import SignUpPage from './pages/auth/SignUpPage'
 
 // Dashboard Components
 import StudentDashboard from './pages/dashboard/StudentDashboard'
@@ -66,9 +65,8 @@ function App() {
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/gurukuls" element={<GurukulPage />} />
 
-            {/* Auth Pages */}
-            <Route path="/auth/signin" element={<SignInPage />} />
-            <Route path="/auth/signup" element={<SignUpPage />} />
+            {/* Auth Redirects - Opens modals instead of separate pages */}
+            <Route path="/auth/*" element={<AuthRedirect openModal={openAuthModal} />} />
 
             {/* User Dashboard Routes */}
             <Route

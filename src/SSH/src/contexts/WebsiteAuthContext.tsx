@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabaseAdmin } from '../lib/supabase'
+import { generateNextId } from '../lib/idGenerator'
 import type { Database } from '../lib/supabase'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -159,24 +160,31 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       // Hash password
       const passwordHash = await hashPassword(userData.password)
 
+      // Generate the appropriate ID based on role
+      const generatedId = await generateNextId(userData.role)
+
       // Create user profile
+      const profileData = {
+        email: userData.email.toLowerCase(),
+        password_hash: passwordHash,
+        full_name: userData.full_name,
+        role: userData.role,
+        status: 'active',
+        phone: userData.phone || null,
+        date_of_birth: userData.date_of_birth || null,
+        preferences: {},
+        address: null,
+        emergency_contact: null,
+        avatar_url: null,
+        parent_id: null,
+        ...(userData.role === 'student'
+          ? { student_id: generatedId, teacher_id: null }
+          : { student_id: null, teacher_id: generatedId }),
+      }
+
       const { error: createError } = await supabaseAdmin
         .from('profiles')
-        .insert({
-          email: userData.email.toLowerCase(),
-          password_hash: passwordHash,
-          full_name: userData.full_name,
-          role: userData.role,
-          status: 'active',
-          phone: userData.phone || null,
-          date_of_birth: userData.date_of_birth || null,
-          preferences: {},
-          address: null,
-          emergency_contact: null,
-          avatar_url: null,
-          student_id: null,
-          parent_id: null,
-        })
+        .insert(profileData)
         .select()
         .single()
 
