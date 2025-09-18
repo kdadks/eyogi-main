@@ -25,6 +25,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
+import CourseManagement from './components/admin/CourseManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
@@ -111,16 +112,8 @@ function App() {
               <Route path="users" element={<AdminUserManagementNew />} />
               <Route path="permissions" element={<AdminPermissionManagement />} />
 
-              {/* Placeholder routes for future features */}
-              <Route
-                path="courses"
-                element={
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Course Management</h1>
-                    <p>Coming in Phase 2: Course creation and management tools</p>
-                  </div>
-                }
-              />
+              {/* Course Management */}
+              <Route path="courses" element={<CourseManagement />} />
               <Route
                 path="enrollments"
                 element={
