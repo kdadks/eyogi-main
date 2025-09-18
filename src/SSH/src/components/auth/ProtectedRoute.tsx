@@ -1,6 +1,6 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
 interface ProtectedRouteProps {

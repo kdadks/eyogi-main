@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import AdminOverview from '@/components/admin/AdminOverview'
 import EnrollmentManagement from '@/components/admin/EnrollmentManagement'
 import UserManagement from '@/components/admin/UserManagement'

@@ -17,8 +17,8 @@ export default function getYouTubeVideoId(url: string): string | null {
         return paths[paths.length - 1]
       }
     }
-  } catch (error) {
-    console.error('Invalid URL:', error)
+  } catch (_error) {
+    // Invalid URL, return null
   }
 
   return null

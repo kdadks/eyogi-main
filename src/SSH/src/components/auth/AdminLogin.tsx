@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 

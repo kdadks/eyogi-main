@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),

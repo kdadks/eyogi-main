@@ -4,34 +4,28 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { User, Course, Enrollment, Gurukul } from '@/types'
-import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api/users'
+import { getAllUsers, deleteUser } from '@/lib/api/users'
 import { getCourses } from '@/lib/api/courses'
-import { getAllEnrollments, updateEnrollmentStatus } from '@/lib/api/enrollments'
+import { getAllEnrollments } from '@/lib/api/enrollments'
 import { getGurukuls } from '@/lib/api/gurukuls'
-import { formatDate, formatDateTime, getAgeGroupLabel } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
 import {
   UserIcon,
   AcademicCapIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
   EnvelopeIcon,
   PhoneIcon,
-  MapPinIcon,
   CalendarIcon,
   BookOpenIcon,
   CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
   UserGroupIcon,
   ChartBarIcon,
   DocumentTextIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
   XMarkIcon,
   PlusIcon,
   ArrowDownTrayIcon,
@@ -54,7 +48,7 @@ interface StudentFormData {
   parent_guardian_name: string
   parent_guardian_email: string
   parent_guardian_phone: string
-  role: 'student' | 'teacher' | 'admin'
+  role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
 }
 
 export default function StudentManagement() {
@@ -105,8 +99,56 @@ export default function StudentManagement() {
   }, [])
 
   useEffect(() => {
+    const filterStudents = () => {
+      let filtered = students
+
+      // Search filter
+      if (searchTerm) {
+        filtered = filtered.filter(
+          (student) =>
+            student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
+        )
+      }
+
+      // Course filter
+      if (courseFilter !== 'all') {
+        filtered = filtered.filter((student) =>
+          student.enrollments.some((e) => e.course_id === courseFilter),
+        )
+      }
+
+      // Status filter (enrollment status)
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter((student) =>
+          student.enrollments.some((e) => e.status === statusFilter),
+        )
+      }
+
+      // Age group filter
+      if (ageGroupFilter !== 'all') {
+        const [minAge, maxAge] = ageGroupFilter.split('-').map(Number)
+        filtered = filtered.filter(
+          (student) => student.age && student.age >= minAge && student.age <= maxAge,
+        )
+      }
+
+      // Gurukul filter
+      if (gurukulFilter !== 'all') {
+        filtered = filtered.filter((student) =>
+          student.enrollments.some((e) => e.course?.gurukul_id === gurukulFilter),
+        )
+      }
+
+      setFilteredStudents(filtered)
+    }
+
     filterStudents()
   }, [students, searchTerm, courseFilter, statusFilter, ageGroupFilter, gurukulFilter])
+
+  // Removed duplicate filterStudents function
 
   const loadData = async () => {
     try {
@@ -123,11 +165,11 @@ export default function StudentManagement() {
       // Filter only students and enrich with enrollment data
       const studentsOnly = usersData.filter((user) => user.role === 'student')
 
-      const enrichedStudents: StudentWithEnrollments[] = studentsOnly.map((student) => {
+      const enrichedStudents = studentsOnly.map((student) => {
         const studentEnrollments = enrollmentsData.filter((e) => e.student_id === student.id)
         const completedCourses = studentEnrollments.filter((e) => e.status === 'completed').length
         const pendingEnrollments = studentEnrollments.filter((e) => e.status === 'pending').length
-        const totalSpent = studentEnrollments.reduce((sum, e) => sum + (e.course?.fee || 0), 0)
+        const totalSpent = studentEnrollments.reduce((sum, e) => sum + (e.course?.price || 0), 0)
 
         return {
           ...student,
@@ -139,59 +181,13 @@ export default function StudentManagement() {
         }
       })
 
-      setStudents(enrichedStudents)
+      setStudents(enrichedStudents as StudentWithEnrollments[])
     } catch (error) {
       console.error('Error loading student data:', error)
       toast.error('Failed to load student data')
     } finally {
       setLoading(false)
     }
-  }
-
-  const filterStudents = () => {
-    let filtered = students
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (student) =>
-          student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    // Course filter
-    if (courseFilter !== 'all') {
-      filtered = filtered.filter((student) =>
-        student.enrollments.some((e) => e.course_id === courseFilter),
-      )
-    }
-
-    // Status filter (enrollment status)
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((student) =>
-        student.enrollments.some((e) => e.status === statusFilter),
-      )
-    }
-
-    // Age group filter
-    if (ageGroupFilter !== 'all') {
-      const [minAge, maxAge] = ageGroupFilter.split('-').map(Number)
-      filtered = filtered.filter(
-        (student) => student.age && student.age >= minAge && student.age <= maxAge,
-      )
-    }
-
-    // Gurukul filter
-    if (gurukulFilter !== 'all') {
-      filtered = filtered.filter((student) =>
-        student.enrollments.some((e) => e.course?.gurukul_id === gurukulFilter),
-      )
-    }
-
-    setFilteredStudents(filtered)
   }
 
   const handleViewStudent = (student: StudentWithEnrollments) => {
@@ -233,16 +229,7 @@ export default function StudentManagement() {
     }
   }
 
-  const handleUpdateRole = async (studentId: string, newRole: User['role']) => {
-    try {
-      await updateUserRole(studentId, newRole)
-      await loadData()
-      toast.success('Student role updated successfully')
-    } catch (error) {
-      console.error('Error updating student role:', error)
-      toast.error('Failed to update student role')
-    }
-  }
+  // Removed unused handleUpdateRole function
 
   const handleSelectStudent = (studentId: string) => {
     const newSelected = new Set(selectedStudents)
@@ -280,13 +267,14 @@ export default function StudentManagement() {
       setShowCommunicationPanel(false)
       setSelectedStudents(new Set())
       setCommunicationData({ subject: '', message: '', type: 'email' })
-    } catch (error) {
+    } catch {
       toast.error('Failed to send communication')
     }
   }
 
   const exportStudentData = () => {
-    const csvData = filteredStudents.map((student) => ({
+    // Create CSV data
+    filteredStudents.map((student) => ({
       'Student ID': student.student_id,
       'Full Name': student.full_name,
       Email: student.email,
@@ -300,7 +288,6 @@ export default function StudentManagement() {
     }))
 
     // In a real app, this would generate and download a CSV file
-    console.log('Exporting student data:', csvData)
     toast.success('Student data exported successfully')
   }
 
@@ -343,23 +330,7 @@ export default function StudentManagement() {
     }
   }
 
-  const getStudentsByGurukul = () => {
-    const gurukulGroups: Record<string, StudentWithEnrollments[]> = {}
-
-    filteredStudents.forEach((student) => {
-      student.enrollments.forEach((enrollment) => {
-        const gurukulName = enrollment.course?.gurukul?.name || 'Unknown Gurukul'
-        if (!gurukulGroups[gurukulName]) {
-          gurukulGroups[gurukulName] = []
-        }
-        if (!gurukulGroups[gurukulName].find((s) => s.id === student.id)) {
-          gurukulGroups[gurukulName].push(student)
-        }
-      })
-    })
-
-    return gurukulGroups
-  }
+  // Removed unused getStudentsByGurukul function
 
   const getStudentsByCourse = () => {
     const courseGroups: Record<
@@ -503,7 +474,9 @@ export default function StudentManagement() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() =>
+                setActiveTab(tab.id as 'overview' | 'by-course' | 'details' | 'communication')
+              }
               className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
@@ -839,7 +812,10 @@ export default function StudentManagement() {
                     <select
                       value={studentFormData.role}
                       onChange={(e) =>
-                        setStudentFormData((prev) => ({ ...prev, role: e.target.value as any }))
+                        setStudentFormData((prev) => ({
+                          ...prev,
+                          role: e.target.value as 'student' | 'teacher' | 'admin',
+                        }))
                       }
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                     >
@@ -944,7 +920,10 @@ export default function StudentManagement() {
                       value="email"
                       checked={communicationData.type === 'email'}
                       onChange={(e) =>
-                        setCommunicationData((prev) => ({ ...prev, type: e.target.value as any }))
+                        setCommunicationData((prev) => ({
+                          ...prev,
+                          type: e.target.value as 'email' | 'sms',
+                        }))
                       }
                       className="mr-2"
                     />
@@ -956,7 +935,10 @@ export default function StudentManagement() {
                       value="sms"
                       checked={communicationData.type === 'sms'}
                       onChange={(e) =>
-                        setCommunicationData((prev) => ({ ...prev, type: e.target.value as any }))
+                        setCommunicationData((prev) => ({
+                          ...prev,
+                          type: e.target.value as 'email' | 'sms',
+                        }))
                       }
                       className="mr-2"
                     />

@@ -1,16 +1,18 @@
 export interface User {
   id: string
   email: string
-  full_name?: string
-  avatar_url?: string
-  role: 'student' | 'teacher' | 'admin'
-  age?: number
-  phone?: string
-  address?: string
-  parent_guardian_name?: string
-  parent_guardian_email?: string
-  parent_guardian_phone?: string
-  student_id?: string
+  password_hash?: string | null
+  full_name?: string | null
+  avatar_url?: string | null
+  role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+  age?: number | null
+  phone?: string | null
+  address?: string | null
+  parent_guardian_name?: string | null
+  parent_guardian_email?: string | null
+  parent_guardian_phone?: string | null
+  student_id?: string | null
+  teacher_id?: string | null
   created_at: string
   updated_at: string
 }

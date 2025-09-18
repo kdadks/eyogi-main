@@ -71,22 +71,11 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
           imageSource = 'External_HTTP_URL'
         }
         src = url
-
-        console.log('🌐 External Image:', {
-          url: src,
-          source: imageSource,
-          isUploadThing: url.includes('uploadthing') || url.includes('ufs.sh'),
-        })
       }
       // For any other format, use as-is
       else {
         imageSource = 'Local_or_Relative_Path'
         src = url
-
-        console.log('📁 Local Image:', {
-          url: src,
-          source: imageSource,
-        })
       }
 
       // Track image source globally using sessionStorage
@@ -179,7 +168,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       src={src}
       onError={() => {
         // Handle image loading errors gracefully
-        console.warn('Failed to load image:', src)
       }}
     />
   )

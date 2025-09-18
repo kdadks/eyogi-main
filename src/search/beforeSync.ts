@@ -6,10 +6,10 @@ export const beforeSyncWithSearch: BeforeSync = async ({
   payload: _payload,
 }) => {
   const {
-    doc: { relationTo: collection },
+    doc: { relationTo: _collection },
   } = searchDoc
 
-  const { slug, id, categories, title, meta, excerpt: _excerpt } = originalDoc
+  const { slug, _id, categories, title, meta, excerpt: _excerpt } = originalDoc
 
   const modifiedDoc: DocToSync = {
     ...searchDoc,
@@ -38,9 +38,7 @@ export const beforeSyncWithSearch: BeforeSync = async ({
 
       modifiedDoc.categories = mappedCategories
     } catch (_err) {
-      console.error(
-        `Failed. Category not found when syncing collection '${collection}' with id: '${id}' to search.`,
-      )
+      // Category not found when syncing, skip logging
     }
   }
 

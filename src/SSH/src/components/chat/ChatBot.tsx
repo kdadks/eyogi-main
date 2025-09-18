@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { ChatService } from '@/lib/ai/ChatService'
 import { formatDateTime } from '@/lib/utils'
 import {

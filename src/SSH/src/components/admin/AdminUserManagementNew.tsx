@@ -9,7 +9,7 @@ import {
   ShieldExclamationIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import type { Database } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import UserFormModal from './UserFormModal'

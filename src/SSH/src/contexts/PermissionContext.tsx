@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { useAuth } from './AuthContext'
+import { useSupabaseAuth as useAuth } from '../hooks/useSupabaseAuth'
 
 interface PermissionContextType {
   canAccess: (resource: string, action: string) => boolean

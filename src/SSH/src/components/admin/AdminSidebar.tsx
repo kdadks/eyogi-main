@@ -13,7 +13,7 @@ import {
   ShieldCheckIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 
 interface AdminSidebarProps {
   isOpen: boolean
