@@ -25,7 +25,7 @@ import {
   PlusIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ClockIcon,
+  // ClockIcon, // For future time-based features
   ArrowTrendingUpIcon,
   Bars3Icon,
   XMarkIcon,
@@ -37,7 +37,7 @@ interface QuickAction {
   id: string
   title: string
   description: string
-  icon: React.ComponentType<any>
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   action: () => void
   color: string
 }
@@ -52,7 +52,7 @@ interface Notification {
 }
 
 export default function AdminDashboard() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<
     | 'overview'
     | 'analytics'
@@ -298,7 +298,20 @@ export default function AdminDashboard() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() =>
+                setActiveTab(
+                  tab.id as
+                    | 'overview'
+                    | 'analytics'
+                    | 'enrollments'
+                    | 'students'
+                    | 'users'
+                    | 'courses'
+                    | 'gurukuls'
+                    | 'certificates'
+                    | 'content',
+                )
+              }
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group ${
                 activeTab === tab.id
                   ? 'bg-orange-50 text-orange-700 border-r-2 border-orange-500'
@@ -331,11 +344,11 @@ export default function AdminDashboard() {
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">
-                  {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'A'}
+                  {user?.email?.charAt(0) || 'A'}
                 </span>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{profile?.full_name || 'Admin'}</p>
+                <p className="text-sm font-medium text-gray-900">{user?.email || 'Admin'}</p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
               <button className="p-1 rounded-md hover:bg-gray-100">
@@ -433,13 +446,11 @@ export default function AdminDashboard() {
               <div className="flex items-center space-x-3">
                 <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-bold">
-                    {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'A'}
+                    {user?.email?.charAt(0) || 'A'}
                   </span>
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">
-                    {profile?.full_name || 'Admin'}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900">{user?.email || 'Admin'}</p>
                   <p className="text-xs text-gray-500">Administrator</p>
                 </div>
               </div>

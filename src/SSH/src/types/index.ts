@@ -43,15 +43,15 @@ export interface Course {
   max_students: number
   min_students?: number
   delivery_method: 'physical' | 'remote' | 'hybrid'
-  prerequisites?: any
+  prerequisites?: string | null
   learning_outcomes: string[]
   includes_certificate?: boolean
   certificate_template_id?: string
   image_url?: string
   cover_image_url?: string
   video_preview_url?: string
-  syllabus: any
-  resources?: any[]
+  syllabus: object | null
+  resources?: Array<{ name: string; url: string; type: string }>
   is_active: boolean
   featured?: boolean
   tags?: string[]
@@ -94,7 +94,7 @@ export interface Certificate {
   issue_date: string
   issued_by: string
   verification_code: string
-  certificate_data: any
+  certificate_data: object
   file_url: string
   created_at: string
   course?: Course
@@ -105,7 +105,7 @@ export interface CertificateTemplate {
   id: string
   name: string
   type: 'student' | 'teacher'
-  template_data: any
+  template_data: object
   is_active: boolean
   created_at: string
   updated_at: string

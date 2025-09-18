@@ -44,6 +44,7 @@ interface WebsiteAuthContextType {
 
 const WebsiteAuthContext = createContext<WebsiteAuthContextType | undefined>(undefined)
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useWebsiteAuth = () => {
   const context = useContext(WebsiteAuthContext)
   if (context === undefined) {

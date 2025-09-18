@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Certificate } from '@/types'
+import { Certificate, Enrollment } from '@/types'
 import {
-  getStudentCertificates,
+  // getStudentCertificates, // Available for future use
   issueCertificate,
   bulkIssueCertificates,
 } from '@/lib/api/certificates'
@@ -32,7 +32,7 @@ interface CertificateTemplate {
 export default function CertificateManagement() {
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [templates, setTemplates] = useState<CertificateTemplate[]>([])
-  const [completedEnrollments, setCompletedEnrollments] = useState<any[]>([])
+  const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'certificates' | 'templates' | 'issue'>('certificates')
   const [searchTerm, setSearchTerm] = useState('')
@@ -159,7 +159,7 @@ export default function CertificateManagement() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'certificates' | 'templates' | 'issue')}
               className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
@@ -387,9 +387,7 @@ export default function CertificateManagement() {
                           <div className="text-sm font-medium text-gray-900">
                             {enrollment.student?.full_name}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {enrollment.student?.student_id}
-                          </div>
+                          <div className="text-sm text-gray-500">{enrollment.student_id}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">

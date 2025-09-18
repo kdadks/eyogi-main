@@ -47,13 +47,7 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 500,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: false,
   },
   define: {
     global: 'globalThis',

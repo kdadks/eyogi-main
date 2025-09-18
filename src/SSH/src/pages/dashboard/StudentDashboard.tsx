@@ -93,7 +93,12 @@ export default function StudentDashboard() {
       ])
 
       setEnrollments(enrollmentsData)
-      setCertificates(certificatesData)
+      // Map issued_at to issue_date for compatibility
+      const mappedCertificates = certificatesData.map((cert) => ({
+        ...cert,
+        issue_date: cert.issued_at,
+      }))
+      setCertificates(mappedCertificates)
       setAvailableCourses(coursesData)
 
       // Calculate stats

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
-import { useAuth } from '../../contexts/AuthContext'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
 const signUpSchema = z
   .object({
@@ -44,7 +44,8 @@ type SignUpForm = z.infer<typeof signUpSchema>
 export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { registerWebsiteUser } = useAuth()
+  // Note: This page is no longer used - replaced by AuthRedirect + Modal
+  const { signUp } = useWebsiteAuth()
 
   const {
     register,
@@ -64,7 +65,7 @@ export default function SignUpPage() {
   const onSubmit = async (data: SignUpForm) => {
     setLoading(true)
     try {
-      const { error } = await registerWebsiteUser({
+      const { error } = await signUp({
         email: data.email,
         password: data.password,
         full_name: data.full_name,

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { Course, Enrollment, Certificate } from '@/types'
+import { Course, Enrollment } from '@/types'
 import { getTeacherCourses, createCourse } from '@/lib/api/courses'
 import {
   getTeacherEnrollments,
@@ -31,7 +31,7 @@ import {
   ChartBarIcon,
   BookOpenIcon,
   BellIcon,
-  CalendarIcon,
+  // CalendarIcon, // Imported but intentionally unused for future use
   TrophyIcon,
   SparklesIcon,
   ArrowTrendingUpIcon,
@@ -53,6 +53,8 @@ const courseSchema = z.object({
   age_group_max: z.number().max(100, 'Maximum age must be less than 100'),
   duration_weeks: z.number().min(1, 'Duration must be at least 1 week'),
   fee: z.number().min(0, 'Fee must be non-negative'),
+  price: z.number().min(0, 'Price must be non-negative'),
+  currency: z.string().default('USD'),
   max_students: z.number().min(1, 'Must allow at least 1 student'),
   delivery_method: z.enum(['physical', 'remote', 'hybrid']),
   entry_requirements: z.string().optional(),
@@ -65,7 +67,7 @@ export default function TeacherDashboard() {
   const { user } = useWebsiteAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
-  const [gurukuls, setGurukuls] = useState<any[]>([])
+  const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [loading, setLoading] = useState(true)
   const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)
@@ -78,8 +80,8 @@ export default function TeacherDashboard() {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
+    // watch, // For future form monitoring
+    // setValue, // For programmatic form updates
     formState: { errors },
   } = useForm<CourseForm>({
     resolver: zodResolver(courseSchema),
@@ -122,6 +124,8 @@ export default function TeacherDashboard() {
         is_active: true,
         learning_outcomes: learningOutcomes.filter((outcome) => outcome.trim() !== ''),
         syllabus: null, // or {} or "" depending on your requirements
+        price: data.price || 0,
+        currency: data.currency || 'USD',
       }
       await createCourse(courseData)
       await loadDashboardData()
@@ -130,6 +134,7 @@ export default function TeacherDashboard() {
       setLearningOutcomes([''])
       toast.success('Course created successfully!')
     } catch (error) {
+      console.error('Error creating course:', error)
       toast.error('Failed to create course')
     }
   }
@@ -140,6 +145,7 @@ export default function TeacherDashboard() {
       await loadDashboardData()
       toast.success('Enrollment approved!')
     } catch (error) {
+      console.error('Error approving enrollment:', error)
       toast.error('Failed to approve enrollment')
     }
   }
@@ -150,6 +156,7 @@ export default function TeacherDashboard() {
       await loadDashboardData()
       toast.success('Enrollment rejected')
     } catch (error) {
+      console.error('Error rejecting enrollment:', error)
       toast.error('Failed to reject enrollment')
     }
   }
@@ -165,6 +172,7 @@ export default function TeacherDashboard() {
       setSelectedEnrollments([])
       toast.success(`${selectedEnrollments.length} enrollments approved!`)
     } catch (error) {
+      console.error('Error in bulk approval:', error)
       toast.error('Failed to approve enrollments')
     }
   }
@@ -175,6 +183,7 @@ export default function TeacherDashboard() {
       await loadDashboardData()
       toast.success('Certificate issued successfully!')
     } catch (error) {
+      console.error('Error issuing certificate:', error)
       toast.error('Failed to issue certificate')
     }
   }
@@ -194,6 +203,7 @@ export default function TeacherDashboard() {
       await loadDashboardData()
       toast.success(`${eligibleEnrollments.length} certificates issued!`)
     } catch (error) {
+      console.error('Error in bulk certificate issuance:', error)
       toast.error('Failed to issue certificates')
     }
   }
@@ -230,7 +240,7 @@ export default function TeacherDashboard() {
       .reduce((sum, e) => sum + (e.course?.price || 0), 0),
     averageRating:
       enrollments.length > 0
-        ? enrollments.reduce((sum, e) => sum + 4.5, 0) / enrollments.length
+        ? (enrollments.length * 4.5) / enrollments.length // Simplified: always 4.5
         : 0,
   }
 
@@ -345,7 +355,11 @@ export default function TeacherDashboard() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveView(tab.id as any)}
+                onClick={() =>
+                  setActiveView(
+                    tab.id as 'overview' | 'courses' | 'students' | 'certificates' | 'analytics',
+                  )
+                }
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
                   activeView === tab.id
                     ? 'bg-white text-blue-600 shadow-sm'

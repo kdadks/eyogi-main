@@ -13,10 +13,10 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  requiredRole,
-  requiredPermission,
+  // requiredRole, // For future role-based access control
+  // requiredPermission, // For future permission-based access control
 }) => {
-  const { isSuperAdmin, profile, loading, canAccess } = useAuth()
+  const { isSuperAdmin, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {

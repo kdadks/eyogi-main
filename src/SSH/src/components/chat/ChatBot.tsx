@@ -73,7 +73,7 @@ interface ChatBotProps {
 }
 
 export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProps) {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -88,7 +88,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         type: 'bot',
-        content: `🙏 Namaste ${profile?.full_name?.split(' ')[0] || 'friend'}! I'm your eYogi AI assistant. I'm here to help you with questions about our courses, Gurukuls, enrollment, and anything related to your learning journey. How can I assist you today?`,
+        content: `🙏 Namaste ${user?.email?.split('@')[0] || 'friend'}! I'm your eYogi AI assistant. I'm here to help you with questions about our courses, Gurukuls, enrollment, and anything related to your learning journey. How can I assist you today?`,
         timestamp: new Date(),
         persona: 'student',
         intent: 'greeting',
@@ -98,7 +98,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       // Focus input with preventScroll
       setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100)
     }
-  }, [isOpen, user, profile?.full_name])
+  }, [isOpen, user])
 
   // Prevent page scroll when chatbot is open
   useEffect(() => {
@@ -165,17 +165,12 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         ? {
             id: user.id,
             email: user.email || '',
-            full_name: profile?.full_name || '',
-            role: (profile?.role === 'super_admin' ? 'admin' : profile?.role || 'student') as
-              | 'student'
-              | 'teacher'
-              | 'admin',
-            student_id: profile?.student_id || '',
-            age: profile?.date_of_birth
-              ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()
-              : undefined,
+            full_name: user.email?.split('@')[0] || '',
+            role: 'admin' as 'student' | 'teacher' | 'admin',
+            student_id: '',
+            age: undefined,
             created_at: user.created_at,
-            updated_at: profile?.updated_at || user.updated_at || '',
+            updated_at: user.updated_at || '',
           }
         : null
 
