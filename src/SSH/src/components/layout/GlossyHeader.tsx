@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/components/providers/AuthProvider'
+import { Button } from '../ui/Button'
+import { useAuth } from '../../contexts/AuthContext'
+import logoImage from '/eyogiTextLess.png'
+import fallbackLogo from '/Images/Logo.png'
 
 interface NavLink {
   name: string
@@ -25,14 +27,14 @@ const navLinks: NavLink[] = [
 const mainSiteLink = {
   name: 'Back to Main Site',
   href: '/',
-  external: true
+  external: true,
 }
 
 export function GlossyHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,7 +62,7 @@ export function GlossyHeader() {
     hover: {
       scale: 1.05,
       filter: 'drop-shadow(0 0 20px rgba(255, 165, 0, 0.6))',
-      transition: { duration: 0.3 }
+      transition: { duration: 0.3 },
     },
   }
 
@@ -68,7 +70,7 @@ export function GlossyHeader() {
     initial: {
       scale: 1,
       background: 'rgba(0, 0, 0, 0)',
-      color: 'rgba(31, 41, 55, 0.9)'
+      color: 'rgba(31, 41, 55, 0.9)',
     },
     hover: {
       scale: 1.05,
@@ -84,15 +86,15 @@ export function GlossyHeader() {
       height: 0,
       transition: {
         duration: 0.3,
-        when: "afterChildren",
+        when: 'afterChildren',
       },
     },
     open: {
       opacity: 1,
-      height: "auto",
+      height: 'auto',
       transition: {
         duration: 0.3,
-        when: "beforeChildren",
+        when: 'beforeChildren',
         staggerChildren: 0.1,
       },
     },
@@ -110,13 +112,9 @@ export function GlossyHeader() {
       animate={isScrolled ? 'scrolled' : 'top'}
       transition={{ duration: 0.3 }}
       style={{
-        background: isScrolled
-          ? 'rgba(255, 255, 255, 0.1)'
-          : 'rgba(255, 255, 255, 0.05)',
+        background: isScrolled ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)',
         backdropFilter: isScrolled ? 'blur(20px)' : 'blur(0px)',
-        boxShadow: isScrolled
-          ? '0 8px 32px rgba(0, 0, 0, 0.1)'
-          : '0 0 0 rgba(0, 0, 0, 0)',
+        boxShadow: isScrolled ? '0 8px 32px rgba(0, 0, 0, 0.1)' : '0 0 0 rgba(0, 0, 0, 0)',
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -131,9 +129,14 @@ export function GlossyHeader() {
             <Link to="/" className="flex items-center space-x-3">
               <div className="relative">
                 <img
-                  src="/eyogiTextLess.png"
+                  src={logoImage}
                   alt="eYogi Gurukul"
                   className="h-10 w-10 lg:h-12 lg:w-12 rounded-full border-2 border-white/20"
+                  onError={(e) => {
+                    // Fallback to Logo.png if eyogiTextLess.png fails
+                    const target = e.target as HTMLImageElement
+                    target.src = fallbackLogo
+                  }}
                 />
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400/20 to-red-500/20"></div>
               </div>
@@ -187,7 +190,7 @@ export function GlossyHeader() {
             >
               <a
                 href="/"
-                onClick={() => window.location.href = '/'}
+                onClick={() => (window.location.href = '/')}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-2 relative overflow-hidden text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100"
               >
                 <span>← eYogi Gurukul</span>
@@ -204,7 +207,9 @@ export function GlossyHeader() {
                   whileHover={{ scale: 1.05 }}
                 >
                   <User className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm text-gray-800">{user.full_name || user.email || 'User'}</span>
+                  <span className="text-sm text-gray-800">
+                    {profile?.full_name || user.email || 'User'}
+                  </span>
                 </motion.div>
                 <motion.button
                   onClick={signOut}
@@ -218,10 +223,7 @@ export function GlossyHeader() {
             ) : (
               <div className="hidden lg:flex items-center space-x-12">
                 <Link to="/auth/signin">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
                       variant="outline"
                       size="sm"
@@ -233,10 +235,7 @@ export function GlossyHeader() {
                   </motion.div>
                 </Link>
                 <Link to="/auth/signup">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
                       size="sm"
                       className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border-0"
@@ -294,10 +293,7 @@ export function GlossyHeader() {
             >
               <div className="px-2 pt-2 pb-3 space-y-1">
                 {navLinks.map((link) => (
-                  <motion.div
-                    key={link.name}
-                    variants={mobileItemVariants}
-                  >
+                  <motion.div key={link.name} variants={mobileItemVariants}>
                     <Link
                       to={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
@@ -314,10 +310,7 @@ export function GlossyHeader() {
                 ))}
 
                 {/* Main Site Link for Mobile */}
-                <motion.div
-                  variants={mobileItemVariants}
-                  className="pt-2 border-t border-gray-200"
-                >
+                <motion.div variants={mobileItemVariants} className="pt-2 border-t border-gray-200">
                   <a
                     href="/"
                     onClick={() => {
@@ -339,7 +332,7 @@ export function GlossyHeader() {
                     <>
                       <div className="flex items-center space-x-3 px-3 py-2 text-gray-800">
                         <User className="w-4 h-4" />
-                        <span>{user.full_name || user.email || 'User'}</span>
+                        <span>{profile?.full_name || user.email || 'User'}</span>
                       </div>
                       <button
                         onClick={() => {

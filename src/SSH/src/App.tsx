@@ -13,6 +13,15 @@ import CoursesPage from './pages/CoursesPage'
 import GurukulPage from './pages/GurukulPage'
 import SignInPage from './pages/auth/SignInPage'
 import SignUpPage from './pages/auth/SignUpPage'
+
+// Admin Components
+import AdminLogin from './components/auth/AdminLogin'
+import AdminLayout from './components/admin/AdminLayout'
+import AdminDashboard from './components/admin/AdminDashboard'
+import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
+import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
+import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
+
 // import GurukulDetailPage from './pages/GurukulDetailPage'
 // import CourseDetailPage from './pages/CourseDetailPage'
 
@@ -45,6 +54,53 @@ function App() {
             {/* Auth Pages */}
             <Route path="/auth/signin" element={<SignInPage />} />
             <Route path="/auth/signup" element={<SignUpPage />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+
+            {/* Protected admin routes */}
+            <Route
+              path="/admin/*"
+              element={
+                <AdminProtectedRoute>
+                  <AdminLayout />
+                </AdminProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUserManagementNew />} />
+              <Route path="permissions" element={<AdminPermissionManagement />} />
+
+              {/* Placeholder routes for future features */}
+              <Route
+                path="courses"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Course Management</h1>
+                    <p>Coming in Phase 2: Course creation and management tools</p>
+                  </div>
+                }
+              />
+              <Route
+                path="enrollments"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Enrollment Management</h1>
+                    <p>Coming in Phase 2: Enrollment approval and tracking system</p>
+                  </div>
+                }
+              />
+              <Route
+                path="certificates"
+                element={
+                  <div className="p-6">
+                    <h1 className="text-2xl font-bold">Certificate Management</h1>
+                    <p>Coming in Phase 3: Certificate templates and generation</p>
+                  </div>
+                }
+              />
+            </Route>
 
             {/* Detail pages temporarily disabled due to auth dependencies */}
             {/* <Route path="/gurukuls/:slug" element={<GurukulDetailPage />} /> */}
