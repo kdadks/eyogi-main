@@ -29,7 +29,7 @@ import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 // import GurukulDetailPage from './pages/GurukulDetailPage'
-// import CourseDetailPage from './pages/CourseDetailPage'
+import CourseDetailPage from './pages/CourseDetailPage'
 
 // Loading component
 const LoadingFallback = () => (
@@ -42,25 +42,13 @@ const LoadingFallback = () => (
 )
 
 function App() {
-  console.log('🎯 [APP] App component initializing...')
-
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin')
 
-  console.log(
-    '🎯 [APP] State initialized - isAuthModalOpen:',
-    isAuthModalOpen,
-    'authModalMode:',
-    authModalMode,
-  )
-
   const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
-    console.log('🎯 [APP] openAuthModal called with mode:', mode)
     setAuthModalMode(mode)
     setIsAuthModalOpen(true)
   }
-
-  console.log('🎯 [APP] About to render App JSX...')
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -153,9 +141,9 @@ function App() {
               />
             </Route>
 
-            {/* Detail pages temporarily disabled due to auth dependencies */}
+            {/* Detail pages */}
+            <Route path="/courses/:id" element={<CourseDetailPage />} />
             {/* <Route path="/gurukuls/:slug" element={<GurukulDetailPage />} /> */}
-            {/* <Route path="/courses/:id" element={<CourseDetailPage />} /> */}
 
             {/* Catch all route - redirect to homepage */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User } from 'lucide-react'
+import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User, Home } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../ui/Button'
-import { useAuth } from '../../contexts/AuthContext'
+import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import logoImage from '/eyogiTextLess.png'
 import fallbackLogo from '/Images/Logo.png'
@@ -25,54 +25,24 @@ const navLinks: NavLink[] = [
   { name: 'Contact', href: '/contact', icon: <Users className="w-4 h-4" /> },
 ]
 
-const mainSiteLink = {
-  name: 'Back to Main Site',
-  href: '/',
-  external: true,
-}
-
 interface GlossyHeaderProps {
   onOpenAuthModal?: (mode?: 'signin' | 'signup') => void
 }
 
 export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
-  console.log('📋 [HEADER] GlossyHeader component initializing...')
-
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
 
-  console.log('📋 [HEADER] Location:', location.pathname)
-
   // Safely get auth context - handle case where provider might not be ready
-  let superAdminUser = null
-  console.log('📋 [HEADER] Attempting to get auth context...')
   try {
-    const authContext = useAuth()
-    console.log('📋 [HEADER] Auth context retrieved successfully:', !!authContext)
-    console.log('📋 [HEADER] Auth context user:', !!authContext?.user)
-    superAdminUser = authContext?.user
-  } catch (error) {
-    console.warn('⚠️ [HEADER] AuthProvider not available:', error)
-    console.error('⚠️ [HEADER] Auth error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name,
-    })
+    useSupabaseAuth()
+  } catch {
+    // AuthProvider not available, continue without super admin context
   }
 
-  console.log('📋 [HEADER] Attempting to get website auth context...')
-  let websiteUser = null
-  let websiteSignOut = null
-  try {
-    const websiteAuthContext = useWebsiteAuth()
-    console.log('📋 [HEADER] Website auth context retrieved successfully:', !!websiteAuthContext)
-    websiteUser = websiteAuthContext?.user
-    websiteSignOut = websiteAuthContext?.signOut
-    console.log('📋 [HEADER] Website user:', !!websiteUser)
-  } catch (error) {
-    console.error('❌ [HEADER] WebsiteAuth error:', error)
-  }
+  // Get website auth context
+  const { user: websiteUser, signOut: websiteSignOut } = useWebsiteAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -245,9 +215,17 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                   whileHover={{ scale: 1.05 }}
                 >
                   <User className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm text-gray-800">
-                    {websiteUser.full_name || websiteUser.email || 'User'}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-800">
+                      {websiteUser.full_name || websiteUser.email || 'User'}
+                    </span>
+                    <Link
+                      to="/dashboard"
+                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      View Dashboard
+                    </Link>
+                  </div>
                 </motion.div>
                 <motion.button
                   onClick={websiteSignOut}
@@ -370,6 +348,14 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                         <User className="w-4 h-4" />
                         <span>{websiteUser.full_name || websiteUser.email || 'User'}</span>
                       </div>
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 w-full text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                      >
+                        <Home className="w-4 h-4" />
+                        <span>View Dashboard</span>
+                      </Link>
                       <button
                         onClick={() => {
                           websiteSignOut()

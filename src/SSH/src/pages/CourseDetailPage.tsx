@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useWebsiteAuth } from '../contexts/WebsiteAuthContext'
 import SEOHead from '../components/seo/SEOHead'
 import { generateCourseSchema, generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Course } from '../types'
@@ -13,26 +14,21 @@ import toast from 'react-hot-toast'
 import {
   ClockIcon,
   UserGroupIcon,
-  CurrencyEuroIcon,
   AcademicCapIcon,
   CheckCircleIcon,
   BookOpenIcon,
 } from '@heroicons/react/24/outline'
+import ChatBotTrigger from '../components/chat/ChatBotTrigger'
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useWebsiteAuth()
   const [course, setCourse] = useState<Course | null>(null)
   const [enrolledCount, setEnrolledCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
 
-  useEffect(() => {
-    if (id) {
-      loadCourseData()
-    }
-  }, [id])
-
-  const loadCourseData = async () => {
+  const loadCourseData = useCallback(async () => {
     try {
       const [courseData, enrolledCountData] = await Promise.all([
         getCourse(id!),
@@ -46,7 +42,13 @@ export default function CourseDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      loadCourseData()
+    }
+  }, [id, loadCourseData])
 
   const handleEnroll = async () => {
     if (!user) {
@@ -200,7 +202,7 @@ export default function CourseDetailPage() {
                   <CardHeader>
                     <div className="text-center">
                       <div className="text-3xl font-bold text-gray-900 mb-2">
-                        {formatCurrency(course.fee)}
+                        {formatCurrency(course.price)}
                       </div>
                       <p className="text-sm text-gray-600">
                         {course.delivery_method === 'remote' && '🌐 Online Course'}
@@ -315,14 +317,14 @@ export default function CourseDetailPage() {
                 </Card>
               )}
 
-              {/* Entry Requirements */}
-              {course.entry_requirements && (
+              {/* Prerequisites */}
+              {course.prerequisites && (
                 <Card>
                   <CardHeader>
-                    <h2 className="text-2xl font-bold">Entry Requirements</h2>
+                    <h2 className="text-2xl font-bold">Prerequisites</h2>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700">{course.entry_requirements}</p>
+                    <p className="text-gray-700">{course.prerequisites}</p>
                   </CardContent>
                 </Card>
               )}
