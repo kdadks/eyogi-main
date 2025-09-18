@@ -37,12 +37,14 @@ interface WebsiteAuthModalProps {
   isOpen: boolean
   onClose: () => void
   initialMode?: 'signin' | 'signup'
+  redirectAfterAuth?: string | false // false means stay on current page
 }
 
 export default function WebsiteAuthModal({
   isOpen,
   onClose,
   initialMode = 'signin',
+  redirectAfterAuth = '/dashboard',
 }: WebsiteAuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode)
   const [loading, setLoading] = useState(false)
@@ -101,8 +103,10 @@ export default function WebsiteAuthModal({
       toast.success('Welcome back!')
       onClose()
 
-      // Redirect to dashboard after successful login
-      navigate('/dashboard')
+      // Conditionally redirect after successful login
+      if (redirectAfterAuth !== false) {
+        navigate(redirectAfterAuth)
+      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(error.message)
