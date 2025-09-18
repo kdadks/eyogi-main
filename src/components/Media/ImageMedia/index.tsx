@@ -62,13 +62,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
                 ? `https://${process.env.VERCEL_URL}`
                 : 'http://localhost:3000')
         src = `${baseUrl}${url}`
-
-        console.log('🔗 PayloadCMS API Image:', {
-          originalUrl: url,
-          finalSrc: src,
-          baseUrl,
-          source: imageSource,
-        })
       }
       // If URL starts with http (UploadThing URL), use as-is
       else if (url.startsWith('http')) {
@@ -128,7 +121,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
           }
 
           sessionStorage.setItem(statsKey, JSON.stringify(stats))
-          console.log('📊 RUNNING IMAGE STATS:', stats)
         } catch (_e) {
           // Ignore storage errors
         }
