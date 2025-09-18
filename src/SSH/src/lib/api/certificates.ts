@@ -1,98 +1,139 @@
-import { Certificate } from '@/types'
+import { supabaseAdmin } from '../supabase'
+import type { Database } from '../supabase'
 
-const STORAGE_KEY = 'eyogi_certificates'
+type Certificate = Database['public']['Tables']['certificates']['Row']
 
 export async function getStudentCertificates(studentId: string): Promise<Certificate[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 200))
-  
-  const certificates = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  const courses = JSON.parse(localStorage.getItem('eyogi_courses') || '[]')
-  const gurukuls = JSON.parse(localStorage.getItem('eyogi_gurukuls') || '[]')
-  
-  return certificates
-    .filter((cert: Certificate) => cert.student_id === studentId)
-    .map((cert: Certificate) => {
-      const course = courses.find((c: any) => c.id === cert.course_id)
-      const gurukul = course ? gurukuls.find((g: any) => g.id === course.gurukul_id) : null
-      
-      return {
-        ...cert,
-        course: course ? { ...course, gurukul } : null
-      }
-    })
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('certificates')
+      .select(
+        `
+        *,
+        courses (*),
+        profiles!certificates_student_id_fkey (*)
+      `,
+      )
+      .eq('student_id', studentId)
+      .order('issue_date', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching student certificates:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error fetching student certificates:', error)
+    return []
+  }
 }
 
 export async function downloadCertificate(certificateId: string): Promise<void> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
-  // In a real app, this would trigger a file download
-  console.log('Downloading certificate:', certificateId)
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('certificates')
+      .select('file_url')
+      .eq('id', certificateId)
+      .single()
+
+    if (error || !data?.file_url) {
+      throw new Error('Certificate not found')
+    }
+
+    // In a real app, this would trigger a file download
+    window.open(data.file_url, '_blank')
+  } catch (error) {
+    console.error('Error downloading certificate:', error)
+    throw error
+  }
 }
 
 export async function issueCertificate(enrollmentId: string): Promise<Certificate> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 400))
-  
-  const enrollments = JSON.parse(localStorage.getItem('eyogi_enrollments') || '[]')
-  const certificates = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  
-  const enrollment = enrollments.find((e: any) => e.id === enrollmentId)
-  if (!enrollment) {
-    throw new Error('Enrollment not found')
+  try {
+    // Get enrollment details
+    const { data: enrollment, error: enrollmentError } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        *,
+        courses (*),
+        profiles!enrollments_student_id_fkey (*)
+      `,
+      )
+      .eq('id', enrollmentId)
+      .single()
+
+    if (enrollmentError || !enrollment) {
+      throw new Error('Enrollment not found')
+    }
+
+    if (enrollment.status !== 'completed') {
+      throw new Error('Can only issue certificates for completed courses')
+    }
+
+    // Check if certificate already exists
+    const { data: existingCert } = await supabaseAdmin
+      .from('certificates')
+      .select('id')
+      .eq('enrollment_id', enrollmentId)
+      .single()
+
+    if (existingCert) {
+      throw new Error('Certificate already issued for this enrollment')
+    }
+
+    const certificateNumber = `CERT-${Date.now()}`
+    const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
+
+    const { data: certificate, error } = await supabaseAdmin
+      .from('certificates')
+      .insert({
+        id: crypto.randomUUID(),
+        enrollment_id: enrollmentId,
+        student_id: enrollment.student_id,
+        course_id: enrollment.course_id,
+        certificate_number: certificateNumber,
+        template_id: 'default-template',
+        issue_date: new Date().toISOString(),
+        issued_by: 'system',
+        verification_code: verificationCode,
+        certificate_data: {
+          student_name: enrollment.profiles?.full_name,
+          course_title: enrollment.courses?.title,
+          completion_date: enrollment.completed_at || new Date().toISOString(),
+        },
+        file_url: `https://certificates.eyogigurukul.com/${certificateNumber}.pdf`,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error issuing certificate:', error)
+      throw new Error('Failed to issue certificate')
+    }
+
+    // Update enrollment to mark certificate as issued
+    await supabaseAdmin
+      .from('enrollments')
+      .update({
+        certificate_issued: true,
+        certificate_url: certificate.file_url,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', enrollmentId)
+
+    return certificate
+  } catch (error) {
+    console.error('Error issuing certificate:', error)
+    throw error
   }
-  
-  if (enrollment.status !== 'completed') {
-    throw new Error('Can only issue certificates for completed courses')
-  }
-  
-  if (enrollment.certificate_issued) {
-    throw new Error('Certificate already issued for this enrollment')
-  }
-  
-  const certificateNumber = `CERT-${Date.now()}`
-  const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
-  
-  const newCertificate: Certificate = {
-    id: Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
-    enrollment_id: enrollmentId,
-    student_id: enrollment.student_id,
-    course_id: enrollment.course_id,
-    certificate_number: certificateNumber,
-    template_id: 'default-template',
-    issued_at: new Date().toISOString(),
-    issued_by: 'system', // In real app, this would be the current user ID
-    verification_code: verificationCode,
-    certificate_data: {
-      student_name: enrollment.student?.full_name,
-      course_title: enrollment.course?.title,
-      completion_date: enrollment.completed_at || new Date().toISOString()
-    },
-    file_url: `https://certificates.eyogigurukul.com/${certificateNumber}.pdf`,
-    created_at: new Date().toISOString()
-  }
-  
-  certificates.push(newCertificate)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(certificates))
-  
-  // Update enrollment to mark certificate as issued
-  const enrollmentIndex = enrollments.findIndex((e: any) => e.id === enrollmentId)
-  if (enrollmentIndex !== -1) {
-    enrollments[enrollmentIndex].certificate_issued = true
-    enrollments[enrollmentIndex].certificate_url = newCertificate.file_url
-    localStorage.setItem('eyogi_enrollments', JSON.stringify(enrollments))
-  }
-  
-  return newCertificate
 }
 
 export async function bulkIssueCertificates(enrollmentIds: string[]): Promise<Certificate[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 600))
-  
   const certificates: Certificate[] = []
-  
+
   for (const enrollmentId of enrollmentIds) {
     try {
       const certificate = await issueCertificate(enrollmentId)
@@ -101,6 +142,6 @@ export async function bulkIssueCertificates(enrollmentIds: string[]): Promise<Ce
       console.error(`Failed to issue certificate for enrollment ${enrollmentId}:`, error)
     }
   }
-  
+
   return certificates
 }

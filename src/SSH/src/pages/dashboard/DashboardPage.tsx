@@ -1,12 +1,13 @@
 import React from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '@/components/providers/AuthProvider'
-import { getDefaultRedirectPath } from '@/lib/auth/authUtils'
+import { useAuth } from '../../contexts/AuthContext'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
 export default function DashboardPage() {
-  const { user, loading, initialized } = useAuth()
+  const { loading: authLoading, isSuperAdmin } = useAuth()
+  const { user: websiteUser, loading: websiteLoading } = useWebsiteAuth()
 
-  if (!initialized || loading) {
+  if (authLoading || websiteLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center page-with-header">
         <div className="text-center">
@@ -17,11 +18,25 @@ export default function DashboardPage() {
     )
   }
 
-  if (!user) {
-    return <Navigate to="/auth/signin" replace />
+  // Redirect super admin to admin console
+  if (isSuperAdmin) {
+    return <Navigate to="/admin/dashboard" replace />
   }
 
-  // Redirect to role-specific dashboard using utility function
-  const redirectPath = getDefaultRedirectPath(user)
-  return <Navigate to={redirectPath} replace />
+  // Redirect website users based on role
+  if (websiteUser) {
+    switch (websiteUser.role) {
+      case 'student':
+        return <Navigate to="/dashboard/student" replace />
+      case 'teacher':
+        return <Navigate to="/dashboard/teacher" replace />
+      case 'admin':
+        return <Navigate to="/dashboard/admin" replace />
+      default:
+        return <Navigate to="/auth/signin" replace />
+    }
+  }
+
+  // Not authenticated
+  return <Navigate to="/auth/signin" replace />
 }

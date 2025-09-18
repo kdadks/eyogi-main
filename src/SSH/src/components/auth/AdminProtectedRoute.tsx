@@ -16,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole,
   requiredPermission,
 }) => {
-  const { user, profile, loading, canAccess } = useAuth()
+  const { isSuperAdmin, profile, loading, canAccess } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -27,39 +27,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     )
   }
 
-  // Supabase authenticated users have full access (no profile required)
-  if (!user) {
+  // Super admin (Supabase authenticated) users have full access
+  if (!isSuperAdmin) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />
   }
 
-  // If user has no profile, they are a Supabase admin user with full access
-  if (!profile) {
-    return <>{children}</>
-  }
-
-  // For users with profiles, check role and permission requirements
-  // Check role requirement
-  if (requiredRole) {
-    if (requiredRole === 'admin' && !['admin', 'super_admin'].includes(profile.role)) {
-      return <Navigate to="/admin/unauthorized" replace />
-    }
-
-    if (requiredRole === 'super_admin' && profile.role !== 'super_admin') {
-      return <Navigate to="/admin/unauthorized" replace />
-    }
-
-    if (requiredRole === 'teacher' && !['teacher', 'admin', 'super_admin'].includes(profile.role)) {
-      return <Navigate to="/admin/unauthorized" replace />
-    }
-  }
-
-  // Check permission requirement
-  if (requiredPermission) {
-    if (!canAccess(requiredPermission.resource, requiredPermission.action)) {
-      return <Navigate to="/admin/unauthorized" replace />
-    }
-  }
-
+  // Super admin has full access without any additional checks
   return <>{children}</>
 }
 

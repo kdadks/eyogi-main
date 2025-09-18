@@ -7,8 +7,7 @@ import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
-import { useAuth } from '@/components/providers/AuthProvider'
-import { signUp } from '../../lib/auth'
+import { useAuth } from '../../contexts/AuthContext'
 
 const signUpSchema = z
   .object({
@@ -45,7 +44,7 @@ type SignUpForm = z.infer<typeof signUpSchema>
 export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { refreshUser } = useAuth()
+  const { registerWebsiteUser } = useAuth()
 
   const {
     register,
@@ -65,10 +64,26 @@ export default function SignUpPage() {
   const onSubmit = async (data: SignUpForm) => {
     setLoading(true)
     try {
-      const { confirmPassword, ...userData } = data
-      await signUp(data.email, data.password, userData)
-      await refreshUser()
-      toast.success('Account created successfully! Please check your email to verify your account.')
+      const { error } = await registerWebsiteUser({
+        email: data.email,
+        password: data.password,
+        full_name: data.full_name,
+        role: data.role as 'student' | 'teacher',
+        phone: data.phone,
+      })
+
+      if (error) {
+        // Check if it's actually a success message that needs email confirmation
+        if (error.includes('Account created! Please check your email')) {
+          toast.success(error)
+          navigate('/auth/signin')
+        } else {
+          toast.error(error)
+        }
+        return
+      }
+
+      toast.success('Account created successfully! You can now sign in.')
       navigate('/auth/signin')
     } catch (error: unknown) {
       if (error instanceof Error) {

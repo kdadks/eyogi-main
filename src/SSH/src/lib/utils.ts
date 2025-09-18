@@ -7,7 +7,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency = 'EUR'): string {
+export function formatCurrency(amount: number | null | undefined, currency = 'EUR'): string {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return new Intl.NumberFormat('en-IE', {
+      style: 'currency',
+      currency,
+    }).format(0)
+  }
   return new Intl.NumberFormat('en-IE', {
     style: 'currency',
     currency,
@@ -43,7 +49,7 @@ export function generateSlug(text: string): string {
 export function getInitials(name: string): string {
   return name
     .split(' ')
-    .map(word => word.charAt(0))
+    .map((word) => word.charAt(0))
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -63,7 +69,7 @@ export function getLevelColor(level: string): string {
     elementary: 'bg-green-100 text-green-800',
     basic: 'bg-blue-100 text-blue-800',
     intermediate: 'bg-yellow-100 text-yellow-800',
-    advanced: 'bg-red-100 text-red-800'
+    advanced: 'bg-red-100 text-red-800',
   }
   return colors[level as keyof typeof colors] || colors.basic
 }
@@ -74,7 +80,7 @@ export function getStatusColor(status: string): string {
     approved: 'bg-green-100 text-green-800',
     rejected: 'bg-red-100 text-red-800',
     completed: 'bg-blue-100 text-blue-800',
-    cancelled: 'bg-gray-100 text-gray-800'
+    cancelled: 'bg-gray-100 text-gray-800',
   }
   return colors[status as keyof typeof colors] || colors.pending
 }

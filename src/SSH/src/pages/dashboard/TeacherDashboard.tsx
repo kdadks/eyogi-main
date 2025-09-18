@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/components/providers/AuthProvider'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -62,7 +62,7 @@ const courseSchema = z.object({
 type CourseForm = z.infer<typeof courseSchema>
 
 export default function TeacherDashboard() {
-  const { user } = useAuth()
+  const { user } = useWebsiteAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<any[]>([])
@@ -94,7 +94,7 @@ export default function TeacherDashboard() {
     if (user) {
       loadDashboardData()
     }
-  }, [user])
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadDashboardData = async () => {
     try {
@@ -227,8 +227,11 @@ export default function TeacherDashboard() {
     ).length,
     totalRevenue: enrollments
       .filter((e) => e.payment_status === 'paid')
-      .reduce((sum, e) => sum + (e.course?.fee || 0), 0),
-    averageRating: 4.8, // Mock data
+      .reduce((sum, e) => sum + (e.course?.price || 0), 0),
+    averageRating:
+      enrollments.length > 0
+        ? enrollments.reduce((sum, e) => sum + 4.5, 0) / enrollments.length
+        : 0,
   }
 
   const recentActivity = [
@@ -289,7 +292,7 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center page-with-header">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center pt-16 lg:pt-20">
         <div className="text-center">
           <div className="spinner w-12 h-12 mx-auto mb-4 border-4 border-blue-200 border-t-blue-600"></div>
           <p className="text-gray-600 text-lg">Loading your teaching dashboard...</p>
@@ -299,9 +302,9 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 page-with-header">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-16 lg:pt-20">
       {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-40">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-16 lg:top-20 z-40">
         <div className="container-max py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -607,7 +610,7 @@ export default function TeacherDashboard() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <CurrencyEuroIcon className="h-4 w-4 text-gray-400" />
-                            <span>{formatCurrency(course.fee)}</span>
+                            <span>{formatCurrency(course.price)}</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <TrophyIcon className="h-4 w-4 text-gray-400" />
@@ -1106,7 +1109,7 @@ export default function TeacherDashboard() {
                               {formatCurrency(
                                 courseEnrollments
                                   .filter((e) => e.payment_status === 'paid')
-                                  .reduce((sum, e) => sum + (e.course?.fee || 0), 0),
+                                  .reduce((sum, e) => sum + (e.course?.price || 0), 0),
                               )}
                             </div>
                           </div>

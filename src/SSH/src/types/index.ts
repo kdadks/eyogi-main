@@ -32,17 +32,32 @@ export interface Course {
   course_number: string
   title: string
   description: string
+  detailed_description?: string
   level: 'elementary' | 'basic' | 'intermediate' | 'advanced'
   age_group_min: number
   age_group_max: number
   duration_weeks: number
-  fee: number
+  duration_hours?: number
+  price: number
+  currency: string
   max_students: number
+  min_students?: number
   delivery_method: 'physical' | 'remote' | 'hybrid'
-  entry_requirements?: string
+  prerequisites?: any
   learning_outcomes: string[]
+  includes_certificate?: boolean
+  certificate_template_id?: string
+  image_url?: string
+  cover_image_url?: string
+  video_preview_url?: string
   syllabus: any
+  resources?: any[]
   is_active: boolean
+  featured?: boolean
+  tags?: string[]
+  meta_title?: string
+  meta_description?: string
+  created_by?: string
   teacher_id?: string
   created_at: string
   updated_at: string
@@ -76,7 +91,7 @@ export interface Certificate {
   course_id: string
   certificate_number: string
   template_id: string
-  issued_at: string
+  issue_date: string
   issued_by: string
   verification_code: string
   certificate_data: any

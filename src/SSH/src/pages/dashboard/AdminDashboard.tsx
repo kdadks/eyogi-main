@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useAuth } from '@/components/providers/AuthProvider'
+import { useAuth } from '../../contexts/AuthContext'
 import AdminOverview from '@/components/admin/AdminOverview'
 import EnrollmentManagement from '@/components/admin/EnrollmentManagement'
 import UserManagement from '@/components/admin/UserManagement'
@@ -30,7 +30,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   ChartPieIcon,
-  UserIcon
+  UserIcon,
 } from '@heroicons/react/24/outline'
 
 interface QuickAction {
@@ -52,38 +52,45 @@ interface Notification {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'enrollments' | 'students' | 'users' | 'courses' | 'gurukuls' | 'certificates' | 'content'>('overview')
+  const { user, profile } = useAuth()
+  const [activeTab, setActiveTab] = useState<
+    | 'overview'
+    | 'analytics'
+    | 'enrollments'
+    | 'students'
+    | 'users'
+    | 'courses'
+    | 'gurukuls'
+    | 'certificates'
+    | 'content'
+  >('overview')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [quickStats, setQuickStats] = useState({
     pendingEnrollments: 0,
     newUsers: 0,
-    totalUsers: 0
+    totalUsers: 0,
   })
 
   useEffect(() => {
     loadQuickStats()
     loadNotifications()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadQuickStats = async () => {
     try {
-      const [enrollmentStats, users] = await Promise.all([
-        getEnrollmentStats(),
-        getAllUsers()
-      ])
-      
+      const [enrollmentStats, users] = await Promise.all([getEnrollmentStats(), getAllUsers()])
+
       setQuickStats({
         pendingEnrollments: enrollmentStats.pending,
-        newUsers: users.filter(u => {
+        newUsers: users.filter((u) => {
           const createdDate = new Date(u.created_at)
           const weekAgo = new Date()
           weekAgo.setDate(weekAgo.getDate() - 7)
           return createdDate > weekAgo
         }).length,
-        totalUsers: users.length
+        totalUsers: users.length,
       })
     } catch (error) {
       console.error('Error loading quick stats:', error)
@@ -99,7 +106,7 @@ export default function AdminDashboard() {
         title: 'Pending Enrollments',
         message: `${quickStats.pendingEnrollments} enrollments need approval`,
         time: '5 min ago',
-        unread: true
+        unread: true,
       },
       {
         id: '2',
@@ -107,7 +114,7 @@ export default function AdminDashboard() {
         title: 'New User Registration',
         message: '3 new students registered today',
         time: '1 hour ago',
-        unread: true
+        unread: true,
       },
       {
         id: '3',
@@ -115,76 +122,76 @@ export default function AdminDashboard() {
         title: 'Course Published',
         message: 'Sanskrit Basics course is now live',
         time: '2 hours ago',
-        unread: false
-      }
+        unread: false,
+      },
     ])
   }
 
   const tabs = [
-    { 
-      id: 'overview', 
-      name: 'Dashboard', 
-      icon: ChartBarIcon, 
+    {
+      id: 'overview',
+      name: 'Dashboard',
+      icon: ChartBarIcon,
       component: AdminOverview,
-      description: 'Overview & Analytics'
+      description: 'Overview & Analytics',
     },
-    { 
-      id: 'analytics', 
-      name: 'Analytics', 
-      icon: ChartPieIcon, 
+    {
+      id: 'analytics',
+      name: 'Analytics',
+      icon: ChartPieIcon,
       component: SiteAnalytics,
-      description: 'Site Traffic & User Insights'
+      description: 'Site Traffic & User Insights',
     },
-    { 
-      id: 'enrollments', 
-      name: 'Enrollments', 
-      icon: AcademicCapIcon, 
+    {
+      id: 'enrollments',
+      name: 'Enrollments',
+      icon: AcademicCapIcon,
       component: EnrollmentManagement,
       description: 'Manage Student Enrollments',
-      badge: quickStats.pendingEnrollments > 0 ? quickStats.pendingEnrollments : undefined
+      badge: quickStats.pendingEnrollments > 0 ? quickStats.pendingEnrollments : undefined,
     },
-    { 
-      id: 'students', 
-      name: 'Students', 
-      icon: UserIcon, 
+    {
+      id: 'students',
+      name: 'Students',
+      icon: UserIcon,
       component: StudentManagement,
-      description: 'Student Management & Analytics'
+      description: 'Student Management & Analytics',
     },
-    { 
-      id: 'users', 
-      name: 'Users', 
-      icon: UserGroupIcon, 
+    {
+      id: 'users',
+      name: 'Users',
+      icon: UserGroupIcon,
       component: UserManagement,
-      description: 'User Management & Roles'
+      description: 'User Management & Roles',
     },
-    { 
-      id: 'courses', 
-      name: 'Courses', 
-      icon: BookOpenIcon, 
+    {
+      id: 'courses',
+      name: 'Courses',
+      icon: BookOpenIcon,
       component: CourseManagement,
-      description: 'Course Catalog Management'
+      description: 'Course Catalog Management',
     },
-    { 
-      id: 'gurukuls', 
-      name: 'Gurukuls', 
-      icon: GlobeAltIcon, 
+    {
+      id: 'gurukuls',
+      name: 'Gurukuls',
+      icon: GlobeAltIcon,
       component: GurukulManagement,
-      description: 'Gurukul Management'
+      description: 'Gurukul Management',
     },
-    { 
-      id: 'certificates', 
-      name: 'Certificates', 
-      icon: DocumentTextIcon, 
+    {
+      id: 'certificates',
+      name: 'Certificates',
+      icon: DocumentTextIcon,
       component: CertificateManagement,
-      description: 'Certificate Management'
+      description: 'Certificate Management',
     },
-    { 
-      id: 'content', 
-      name: 'Content', 
-      icon: DocumentDuplicateIcon, 
+    {
+      id: 'content',
+      name: 'Content',
+      icon: DocumentDuplicateIcon,
       component: ContentManagement,
-      description: 'Website Content Management'
-    }
+      description: 'Website Content Management',
+    },
   ]
 
   const quickActions: QuickAction[] = [
@@ -194,7 +201,7 @@ export default function AdminDashboard() {
       description: 'Add a new course to the catalog',
       icon: PlusIcon,
       action: () => setActiveTab('courses'),
-      color: 'bg-blue-500 hover:bg-blue-600'
+      color: 'bg-blue-500 hover:bg-blue-600',
     },
     {
       id: 'approve-enrollments',
@@ -202,7 +209,7 @@ export default function AdminDashboard() {
       description: `${quickStats.pendingEnrollments} pending approvals`,
       icon: CheckCircleIcon,
       action: () => setActiveTab('enrollments'),
-      color: 'bg-green-500 hover:bg-green-600'
+      color: 'bg-green-500 hover:bg-green-600',
     },
     {
       id: 'manage-users',
@@ -210,7 +217,7 @@ export default function AdminDashboard() {
       description: 'User roles and permissions',
       icon: UserGroupIcon,
       action: () => setActiveTab('users'),
-      color: 'bg-purple-500 hover:bg-purple-600'
+      color: 'bg-purple-500 hover:bg-purple-600',
     },
     {
       id: 'issue-certificates',
@@ -218,37 +225,47 @@ export default function AdminDashboard() {
       description: 'Generate student certificates',
       icon: DocumentTextIcon,
       action: () => setActiveTab('certificates'),
-      color: 'bg-orange-500 hover:bg-orange-600'
-    }
+      color: 'bg-orange-500 hover:bg-orange-600',
+    },
   ]
 
-  const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || AdminOverview
-  const activeTabInfo = tabs.find(tab => tab.id === activeTab)
+  const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || AdminOverview
+  const activeTabInfo = tabs.find((tab) => tab.id === activeTab)
 
-  const unreadCount = notifications.filter(n => n.unread).length
+  const unreadCount = notifications.filter((n) => n.unread).length
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'warning': return ExclamationTriangleIcon
-      case 'success': return CheckCircleIcon
-      case 'error': return ExclamationTriangleIcon
-      default: return BellIcon
+      case 'warning':
+        return ExclamationTriangleIcon
+      case 'success':
+        return CheckCircleIcon
+      case 'error':
+        return ExclamationTriangleIcon
+      default:
+        return BellIcon
     }
   }
 
   const getNotificationColor = (type: string) => {
     switch (type) {
-      case 'warning': return 'text-yellow-600 bg-yellow-100'
-      case 'success': return 'text-green-600 bg-green-100'
-      case 'error': return 'text-red-600 bg-red-100'
-      default: return 'text-blue-600 bg-blue-100'
+      case 'warning':
+        return 'text-yellow-600 bg-yellow-100'
+      case 'success':
+        return 'text-green-600 bg-green-100'
+      case 'error':
+        return 'text-red-600 bg-red-100'
+      default:
+        return 'text-blue-600 bg-blue-100'
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex page-with-header">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-white shadow-lg transition-all duration-300 flex flex-col`}>
+      <div
+        className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-white shadow-lg transition-all duration-300 flex flex-col`}
+      >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -289,7 +306,9 @@ export default function AdminDashboard() {
               }`}
             >
               <div className="relative">
-                <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                <tab.icon
+                  className={`h-5 w-5 ${activeTab === tab.id ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'}`}
+                />
                 {tab.badge && (
                   <span className="absolute -top-2 -right-2 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                     {tab.badge > 9 ? '9+' : tab.badge}
@@ -312,11 +331,11 @@ export default function AdminDashboard() {
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">
-                  {user?.full_name?.charAt(0) || 'A'}
+                  {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'A'}
                 </span>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{user?.full_name || 'Admin'}</p>
+                <p className="text-sm font-medium text-gray-900">{profile?.full_name || 'Admin'}</p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
               <button className="p-1 rounded-md hover:bg-gray-100">
@@ -334,12 +353,8 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {activeTabInfo?.name}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {activeTabInfo?.description}
-                </p>
+                <h1 className="text-2xl font-bold text-gray-900">{activeTabInfo?.name}</h1>
+                <p className="text-sm text-gray-600">{activeTabInfo?.description}</p>
               </div>
             </div>
 
@@ -385,19 +400,17 @@ export default function AdminDashboard() {
                             }`}
                           >
                             <div className="flex items-start space-x-3">
-                              <div className={`p-1 rounded-full ${getNotificationColor(notification.type)}`}>
+                              <div
+                                className={`p-1 rounded-full ${getNotificationColor(notification.type)}`}
+                              >
                                 <IconComponent className="h-4 w-4" />
                               </div>
                               <div className="flex-1">
                                 <p className="text-sm font-medium text-gray-900">
                                   {notification.title}
                                 </p>
-                                <p className="text-sm text-gray-600">
-                                  {notification.message}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">
-                                  {notification.time}
-                                </p>
+                                <p className="text-sm text-gray-600">{notification.message}</p>
+                                <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
                               </div>
                               {notification.unread && (
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -420,11 +433,13 @@ export default function AdminDashboard() {
               <div className="flex items-center space-x-3">
                 <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-bold">
-                    {user?.full_name?.charAt(0) || 'A'}
+                    {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'A'}
                   </span>
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.full_name || 'Admin'}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {profile?.full_name || 'Admin'}
+                  </p>
                   <p className="text-xs text-gray-500">Administrator</p>
                 </div>
               </div>
@@ -472,10 +487,7 @@ export default function AdminDashboard() {
 
       {/* Click outside to close notifications */}
       {showNotifications && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowNotifications(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
       )}
     </div>
   )

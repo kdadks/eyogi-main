@@ -7,8 +7,7 @@ import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
-import { useAuth } from '@/components/providers/AuthProvider'
-import { signIn } from '../../lib/auth'
+import { useAuth } from '../../contexts/AuthContext'
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -20,7 +19,7 @@ type SignInForm = z.infer<typeof signInSchema>
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { refreshUser } = useAuth()
+  const { signIn } = useAuth()
 
   const {
     register,
@@ -33,8 +32,13 @@ export default function SignInPage() {
   const onSubmit = async (data: SignInForm) => {
     setLoading(true)
     try {
-      await signIn(data.email, data.password)
-      await refreshUser()
+      const { error } = await signIn(data.email, data.password)
+
+      if (error) {
+        toast.error(error.message || 'Failed to sign in')
+        return
+      }
+
       toast.success('Welcome back!')
       navigate('/dashboard')
     } catch (error: unknown) {
@@ -72,22 +76,6 @@ export default function SignInPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Test Login Credentials */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h4 className="font-semibold text-blue-900 mb-2">Test Login Credentials</h4>
-                <div className="text-sm text-blue-800 space-y-1">
-                  <p>
-                    <strong>Student:</strong> student@test.com (password: 123456)
-                  </p>
-                  <p>
-                    <strong>Teacher:</strong> teacher@test.com (password: 123456)
-                  </p>
-                  <p>
-                    <strong>Admin:</strong> admin@test.com (password: 123456)
-                  </p>
-                </div>
-              </div>
-
               <Input
                 label="Email address"
                 type="email"

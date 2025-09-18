@@ -1,70 +1,106 @@
-import { User } from '@/types'
+import { supabaseAdmin } from '../supabase'
+import type { Database } from '../supabase'
 
-const STORAGE_KEY = 'eyogi_users'
+type Profile = Database['public']['Tables']['profiles']['Row']
 
-export async function getAllUsers(): Promise<User[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 200))
-  
-  const users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  return users
+export async function getAllUsers(): Promise<Profile[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching users:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    return []
+  }
 }
 
-export async function updateUserRole(userId: string, newRole: User['role']): Promise<User> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
-  const users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  const userIndex = users.findIndex((u: User) => u.id === userId)
-  
-  if (userIndex === -1) {
-    throw new Error('User not found')
+export async function updateUserRole(userId: string, newRole: Profile['role']): Promise<Profile> {
+  try {
+    const updateData: Partial<Profile> = {
+      role: newRole,
+      updated_at: new Date().toISOString(),
+    }
+
+    // If changing to student, assign student ID
+    if (newRole === 'student') {
+      const year = new Date().getFullYear()
+      const { data: existingStudents } = await supabaseAdmin
+        .from('profiles')
+        .select('student_id')
+        .eq('role', 'student')
+        .not('student_id', 'is', null)
+
+      const nextNumber = (existingStudents?.length || 0) + 1
+      updateData.student_id = `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
+    }
+
+    // If changing from student, remove student ID
+    if (newRole !== 'student') {
+      updateData.student_id = null
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating user role:', error)
+      throw new Error('Failed to update user role')
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error updating user role:', error)
+    throw error
   }
-  
-  users[userIndex].role = newRole
-  users[userIndex].updated_at = new Date().toISOString()
-  
-  // If changing to student, assign student ID
-  if (newRole === 'student' && !users[userIndex].student_id) {
-    const year = new Date().getFullYear()
-    const existingStudents = users.filter((u: User) => 
-      u.student_id?.startsWith(`EYG-${year}-`)
-    )
-    const nextNumber = existingStudents.length + 1
-    users[userIndex].student_id = `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
-  }
-  
-  // If changing from student, remove student ID
-  if (newRole !== 'student') {
-    users[userIndex].student_id = null
-  }
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(users))
-  
-  return users[userIndex]
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 250))
-  
-  const users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  const filteredUsers = users.filter((u: User) => u.id !== userId)
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredUsers))
+  try {
+    const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
+
+    if (error) {
+      console.error('Error deleting user:', error)
+      throw new Error('Failed to delete user')
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error)
+    throw error
+  }
 }
 
 export async function getTeacherCourses(teacherId: string): Promise<any[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 150))
-  
-  const courses = JSON.parse(localStorage.getItem('eyogi_courses') || '[]')
-  const gurukuls = JSON.parse(localStorage.getItem('eyogi_gurukuls') || '[]')
-  
-  const teacherCourses = courses.filter((c: any) => c.teacher_id === teacherId)
-  
-  return teacherCourses.map((course: any) => ({
-    ...course,
-    gurukul: gurukuls.find((g: any) => g.id === course.gurukul_id)
-  }))
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('courses')
+      .select(
+        `
+        *,
+        gurukuls (*)
+      `,
+      )
+      .eq('teacher_id', teacherId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching teacher courses:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error fetching teacher courses:', error)
+    return []
+  }
 }

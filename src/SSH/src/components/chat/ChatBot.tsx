@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { useAuth } from '@/components/providers/AuthProvider'
+import { useAuth } from '../../contexts/AuthContext'
 import { ChatService } from '@/lib/ai/ChatService'
 import { formatDateTime } from '@/lib/utils'
 import {
-  ChatBubbleLeftRightIcon,
   XMarkIcon,
   PaperAirplaneIcon,
   SparklesIcon,
@@ -18,6 +17,43 @@ import {
   MicrophoneIcon,
   StopIcon,
 } from '@heroicons/react/24/outline'
+
+// Speech Recognition API type declarations
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionResult {
+  [index: number]: SpeechRecognitionAlternative
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null
+  onerror: ((this: SpeechRecognition, ev: Event) => void) | null
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null
+  start(): void
+  stop(): void
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition
+    webkitSpeechRecognition?: new () => SpeechRecognition
+  }
+}
 
 interface ChatMessage {
   id: string
@@ -37,7 +73,7 @@ interface ChatBotProps {
 }
 
 export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProps) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -52,7 +88,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         type: 'bot',
-        content: `🙏 Namaste ${user?.full_name?.split(' ')[0] || 'friend'}! I'm your eYogi AI assistant. I'm here to help you with questions about our courses, Gurukuls, enrollment, and anything related to your learning journey. How can I assist you today?`,
+        content: `🙏 Namaste ${profile?.full_name?.split(' ')[0] || 'friend'}! I'm your eYogi AI assistant. I'm here to help you with questions about our courses, Gurukuls, enrollment, and anything related to your learning journey. How can I assist you today?`,
         timestamp: new Date(),
         persona: 'student',
         intent: 'greeting',
@@ -62,7 +98,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       // Focus input with preventScroll
       setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100)
     }
-  }, [isOpen, user])
+  }, [isOpen, user, profile?.full_name])
 
   // Prevent page scroll when chatbot is open
   useEffect(() => {
@@ -89,7 +125,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
     if (initialMessage && isOpen) {
       handleSendMessage(initialMessage)
     }
-  }, [initialMessage, isOpen])
+  }, [initialMessage, isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom()
@@ -124,8 +160,27 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
     }, 0)
 
     try {
+      // Convert Supabase User to local User type for ChatService
+      const localUser = user
+        ? {
+            id: user.id,
+            email: user.email || '',
+            full_name: profile?.full_name || '',
+            role: (profile?.role === 'super_admin' ? 'admin' : profile?.role || 'student') as
+              | 'student'
+              | 'teacher'
+              | 'admin',
+            student_id: profile?.student_id || '',
+            age: profile?.date_of_birth
+              ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()
+              : undefined,
+            created_at: user.created_at,
+            updated_at: profile?.updated_at || user.updated_at || '',
+          }
+        : null
+
       // Process message through AI service
-      const response = await chatService.processMessage(messageText, user)
+      const response = await chatService.processMessage(messageText, localUser)
 
       // Simulate typing delay
       await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000))
@@ -167,8 +222,9 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
 
   const handleVoiceInput = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition =
-        (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition
+      if (!SpeechRecognition) return
+
       const recognition = new SpeechRecognition()
 
       recognition.continuous = false
@@ -179,7 +235,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         setIsListening(true)
       }
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript
         setInputMessage(transcript)
         setIsListening(false)

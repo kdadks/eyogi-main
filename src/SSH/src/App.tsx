@@ -1,9 +1,10 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 
 // Layout Components
 import { GlossyHeader } from './components/layout/GlossyHeader'
+import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
 
 // SSH Website Components
 import HomePage from './pages/HomePage'
@@ -14,6 +15,11 @@ import GurukulPage from './pages/GurukulPage'
 import SignInPage from './pages/auth/SignInPage'
 import SignUpPage from './pages/auth/SignUpPage'
 
+// Dashboard Components
+import StudentDashboard from './pages/dashboard/StudentDashboard'
+import TeacherDashboard from './pages/dashboard/TeacherDashboard'
+import DashboardPage from './pages/dashboard/DashboardPage'
+
 // Admin Components
 import AdminLogin from './components/auth/AdminLogin'
 import AdminLayout from './components/admin/AdminLayout'
@@ -21,6 +27,7 @@ import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 
 // import GurukulDetailPage from './pages/GurukulDetailPage'
 // import CourseDetailPage from './pages/CourseDetailPage'
@@ -36,9 +43,17 @@ const LoadingFallback = () => (
 )
 
 function App() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin')
+
+  const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
+    setAuthModalMode(mode)
+    setIsAuthModalOpen(true)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      <GlossyHeader />
+      <GlossyHeader onOpenAuthModal={openAuthModal} />
 
       {/* Main content with top padding to account for fixed header */}
       <main className="pt-16 lg:pt-20">
@@ -54,6 +69,32 @@ function App() {
             {/* Auth Pages */}
             <Route path="/auth/signin" element={<SignInPage />} />
             <Route path="/auth/signup" element={<SignUpPage />} />
+
+            {/* User Dashboard Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/student"
+              element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/teacher"
+              element={
+                <ProtectedRoute requiredRole="teacher">
+                  <TeacherDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -121,6 +162,13 @@ function App() {
             border: '1px solid rgba(255, 255, 255, 0.2)',
           },
         }}
+      />
+
+      {/* Website Auth Modal - Rendered at app level to avoid positioning issues */}
+      <WebsiteAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
       />
     </div>
   )

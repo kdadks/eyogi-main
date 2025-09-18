@@ -6,6 +6,7 @@ import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User } from 'lucide-re
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../contexts/AuthContext'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import logoImage from '/eyogiTextLess.png'
 import fallbackLogo from '/Images/Logo.png'
 
@@ -30,11 +31,16 @@ const mainSiteLink = {
   external: true,
 }
 
-export function GlossyHeader() {
+interface GlossyHeaderProps {
+  onOpenAuthModal?: (mode?: 'signin' | 'signup') => void
+}
+
+export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
-  const { user, profile, signOut } = useAuth()
+  const { user: superAdminUser } = useAuth() // Super admin user from Supabase Auth
+  const { user: websiteUser, signOut: websiteSignOut } = useWebsiteAuth() // Website user from profiles table
 
   useEffect(() => {
     const handleScroll = () => {
@@ -200,7 +206,7 @@ export function GlossyHeader() {
 
           {/* Right side - Auth & CTA */}
           <div className="flex items-center space-x-4">
-            {user ? (
+            {websiteUser ? (
               <div className="hidden lg:flex items-center space-x-3">
                 <motion.div
                   className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-gray-100 backdrop-blur-sm"
@@ -208,11 +214,11 @@ export function GlossyHeader() {
                 >
                   <User className="w-4 h-4 text-gray-600" />
                   <span className="text-sm text-gray-800">
-                    {profile?.full_name || user.email || 'User'}
+                    {websiteUser.full_name || websiteUser.email || 'User'}
                   </span>
                 </motion.div>
                 <motion.button
-                  onClick={signOut}
+                  onClick={websiteSignOut}
                   className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-all duration-200"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
@@ -222,28 +228,26 @@ export function GlossyHeader() {
               </div>
             ) : (
               <div className="hidden lg:flex items-center space-x-12">
-                <Link to="/auth/signin">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/20 backdrop-blur-md border-white/30 text-gray-800 hover:bg-white/30 hover:border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-                    >
-                      <span className="relative z-10">Sign In</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                    </Button>
-                  </motion.div>
-                </Link>
-                <Link to="/auth/signup">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      size="sm"
-                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border-0"
-                    >
-                      Get Started
-                    </Button>
-                  </motion.div>
-                </Link>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onOpenAuthModal?.('signin')}
+                    className="bg-white/20 backdrop-blur-md border-white/30 text-gray-800 hover:bg-white/30 hover:border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+                  >
+                    <span className="relative z-10">Sign In</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    size="sm"
+                    onClick={() => onOpenAuthModal?.('signup')}
+                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border-0"
+                  >
+                    Get Started
+                  </Button>
+                </motion.div>
               </div>
             )}
 
@@ -328,15 +332,15 @@ export function GlossyHeader() {
                   className="pt-4 border-t border-gray-200 space-y-2"
                   variants={mobileItemVariants}
                 >
-                  {user ? (
+                  {websiteUser ? (
                     <>
                       <div className="flex items-center space-x-3 px-3 py-2 text-gray-800">
                         <User className="w-4 h-4" />
-                        <span>{profile?.full_name || user.email || 'User'}</span>
+                        <span>{websiteUser.full_name || websiteUser.email || 'User'}</span>
                       </div>
                       <button
                         onClick={() => {
-                          signOut()
+                          websiteSignOut()
                           setIsMobileMenuOpen(false)
                         }}
                         className="flex items-center space-x-3 px-3 py-2 w-full text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -347,21 +351,25 @@ export function GlossyHeader() {
                     </>
                   ) : (
                     <>
-                      <Link
-                        to="/auth/signin"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block px-3 py-2 bg-white/20 backdrop-blur-md border border-white/30 text-gray-800 hover:bg-white/30 hover:border-white/40 rounded-lg font-medium shadow-lg transition-all duration-200 relative overflow-hidden"
+                      <button
+                        onClick={() => {
+                          onOpenAuthModal?.('signin')
+                          setIsMobileMenuOpen(false)
+                        }}
+                        className="block w-full px-3 py-2 bg-white/20 backdrop-blur-md border border-white/30 text-gray-800 hover:bg-white/30 hover:border-white/40 rounded-lg font-medium shadow-lg transition-all duration-200 relative overflow-hidden"
                       >
                         <span className="relative z-10">Sign In</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                      </Link>
-                      <Link
-                        to="/auth/signup"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium shadow-lg"
+                      </button>
+                      <button
+                        onClick={() => {
+                          onOpenAuthModal?.('signup')
+                          setIsMobileMenuOpen(false)
+                        }}
+                        className="block w-full px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium shadow-lg"
                       >
                         Get Started
-                      </Link>
+                      </button>
                     </>
                   )}
                 </motion.div>

@@ -1,9 +1,8 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 import ScrollLink from '../components/ui/ScrollLink'
 import SEOHead from '../components/seo/SEOHead'
 import { generateOrganizationSchema, generateWebsiteSchema } from '../components/seo/StructuredData'
-import { Button } from '../components/ui/button'
+import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import RollingText from '../components/ui/RollingText'
@@ -164,9 +163,7 @@ export default function HomePage() {
       />
       <div>
         {/* Rolling Text Banner */}
-        <RollingText
-          text="🕉️ Spirituality and Science of Hinduism University - Discover Ancient Wisdom Through Modern Learning 🕉️"
-        />
+        <RollingText text="🕉️ Spirituality and Science of Hinduism University - Discover Ancient Wisdom Through Modern Learning 🕉️" />
 
         {/* Hero Section */}
         <section
@@ -262,7 +259,7 @@ export default function HomePage() {
                     className="w-full h-full object-contain logo-pop relative z-10"
                   />
                 </div>
-                <div className="absolute -bottom-4 left-2 sm:left-0 sm:-left-4 lg:-bottom-6 lg:-left-6 bg-white/90 backdrop-blur-md rounded-lg shadow-xl p-3 lg:p-4 border border-white/30 relative hero-certificate-card">
+                <div className="absolute -bottom-4 left-2 sm:-left-4 lg:-bottom-6 lg:-left-6 bg-white/90 backdrop-blur-md rounded-lg shadow-xl p-3 lg:p-4 border border-white/30 hero-certificate-card">
                   {/* Card Gloss Effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent rounded-lg"></div>
                   <div className="relative z-10 flex items-center space-x-2 lg:space-x-3">

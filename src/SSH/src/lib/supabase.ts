@@ -30,7 +30,7 @@ export const supabaseAdmin = supabaseServiceRoleKey
     })
   : supabase
 
-// Database types (generate these from your Supabase schema)
+// Database types (generated from Supabase schema)
 export interface Database {
   public: {
     Tables: {
@@ -38,16 +38,18 @@ export interface Database {
         Row: {
           id: string
           email: string
+          password_hash: string | null
           full_name: string
           role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
           status: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth: string | null
           phone: string | null
-          address: any | null
-          emergency_contact: any | null
-          preferences: any
+          address: Record<string, any> | null
+          emergency_contact: Record<string, any> | null
+          preferences: Record<string, any>
           avatar_url: string | null
           student_id: string | null
+          teacher_id: string | null
           parent_id: string | null
           created_at: string
           updated_at: string
@@ -55,16 +57,18 @@ export interface Database {
         Insert: {
           id: string
           email: string
+          password_hash?: string | null
           full_name: string
           role?: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
           status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth?: string | null
           phone?: string | null
-          address?: any | null
-          emergency_contact?: any | null
-          preferences?: any
+          address?: Record<string, any> | null
+          emergency_contact?: Record<string, any> | null
+          preferences?: Record<string, any>
           avatar_url?: string | null
           student_id?: string | null
+          teacher_id?: string | null
           parent_id?: string | null
         }
         Update: {
@@ -74,11 +78,12 @@ export interface Database {
           status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth?: string | null
           phone?: string | null
-          address?: any | null
-          emergency_contact?: any | null
-          preferences?: any
+          address?: Record<string, any> | null
+          emergency_contact?: Record<string, any> | null
+          preferences?: Record<string, any>
           avatar_url?: string | null
           student_id?: string | null
+          teacher_id?: string | null
           parent_id?: string | null
         }
       }
@@ -275,6 +280,48 @@ export interface Database {
           certificate_issued_at?: string | null
           certificate_url?: string | null
           notes?: string | null
+        }
+      }
+      certificates: {
+        Row: {
+          id: string
+          enrollment_id: string
+          student_id: string
+          course_id: string
+          certificate_number: string
+          template_id: string
+          issued_at: string
+          issued_by: string
+          verification_code: string
+          certificate_data: any
+          file_url: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          enrollment_id: string
+          student_id: string
+          course_id: string
+          certificate_number: string
+          template_id: string
+          issued_at: string
+          issued_by: string
+          verification_code: string
+          certificate_data: any
+          file_url: string
+          created_at: string
+        }
+        Update: {
+          enrollment_id?: string
+          student_id?: string
+          course_id?: string
+          certificate_number?: string
+          template_id?: string
+          issued_at?: string
+          issued_by?: string
+          verification_code?: string
+          certificate_data?: any
+          file_url?: string
         }
       }
       // Add other table types as needed...

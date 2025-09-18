@@ -28,6 +28,11 @@ Thumbs.db
 logs/
 *.log
 
+# test and debug files
+test-*.js
+check-*.js
+debug-*.js
+
 # local system folders accidentally added
 Desktop/
 Downloads/

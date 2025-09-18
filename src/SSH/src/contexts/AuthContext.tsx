@@ -1,17 +1,21 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
-import { supabase, supabaseAdmin } from '../lib/supabase'
-import type { Database } from '../lib/supabase'
-
-type Profile = Database['public']['Tables']['profiles']['Row']
+import { supabase } from '../lib/supabase'
 
 interface AuthContextType {
+  // Current authenticated super admin user (from Supabase Auth ONLY)
   user: User | null
-  profile: Profile | null
   loading: boolean
+  initialized: boolean
+
+  // Super admin sign in (Supabase Auth only)
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
-  isAdmin: boolean
+
+  // Check if user is super admin (only users in Supabase Auth are super admins)
+  isSuperAdmin: boolean
+
+  // Check permissions
   canAccess: (resource: string, action: string) => boolean
 }
 
@@ -31,36 +35,8 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // Memoize loadProfile to prevent infinite loops
-  const loadProfile = useCallback(async (userId: string) => {
-    try {
-      // Use admin client to bypass RLS for loading profile
-      const { data, error } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile doesn't exist - this is normal for admin users
-          console.log('No profile found for admin user - this is expected')
-          setProfile(null)
-          return
-        }
-
-        console.error('Error loading profile:', error)
-        return
-      }
-
-      setProfile(data)
-    } catch (error) {
-      console.error('Error in loadProfile:', error)
-    }
-  }, [])
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -74,11 +50,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!isMounted) return
 
       setUser(session?.user ?? null)
-
-      if (session?.user) {
-        await loadProfile(session.user.id)
-      }
       setLoading(false)
+      setInitialized(true)
     }
 
     getSession()
@@ -90,21 +63,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!isMounted) return
 
       setUser(session?.user ?? null)
-
-      if (session?.user) {
-        await loadProfile(session.user.id)
-      } else {
-        setProfile(null)
-      }
       setLoading(false)
+      setInitialized(true)
     })
 
     return () => {
       isMounted = false
       subscription.unsubscribe()
     }
-  }, [loadProfile])
+  }, [])
 
+  // Sign in for super admin only (Supabase Auth)
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -113,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       })
 
       if (!error) {
-        console.log('SignIn successful')
+        console.log('Super admin SignIn successful')
       }
 
       return { error }
@@ -124,31 +93,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setProfile(null)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
 
-  // For admin console, any authenticated user is considered admin
-  // Profile-based permissions are only for users in the profiles table
-  const isAdmin = user !== null
+  // All Supabase Auth users are super admins
+  const isSuperAdmin = !!user
 
   const canAccess = (resource: string, action: string): boolean => {
-    // Admin Console: Any Supabase authenticated user has full access
-    if (user) {
-      return true
-    }
-
-    // Website Dashboard: For non-authenticated users, deny access
-    return false
+    // Super admin has access to everything
+    return isSuperAdmin
   }
 
   const value: AuthContextType = {
     user,
-    profile,
     loading,
+    initialized,
     signIn,
     signOut,
-    isAdmin,
+    isSuperAdmin,
     canAccess,
   }
 

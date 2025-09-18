@@ -221,7 +221,7 @@ export default function CertificateManagement() {
                         <td className="px-6 py-4 text-sm">{certificate.student?.full_name}</td>
                         <td className="px-6 py-4 text-sm">{certificate.course?.title}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {formatDate(certificate.issued_at)}
+                          {formatDate(certificate.issue_date)}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">

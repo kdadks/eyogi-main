@@ -1,42 +1,52 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@/components/providers/AuthProvider'
-import { User } from '@/types'
+import { useAuth } from '../../contexts/AuthContext'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: User['role']
+  requiredRole?: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
   redirectTo?: string
 }
 
-export default function ProtectedRoute({ 
-  children, 
-  requiredRole, 
-  redirectTo = '/auth/signin' 
+export default function ProtectedRoute({
+  children,
+  requiredRole,
+  redirectTo = '/auth/signin',
 }: ProtectedRouteProps) {
-  const { user, loading, initialized } = useAuth()
+  const { user: superAdminUser, loading: authLoading, isSuperAdmin } = useAuth()
+  const { user: websiteUser, loading: websiteLoading } = useWebsiteAuth()
   const location = useLocation()
 
-  // Show loading spinner while auth is initializing
-  if (!initialized || loading) {
+  // Show loading spinner while either auth is initializing
+  if (authLoading || websiteLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="spinner w-8 h-8 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
   }
 
+  // Check if user is authenticated (either super admin or website user)
+  const isAuthenticated = isSuperAdmin || !!websiteUser
+
   // Redirect to sign in if not authenticated
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />
   }
 
-  // Redirect to appropriate dashboard if role doesn't match
-  if (requiredRole && user.role !== requiredRole) {
-    const dashboardPath = `/dashboard/${user.role}`
+  // Super admin has access to everything
+  if (isSuperAdmin) {
+    return <>{children}</>
+  }
+
+  // For website users, check role if required
+  if (requiredRole && websiteUser?.role !== requiredRole) {
+    // Redirect to appropriate dashboard based on user role
+    const dashboardPath = websiteUser?.role ? `/dashboard/${websiteUser.role}` : '/dashboard'
     return <Navigate to={dashboardPath} replace />
   }
 

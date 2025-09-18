@@ -1,16 +1,13 @@
 import React from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '@/components/providers/AuthProvider'
+import { useAuth } from '../../contexts/AuthContext'
 
 interface PublicRouteProps {
   children: React.ReactNode
   redirectAuthenticated?: boolean
 }
 
-export default function PublicRoute({ 
-  children, 
-  redirectAuthenticated = true 
-}: PublicRouteProps) {
+export default function PublicRoute({ children, redirectAuthenticated = true }: PublicRouteProps) {
   const { user, loading, initialized } = useAuth()
 
   // Show loading while auth is initializing

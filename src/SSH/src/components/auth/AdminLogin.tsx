@@ -5,7 +5,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
 const AdminLogin: React.FC = () => {
-  const { signIn, loading, isAdmin, user } = useAuth()
+  const { signIn, loading, isSuperAdmin, user } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,11 +15,11 @@ const AdminLogin: React.FC = () => {
 
   // Handle redirect in useEffect to prevent infinite re-renders
   useEffect(() => {
-    if (!loading && user && isAdmin && !navigationAttempted.current) {
+    if (!loading && user && isSuperAdmin && !navigationAttempted.current) {
       navigationAttempted.current = true
       navigate('/admin/dashboard', { replace: true })
     }
-  }, [user, isAdmin, loading, navigate])
+  }, [user, isSuperAdmin, loading, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
