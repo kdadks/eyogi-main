@@ -12,8 +12,12 @@
   },
   "rewrites": [
     {
-      "source": "/ssh-app/:path*",
-      "destination": "/ssh-app/:path*"
+      "source": "/ssh-app",
+      "destination": "/ssh-app/index.html"
+    },
+    {
+      "source": "/ssh-app/((?!assets|Images|.*\\..*).*)",
+      "destination": "/ssh-app/index.html"
     },
     {
       "source": "/admin/:path*",

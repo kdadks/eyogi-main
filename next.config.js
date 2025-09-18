@@ -129,6 +129,17 @@ const nextConfig = {
         destination: '/ssh-app/index.html',
       },
       {
+        source: '/ssh-app/:path*',
+        destination: '/ssh-app/index.html',
+        has: [
+          {
+            type: 'header',
+            key: 'accept',
+            value: '(text/html.*)',
+          },
+        ],
+      },
+      {
         source: '/ssh-app/((?!assets|Images|.*\\..*).*)',
         destination: '/ssh-app/index.html',
       },
