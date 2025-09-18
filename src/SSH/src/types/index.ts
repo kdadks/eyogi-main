@@ -33,6 +33,7 @@ export interface Course {
   gurukul_id: string
   course_number: string
   title: string
+  slug?: string // Unique URL slug for the course
   description: string
   detailed_description?: string
   level: 'elementary' | 'basic' | 'intermediate' | 'advanced'

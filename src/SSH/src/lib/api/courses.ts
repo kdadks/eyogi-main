@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../supabase'
 import { Course } from '../../types'
+import { generateCourseSlug } from '../utils'
 
 export async function getCourses(filters?: {
   gurukul_id?: string
@@ -52,12 +53,67 @@ export async function getCourse(id: string): Promise<Course | null> {
   }
 }
 
-export async function getEnrolledCount(courseId: string): Promise<number> {
+export async function getCourseBySlug(slug: string): Promise<Course | null> {
   try {
+    // Handle UUID-only format for backward compatibility
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(slug)) {
+      return getCourse(slug)
+    }
+
+    // For slug format, we need to find the course by generating slugs for all courses
+    // and matching against the provided slug
+    const { data: allCourses, error } = await supabaseAdmin.from('courses').select('*')
+
+    if (error) {
+      console.error('Error fetching courses:', error)
+      return null
+    }
+
+    if (!allCourses || allCourses.length === 0) {
+      return null
+    }
+
+    // Find the course whose generated slug matches the provided slug
+    const matchingCourses = allCourses.filter((course) => {
+      const generatedSlug = generateCourseSlug(course)
+      return generatedSlug === slug
+    })
+
+    if (matchingCourses.length > 1) {
+      console.warn(
+        `Multiple courses found with slug "${slug}":`,
+        matchingCourses.map((c) => c.title),
+      )
+    }
+
+    const matchingCourse = matchingCourses[0] || null
+
+    return matchingCourse || null
+  } catch (error) {
+    console.error('Error fetching course by slug:', error)
+    return null
+  }
+}
+
+export async function getEnrolledCount(courseIdOrSlug: string): Promise<number> {
+  try {
+    let actualCourseId = courseIdOrSlug
+
+    // If it's not a UUID, treat it as a slug and resolve to course ID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(courseIdOrSlug)) {
+      const course = await getCourseBySlug(courseIdOrSlug)
+      if (!course) {
+        return 0
+      }
+      actualCourseId = course.id
+    }
+
     const { count, error } = await supabaseAdmin
       .from('enrollments')
       .select('*', { count: 'exact', head: true })
-      .eq('course_id', courseId)
+      .eq('course_id', actualCourseId)
       .eq('status', 'active')
 
     if (error) {

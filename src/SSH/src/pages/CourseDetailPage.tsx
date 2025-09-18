@@ -4,12 +4,12 @@ import { useWebsiteAuth } from '../contexts/WebsiteAuthContext'
 import SEOHead from '../components/seo/SEOHead'
 import { generateCourseSchema, generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Course } from '../types'
-import { getCourse, getEnrolledCount } from '../lib/api/courses'
+import { getEnrolledCount, getCourseBySlug } from '../lib/api/courses'
 import { enrollInCourse } from '../lib/api/enrollments'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
-import { formatCurrency, getAgeGroupLabel, getLevelColor } from '../lib/utils'
+import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
 import toast from 'react-hot-toast'
 import {
   ClockIcon,
@@ -29,11 +29,18 @@ export default function CourseDetailPage() {
   const [enrolling, setEnrolling] = useState(false)
 
   const loadCourseData = useCallback(async () => {
+    if (!id) {
+      console.error('No course ID provided')
+      setLoading(false)
+      return
+    }
+
     try {
       const [courseData, enrolledCountData] = await Promise.all([
-        getCourse(id!),
-        getEnrolledCount(id!),
+        getCourseBySlug(id),
+        getEnrolledCount(id),
       ])
+
       setCourse(courseData)
       setEnrolledCount(enrolledCountData)
     } catch (error) {
@@ -98,9 +105,11 @@ export default function CourseDetailPage() {
     )
   }
 
-  const syllabus = course.syllabus as {
-    classes?: Array<{ number: number; title: string; topics: string[]; duration: string }>
-  }
+  const syllabus = course?.syllabus as
+    | {
+        classes?: Array<{ number: number; title: string; topics: string[]; duration: string }>
+      }
+    | undefined
 
   return (
     <>
@@ -133,7 +142,7 @@ export default function CourseDetailPage() {
               ]
             : []
         }
-        canonicalUrl={course ? `/courses/${course.id}` : '/courses'}
+        canonicalUrl={course ? generateCourseUrl(course) : '/courses'}
         structuredData={
           course
             ? [
@@ -141,7 +150,7 @@ export default function CourseDetailPage() {
                 generateBreadcrumbSchema([
                   { name: 'Home', url: '/' },
                   { name: 'Hindu Courses', url: '/courses' },
-                  { name: course.title, url: `/courses/${course.id}` },
+                  { name: course.title, url: generateCourseUrl(course) },
                 ]),
               ]
             : []
@@ -288,7 +297,7 @@ export default function CourseDetailPage() {
               </Card>
 
               {/* Course Syllabus */}
-              {syllabus.classes && (
+              {syllabus?.classes && (
                 <Card>
                   <CardHeader>
                     <h2 className="text-2xl font-bold">Course Syllabus</h2>

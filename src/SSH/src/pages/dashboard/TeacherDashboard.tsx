@@ -14,7 +14,13 @@ import {
 } from '@/lib/api/enrollments'
 import { issueCertificate, bulkIssueCertificates } from '@/lib/api/certificates'
 import { getGurukuls } from '@/lib/api/gurukuls'
-import { formatCurrency, formatDate, getStatusColor, getLevelColor } from '@/lib/utils'
+import {
+  formatCurrency,
+  formatDate,
+  getStatusColor,
+  getLevelColor,
+  generateCourseUrl,
+} from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -636,7 +642,7 @@ export default function TeacherDashboard() {
                         </div>
 
                         <div className="flex items-center space-x-2">
-                          <Link to={`/courses/${course.id}`} className="flex-1">
+                          <Link to={generateCourseUrl(course)} className="flex-1">
                             <Button variant="outline" size="sm" className="w-full">
                               <EyeIcon className="h-4 w-4 mr-1" />
                               View Details

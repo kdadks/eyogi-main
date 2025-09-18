@@ -9,7 +9,7 @@ import { Enrollment, Certificate, Course } from '../../types'
 import { getStudentEnrollments } from '../../lib/api/enrollments'
 import { getStudentCertificates } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
-import { formatCurrency, formatDate, getLevelColor } from '../../lib/utils'
+import { formatCurrency, formatDate, getLevelColor, generateCourseUrl } from '../../lib/utils'
 import toast from 'react-hot-toast'
 import {
   HomeIcon,
@@ -566,7 +566,7 @@ export default function StudentDashboard() {
                                 <span>{formatCurrency(course.price)}</span>
                               </div>
 
-                              <Link to={`/courses/${course.id}`}>
+                              <Link to={generateCourseUrl(course)}>
                                 <Button size="sm" className="w-full">
                                   Learn More
                                   <ArrowRightIcon className="h-4 w-4 ml-2" />

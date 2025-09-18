@@ -16,7 +16,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    sourcemap: true, // Enable source maps for debugging
+    sourcemap: false, // Disable source maps for production
     rollupOptions: {
       output: {
         manualChunks: {
@@ -26,7 +26,7 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 1000,
-    minify: false,
+    minify: true,
   },
   define: {
     global: 'globalThis',

@@ -8,7 +8,13 @@ import { Badge } from '../components/ui/Badge'
 import { Gurukul, Course } from '../types'
 import { getGurukul } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
-import { formatCurrency, getAgeGroupLabel, getLevelColor } from '../lib/utils'
+import {
+  formatCurrency,
+  formatDate,
+  getAgeGroupLabel,
+  getLevelColor,
+  generateCourseUrl,
+} from '../lib/utils'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -305,7 +311,7 @@ export default function GurukulDetailPage() {
                           {course.delivery_method === 'physical' && '🏫 In-person'}
                           {course.delivery_method === 'hybrid' && '🔄 Hybrid'}
                         </div>
-                        <Link to={`/courses/${course.id}`}>
+                        <Link to={generateCourseUrl(course)}>
                           <Button size="sm">View Details</Button>
                         </Link>
                       </div>

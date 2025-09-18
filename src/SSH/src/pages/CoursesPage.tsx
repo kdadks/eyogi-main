@@ -9,7 +9,7 @@ import Footer from '../components/layout/Footer'
 import { Course, Gurukul } from '../types'
 import { getCourses } from '../lib/api/courses'
 import { getGurukuls } from '../lib/api/gurukuls'
-import { formatCurrency, getAgeGroupLabel, getLevelColor } from '../lib/utils'
+import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -252,7 +252,7 @@ export default function CoursesPage() {
                       </div>
                       <div className="flex items-center">
                         <CurrencyEuroIcon className="h-4 w-4 mr-2" />
-                        <span>{formatCurrency(course.fee)}</span>
+                        <span>{formatCurrency(course.price)}</span>
                       </div>
                     </div>
 
@@ -262,7 +262,7 @@ export default function CoursesPage() {
                         {course.delivery_method === 'physical' && '🏫 In-person'}
                         {course.delivery_method === 'hybrid' && '🔄 Hybrid'}
                       </div>
-                      <Link to={`/courses/${course.id}`}>
+                      <Link to={generateCourseUrl(course)}>
                         <Button size="sm">View Details</Button>
                       </Link>
                     </div>

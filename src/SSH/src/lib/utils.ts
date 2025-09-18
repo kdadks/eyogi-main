@@ -84,3 +84,43 @@ export function getStatusColor(status: string): string {
   }
   return colors[status as keyof typeof colors] || colors.pending
 }
+
+// Course URL utilities - Using clean title-based slugs
+export function generateCourseSlug(course: { id: string; title: string }): string {
+  // Create a clean slug from just the title
+  return generateSlug(course.title)
+}
+
+export function generateCourseUrl(course: { id: string; title: string; slug?: string }): string {
+  // Use the database slug if available, otherwise generate one
+  const slug = course.slug || generateCourseSlug(course)
+  return `/courses/${slug}`
+}
+
+// For truly unique slugs, we'll need to store them in the database
+// This function creates a unique slug that can be stored as a database field
+export function createUniqueSlug(title: string, existingSlugs: string[] = []): string {
+  const baseSlug = generateSlug(title)
+  let uniqueSlug = baseSlug
+  let counter = 1
+
+  // Ensure uniqueness by adding numbers if needed
+  while (existingSlugs.includes(uniqueSlug)) {
+    uniqueSlug = `${baseSlug}-${counter}`
+    counter++
+  }
+
+  return uniqueSlug
+}
+
+export function parseCourseSlug(slug: string): { courseId: string | null; title: string | null } {
+  // Handle UUID-only format for backward compatibility
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(slug)) {
+    return { courseId: slug, title: null }
+  }
+
+  // For the new system, we'll look up by the slug directly in the database
+  // This function will be simplified since slugs are stored as database fields
+  return { courseId: null, title: slug }
+}

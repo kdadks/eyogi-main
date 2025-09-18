@@ -28,7 +28,7 @@ import AdminPermissionManagement from './components/admin/AdminPermissionManagem
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
-// import GurukulDetailPage from './pages/GurukulDetailPage'
+import GurukulDetailPage from './pages/GurukulDetailPage'
 import CourseDetailPage from './pages/CourseDetailPage'
 
 // Loading component
@@ -143,7 +143,7 @@ function App() {
 
             {/* Detail pages */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />
-            {/* <Route path="/gurukuls/:slug" element={<GurukulDetailPage />} /> */}
+            <Route path="/gurukuls/:slug" element={<GurukulDetailPage />} />
 
             {/* Catch all route - redirect to homepage */}
             <Route path="*" element={<Navigate to="/" replace />} />
