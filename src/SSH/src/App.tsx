@@ -26,6 +26,11 @@ import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
 import CourseManagement from './components/admin/CourseManagement'
+import EnrollmentManagement from './components/admin/EnrollmentManagement'
+import GurukulManagement from './components/admin/GurukulManagement'
+import SiteAnalytics from './components/admin/SiteAnalytics'
+import CertificateManagement from './components/admin/CertificateManagement'
+import ContentManagement from './components/admin/ContentManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
@@ -114,24 +119,11 @@ function App() {
 
               {/* Course Management */}
               <Route path="courses" element={<CourseManagement />} />
-              <Route
-                path="enrollments"
-                element={
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Enrollment Management</h1>
-                    <p>Coming in Phase 2: Enrollment approval and tracking system</p>
-                  </div>
-                }
-              />
-              <Route
-                path="certificates"
-                element={
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Certificate Management</h1>
-                    <p>Coming in Phase 3: Certificate templates and generation</p>
-                  </div>
-                }
-              />
+              <Route path="enrollments" element={<EnrollmentManagement />} />
+              <Route path="gurukuls" element={<GurukulManagement />} />
+              <Route path="certificates" element={<CertificateManagement />} />
+              <Route path="content" element={<ContentManagement />} />
+              <Route path="analytics" element={<SiteAnalytics />} />
             </Route>
 
             {/* Detail pages */}

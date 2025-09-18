@@ -20,9 +20,13 @@ const signUpSchema = z
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
-    full_name: z.string().min(2, 'Full name must be at least 2 characters'),
+    full_name: z.string()
+      .min(2, 'Full name must be at least 2 characters')
+      .regex(/^[a-zA-Z\s']+$/, 'Full name can only contain letters, spaces, and apostrophes'),
     role: z.enum(['student', 'teacher']),
-    phone: z.string().optional(),
+    phone: z.string()
+      .optional()
+      .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
     date_of_birth: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -60,10 +64,12 @@ export default function WebsiteAuthModal({
 
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
+    mode: 'onChange',
   })
 
   const signUpForm = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
+    mode: 'onChange',
     defaultValues: {
       role: 'student',
     },

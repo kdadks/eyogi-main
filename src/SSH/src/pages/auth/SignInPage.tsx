@@ -27,6 +27,7 @@ export default function SignInPage() {
     formState: { errors },
   } = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
+    mode: 'onChange',
   })
 
   const onSubmit = async (data: SignInForm) => {

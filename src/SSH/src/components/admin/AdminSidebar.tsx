@@ -12,6 +12,7 @@ import {
   DocumentDuplicateIcon,
   ShieldCheckIcon,
   ArrowRightOnRectangleIcon,
+  BuildingLibraryIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 
@@ -41,6 +42,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       href: '/admin/courses',
       icon: BookOpenIcon,
       permission: { resource: 'courses', action: 'read' },
+    },
+    {
+      name: 'Gurukuls',
+      href: '/admin/gurukuls',
+      icon: BuildingLibraryIcon,
+      permission: { resource: 'gurukuls', action: 'read' },
     },
     {
       name: 'Enrollments',

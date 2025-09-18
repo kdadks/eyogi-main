@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { Gurukul } from '@/types'
-import { getGurukuls, createGurukul, updateGurukul, deleteGurukul } from '@/lib/api/gurukuls'
+import { getAllGurukuls, createGurukul, updateGurukul, deleteGurukul } from '@/lib/api/gurukuls'
 import { getCourses } from '@/lib/api/courses'
 import { formatDate, generateSlug } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -64,7 +64,11 @@ export default function GurukulManagement() {
 
   const loadData = async () => {
     try {
-      const [gurukulData, coursesData] = await Promise.all([getGurukuls(), getCourses()])
+      console.log('Loading gurukul data...')
+      const [gurukulData, coursesData] = await Promise.all([getAllGurukuls(), getCourses()])
+
+      console.log('Gurukul data received:', gurukulData)
+      console.log('Courses data received:', coursesData)
 
       setGurukuls(gurukulData)
 
@@ -74,6 +78,8 @@ export default function GurukulManagement() {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
+
+      console.log('Data loading completed. Gurukuls count:', gurukulData.length)
     } catch (error) {
       console.error('Error loading data:', error)
       toast.error('Failed to load gurukul data')
@@ -124,7 +130,11 @@ export default function GurukulManagement() {
         await updateGurukul(editingGurukul.id, formData)
         toast.success('Gurukul updated successfully')
       } else {
-        await createGurukul({ ...formData, is_active: true })
+        await createGurukul({
+          ...formData,
+          is_active: true,
+          sort_order: 0
+        })
         toast.success('Gurukul created successfully')
       }
 

@@ -21,6 +21,27 @@ export async function getGurukuls(): Promise<Gurukul[]> {
   }
 }
 
+export async function getAllGurukuls(): Promise<Gurukul[]> {
+  try {
+    console.log('Fetching all gurukuls from database...')
+    const { data, error } = await supabaseAdmin
+      .from('gurukuls')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Supabase error fetching all gurukuls:', error)
+      return []
+    }
+
+    console.log('Raw gurukuls data from Supabase:', data)
+    return data || []
+  } catch (error) {
+    console.error('Exception fetching all gurukuls:', error)
+    return []
+  }
+}
+
 export async function getGurukul(slug: string): Promise<Gurukul | null> {
   try {
     const { data, error } = await supabaseAdmin
