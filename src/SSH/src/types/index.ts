@@ -1,3 +1,32 @@
+export interface Address {
+  street?: string
+  city?: string
+  state?: string
+  postal_code?: string
+  country?: string
+}
+
+export interface EmergencyContact {
+  name?: string
+  relationship?: string
+  phone?: string
+  email?: string
+}
+
+export interface UserPreferences {
+  language?: string
+  notifications?: {
+    email?: boolean
+    sms?: boolean
+    push?: boolean
+  }
+  accessibility?: {
+    large_text?: boolean
+    high_contrast?: boolean
+    reduced_motion?: boolean
+  }
+}
+
 export interface User {
   id: string
   email: string
@@ -5,14 +34,15 @@ export interface User {
   full_name?: string | null
   avatar_url?: string | null
   role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
-  age?: number | null
+  status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
+  date_of_birth?: string | null
   phone?: string | null
-  address?: string | null
-  parent_guardian_name?: string | null
-  parent_guardian_email?: string | null
-  parent_guardian_phone?: string | null
+  address?: Address | null
+  emergency_contact?: EmergencyContact | null
+  preferences?: UserPreferences
   student_id?: string | null
   teacher_id?: string | null
+  parent_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -47,6 +77,9 @@ export interface Course {
   min_students?: number
   delivery_method: 'physical' | 'remote' | 'hybrid'
   prerequisites?: string | null
+  prerequisite_courses?: string[] // Array of course IDs that must be completed
+  prerequisite_skills?: string[] // Array of skill requirements
+  prerequisite_level?: 'elementary' | 'basic' | 'intermediate' | 'advanced' // Minimum level required
   learning_outcomes: string[]
   includes_certificate?: boolean
   certificate_template_id?: string
@@ -94,7 +127,7 @@ export interface Certificate {
   course_id: string
   certificate_number: string
   template_id: string
-  issue_date: string
+  issued_at: string
   issued_by: string
   verification_code: string
   certificate_data: object
@@ -121,4 +154,33 @@ export interface DashboardStats {
   total_certificates: number
   recent_enrollments: Enrollment[]
   popular_courses: Course[]
+}
+
+export interface PrerequisiteCheckResult {
+  canEnroll: boolean
+  missingPrerequisites: {
+    courses: Array<{
+      id: string
+      title: string
+      completion_status: 'not_enrolled' | 'pending' | 'in_progress' | 'not_completed'
+    }>
+    skills: string[]
+    level: {
+      required: string
+      current: string
+    } | null
+  }
+  message: string
+}
+
+export interface CourseProgress {
+  course_id: string
+  student_id: string
+  progress_percentage: number
+  completed_modules: string[]
+  total_modules: number
+  last_accessed: string
+  completion_status: 'not_started' | 'in_progress' | 'completed'
+  created_at: string
+  updated_at: string
 }

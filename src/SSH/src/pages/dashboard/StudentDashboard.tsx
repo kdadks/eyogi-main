@@ -7,7 +7,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Input } from '../../components/ui/Input'
 import { Enrollment, Certificate, Course } from '../../types'
 import { getStudentEnrollments } from '../../lib/api/enrollments'
-import { getStudentCertificates } from '../../lib/api/certificates'
+import { getStudentCertificates, downloadCertificate } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
 import { formatCurrency, formatDate, getLevelColor, generateCourseUrl } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -36,6 +36,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
+import ProfileEditModal from '../../components/profile/ProfileEditModal'
 
 interface StudentStats {
   totalEnrollments: number
@@ -78,6 +79,9 @@ export default function StudentDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [gurukulFilter, setGurukulFilter] = useState<string>('all')
 
+  // Profile Modal
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+
   useEffect(() => {
     if (user?.id) {
       loadStudentData()
@@ -93,12 +97,7 @@ export default function StudentDashboard() {
       ])
 
       setEnrollments(enrollmentsData)
-      // Map issued_at to issue_date for compatibility
-      const mappedCertificates = certificatesData.map((cert) => ({
-        ...cert,
-        issue_date: cert.issued_at,
-      }))
-      setCertificates(mappedCertificates)
+      setCertificates(certificatesData)
       setAvailableCourses(coursesData)
 
       // Calculate stats
@@ -125,6 +124,39 @@ export default function StudentDashboard() {
       toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCertificateDownload = async (certificateId: string) => {
+    try {
+      await downloadCertificate(certificateId)
+      toast.success('Certificate download started')
+    } catch (error) {
+      console.error('Error downloading certificate:', error)
+      toast.error('Failed to download certificate')
+    }
+  }
+
+  const handleCertificateShare = async (certificate: Certificate) => {
+    const shareData = {
+      title: `Certificate - ${certificate.course?.title}`,
+      text: `I've completed ${certificate.course?.title} and earned this certificate! Verification code: ${certificate.verification_code}`,
+      url: window.location.origin + `/verify-certificate/${certificate.verification_code}`,
+    }
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+        toast.success('Certificate shared successfully')
+      } else {
+        // Fallback: Copy to clipboard
+        const shareText = `${shareData.text}\n\nVerify at: ${shareData.url}`
+        await navigator.clipboard.writeText(shareText)
+        toast.success('Certificate details copied to clipboard')
+      }
+    } catch (error) {
+      console.error('Error sharing certificate:', error)
+      toast.error('Failed to share certificate')
     }
   }
 
@@ -511,14 +543,23 @@ export default function StudentDashboard() {
                                   {certificate.course?.title}
                                 </h3>
                                 <p className="text-sm text-gray-600 mb-3">
-                                  Completed {formatDate(certificate.issue_date)}
+                                  Completed {formatDate(certificate.issued_at)}
                                 </p>
                                 <div className="flex space-x-2">
-                                  <Button size="sm" variant="outline" className="flex-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() => handleCertificateDownload(certificate.id)}
+                                  >
                                     <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
                                     Download
                                   </Button>
-                                  <Button size="sm" variant="outline">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleCertificateShare(certificate)}
+                                  >
                                     <ShareIcon className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -826,7 +867,7 @@ export default function StudentDashboard() {
                               </p>
 
                               <p className="text-sm text-gray-500 mb-4">
-                                Issued on {formatDate(certificate.issue_date)}
+                                Issued on {formatDate(certificate.issued_at)}
                               </p>
 
                               <div className="bg-white rounded-lg p-3 mb-4">
@@ -837,11 +878,20 @@ export default function StudentDashboard() {
                               </div>
 
                               <div className="flex space-x-2">
-                                <Button size="sm" variant="outline" className="flex-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1"
+                                  onClick={() => handleCertificateDownload(certificate.id)}
+                                >
                                   <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
                                   Download
                                 </Button>
-                                <Button size="sm" variant="outline">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCertificateShare(certificate)}
+                                >
                                   <ShareIcon className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -886,7 +936,7 @@ export default function StudentDashboard() {
                               <Input label="Role" value={user?.role || ''} readOnly />
                             </div>
 
-                            <Button>
+                            <Button onClick={() => setIsProfileModalOpen(true)}>
                               <Cog6ToothIcon className="h-4 w-4 mr-2" />
                               Edit Profile
                             </Button>
@@ -959,6 +1009,21 @@ export default function StudentDashboard() {
 
       {/* AI Chat Assistant */}
       <ChatBotTrigger />
+
+      {/* Profile Edit Modal */}
+      {user && (
+        <ProfileEditModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          user={user}
+          onUpdate={(updatedUser) => {
+            console.log('Profile updated:', updatedUser)
+            setIsProfileModalOpen(false)
+            // TODO: Update user context with new data
+            // This would ideally update the WebsiteAuth context
+          }}
+        />
+      )}
     </div>
   )
 }

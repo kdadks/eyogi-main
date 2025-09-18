@@ -301,7 +301,7 @@ export default function GurukulDetailPage() {
                         </div>
                         <div className="flex items-center">
                           <CurrencyEuroIcon className="h-4 w-4 mr-2" />
-                          <span>{formatCurrency(course.fee)}</span>
+                          <span>{formatCurrency(course.price)}</span>
                         </div>
                       </div>
 

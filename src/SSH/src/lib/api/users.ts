@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../supabase'
 import type { Database } from '../supabase'
+import type { Course } from '../../types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -80,7 +81,36 @@ export async function deleteUser(userId: string): Promise<void> {
   }
 }
 
-export async function getTeacherCourses(teacherId: string): Promise<any[]> {
+export async function updateUserProfile(
+  userId: string,
+  updates: Database['public']['Tables']['profiles']['Update'],
+): Promise<Profile> {
+  try {
+    const updateData = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating user profile:', error)
+      throw new Error('Failed to update user profile')
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error updating user profile:', error)
+    throw error
+  }
+}
+
+export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('courses')

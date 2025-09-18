@@ -3,13 +3,14 @@ import { useParams, Link } from 'react-router-dom'
 import { useWebsiteAuth } from '../contexts/WebsiteAuthContext'
 import SEOHead from '../components/seo/SEOHead'
 import { generateCourseSchema, generateBreadcrumbSchema } from '../components/seo/StructuredData'
-import { Course } from '../types'
+import { Course, PrerequisiteCheckResult } from '../types'
 import { getEnrolledCount, getCourseBySlug } from '../lib/api/courses'
 import { enrollInCourse } from '../lib/api/enrollments'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
+import PrerequisiteChecker from '../components/courses/PrerequisiteChecker'
 import toast from 'react-hot-toast'
 import {
   ClockIcon,
@@ -27,6 +28,7 @@ export default function CourseDetailPage() {
   const [enrolledCount, setEnrolledCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
+  const [prerequisiteResult, setPrerequisiteResult] = useState<PrerequisiteCheckResult | null>(null)
 
   const loadCourseData = useCallback(async () => {
     if (!id) {
@@ -242,14 +244,31 @@ export default function CourseDetailPage() {
 
                     {user ? (
                       user.role === 'student' ? (
-                        <Button
-                          className="w-full"
-                          onClick={handleEnroll}
-                          loading={enrolling}
-                          disabled={enrolledCount >= course.max_students}
-                        >
-                          {enrolledCount >= course.max_students ? 'Course Full' : 'Enroll Now'}
-                        </Button>
+                        <div className="space-y-4">
+                          {/* Prerequisites Checker */}
+                          <PrerequisiteChecker
+                            courseId={course.id}
+                            studentId={user.id}
+                            onPrerequisiteCheck={setPrerequisiteResult}
+                            showFullDetails={false}
+                          />
+
+                          <Button
+                            className="w-full"
+                            onClick={handleEnroll}
+                            loading={enrolling}
+                            disabled={
+                              enrolledCount >= course.max_students ||
+                              !!(prerequisiteResult && !prerequisiteResult.canEnroll)
+                            }
+                          >
+                            {enrolledCount >= course.max_students
+                              ? 'Course Full'
+                              : prerequisiteResult && !prerequisiteResult.canEnroll
+                                ? 'Prerequisites Not Met'
+                                : 'Enroll Now'}
+                          </Button>
+                        </div>
                       ) : (
                         <div className="text-center text-sm text-gray-600">
                           Only students can enroll in courses
@@ -327,7 +346,24 @@ export default function CourseDetailPage() {
               )}
 
               {/* Prerequisites */}
-              {course.prerequisites && (
+              {user && user.role === 'student' && (
+                <Card>
+                  <CardHeader>
+                    <h2 className="text-2xl font-bold">Prerequisites</h2>
+                  </CardHeader>
+                  <CardContent>
+                    <PrerequisiteChecker
+                      courseId={course.id}
+                      studentId={user.id}
+                      onPrerequisiteCheck={setPrerequisiteResult}
+                      showFullDetails={true}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Prerequisites (for non-students or non-authenticated users) */}
+              {(!user || user.role !== 'student') && course.prerequisites && (
                 <Card>
                   <CardHeader>
                     <h2 className="text-2xl font-bold">Prerequisites</h2>

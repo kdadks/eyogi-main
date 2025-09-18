@@ -32,12 +32,15 @@ interface CourseFormData {
   age_group_min: number
   age_group_max: number
   duration_weeks: number
-  fee: number
+  price: number
   max_students: number
   delivery_method: 'physical' | 'remote' | 'hybrid'
-  entry_requirements: string
+  prerequisites: string
   learning_outcomes: string[]
   teacher_id: string
+  prerequisite_courses: string[]
+  prerequisite_skills: string[]
+  prerequisite_level?: 'elementary' | 'basic' | 'intermediate' | 'advanced'
 }
 
 export default function CourseManagement() {
@@ -62,12 +65,15 @@ export default function CourseManagement() {
     age_group_min: 8,
     age_group_max: 11,
     duration_weeks: 6,
-    fee: 50,
+    price: 50,
     max_students: 20,
     delivery_method: 'remote',
-    entry_requirements: '',
+    prerequisites: '',
     learning_outcomes: [],
     teacher_id: '',
+    prerequisite_courses: [],
+    prerequisite_skills: [],
+    prerequisite_level: undefined,
   })
   const [formLoading, setFormLoading] = useState(false)
   const [learningOutcomeInput, setLearningOutcomeInput] = useState('')
@@ -140,12 +146,15 @@ export default function CourseManagement() {
       age_group_min: 8,
       age_group_max: 11,
       duration_weeks: 6,
-      fee: 50,
+      price: 50,
       max_students: 20,
       delivery_method: 'remote',
-      entry_requirements: '',
+      prerequisites: '',
       learning_outcomes: [],
       teacher_id: '',
+      prerequisite_courses: [],
+      prerequisite_skills: [],
+      prerequisite_level: undefined,
     })
     setLearningOutcomeInput('')
     setShowCreateForm(false)

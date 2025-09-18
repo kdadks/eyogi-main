@@ -1,7 +1,46 @@
 import { supabaseAdmin } from '../supabase'
 import { Enrollment } from '../../types'
+import { checkCoursePrerequisites } from './prerequisites'
 
 export async function enrollInCourse(courseId: string, studentId: string): Promise<Enrollment> {
+  try {
+    // Check prerequisites before enrollment
+    const prerequisiteCheck = await checkCoursePrerequisites(courseId, studentId)
+
+    if (!prerequisiteCheck.canEnroll) {
+      throw new Error(`Cannot enroll: ${prerequisiteCheck.message}`)
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .insert({
+        id: crypto.randomUUID(),
+        course_id: courseId,
+        student_id: studentId,
+        status: 'pending',
+        enrolled_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error enrolling in course:', error)
+      throw new Error('Failed to enroll in course')
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error enrolling in course:', error)
+    throw error
+  }
+}
+
+export async function enrollInCourseWithoutPrerequisites(
+  courseId: string,
+  studentId: string,
+): Promise<Enrollment> {
   try {
     const { data, error } = await supabaseAdmin
       .from('enrollments')
