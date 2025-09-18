@@ -16,42 +16,22 @@ export default defineConfig({
     }),
   ],
   build: {
+    sourcemap: true, // Enable source maps for debugging
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor'
-            }
-            if (id.includes('react-router')) {
-              return 'router'
-            }
-            if (id.includes('@heroicons')) {
-              return 'ui'
-            }
-            if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
-              return 'forms'
-            }
-            if (id.includes('clsx') || id.includes('tailwind-merge')) {
-              return 'utils'
-            }
-            return 'vendor'
-          }
-          if (id.includes('pages/dashboard')) {
-            return 'dashboard'
-          }
-          if (id.includes('pages/auth')) {
-            return 'auth'
-          }
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
         },
       },
     },
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 1000,
     minify: false,
   },
   define: {
     global: 'globalThis',
     'process.env': {},
+    __DEV__: 'false',
   },
   resolve: {
     alias: {
@@ -59,6 +39,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
     exclude: ['lucide-react'],
   },
 })

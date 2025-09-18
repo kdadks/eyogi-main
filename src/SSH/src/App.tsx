@@ -42,13 +42,25 @@ const LoadingFallback = () => (
 )
 
 function App() {
+  console.log('🎯 [APP] App component initializing...')
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin')
 
+  console.log(
+    '🎯 [APP] State initialized - isAuthModalOpen:',
+    isAuthModalOpen,
+    'authModalMode:',
+    authModalMode,
+  )
+
   const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
+    console.log('🎯 [APP] openAuthModal called with mode:', mode)
     setAuthModalMode(mode)
     setIsAuthModalOpen(true)
   }
+
+  console.log('🎯 [APP] About to render App JSX...')
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">

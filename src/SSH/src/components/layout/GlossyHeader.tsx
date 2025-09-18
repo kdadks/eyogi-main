@@ -36,20 +36,43 @@ interface GlossyHeaderProps {
 }
 
 export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
+  console.log('📋 [HEADER] GlossyHeader component initializing...')
+
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
 
+  console.log('📋 [HEADER] Location:', location.pathname)
+
   // Safely get auth context - handle case where provider might not be ready
   let superAdminUser = null
+  console.log('📋 [HEADER] Attempting to get auth context...')
   try {
     const authContext = useAuth()
+    console.log('📋 [HEADER] Auth context retrieved successfully:', !!authContext)
+    console.log('📋 [HEADER] Auth context user:', !!authContext?.user)
     superAdminUser = authContext?.user
   } catch (error) {
-    console.warn('AuthProvider not available:', error)
+    console.warn('⚠️ [HEADER] AuthProvider not available:', error)
+    console.error('⚠️ [HEADER] Auth error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+    })
   }
 
-  const { user: websiteUser, signOut: websiteSignOut } = useWebsiteAuth() // Website user from profiles table
+  console.log('📋 [HEADER] Attempting to get website auth context...')
+  let websiteUser = null
+  let websiteSignOut = null
+  try {
+    const websiteAuthContext = useWebsiteAuth()
+    console.log('📋 [HEADER] Website auth context retrieved successfully:', !!websiteAuthContext)
+    websiteUser = websiteAuthContext?.user
+    websiteSignOut = websiteAuthContext?.signOut
+    console.log('📋 [HEADER] Website user:', !!websiteUser)
+  } catch (error) {
+    console.error('❌ [HEADER] WebsiteAuth error:', error)
+  }
 
   useEffect(() => {
     const handleScroll = () => {

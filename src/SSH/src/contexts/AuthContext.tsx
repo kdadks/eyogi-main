@@ -34,33 +34,66 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  console.log('🔐 [AUTH_PROVIDER] Initializing AuthProvider...')
+
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
 
+  console.log(
+    '🔐 [AUTH_PROVIDER] Initial state - user:',
+    user,
+    'loading:',
+    loading,
+    'initialized:',
+    initialized,
+  )
+
   useEffect(() => {
+    console.log('🔐 [AUTH_PROVIDER] useEffect triggered for auth initialization')
     let isMounted = true
 
     // Get initial session
     const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      console.log('🔐 [AUTH_PROVIDER] Getting initial session...')
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-      if (!isMounted) return
+        console.log('🔐 [AUTH_PROVIDER] Session retrieved:', !!session, 'User:', !!session?.user)
 
-      setUser(session?.user ?? null)
-      setLoading(false)
-      setInitialized(true)
+        if (!isMounted) {
+          console.log('🔐 [AUTH_PROVIDER] Component unmounted, skipping state update')
+          return
+        }
+
+        setUser(session?.user ?? null)
+        setLoading(false)
+        setInitialized(true)
+        console.log('🔐 [AUTH_PROVIDER] Initial session processed successfully')
+      } catch (error) {
+        console.error('❌ [AUTH_PROVIDER] Error getting initial session:', error)
+        if (isMounted) {
+          setLoading(false)
+          setInitialized(true)
+        }
+      }
     }
 
     getSession()
 
     // Listen for auth changes
+    console.log('🔐 [AUTH_PROVIDER] Setting up auth state change listener...')
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      if (!isMounted) return
+      console.log('🔐 [AUTH_PROVIDER] Auth state change:', event, 'Session:', !!session)
+
+      if (!isMounted) {
+        console.log('🔐 [AUTH_PROVIDER] Component unmounted, skipping auth state change')
+        return
+      }
 
       setUser(session?.user ?? null)
       setLoading(false)
@@ -68,6 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     })
 
     return () => {
+      console.log('🔐 [AUTH_PROVIDER] Cleaning up AuthProvider...')
       isMounted = false
       subscription.unsubscribe()
     }
