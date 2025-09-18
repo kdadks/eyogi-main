@@ -39,7 +39,16 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
-  const { user: superAdminUser } = useAuth() // Super admin user from Supabase Auth
+
+  // Safely get auth context - handle case where provider might not be ready
+  let superAdminUser = null
+  try {
+    const authContext = useAuth()
+    superAdminUser = authContext?.user
+  } catch (error) {
+    console.warn('AuthProvider not available:', error)
+  }
+
   const { user: websiteUser, signOut: websiteSignOut } = useWebsiteAuth() // Website user from profiles table
 
   useEffect(() => {
