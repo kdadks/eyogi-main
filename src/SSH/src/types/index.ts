@@ -33,7 +33,7 @@ export interface User {
   password_hash?: string | null
   full_name?: string | null
   avatar_url?: string | null
-  role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+  role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
   status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
   date_of_birth?: string | null
   phone?: string | null
@@ -184,4 +184,19 @@ export interface CourseProgress {
   completion_status: 'not_started' | 'in_progress' | 'completed'
   created_at: string
   updated_at: string
+}
+
+export interface CourseAssignment {
+  id: string
+  teacher_id: string
+  course_id: string
+  assigned_by?: string
+  assigned_at: string
+  is_active: boolean
+  notes?: string
+  created_at: string
+  updated_at: string
+  course?: Course
+  teacher?: User
+  assigned_by_user?: User
 }

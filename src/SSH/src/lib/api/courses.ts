@@ -195,18 +195,51 @@ export async function deleteCourse(id: string): Promise<void> {
 
 export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
   try {
-    const { data, error } = await supabaseAdmin
+    // First check if we have a teacher_id (website auth user) or profile id (supabase auth user)
+    // For backward compatibility, try both approaches
+
+    // Method 1: Try direct teacher_id assignment (legacy)
+    const { data: directCourses, error: directError } = await supabaseAdmin
       .from('courses')
       .select('*')
       .eq('teacher_id', teacherId)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching teacher courses:', error)
+    // Method 2: Try course assignments table (new approach)
+    // First, find the teacher's teacher_id from profiles
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('teacher_id')
+      .eq('id', teacherId)
+      .single()
+
+    let assignedCourses: Course[] = []
+    if (profile?.teacher_id) {
+      const { data: assignments, error: assignmentError } = await supabaseAdmin
+        .from('course_assignments')
+        .select(`
+          course:courses(*)
+        `)
+        .eq('teacher_id', profile.teacher_id)
+        .eq('is_active', true)
+
+      if (!assignmentError && assignments) {
+        assignedCourses = assignments.map(assignment => assignment.course).filter(Boolean)
+      }
+    }
+
+    // Combine both methods and remove duplicates
+    const allCourses = [...(directCourses || []), ...assignedCourses]
+    const uniqueCourses = allCourses.filter((course, index, self) =>
+      index === self.findIndex(c => c.id === course.id)
+    )
+
+    if (directError && !profile?.teacher_id) {
+      console.error('Error fetching teacher courses:', directError)
       return []
     }
 
-    return data || []
+    return uniqueCourses
   } catch (error) {
     console.error('Error fetching teacher courses:', error)
     return []

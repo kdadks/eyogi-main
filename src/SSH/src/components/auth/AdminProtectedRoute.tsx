@@ -4,7 +4,7 @@ import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: 'admin' | 'super_admin' | 'teacher'
+  requiredRole?: 'admin' | 'business_admin' | 'super_admin' | 'teacher'
   requiredPermission?: {
     resource: string
     action: string

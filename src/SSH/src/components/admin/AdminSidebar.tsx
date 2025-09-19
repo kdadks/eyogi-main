@@ -4,6 +4,7 @@ import {
   XMarkIcon,
   HomeIcon,
   UsersIcon,
+  UserGroupIcon,
   BookOpenIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
@@ -15,6 +16,7 @@ import {
   BuildingLibraryIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
+import { usePermissions } from '../../hooks/usePermissions'
 
 interface AdminSidebarProps {
   isOpen: boolean
@@ -22,26 +24,34 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
-  const { profile, canAccess, user, signOut } = useAuth()
+  const { user, signOut } = useAuth()
+  const { canAccessResource, getUserRole, currentUser, isSuperAdminRole } = usePermissions()
 
   const navigation = [
     {
       name: 'Dashboard',
       href: '/admin/dashboard',
       icon: HomeIcon,
-      permission: null,
+      permission: { resource: 'dashboard', action: 'read' },
     },
     {
       name: 'Users',
       href: '/admin/users',
       icon: UsersIcon,
       permission: { resource: 'users', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can manage users
     },
     {
       name: 'Courses',
       href: '/admin/courses',
       icon: BookOpenIcon,
       permission: { resource: 'courses', action: 'read' },
+    },
+    {
+      name: 'Course Assignments',
+      href: '/admin/course-assignments',
+      icon: UserGroupIcon,
+      permission: { resource: 'assignments', action: 'read' },
     },
     {
       name: 'Gurukuls',
@@ -72,24 +82,32 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       href: '/admin/analytics',
       icon: ChartBarIcon,
       permission: { resource: 'analytics', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can view analytics
     },
     {
       name: 'Permissions',
       href: '/admin/permissions',
       icon: ShieldCheckIcon,
       permission: { resource: 'permissions', action: 'read' },
-    },
-    {
-      name: 'Settings',
-      href: '/admin/settings',
-      icon: CogIcon,
-      permission: { resource: 'settings', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can manage permissions
     },
   ]
 
   const filteredNavigation = navigation.filter((item) => {
-    if (!item.permission) return true
-    return canAccess(item.permission.resource, item.permission.action)
+    // Check if item requires admin-only access
+    if (item.adminOnly) {
+      const role = getUserRole()
+      if (role !== 'admin' && role !== 'super_admin') {
+        return false
+      }
+    }
+
+    // Check resource-level permissions
+    if (item.permission) {
+      return canAccessResource(item.permission.resource, item.permission.action)
+    }
+
+    return true
   })
 
   return (
@@ -150,15 +168,17 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
-                    {profile?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                    {currentUser?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
                   </span>
                 </div>
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-700">
-                  {profile?.full_name || user?.email?.split('@')[0] || 'Admin'}
+                  {currentUser?.full_name || user?.email?.split('@')[0] || 'Admin'}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">{profile?.role || 'Admin'}</p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {isSuperAdminRole ? 'Super Admin' : getUserRole()?.replace('_', ' ') || 'Admin'}
+                </p>
               </div>
             </div>
             <button

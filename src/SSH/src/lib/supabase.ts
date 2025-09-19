@@ -40,7 +40,7 @@ export interface Database {
           email: string
           password_hash: string | null
           full_name: string
-          role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+          role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
           status: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth: string | null
           phone: string | null
@@ -59,7 +59,7 @@ export interface Database {
           email: string
           password_hash?: string | null
           full_name: string
-          role?: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+          role?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
           status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth?: string | null
           phone?: string | null
@@ -74,7 +74,7 @@ export interface Database {
         Update: {
           email?: string
           full_name?: string
-          role?: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+          role?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
           status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth?: string | null
           phone?: string | null
@@ -322,6 +322,35 @@ export interface Database {
           verification_code?: string
           certificate_data?: any
           file_url?: string
+        }
+      }
+      course_assignments: {
+        Row: {
+          id: string
+          teacher_id: string
+          course_id: string
+          assigned_by: string | null
+          assigned_at: string
+          is_active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          teacher_id: string
+          course_id: string
+          assigned_by?: string | null
+          assigned_at?: string
+          is_active?: boolean
+          notes?: string | null
+        }
+        Update: {
+          teacher_id?: string
+          course_id?: string
+          assigned_by?: string | null
+          assigned_at?: string
+          is_active?: boolean
+          notes?: string | null
         }
       }
       // Add other table types as needed...

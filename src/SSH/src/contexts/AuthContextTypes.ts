@@ -1,17 +1,20 @@
 import { createContext } from 'react'
 import { User } from '@supabase/supabase-js'
+import type { Profile } from '../types'
 
 export interface AuthContextType {
-  // Current authenticated super admin user (from Supabase Auth ONLY)
+  // Current authenticated admin user (from Supabase Auth)
   user: User | null
+  // User's profile data from database
+  profile: Profile | null
   loading: boolean
   initialized: boolean
 
-  // Super admin sign in (Supabase Auth only)
+  // Admin sign in (Supabase Auth only)
   signIn: (email: string, password: string) => Promise<{ error: unknown }>
   signOut: () => Promise<void>
 
-  // Check if user is super admin (only users in Supabase Auth are super admins)
+  // Check if user has admin privileges (admin, business_admin, or super_admin)
   isSuperAdmin: boolean
 
   // Check permissions

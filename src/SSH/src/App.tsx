@@ -26,6 +26,7 @@ import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
 import CourseManagement from './components/admin/CourseManagement'
+import CourseAssignmentManagement from './components/admin/CourseAssignmentManagement'
 import EnrollmentManagement from './components/admin/EnrollmentManagement'
 import GurukulManagement from './components/admin/GurukulManagement'
 import SiteAnalytics from './components/admin/SiteAnalytics'
@@ -99,6 +100,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/dashboard/business_admin"
+              element={
+                <ProtectedRoute requiredRole="business_admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -119,6 +128,7 @@ function App() {
 
               {/* Course Management */}
               <Route path="courses" element={<CourseManagement />} />
+              <Route path="course-assignments" element={<CourseAssignmentManagement />} />
               <Route path="enrollments" element={<EnrollmentManagement />} />
               <Route path="gurukuls" element={<GurukulManagement />} />
               <Route path="certificates" element={<CertificateManagement />} />

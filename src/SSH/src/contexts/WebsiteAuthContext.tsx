@@ -32,7 +32,7 @@ interface WebsiteAuthContextType {
     email: string
     password: string
     full_name: string
-    role: 'student' | 'teacher'
+    role: 'student' | 'teacher' | 'business_admin'
     phone?: string
     date_of_birth?: string
   }) => Promise<{ error: string | null }>
@@ -142,7 +142,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     email: string
     password: string
     full_name: string
-    role: 'student' | 'teacher'
+    role: 'student' | 'teacher' | 'business_admin'
     phone?: string
     date_of_birth?: string
   }) => {
@@ -213,17 +213,32 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
   const canAccess = (resource: string, action: string): boolean => {
     if (!user) return false
 
-    // Basic role-based permissions
+    // Role-based permissions with component-level access control
     switch (user.role) {
       case 'admin':
         return true // Admin can access everything
+      case 'business_admin':
+        // Business Admin has access to specific components only
+        const businessAdminResources = [
+          'dashboard',
+          'certificates',
+          'courses',
+          'assignments',
+          'enrollments',
+          'students',
+          'gurukuls',
+          'content'
+        ]
+        return businessAdminResources.includes(resource)
       case 'teacher':
-        return (
-          resource === 'courses' ||
-          resource === 'students' ||
-          resource === 'dashboard' ||
-          (resource === 'users' && action === 'read')
-        )
+        // Teachers can access courses they're assigned to, their students, and enrollments
+        const teacherResources = [
+          'courses',
+          'students',
+          'enrollments',
+          'dashboard'
+        ]
+        return teacherResources.includes(resource) || (resource === 'users' && action === 'read')
       case 'student':
         return (
           (resource === 'courses' && (action === 'read' || action === 'enroll')) ||

@@ -5,7 +5,7 @@ import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+  requiredRole?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
   redirectTo?: string
 }
 

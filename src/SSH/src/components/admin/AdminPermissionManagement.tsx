@@ -13,6 +13,11 @@ import {
   Settings,
   Shield,
   RefreshCw,
+  Building,
+  FileText,
+  Award,
+  BarChart3,
+  UserCheck,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { usePermissions } from '../../contexts/PermissionContext'
@@ -53,6 +58,20 @@ const getIconForResource = (resource: string): React.ReactNode => {
       return <Book className="h-4 w-4" />
     case 'enrollments':
       return <GraduationCap className="h-4 w-4" />
+    case 'students':
+      return <UserCheck className="h-4 w-4" />
+    case 'gurukuls':
+      return <Building className="h-4 w-4" />
+    case 'content':
+      return <FileText className="h-4 w-4" />
+    case 'certificates':
+      return <Award className="h-4 w-4" />
+    case 'analytics':
+      return <BarChart3 className="h-4 w-4" />
+    case 'assignments':
+      return <UserCheck className="h-4 w-4" />
+    case 'dashboard':
+      return <BarChart3 className="h-4 w-4" />
     case 'settings':
       return <Settings className="h-4 w-4" />
     case 'permissions':
@@ -64,6 +83,8 @@ const getIconForResource = (resource: string): React.ReactNode => {
 
 const ROLE_DEFAULTS = {
   admin: [],
+  business_admin: [],
+  super_admin: [],
   teacher: [],
   student: [],
 }
@@ -71,7 +92,7 @@ const ROLE_DEFAULTS = {
 export default function AdminPermissionManagement() {
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>(ROLE_DEFAULTS)
-  const [selectedRole, setSelectedRole] = useState<string>('admin')
+  const [selectedRole, setSelectedRole] = useState<string>('business_admin')
   const [loading, setLoading] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [isLoadingData, setIsLoadingData] = useState(true)
@@ -117,6 +138,8 @@ export default function AdminPermissionManagement() {
       // Group role permissions by role
       const rolePermissionMap: Record<string, string[]> = {
         admin: [],
+        business_admin: [],
+        super_admin: [],
         teacher: [],
         student: [],
       }
@@ -284,27 +307,96 @@ export default function AdminPermissionManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            {roles.map((role) => (
-              <Button
-                key={role}
-                onClick={() => setSelectedRole(role)}
-                className="capitalize"
-                style={{
-                  backgroundColor: selectedRole === role ? '#3b82f6' : 'transparent',
-                  color: selectedRole === role ? 'white' : '#374151',
-                  border: '1px solid #d1d5db',
-                }}
-              >
-                {role}
-                <Badge variant="default" className="ml-2">
-                  {(rolePermissions[role] || []).length}
-                </Badge>
-              </Button>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {roles.map((role) => {
+              const isSelected = selectedRole === role
+              const permissionCount = (rolePermissions[role] || []).length
+
+              return (
+                <div
+                  key={role}
+                  onClick={() => setSelectedRole(role)}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="font-medium capitalize text-gray-900 mb-1">
+                      {role === 'business_admin' ? 'Business Admin' : role}
+                    </div>
+                    <Badge
+                      variant={isSelected ? "default" : "secondary"}
+                      className="text-xs"
+                    >
+                      {permissionCount} permissions
+                    </Badge>
+                    {role === 'business_admin' && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Limited admin access
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
+
+      {selectedRole === 'business_admin' && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-800 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Business Admin Role Guidelines
+            </CardTitle>
+            <CardDescription className="text-amber-700">
+              Business Admins have limited administrative access. Recommended permissions include:
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="flex items-center gap-2 text-amber-800">
+                <BarChart3 className="h-4 w-4" />
+                Dashboard access
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <Book className="h-4 w-4" />
+                Course management
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <GraduationCap className="h-4 w-4" />
+                Enrollment oversight
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <Building className="h-4 w-4" />
+                Gurukul management
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <Award className="h-4 w-4" />
+                Certificate management
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <FileText className="h-4 w-4" />
+                Content management
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <UserCheck className="h-4 w-4" />
+                Student oversight
+              </div>
+              <div className="flex items-center gap-2 text-amber-800">
+                <UserCheck className="h-4 w-4" />
+                Course assignments
+              </div>
+            </div>
+            <div className="mt-3 p-2 bg-amber-100 rounded text-xs text-amber-800">
+              <strong>Note:</strong> Business Admins cannot access user management, system permissions, or advanced analytics.
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-6">
         {Object.entries(groupedPermissions).map(([resource, resourcePermissions]) => (
