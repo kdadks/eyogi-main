@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '../supabase'
 import { Course } from '../../types'
-import { generateCourseSlug } from '../utils'
+import { generateCourseSlug, generateSlug } from '../utils'
 
 export async function getCourses(filters?: {
   gurukul_id?: string
@@ -132,20 +132,29 @@ export async function createCourse(
   course: Omit<Course, 'id' | 'created_at' | 'updated_at'>,
 ): Promise<Course> {
   try {
+    const courseId = crypto.randomUUID()
+
+    // Generate slug if not provided
+    const slug = course.slug || generateSlug(course.title)
+
+    const courseData = {
+      ...course,
+      id: courseId,
+      slug: slug,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
     const { data, error } = await supabaseAdmin
       .from('courses')
-      .insert({
-        ...course,
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .insert(courseData)
       .select()
       .single()
 
     if (error) {
-      console.error('Error creating course:', error)
-      throw new Error('Failed to create course')
+      console.error('Error creating course:', JSON.stringify(error, null, 2))
+      console.error('Course data:', JSON.stringify(courseData, null, 2))
+      throw error
     }
 
     return data

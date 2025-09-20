@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Course, Gurukul } from '@/types'
-import { getCourses, updateCourse, deleteCourse } from '@/lib/api/courses'
+import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getAllUsers } from '@/lib/api/users'
 import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
@@ -50,13 +50,14 @@ const initialFormData: CourseFormData = {
   gurukul_id: '',
   course_number: '',
   title: '',
+  slug: '',
   description: '',
   level: 'basic',
   age_group_min: 8,
   age_group_max: 11,
   duration_weeks: 6,
   price: 50,
-  currency: 'USD',
+  currency: 'EUR',
   max_students: 20,
   delivery_method: 'remote',
   learning_outcomes: [],
@@ -72,6 +73,11 @@ export default function CourseManagement() {
   const [filterGurukul, setFilterGurukul] = useState('')
   const [filterLevel, setFilterLevel] = useState('')
   const [viewingCourse, setViewingCourse] = useState<Course | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [formData, setFormData] = useState<CourseFormData>(initialFormData)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -162,6 +168,163 @@ export default function CourseManagement() {
     }
   }
 
+  const handleCreateCourse = async () => {
+    if (!formData.title || !formData.gurukul_id || !formData.course_number) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const courseData = {
+        // Only include fields that exist in the database schema
+        gurukul_id: formData.gurukul_id,
+        course_number: formData.course_number,
+        title: formData.title,
+        slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        description: formData.description || '',
+        detailed_description: formData.detailed_description || undefined,
+        level: formData.level,
+        age_group_min: formData.age_group_min || 5,
+        age_group_max: formData.age_group_max || 18,
+        duration_weeks: formData.duration_weeks || 1,
+        duration_hours: formData.duration_hours || undefined,
+        delivery_method: formData.delivery_method,
+        price: formData.price || 0,
+        currency: formData.currency || 'EUR',
+        max_students: formData.max_students || 1,
+        min_students: formData.min_students || undefined,
+        prerequisites: formData.prerequisites || undefined,
+        learning_outcomes: formData.learning_outcomes.filter(outcome => outcome.trim() !== ''),
+        includes_certificate: formData.includes_certificate || false,
+        certificate_template_id: formData.certificate_template_id || undefined,
+        image_url: formData.image_url || undefined,
+        cover_image_url: formData.cover_image_url || undefined,
+        video_preview_url: formData.video_preview_url || undefined,
+        syllabus: formData.syllabus,
+        resources: formData.resources || undefined,
+        is_active: formData.is_active !== undefined ? formData.is_active : true,
+        featured: formData.featured || false,
+        tags: formData.tags || undefined,
+        meta_title: formData.meta_title || undefined,
+        meta_description: formData.meta_description || undefined,
+        teacher_id: formData.teacher_id || undefined,
+      }
+
+      console.log('Creating course with data:', JSON.stringify(courseData, null, 2))
+      await createCourse(courseData)
+      toast.success('Course created successfully')
+      setShowCreateModal(false)
+      setFormData(initialFormData)
+      await loadData()
+    } catch (error) {
+      console.error('Error creating course:', error)
+      toast.error('Failed to create course: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEditCourse = (course: Course) => {
+    setEditingCourse(course)
+    setFormData({
+      gurukul_id: course.gurukul_id,
+      course_number: course.course_number,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      detailed_description: course.detailed_description || '',
+      level: course.level,
+      age_group_min: course.age_group_min,
+      age_group_max: course.age_group_max,
+      duration_weeks: course.duration_weeks,
+      duration_hours: course.duration_hours || undefined,
+      price: course.price,
+      currency: course.currency,
+      max_students: course.max_students,
+      min_students: course.min_students || undefined,
+      delivery_method: course.delivery_method,
+      prerequisites: course.prerequisites || '',
+      prerequisite_courses: course.prerequisite_courses || [],
+      prerequisite_skills: course.prerequisite_skills || [],
+      learning_outcomes: course.learning_outcomes || [],
+      includes_certificate: course.includes_certificate || false,
+      certificate_template_id: course.certificate_template_id || '',
+      image_url: course.image_url || '',
+      cover_image_url: course.cover_image_url || '',
+      video_preview_url: course.video_preview_url || '',
+      syllabus: course.syllabus,
+      resources: course.resources || [],
+      is_active: course.is_active,
+      featured: course.featured || false,
+      tags: course.tags || [],
+      meta_title: course.meta_title || '',
+      meta_description: course.meta_description || '',
+      teacher_id: course.teacher_id || '',
+    })
+    setShowEditModal(true)
+  }
+
+  const handleUpdateCourse = async () => {
+    if (!editingCourse) return
+
+    setSaving(true)
+    try {
+      const updates = {
+        gurukul_id: formData.gurukul_id,
+        course_number: formData.course_number,
+        title: formData.title,
+        slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        description: formData.description || '',
+        detailed_description: formData.detailed_description || undefined,
+        level: formData.level,
+        age_group_min: formData.age_group_min || 5,
+        age_group_max: formData.age_group_max || 18,
+        duration_weeks: formData.duration_weeks || 1,
+        duration_hours: formData.duration_hours || undefined,
+        delivery_method: formData.delivery_method,
+        price: formData.price || 0,
+        currency: formData.currency || 'EUR',
+        max_students: formData.max_students || 1,
+        min_students: formData.min_students || undefined,
+        prerequisites: formData.prerequisites || undefined,
+        learning_outcomes: formData.learning_outcomes.filter(outcome => outcome.trim() !== ''),
+        includes_certificate: formData.includes_certificate || false,
+        certificate_template_id: formData.certificate_template_id || undefined,
+        image_url: formData.image_url || undefined,
+        cover_image_url: formData.cover_image_url || undefined,
+        video_preview_url: formData.video_preview_url || undefined,
+        syllabus: formData.syllabus,
+        resources: formData.resources || undefined,
+        is_active: formData.is_active !== undefined ? formData.is_active : true,
+        featured: formData.featured || false,
+        tags: formData.tags || undefined,
+        meta_title: formData.meta_title || undefined,
+        meta_description: formData.meta_description || undefined,
+        teacher_id: formData.teacher_id || undefined,
+      }
+
+      await updateCourse(editingCourse.id, updates)
+      toast.success('Course updated successfully')
+      setShowEditModal(false)
+      setEditingCourse(null)
+      setFormData(initialFormData)
+      await loadData()
+    } catch (error) {
+      console.error('Error updating course:', error)
+      toast.error('Failed to update course')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const closeModal = () => {
+    setShowCreateModal(false)
+    setShowEditModal(false)
+    setEditingCourse(null)
+    setFormData(initialFormData)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -176,9 +339,9 @@ export default function CourseManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Course Management</h1>
-        <Button disabled>
+        <Button onClick={() => setShowCreateModal(true)}>
           <PlusIcon className="h-4 w-4 mr-2" />
-          Add Course (Modal coming)
+          Add Course
         </Button>
       </div>
       {/* Search and Filters */}
@@ -303,8 +466,7 @@ export default function CourseManagement() {
                   <EyeIcon className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => alert('Edit modal coming soon')}
-                  disabled
+                  onClick={() => handleEditCourse(course)}
                   className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
                   title="Edit"
                 >
@@ -501,6 +663,481 @@ export default function CourseManagement() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Course Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Create New Course</h2>
+                <button
+                  onClick={closeModal}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Basic Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gurukul *
+                  </label>
+                  <select
+                    value={formData.gurukul_id}
+                    onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select a gurukul</option>
+                    {gurukuls.map((gurukul) => (
+                      <option key={gurukul.id} value={gurukul.id}>
+                        {gurukul.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course Number *
+                  </label>
+                  <Input
+                    value={formData.course_number}
+                    onChange={(e) => setFormData({ ...formData, course_number: e.target.value })}
+                    placeholder="e.g., CS101"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title *
+                  </label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Course title"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Course description"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                  <select
+                    value={formData.level}
+                    onChange={(e) => setFormData({ ...formData, level: e.target.value as any })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="elementary">Elementary</option>
+                    <option value="basic">Basic</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Delivery Method
+                  </label>
+                  <select
+                    value={formData.delivery_method}
+                    onChange={(e) => setFormData({ ...formData, delivery_method: e.target.value as any })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="remote">Remote</option>
+                    <option value="physical">Physical</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age Min
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.age_group_min}
+                    onChange={(e) => setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })}
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age Max
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.age_group_max}
+                    onChange={(e) => setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })}
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Duration (weeks)
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.duration_weeks}
+                    onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })}
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Duration (hours)
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.duration_hours || ''}
+                    onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || undefined })}
+                    min="1"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <Input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <Input
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    placeholder="EUR"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
+                  <Input
+                    type="number"
+                    value={formData.max_students}
+                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })}
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Students</label>
+                  <Input
+                    type="number"
+                    value={formData.min_students || ''}
+                    onChange={(e) => setFormData({ ...formData, min_students: parseInt(e.target.value) || undefined })}
+                    min="1"
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+
+              {/* Learning Outcomes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Learning Outcomes
+                </label>
+                <textarea
+                  value={formData.learning_outcomes.join('\n')}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    learning_outcomes: e.target.value.split('\n').filter(line => line.trim() !== '')
+                  })}
+                  placeholder="Enter each outcome on a new line"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button variant="outline" onClick={closeModal}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateCourse} disabled={saving}>
+                  {saving ? 'Creating...' : 'Create Course'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Course Modal */}
+      {showEditModal && editingCourse && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Edit Course</h2>
+                <button
+                  onClick={closeModal}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Same form fields as create modal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gurukul *
+                  </label>
+                  <select
+                    value={formData.gurukul_id}
+                    onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Select a gurukul</option>
+                    {gurukuls.map((gurukul) => (
+                      <option key={gurukul.id} value={gurukul.id}>
+                        {gurukul.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course Number *
+                  </label>
+                  <Input
+                    value={formData.course_number}
+                    onChange={(e) => setFormData({ ...formData, course_number: e.target.value })}
+                    placeholder="e.g., CS101"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title *
+                  </label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Course title"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Course description"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                  <select
+                    value={formData.level}
+                    onChange={(e) => setFormData({ ...formData, level: e.target.value as any })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="elementary">Elementary</option>
+                    <option value="basic">Basic</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Delivery Method
+                  </label>
+                  <select
+                    value={formData.delivery_method}
+                    onChange={(e) => setFormData({ ...formData, delivery_method: e.target.value as any })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="remote">Remote</option>
+                    <option value="physical">Physical</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age Min
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.age_group_min}
+                    onChange={(e) => setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })}
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age Max
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.age_group_max}
+                    onChange={(e) => setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })}
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Duration (weeks)
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.duration_weeks}
+                    onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })}
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Duration (hours)
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.duration_hours || ''}
+                    onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || undefined })}
+                    min="1"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <Input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <Input
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    placeholder="EUR"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
+                  <Input
+                    type="number"
+                    value={formData.max_students}
+                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })}
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Students</label>
+                  <Input
+                    type="number"
+                    value={formData.min_students || ''}
+                    onChange={(e) => setFormData({ ...formData, min_students: parseInt(e.target.value) || undefined })}
+                    min="1"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="mr-2"
+                    />
+                    Active
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.featured || false}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                      className="mr-2"
+                    />
+                    Featured
+                  </label>
+                </div>
+              </div>
+
+              {/* Learning Outcomes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Learning Outcomes
+                </label>
+                <textarea
+                  value={formData.learning_outcomes.join('\n')}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    learning_outcomes: e.target.value.split('\n').filter(line => line.trim() !== '')
+                  })}
+                  placeholder="Enter each outcome on a new line"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button variant="outline" onClick={closeModal}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateCourse} disabled={saving}>
+                  {saving ? 'Updating...' : 'Update Course'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
