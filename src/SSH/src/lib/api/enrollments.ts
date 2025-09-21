@@ -82,13 +82,18 @@ export async function getStudentEnrollments(studentId: string): Promise<Enrollme
       .order('enrolled_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching student enrollments:', error)
       return []
     }
 
-    return data || []
-  } catch (error) {
-    console.error('Error fetching student enrollments:', error)
+    // Transform the data to match our interface - move courses to course
+    const transformedData =
+      data?.map((enrollment) => ({
+        ...enrollment,
+        course: enrollment.courses || null,
+      })) || []
+
+    return transformedData
+  } catch {
     return []
   }
 }

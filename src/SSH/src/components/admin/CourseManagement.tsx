@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Course, Gurukul } from '@/types'
+import { Course, Gurukul, Syllabus } from '@/types'
 import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getAllUsers } from '@/lib/api/users'
@@ -36,7 +36,7 @@ interface CourseFormData {
   image_url?: string
   cover_image_url?: string
   video_preview_url?: string
-  syllabus?: object | null
+  syllabus: Syllabus | null
   resources?: Array<{ name: string; url: string; type: string }>
   is_active: boolean
   featured?: boolean
@@ -62,6 +62,7 @@ const initialFormData: CourseFormData = {
   delivery_method: 'remote',
   learning_outcomes: [],
   is_active: true,
+  syllabus: null,
 }
 
 export default function CourseManagement() {
@@ -181,7 +182,12 @@ export default function CourseManagement() {
         gurukul_id: formData.gurukul_id,
         course_number: formData.course_number,
         title: formData.title,
-        slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        slug:
+          formData.slug ||
+          formData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, ''),
         description: formData.description || '',
         detailed_description: formData.detailed_description || undefined,
         level: formData.level,
@@ -195,7 +201,7 @@ export default function CourseManagement() {
         max_students: formData.max_students || 1,
         min_students: formData.min_students || undefined,
         prerequisites: formData.prerequisites || undefined,
-        learning_outcomes: formData.learning_outcomes.filter(outcome => outcome.trim() !== ''),
+        learning_outcomes: formData.learning_outcomes.filter((outcome) => outcome.trim() !== ''),
         includes_certificate: formData.includes_certificate || false,
         certificate_template_id: formData.certificate_template_id || undefined,
         image_url: formData.image_url || undefined,
@@ -219,7 +225,9 @@ export default function CourseManagement() {
       await loadData()
     } catch (error) {
       console.error('Error creating course:', error)
-      toast.error('Failed to create course: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error(
+        'Failed to create course: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      )
     } finally {
       setSaving(false)
     }
@@ -274,7 +282,12 @@ export default function CourseManagement() {
         gurukul_id: formData.gurukul_id,
         course_number: formData.course_number,
         title: formData.title,
-        slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        slug:
+          formData.slug ||
+          formData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, ''),
         description: formData.description || '',
         detailed_description: formData.detailed_description || undefined,
         level: formData.level,
@@ -288,7 +301,7 @@ export default function CourseManagement() {
         max_students: formData.max_students || 1,
         min_students: formData.min_students || undefined,
         prerequisites: formData.prerequisites || undefined,
-        learning_outcomes: formData.learning_outcomes.filter(outcome => outcome.trim() !== ''),
+        learning_outcomes: formData.learning_outcomes.filter((outcome) => outcome.trim() !== ''),
         includes_certificate: formData.includes_certificate || false,
         certificate_template_id: formData.certificate_template_id || undefined,
         image_url: formData.image_url || undefined,
@@ -688,9 +701,7 @@ export default function CourseManagement() {
               {/* Basic Information Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gurukul *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gurukul *</label>
                   <select
                     value={formData.gurukul_id}
                     onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
@@ -719,9 +730,7 @@ export default function CourseManagement() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Title *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -748,7 +757,9 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
                   <select
                     value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, level: e.target.value as CourseFormData['level'] })
+                    }
                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="elementary">Elementary</option>
@@ -764,7 +775,12 @@ export default function CourseManagement() {
                   </label>
                   <select
                     value={formData.delivery_method}
-                    onChange={(e) => setFormData({ ...formData, delivery_method: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        delivery_method: e.target.value as CourseFormData['delivery_method'],
+                      })
+                    }
                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="remote">Remote</option>
@@ -774,25 +790,25 @@ export default function CourseManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age Min
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
                   <Input
                     type="number"
                     value={formData.age_group_min}
-                    onChange={(e) => setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })
+                    }
                     min="0"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age Max
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
                   <Input
                     type="number"
                     value={formData.age_group_max}
-                    onChange={(e) => setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })
+                    }
                     min="0"
                   />
                 </div>
@@ -804,7 +820,9 @@ export default function CourseManagement() {
                   <Input
                     type="number"
                     value={formData.duration_weeks}
-                    onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })
+                    }
                     min="1"
                   />
                 </div>
@@ -816,7 +834,12 @@ export default function CourseManagement() {
                   <Input
                     type="number"
                     value={formData.duration_hours || ''}
-                    onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || undefined })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        duration_hours: parseInt(e.target.value) || undefined,
+                      })
+                    }
                     min="1"
                     placeholder="Optional"
                   />
@@ -827,7 +850,9 @@ export default function CourseManagement() {
                   <Input
                     type="number"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                    }
                     min="0"
                     step="0.01"
                   />
@@ -843,21 +868,32 @@ export default function CourseManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Students
+                  </label>
                   <Input
                     type="number"
                     value={formData.max_students}
-                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })
+                    }
                     min="1"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Students</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Min Students
+                  </label>
                   <Input
                     type="number"
                     value={formData.min_students || ''}
-                    onChange={(e) => setFormData({ ...formData, min_students: parseInt(e.target.value) || undefined })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        min_students: parseInt(e.target.value) || undefined,
+                      })
+                    }
                     min="1"
                     placeholder="Optional"
                   />
@@ -871,10 +907,14 @@ export default function CourseManagement() {
                 </label>
                 <textarea
                   value={formData.learning_outcomes.join('\n')}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    learning_outcomes: e.target.value.split('\n').filter(line => line.trim() !== '')
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      learning_outcomes: e.target.value
+                        .split('\n')
+                        .filter((line) => line.trim() !== ''),
+                    })
+                  }
                   placeholder="Enter each outcome on a new line"
                   className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={4}
@@ -915,9 +955,7 @@ export default function CourseManagement() {
               {/* Same form fields as create modal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gurukul *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gurukul *</label>
                   <select
                     value={formData.gurukul_id}
                     onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
@@ -946,9 +984,7 @@ export default function CourseManagement() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Title *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -975,7 +1011,9 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
                   <select
                     value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, level: e.target.value as CourseFormData['level'] })
+                    }
                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="elementary">Elementary</option>
@@ -991,7 +1029,12 @@ export default function CourseManagement() {
                   </label>
                   <select
                     value={formData.delivery_method}
-                    onChange={(e) => setFormData({ ...formData, delivery_method: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        delivery_method: e.target.value as CourseFormData['delivery_method'],
+                      })
+                    }
                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="remote">Remote</option>
@@ -1001,25 +1044,25 @@ export default function CourseManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age Min
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
                   <Input
                     type="number"
                     value={formData.age_group_min}
-                    onChange={(e) => setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })
+                    }
                     min="0"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age Max
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
                   <Input
                     type="number"
                     value={formData.age_group_max}
-                    onChange={(e) => setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })
+                    }
                     min="0"
                   />
                 </div>
@@ -1031,7 +1074,9 @@ export default function CourseManagement() {
                   <Input
                     type="number"
                     value={formData.duration_weeks}
-                    onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })
+                    }
                     min="1"
                   />
                 </div>
@@ -1043,7 +1088,12 @@ export default function CourseManagement() {
                   <Input
                     type="number"
                     value={formData.duration_hours || ''}
-                    onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || undefined })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        duration_hours: parseInt(e.target.value) || undefined,
+                      })
+                    }
                     min="1"
                     placeholder="Optional"
                   />
@@ -1054,7 +1104,9 @@ export default function CourseManagement() {
                   <Input
                     type="number"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                    }
                     min="0"
                     step="0.01"
                   />
@@ -1070,21 +1122,32 @@ export default function CourseManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Students
+                  </label>
                   <Input
                     type="number"
                     value={formData.max_students}
-                    onChange={(e) => setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })
+                    }
                     min="1"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Students</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Min Students
+                  </label>
                   <Input
                     type="number"
                     value={formData.min_students || ''}
-                    onChange={(e) => setFormData({ ...formData, min_students: parseInt(e.target.value) || undefined })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        min_students: parseInt(e.target.value) || undefined,
+                      })
+                    }
                     min="1"
                     placeholder="Optional"
                   />
@@ -1119,10 +1182,14 @@ export default function CourseManagement() {
                 </label>
                 <textarea
                   value={formData.learning_outcomes.join('\n')}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    learning_outcomes: e.target.value.split('\n').filter(line => line.trim() !== '')
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      learning_outcomes: e.target.value
+                        .split('\n')
+                        .filter((line) => line.trim() !== ''),
+                    })
+                  }
                   placeholder="Enter each outcome on a new line"
                   className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={4}

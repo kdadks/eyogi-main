@@ -43,7 +43,26 @@ export async function signUp(email: string, password: string, userData: Partial<
 
   // Update auth store
   const session = storeSession(newUser)
-  authStore.setUser(newUser)
+  authStore.setUser({
+    id: newUser.id,
+    email: newUser.email,
+    full_name: newUser.full_name || null,
+    avatar_url: newUser.avatar_url,
+    role: newUser.role as
+      | 'student'
+      | 'teacher'
+      | 'admin'
+      | 'business_admin'
+      | 'super_admin'
+      | 'parent',
+    date_of_birth: null,
+    phone: newUser.phone,
+    address: newUser.address ? { street: newUser.address } : null,
+    age: newUser.age,
+    student_id: newUser.student_id,
+    created_at: newUser.created_at,
+    updated_at: newUser.updated_at,
+  })
 
   return {
     user: newUser,
@@ -68,7 +87,26 @@ export async function signIn(email: string, password: string) {
 
   // Update auth store
   const session = storeSession(user)
-  authStore.setUser(user)
+  authStore.setUser({
+    id: user.id,
+    email: user.email,
+    full_name: user.full_name || null,
+    avatar_url: user.avatar_url,
+    role: user.role as
+      | 'student'
+      | 'teacher'
+      | 'admin'
+      | 'business_admin'
+      | 'super_admin'
+      | 'parent',
+    date_of_birth: null,
+    phone: user.phone,
+    address: user.address ? { street: user.address } : null,
+    age: user.age,
+    student_id: user.student_id,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  })
 
   return {
     user,

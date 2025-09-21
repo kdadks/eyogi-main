@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
@@ -29,7 +29,7 @@ const AdminLogin: React.FC = () => {
       const { error } = await signIn(email, password)
 
       if (error) {
-        toast.error(error.message || 'Login failed')
+        toast.error((error as { message?: string })?.message || 'Login failed')
         return
       }
 

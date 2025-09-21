@@ -4,43 +4,43 @@ import { useSupabaseAuth } from './useSupabaseAuth'
 // Component permissions mapping
 const COMPONENT_PERMISSIONS = {
   // Admin components
-  'AdminDashboard': ['admin', 'business_admin', 'super_admin'],
-  'AdminSidebar': ['admin', 'business_admin', 'super_admin'],
-  'CertificateManagement': ['admin', 'business_admin', 'super_admin'],
-  'CourseManagement': ['admin', 'business_admin', 'teacher', 'super_admin'],
-  'EnrollmentManagement': ['admin', 'business_admin', 'teacher', 'super_admin'],
-  'StudentManagement': ['admin', 'business_admin', 'teacher', 'super_admin'],
-  'GurukulManagement': ['admin', 'business_admin', 'super_admin'],
-  'ContentManagement': ['admin', 'business_admin', 'super_admin'],
-  'SiteAnalytics': ['admin', 'super_admin'],
-  'AdminPermissionManagement': ['admin', 'super_admin'],
-  'AdminUserManagementNew': ['admin', 'super_admin'],
+  AdminDashboard: ['admin', 'business_admin', 'super_admin'],
+  AdminSidebar: ['admin', 'business_admin', 'super_admin'],
+  CertificateManagement: ['admin', 'business_admin', 'super_admin'],
+  CourseManagement: ['admin', 'business_admin', 'teacher', 'super_admin'],
+  EnrollmentManagement: ['admin', 'business_admin', 'teacher', 'super_admin'],
+  StudentManagement: ['admin', 'business_admin', 'teacher', 'super_admin'],
+  GurukulManagement: ['admin', 'business_admin', 'super_admin'],
+  ContentManagement: ['admin', 'business_admin', 'super_admin'],
+  SiteAnalytics: ['admin', 'super_admin'],
+  AdminPermissionManagement: ['admin', 'super_admin'],
+  AdminUserManagementNew: ['admin', 'super_admin'],
 
   // Teacher components
-  'TeacherDashboard': ['teacher', 'admin', 'super_admin'],
+  TeacherDashboard: ['teacher', 'admin', 'super_admin'],
 
   // Student components
-  'StudentDashboard': ['student', 'admin', 'super_admin'],
+  StudentDashboard: ['student', 'admin', 'super_admin'],
 } as const
 
 type ComponentName = keyof typeof COMPONENT_PERMISSIONS
 type UserRole = 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
 
 export function usePermissions() {
-  const { user: websiteUser } = useWebsiteAuth()
+  const { user: websiteUser, canAccess: websiteCanAccess } = useWebsiteAuth()
   const { profile, user: authUser } = useSupabaseAuth()
 
   const canAccessComponent = (componentName: ComponentName): boolean => {
     // For admin routes, use AuthContext profile
     if (authUser && profile) {
       const allowedRoles = COMPONENT_PERMISSIONS[componentName]
-      return allowedRoles.includes(profile.role as UserRole)
+      return (allowedRoles as readonly string[]).includes(profile.role)
     }
 
     // For website routes, use WebsiteAuth user
     if (websiteUser) {
       const allowedRoles = COMPONENT_PERMISSIONS[componentName]
-      return allowedRoles.includes(websiteUser.role as UserRole)
+      return (allowedRoles as readonly string[]).includes(websiteUser.role)
     }
 
     return false
@@ -54,7 +54,16 @@ export function usePermissions() {
       if (profile.role === 'admin') return true
       if (profile.role === 'business_admin') {
         // Business admin has limited resource access
-        const businessAdminResources = ['dashboard', 'courses', 'enrollments', 'students', 'gurukuls', 'content', 'certificates', 'assignments']
+        const businessAdminResources = [
+          'dashboard',
+          'courses',
+          'enrollments',
+          'students',
+          'gurukuls',
+          'content',
+          'certificates',
+          'assignments',
+        ]
         return businessAdminResources.includes(resource.toLowerCase())
       }
       return false
@@ -62,8 +71,7 @@ export function usePermissions() {
 
     // For website routes, use WebsiteAuth permissions
     if (websiteUser) {
-      const { canAccess } = useWebsiteAuth()
-      return canAccess(resource, action)
+      return websiteCanAccess(resource, action)
     }
 
     return false
@@ -75,7 +83,7 @@ export function usePermissions() {
       return profile.role as UserRole
     }
     // For website routes, use WebsiteAuth user
-    return websiteUser?.role as UserRole || null
+    return (websiteUser?.role as UserRole) || null
   }
 
   const isTeacher = (): boolean => {

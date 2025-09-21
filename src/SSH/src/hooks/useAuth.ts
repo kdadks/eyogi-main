@@ -1,8 +1,26 @@
 import { useState, useEffect } from 'react'
 import { authStore } from '@/lib/auth/authStore'
-import { getCurrentSession, clearSession } from '@/lib/local-data/storage'
+import { getCurrentSession, LocalUser } from '@/lib/local-data/storage'
 import { signOut as localSignOut } from '@/lib/local-data/auth'
 import { User } from '@/types'
+
+// Convert LocalUser to User
+function convertLocalUserToUser(localUser: LocalUser): User {
+  return {
+    id: localUser.id,
+    email: localUser.email,
+    full_name: localUser.full_name || null,
+    avatar_url: localUser.avatar_url,
+    role: localUser.role as User['role'],
+    date_of_birth: null, // LocalUser doesn't have this
+    phone: localUser.phone,
+    address: localUser.address ? { street: localUser.address } : null, // Convert string to Address object
+    age: localUser.age,
+    student_id: localUser.student_id,
+    created_at: localUser.created_at,
+    updated_at: localUser.updated_at,
+  }
+}
 
 export function useAuth() {
   const [state, setState] = useState(authStore.getState())
@@ -27,7 +45,7 @@ export function useAuth() {
       const session = getCurrentSession()
 
       if (session?.user) {
-        authStore.setUser(session.user)
+        authStore.setUser(convertLocalUserToUser(session.user))
       } else {
         authStore.setUser(null)
       }

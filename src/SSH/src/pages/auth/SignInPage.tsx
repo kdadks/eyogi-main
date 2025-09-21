@@ -36,7 +36,7 @@ export default function SignInPage() {
       const { error } = await signIn(data.email, data.password)
 
       if (error) {
-        toast.error(error.message || 'Failed to sign in')
+        toast.error((error as { message?: string })?.message || 'Failed to sign in')
         return
       }
 

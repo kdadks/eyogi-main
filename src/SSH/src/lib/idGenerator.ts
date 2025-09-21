@@ -4,7 +4,16 @@ import { supabaseAdmin } from './supabase'
  * Generates the next student or teacher ID in sequence
  * Format: EYG-2025-XXXX where XXXX is a 4-digit incrementing number
  */
-export async function generateNextId(role: 'student' | 'teacher'): Promise<string> {
+export async function generateNextId(
+  role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent',
+): Promise<string> {
+  // Only generate sequential IDs for students and teachers
+  if (role !== 'student' && role !== 'teacher') {
+    // For admin roles, return a simple identifier
+    const currentYear = new Date().getFullYear()
+    return `ADMIN-${currentYear}-${Date.now()}`
+  }
+
   try {
     const currentYear = new Date().getFullYear()
     const prefix = `EYG-${currentYear}-`

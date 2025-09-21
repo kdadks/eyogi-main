@@ -32,7 +32,7 @@ interface WebsiteAuthContextType {
     email: string
     password: string
     full_name: string
-    role: 'student' | 'teacher' | 'business_admin'
+    role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
     phone?: string
     date_of_birth?: string
   }) => Promise<{ error: string | null }>
@@ -142,7 +142,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     email: string
     password: string
     full_name: string
-    role: 'student' | 'teacher' | 'business_admin'
+    role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
     phone?: string
     date_of_birth?: string
   }) => {
@@ -217,7 +217,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     switch (user.role) {
       case 'admin':
         return true // Admin can access everything
-      case 'business_admin':
+      case 'business_admin': {
         // Business Admin has access to specific components only
         const businessAdminResources = [
           'dashboard',
@@ -227,18 +227,15 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
           'enrollments',
           'students',
           'gurukuls',
-          'content'
+          'content',
         ]
         return businessAdminResources.includes(resource)
-      case 'teacher':
+      }
+      case 'teacher': {
         // Teachers can access courses they're assigned to, their students, and enrollments
-        const teacherResources = [
-          'courses',
-          'students',
-          'enrollments',
-          'dashboard'
-        ]
+        const teacherResources = ['courses', 'students', 'enrollments', 'dashboard']
         return teacherResources.includes(resource) || (resource === 'users' && action === 'read')
+      }
       case 'student':
         return (
           (resource === 'courses' && (action === 'read' || action === 'enroll')) ||

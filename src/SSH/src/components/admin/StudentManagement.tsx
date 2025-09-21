@@ -37,6 +37,10 @@ interface StudentWithEnrollments extends User {
   completed_courses: number
   pending_enrollments: number
   total_spent: number
+  age?: number
+  parent_guardian_name?: string
+  parent_guardian_email?: string
+  parent_guardian_phone?: string
 }
 
 interface StudentFormData {
@@ -48,7 +52,7 @@ interface StudentFormData {
   parent_guardian_name: string
   parent_guardian_email: string
   parent_guardian_phone: string
-  role: 'student' | 'teacher' | 'admin' | 'super_admin' | 'parent'
+  role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
 }
 
 export default function StudentManagement() {
@@ -201,7 +205,12 @@ export default function StudentManagement() {
       email: student.email,
       age: student.age || 16,
       phone: student.phone || '',
-      address: student.address || '',
+      address:
+        typeof student.address === 'string'
+          ? student.address
+          : student.address
+            ? `${student.address.street || ''} ${student.address.city || ''} ${student.address.state || ''}`.trim()
+            : '',
       parent_guardian_name: student.parent_guardian_name || '',
       parent_guardian_email: student.parent_guardian_email || '',
       parent_guardian_phone: student.parent_guardian_phone || '',
@@ -640,7 +649,11 @@ export default function StudentManagement() {
                     {viewingStudent.address && (
                       <div>
                         <p className="text-gray-600">Address:</p>
-                        <p className="font-medium">{viewingStudent.address}</p>
+                        <p className="font-medium">
+                          {typeof viewingStudent.address === 'string'
+                            ? viewingStudent.address
+                            : `${viewingStudent.address.street || ''} ${viewingStudent.address.city || ''} ${viewingStudent.address.state || ''} ${viewingStudent.address.postal_code || ''} ${viewingStudent.address.country || ''}`.trim()}
+                        </p>
                       </div>
                     )}
                   </div>

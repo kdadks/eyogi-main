@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabaseAdmin } from '../lib/supabase'
 import { CourseAssignment, Course, User } from '../types'
 import toast from 'react-hot-toast'
@@ -8,7 +8,7 @@ export function useCourseAssignments(teacherId?: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadAssignments = async () => {
+  const loadAssignments = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -34,7 +34,7 @@ export function useCourseAssignments(teacherId?: string) {
       console.log('Assignment query result:', {
         data: data,
         error: error,
-        count: data?.length || 0
+        count: data?.length || 0,
       })
 
       if (error) {
@@ -67,13 +67,13 @@ export function useCourseAssignments(teacherId?: string) {
           assignment_id: assignment.id,
           course: course?.title,
           teacher: teacher?.full_name,
-          teacher_id: assignment.teacher_id
+          teacher_id: assignment.teacher_id,
         })
 
         assignmentsWithRelations.push({
           ...assignment,
           course,
-          teacher
+          teacher,
         })
       }
 
@@ -85,20 +85,20 @@ export function useCourseAssignments(teacherId?: string) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [teacherId])
 
   const assignTeacherToCourse = async (
     teacherId: string,
     courseId: string,
     assignedBy: string,
-    notes?: string
+    notes?: string,
   ): Promise<boolean> => {
     try {
       console.log('assignTeacherToCourse called with:', {
         teacherId,
         courseId,
         assignedBy,
-        notes
+        notes,
       })
 
       // Check if we need to update the teacher profile with teacher_id
@@ -160,7 +160,10 @@ export function useCourseAssignments(teacherId?: string) {
               .eq('id', profile.id)
 
             if (updateError) {
-              console.error('Error updating teacher profile with short ID:', JSON.stringify(updateError, null, 2))
+              console.error(
+                'Error updating teacher profile with short ID:',
+                JSON.stringify(updateError, null, 2),
+              )
               toast.error('Failed to update teacher profile')
               return false
             }
@@ -184,7 +187,10 @@ export function useCourseAssignments(teacherId?: string) {
             .eq('id', profile.id)
 
           if (updateError) {
-            console.error('Error updating teacher profile (fallback):', JSON.stringify(updateError, null, 2))
+            console.error(
+              'Error updating teacher profile (fallback):',
+              JSON.stringify(updateError, null, 2),
+            )
             toast.error('Failed to update teacher profile')
             return false
           }
@@ -220,25 +226,30 @@ export function useCourseAssignments(teacherId?: string) {
         return false
       }
 
-      const { error } = await supabaseAdmin
-        .from('course_assignments')
-        .insert({
-          teacher_id: actualTeacherId,
-          course_id: courseId,
-          assigned_by: assignedBy,
-          notes: notes,
-          is_active: true,
-        })
+      const { error } = await supabaseAdmin.from('course_assignments').insert({
+        teacher_id: actualTeacherId,
+        course_id: courseId,
+        assigned_by: assignedBy,
+        notes: notes,
+        is_active: true,
+      })
 
       if (error) {
         console.error('Error assigning teacher to course:', JSON.stringify(error, null, 2))
-        console.error('Assignment data:', JSON.stringify({
-          teacher_id: actualTeacherId,
-          course_id: courseId,
-          assigned_by: assignedBy,
-          notes: notes,
-          is_active: true,
-        }, null, 2))
+        console.error(
+          'Assignment data:',
+          JSON.stringify(
+            {
+              teacher_id: actualTeacherId,
+              course_id: courseId,
+              assigned_by: assignedBy,
+              notes: notes,
+              is_active: true,
+            },
+            null,
+            2,
+          ),
+        )
         toast.error('Failed to assign teacher to course: ' + (error.message || 'Unknown error'))
         return false
       }
@@ -249,7 +260,10 @@ export function useCourseAssignments(teacherId?: string) {
     } catch (err) {
       console.error('Error in assignTeacherToCourse:', JSON.stringify(err, null, 2))
       console.error('Catch error details:', err)
-      toast.error('Failed to assign teacher to course: ' + (err instanceof Error ? err.message : 'Unknown error'))
+      toast.error(
+        'Failed to assign teacher to course: ' +
+          (err instanceof Error ? err.message : 'Unknown error'),
+      )
       return false
     }
   }
@@ -281,9 +295,11 @@ export function useCourseAssignments(teacherId?: string) {
     try {
       const { data, error } = await supabaseAdmin
         .from('course_assignments')
-        .select(`
+        .select(
+          `
           course:courses(*)
-        `)
+        `,
+        )
         .eq('teacher_id', teacherId)
         .eq('is_active', true)
 
@@ -292,7 +308,7 @@ export function useCourseAssignments(teacherId?: string) {
         return []
       }
 
-      return (data || []).map(item => item.course).filter(Boolean)
+      return (data || []).map((item) => item.course as unknown as Course).filter(Boolean)
     } catch (err) {
       console.error('Error in getTeacherCourses:', err)
       return []
@@ -335,7 +351,7 @@ export function useCourseAssignments(teacherId?: string) {
 
   useEffect(() => {
     loadAssignments()
-  }, [teacherId])
+  }, [teacherId, loadAssignments])
 
   return {
     assignments,

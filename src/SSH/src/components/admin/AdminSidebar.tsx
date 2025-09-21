@@ -8,7 +8,6 @@ import {
   BookOpenIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
-  CogIcon,
   AcademicCapIcon,
   DocumentDuplicateIcon,
   ShieldCheckIcon,
@@ -168,7 +167,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
-                    {currentUser?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                    {currentUser?.full_name?.charAt(0) ||
+                      user?.email?.charAt(0)?.toUpperCase() ||
+                      'A'}
                   </span>
                 </div>
               </div>
@@ -177,7 +178,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
                   {currentUser?.full_name || user?.email?.split('@')[0] || 'Admin'}
                 </p>
                 <p className="text-xs text-gray-500 capitalize">
-                  {isSuperAdminRole ? 'Super Admin' : getUserRole()?.replace('_', ' ') || 'Admin'}
+                  {(() => {
+                    if (isSuperAdminRole()) return 'Super Admin'
+                    const role = getUserRole()
+                    return role ? role.replace('_', ' ') : 'Admin'
+                  })()}
                 </p>
               </div>
             </div>

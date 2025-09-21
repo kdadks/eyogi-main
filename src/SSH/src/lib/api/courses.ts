@@ -145,11 +145,7 @@ export async function createCourse(
       updated_at: new Date().toISOString(),
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('courses')
-      .insert(courseData)
-      .select()
-      .single()
+    const { data, error } = await supabaseAdmin.from('courses').insert(courseData).select().single()
 
     if (error) {
       console.error('Error creating course:', JSON.stringify(error, null, 2))
@@ -226,21 +222,25 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
     if (profile?.teacher_id) {
       const { data: assignments, error: assignmentError } = await supabaseAdmin
         .from('course_assignments')
-        .select(`
+        .select(
+          `
           course:courses(*)
-        `)
+        `,
+        )
         .eq('teacher_id', profile.teacher_id)
         .eq('is_active', true)
 
       if (!assignmentError && assignments) {
-        assignedCourses = assignments.map(assignment => assignment.course).filter(Boolean)
+        assignedCourses = assignments
+          .map((assignment) => assignment.course as unknown as Course)
+          .filter(Boolean)
       }
     }
 
     // Combine both methods and remove duplicates
     const allCourses = [...(directCourses || []), ...assignedCourses]
-    const uniqueCourses = allCourses.filter((course, index, self) =>
-      index === self.findIndex(c => c.id === course.id)
+    const uniqueCourses = allCourses.filter(
+      (course, index, self) => index === self.findIndex((c) => c.id === course.id),
     )
 
     if (directError && !profile?.teacher_id) {

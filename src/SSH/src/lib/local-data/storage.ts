@@ -4,7 +4,7 @@ export interface LocalUser {
   email: string
   full_name?: string
   avatar_url?: string
-  role: 'student' | 'teacher' | 'admin'
+  role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
   age?: number
   phone?: string
   address?: string

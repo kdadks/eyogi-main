@@ -40,6 +40,7 @@ export interface User {
   address?: Address | null
   emergency_contact?: EmergencyContact | null
   preferences?: UserPreferences
+  age?: number | null
   student_id?: string | null
   teacher_id?: string | null
   parent_id?: string | null
@@ -87,7 +88,7 @@ export interface Course {
   image_url?: string
   cover_image_url?: string
   video_preview_url?: string
-  syllabus: object | null
+  syllabus: Syllabus | null
   resources?: Array<{ name: string; url: string; type: string }>
   is_active: boolean
   featured?: boolean
@@ -199,4 +200,31 @@ export interface CourseAssignment {
   course?: Course
   teacher?: User
   assigned_by_user?: User
+}
+
+// Database profile type (from Supabase)
+export type Profile = {
+  id: string
+  email: string
+  full_name: string | null
+  phone: string | null
+  date_of_birth: string | null
+  address: Address | null
+  emergency_contact: EmergencyContact | null
+  preferences: UserPreferences | null
+  role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
+  student_id: string | null
+  teacher_id: string | null
+  parent_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Syllabus {
+  classes?: Array<{
+    number: number
+    title: string
+    topics: string[]
+    duration: string
+  }>
 }
