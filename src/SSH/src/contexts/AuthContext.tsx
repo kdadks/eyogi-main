@@ -19,11 +19,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Fetch user profile from database
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
       if (error) {
         console.error('Error fetching profile:', error)
@@ -43,9 +39,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Get initial session
     const getSession = async () => {
       try {
+        console.log('AuthContext: Starting session initialization...')
+
         const {
           data: { session },
+          error: sessionError,
         } = await supabase.auth.getSession()
+
+        console.log('AuthContext: Session result:', { session: !!session, error: sessionError })
 
         if (!isMounted) return
 
@@ -54,16 +55,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Fetch profile if user exists
         if (currentUser) {
+          console.log('AuthContext: Fetching profile for user:', currentUser.id)
           const userProfile = await fetchProfile(currentUser.id)
           setProfile(userProfile)
+          console.log('AuthContext: Profile loaded:', !!userProfile)
         } else {
           setProfile(null)
+          console.log('AuthContext: No user session found')
         }
 
         setLoading(false)
         setInitialized(true)
+        console.log('AuthContext: Initialization completed')
       } catch (error) {
-        console.error('Error getting initial session:', error)
+        console.error('AuthContext: Error getting initial session:', error)
         if (isMounted) {
           setLoading(false)
           setInitialized(true)
@@ -71,7 +76,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }
 
-    getSession()
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('AuthContext: Initialization timeout - forcing completion')
+      if (isMounted) {
+        setLoading(false)
+        setInitialized(true)
+      }
+    }, 10000) // 10 second timeout
+
+    getSession().then(() => {
+      clearTimeout(timeoutId)
+    })
 
     // Listen for auth changes
     const {
@@ -96,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => {
       isMounted = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
   }, [])
@@ -127,7 +144,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   // Check if user has admin privileges (admin, business_admin, or super_admin)
-  const isSuperAdmin = !!user && !!profile && ['admin', 'business_admin', 'super_admin'].includes(profile.role)
+  const isSuperAdmin =
+    !!user && !!profile && ['admin', 'business_admin', 'super_admin'].includes(profile.role)
 
   const canAccess = (): boolean => {
     // Super admin has access to everything
