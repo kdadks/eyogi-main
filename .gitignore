@@ -22,3 +22,7 @@ public/media/
 
 public/robots.txt
 public/sitemap*.xml
+
+# SSH app built assets (generated during build)
+public/ssh-app/assets/
+public/ssh-app/index.html
