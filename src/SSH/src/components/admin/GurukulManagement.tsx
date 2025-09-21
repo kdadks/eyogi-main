@@ -49,10 +49,6 @@ export default function GurukulManagement() {
   }, [])
 
   useEffect(() => {
-    filterGurukuls()
-  }, [gurukuls, searchTerm, statusFilter])
-
-  useEffect(() => {
     // Auto-generate slug when name changes
     if (formData.name && !editingGurukul) {
       setFormData((prev) => ({
@@ -88,7 +84,7 @@ export default function GurukulManagement() {
     }
   }
 
-  const filterGurukuls = () => {
+  const filterGurukuls = React.useCallback(() => {
     let filtered = gurukuls
 
     // Filter by search term
@@ -108,7 +104,11 @@ export default function GurukulManagement() {
     }
 
     setFilteredGurukuls(filtered)
-  }
+  }, [gurukuls, searchTerm, statusFilter])
+
+  useEffect(() => {
+    filterGurukuls()
+  }, [filterGurukuls])
 
   const resetForm = () => {
     setFormData({
@@ -133,7 +133,7 @@ export default function GurukulManagement() {
         await createGurukul({
           ...formData,
           is_active: true,
-          sort_order: 0
+          sort_order: 0,
         })
         toast.success('Gurukul created successfully')
       }
@@ -395,6 +395,7 @@ export default function GurukulManagement() {
                               ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800'
                           }
+                          size="sm"
                         >
                           {gurukul.is_active ? 'Active' : 'Inactive'}
                         </Badge>

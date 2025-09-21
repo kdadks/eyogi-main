@@ -85,6 +85,11 @@ export function getStatusColor(status: string): string {
   return colors[status as keyof typeof colors] || colors.pending
 }
 
+export function toSentenceCase(text: string): string {
+  if (!text) return ''
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+}
+
 // Course URL utilities - Using clean title-based slugs
 export function generateCourseSlug(course: { id: string; title: string }): string {
   // Create a clean slug from just the title

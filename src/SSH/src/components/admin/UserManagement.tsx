@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { User } from '@/types'
 import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api/users'
-import { formatDate } from '@/lib/utils'
+import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
 import {
@@ -29,23 +29,7 @@ export default function UserManagement() {
     loadUsers()
   }, [])
 
-  useEffect(() => {
-    filterUsers()
-  }, [users, searchTerm, roleFilter])
-
-  const loadUsers = async () => {
-    try {
-      const data = await getAllUsers()
-      setUsers(data)
-    } catch (error) {
-      console.error('Error loading users:', error)
-      toast.error('Failed to load users')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filterUsers = () => {
+  const filterUsers = React.useCallback(() => {
     let filtered = users
 
     // Filter by search term
@@ -64,6 +48,22 @@ export default function UserManagement() {
     }
 
     setFilteredUsers(filtered)
+  }, [users, searchTerm, roleFilter])
+
+  useEffect(() => {
+    filterUsers()
+  }, [filterUsers])
+
+  const loadUsers = async () => {
+    try {
+      const data = await getAllUsers()
+      setUsers(data)
+    } catch (error) {
+      console.error('Error loading users:', error)
+      toast.error('Failed to load users')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleUpdateRole = async (userId: string, newRole: User['role']) => {
@@ -252,7 +252,9 @@ export default function UserManagement() {
                             </Button>
                           </div>
                         ) : (
-                          <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
+                          <Badge className={getRoleColor(user.role)} size="sm">
+                            {toSentenceCase(user.role)}
+                          </Badge>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">{user.student_id || '-'}</td>

@@ -216,7 +216,10 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
       .select(
         `
         *,
-        courses (*),
+        courses (
+          *,
+          gurukuls (*)
+        ),
         profiles!enrollments_student_id_fkey (*)
       `,
       )
@@ -227,7 +230,20 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
       return []
     }
 
-    return data || []
+    // Transform the data to match our interface expectations
+    const transformedData =
+      data?.map((enrollment) => ({
+        ...enrollment,
+        course: enrollment.courses
+          ? {
+              ...enrollment.courses,
+              gurukul: enrollment.courses.gurukuls, // Extract gurukul from gurukuls array
+            }
+          : null,
+        student: enrollment.profiles || null,
+      })) || []
+
+    return transformedData
   } catch (error) {
     console.error('Error fetching all enrollments:', error)
     return []

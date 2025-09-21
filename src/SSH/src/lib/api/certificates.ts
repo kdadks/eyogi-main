@@ -95,7 +95,7 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
         course_id: enrollment.course_id,
         certificate_number: certificateNumber,
         template_id: 'default-template',
-        issue_date: new Date().toISOString(),
+        issued_at: new Date().toISOString(),
         issued_by: 'system',
         verification_code: verificationCode,
         certificate_data: {
@@ -111,11 +111,11 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
 
     if (error) {
       console.error('Error issuing certificate:', error)
-      throw new Error('Failed to issue certificate')
+      throw new Error(`Failed to issue certificate: ${error.message || JSON.stringify(error)}`)
     }
 
     // Update enrollment to mark certificate as issued
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('enrollments')
       .update({
         certificate_issued: true,
@@ -123,6 +123,12 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
         updated_at: new Date().toISOString(),
       })
       .eq('id', enrollmentId)
+
+    if (updateError) {
+      console.error('Error updating enrollment:', updateError)
+      // Certificate was created but enrollment update failed
+      // You might want to handle this differently depending on your requirements
+    }
 
     return certificate
   } catch (error) {

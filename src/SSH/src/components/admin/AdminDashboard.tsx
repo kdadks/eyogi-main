@@ -35,24 +35,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadDashboardStats = async () => {
     try {
-      // Use mock data for instant loading in development
-      if (import.meta.env.DEV) {
-        // Simulate quick loading with mock data
-        setTimeout(() => {
-          setStats({
-            totalUsers: 1247,
-            totalCourses: 23,
-            totalEnrollments: 834,
-            totalCertificates: 567,
-            recentEnrollments: 42,
-            activeUsers: 1198,
-          })
-          setLoading(false)
-        }, 100) // Very fast mock loading
-        return
-      }
-
-      // For production, make all queries in parallel for speed
+      // Make all queries in parallel for speed
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
@@ -88,7 +71,7 @@ const AdminDashboard: React.FC = () => {
       })
     } catch (error) {
       console.error('Error loading dashboard stats:', error)
-      // Fallback to mock data on error
+      // Show zero values on error instead of mock data
       setStats({
         totalUsers: 0,
         totalCourses: 0,

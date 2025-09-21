@@ -52,32 +52,12 @@ export default function CertificateManagement() {
 
       setCompletedEnrollments(completedWithoutCerts)
 
-      // Mock templates data
-      setTemplates([
-        {
-          id: 'template-1',
-          name: 'Student Course Completion - Traditional',
-          type: 'student',
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'template-2',
-          name: 'Student Course Completion - Modern',
-          type: 'student',
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'template-3',
-          name: 'Teacher Qualification Certificate',
-          type: 'teacher',
-          is_active: false,
-          created_at: new Date().toISOString(),
-        },
-      ])
+      // Load actual certificate templates from database
+      // For now, use empty array until templates API is implemented
+      setTemplates([])
 
-      // Mock recent certificates
+      // Load actual certificates from database
+      // For now, use empty array until certificates API is implemented
       setCertificates([])
     } catch (error) {
       console.error('Error loading certificate data:', error)
@@ -94,7 +74,8 @@ export default function CertificateManagement() {
       toast.success('Certificate issued successfully')
     } catch (error) {
       console.error('Error issuing certificate:', error)
-      toast.error('Failed to issue certificate')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to issue certificate'
+      toast.error(errorMessage)
     }
   }
 

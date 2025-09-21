@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { formatDate, generateSlug } from '@/lib/utils'
+import { formatDate, generateSlug, toSentenceCase } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import {
   DocumentTextIcon,
@@ -18,10 +18,6 @@ import {
   CheckIcon,
   Bars3Icon,
   LinkIcon,
-  HomeIcon,
-  InformationCircleIcon,
-  PhoneIcon,
-  AcademicCapIcon,
 } from '@heroicons/react/24/outline'
 
 interface ContentPage {
@@ -107,10 +103,6 @@ export default function ContentManagement() {
   }, [])
 
   useEffect(() => {
-    filterPages()
-  }, [pages, searchTerm, typeFilter, statusFilter])
-
-  useEffect(() => {
     // Auto-generate slug when title changes
     if (pageFormData.title && !editingPage) {
       setPageFormData((prev) => ({
@@ -123,113 +115,10 @@ export default function ContentManagement() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Mock pages data
-      const mockPages: ContentPage[] = [
-        {
-          id: '1',
-          title: 'About eYogi Gurukul',
-          slug: 'about',
-          type: 'page',
-          status: 'published',
-          author: 'Admin',
-          content: '<h1>About Us</h1><p>Welcome to eYogi Gurukul...</p>',
-          meta_description:
-            'Learn about eYogi Gurukul and our mission to connect ancient wisdom with modern learning.',
-          created_at: '2025-01-15T10:00:00Z',
-          updated_at: '2025-01-20T14:30:00Z',
-          views: 1250,
-        },
-        {
-          id: '2',
-          title: 'Hinduism Gurukul Landing',
-          slug: 'gurukuls/hinduism',
-          type: 'gurukul',
-          status: 'published',
-          author: 'Content Manager',
-          content: '<h1>Hinduism Gurukul</h1><p>Explore Hindu traditions...</p>',
-          meta_description:
-            'Discover Hindu traditions, philosophy, and practices through our comprehensive courses.',
-          created_at: '2025-01-10T09:00:00Z',
-          updated_at: '2025-01-18T16:45:00Z',
-          views: 890,
-        },
-        {
-          id: '3',
-          title: 'Getting Started with Vedic Learning',
-          slug: 'blog/getting-started',
-          type: 'blog',
-          status: 'draft',
-          author: 'Dr. Priya Sharma',
-          content: '<h1>Getting Started</h1><p>Your journey begins here...</p>',
-          meta_description: 'A comprehensive guide to starting your Vedic learning journey.',
-          created_at: '2025-01-22T11:15:00Z',
-          updated_at: '2025-01-22T11:15:00Z',
-          views: 0,
-        },
-        {
-          id: '4',
-          title: 'Contact Us',
-          slug: 'contact',
-          type: 'page',
-          status: 'published',
-          author: 'Admin',
-          content: '<h1>Contact Us</h1><p>Get in touch with us...</p>',
-          meta_description: 'Contact eYogi Gurukul for questions about courses and enrollment.',
-          created_at: '2025-01-05T08:30:00Z',
-          updated_at: '2025-01-19T13:20:00Z',
-          views: 567,
-        },
-      ]
-
-      // Mock menu items data
-      const mockMenuItems: HeaderMenuItem[] = [
-        {
-          id: '1',
-          name: 'Home',
-          href: '/',
-          order: 1,
-          is_active: true,
-          icon: 'HomeIcon',
-        },
-        {
-          id: '2',
-          name: 'Gurukuls',
-          href: '/gurukuls',
-          order: 2,
-          is_active: true,
-          icon: 'GlobeAltIcon',
-        },
-        {
-          id: '3',
-          name: 'Courses',
-          href: '/courses',
-          order: 3,
-          is_active: true,
-          icon: 'AcademicCapIcon',
-        },
-        {
-          id: '4',
-          name: 'About',
-          href: '/about',
-          order: 4,
-          is_active: true,
-          icon: 'InformationCircleIcon',
-        },
-        {
-          id: '5',
-          name: 'Contact',
-          href: '/contact',
-          order: 5,
-          is_active: true,
-          icon: 'PhoneIcon',
-        },
-      ]
-
-      setPages(mockPages)
-      setMenuItems(mockMenuItems)
+      // Load real content pages from database
+      // For now, use empty arrays until content API is implemented
+      setPages([])
+      setMenuItems([])
     } catch (error) {
       console.error('Error loading data:', error)
       toast.error('Failed to load content data')
@@ -238,7 +127,7 @@ export default function ContentManagement() {
     }
   }
 
-  const filterPages = () => {
+  const filterPages = React.useCallback(() => {
     let filtered = pages
 
     // Filter by search term
@@ -262,7 +151,11 @@ export default function ContentManagement() {
     }
 
     setFilteredPages(filtered)
-  }
+  }, [pages, searchTerm, typeFilter, statusFilter])
+
+  useEffect(() => {
+    filterPages()
+  }, [filterPages])
 
   // Page Management Functions
   const resetPageForm = () => {
@@ -595,12 +488,14 @@ export default function ContentManagement() {
                     </p>
                     <p>
                       <strong>Type:</strong>{' '}
-                      <Badge className={getStatusColor(viewingPage.type)}>{viewingPage.type}</Badge>
+                      <Badge className={getStatusColor(viewingPage.type)} size="sm">
+                        {toSentenceCase(viewingPage.type)}
+                      </Badge>
                     </p>
                     <p>
                       <strong>Status:</strong>{' '}
-                      <Badge className={getStatusColor(viewingPage.status)}>
-                        {viewingPage.status}
+                      <Badge className={getStatusColor(viewingPage.status)} size="sm">
+                        {toSentenceCase(viewingPage.status)}
                       </Badge>
                     </p>
                     <p>
@@ -673,7 +568,10 @@ export default function ContentManagement() {
                       <select
                         value={pageFormData.type}
                         onChange={(e) =>
-                          setPageFormData((prev) => ({ ...prev, type: e.target.value as any }))
+                          setPageFormData((prev) => ({
+                            ...prev,
+                            type: e.target.value as 'page' | 'blog' | 'gurukul',
+                          }))
                         }
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       >
@@ -688,7 +586,10 @@ export default function ContentManagement() {
                       <select
                         value={pageFormData.status}
                         onChange={(e) =>
-                          setPageFormData((prev) => ({ ...prev, status: e.target.value as any }))
+                          setPageFormData((prev) => ({
+                            ...prev,
+                            status: e.target.value as 'published' | 'draft' | 'archived',
+                          }))
                         }
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                       >
@@ -848,7 +749,9 @@ export default function ContentManagement() {
                               <span className="capitalize text-sm text-gray-600">{page.type}</span>
                             </td>
                             <td className="px-6 py-4">
-                              <Badge className={getStatusColor(page.status)}>{page.status}</Badge>
+                              <Badge className={getStatusColor(page.status)} size="sm">
+                                {toSentenceCase(page.status)}
+                              </Badge>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600">{page.author}</td>
                             <td className="px-6 py-4 text-sm text-gray-600">

@@ -8,7 +8,7 @@ import { getAllUsers, deleteUser } from '@/lib/api/users'
 import { getCourses } from '@/lib/api/courses'
 import { getAllEnrollments } from '@/lib/api/enrollments'
 import { getGurukuls } from '@/lib/api/gurukuls'
-import { formatDate } from '@/lib/utils'
+import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
 import {
@@ -632,8 +632,8 @@ export default function StudentManagement() {
                       </div>
                       <div>
                         <p className="text-gray-600">Role:</p>
-                        <Badge className={getRoleColor(viewingStudent.role)}>
-                          {viewingStudent.role}
+                        <Badge className={getRoleColor(viewingStudent.role)} size="sm">
+                          {toSentenceCase(viewingStudent.role)}
                         </Badge>
                       </div>
                       <div>
@@ -709,7 +709,7 @@ export default function StudentManagement() {
                               </p>
                             </div>
                             <Badge
-                              className={`text-xs ${
+                              className={`${
                                 enrollment.status === 'completed'
                                   ? 'bg-green-100 text-green-800'
                                   : enrollment.status === 'approved'
@@ -718,8 +718,9 @@ export default function StudentManagement() {
                                       ? 'bg-yellow-100 text-yellow-800'
                                       : 'bg-red-100 text-red-800'
                               }`}
+                              size="sm"
                             >
-                              {enrollment.status}
+                              {toSentenceCase(enrollment.status)}
                             </Badge>
                           </div>
                         ))}
@@ -1014,7 +1015,9 @@ export default function StudentManagement() {
                       <p className="text-xs text-gray-500">{student.email}</p>
                     </div>
                   </div>
-                  <Badge className={getRoleColor(student.role)}>{student.role}</Badge>
+                  <Badge className={getRoleColor(student.role)} size="sm">
+                    {toSentenceCase(student.role)}
+                  </Badge>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-4 text-center">
@@ -1073,8 +1076,9 @@ export default function StudentManagement() {
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                     }`}
+                    size="sm"
                   >
-                    {course.level}
+                    {toSentenceCase(course.level)}
                   </Badge>
                 </div>
               </CardHeader>
@@ -1098,7 +1102,7 @@ export default function StudentManagement() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <Badge
-                            className={`text-xs ${
+                            className={`${
                               enrollment?.status === 'completed'
                                 ? 'bg-green-100 text-green-800'
                                 : enrollment?.status === 'approved'
@@ -1107,8 +1111,9 @@ export default function StudentManagement() {
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : 'bg-red-100 text-red-800'
                             }`}
+                            size="sm"
                           >
-                            {enrollment?.status}
+                            {toSentenceCase(enrollment?.status || '')}
                           </Badge>
                           <Button
                             size="sm"

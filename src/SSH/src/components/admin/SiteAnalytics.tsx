@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { formatDate } from '@/lib/utils'
 import {
   ChartBarIcon,
   UserGroupIcon,
-  GlobeAltIcon,
   DevicePhoneMobileIcon,
   ComputerDesktopIcon,
   ArrowTrendingUpIcon,
@@ -16,7 +14,6 @@ import {
   MapPinIcon,
   LinkIcon,
   CalendarIcon,
-  FunnelIcon,
 } from '@heroicons/react/24/outline'
 
 interface AnalyticsData {
@@ -79,66 +76,12 @@ export default function SiteAnalytics() {
   const loadAnalyticsData = async () => {
     setLoading(true)
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock analytics data - in real app, this would come from Google Analytics API or similar
-      const mockData: AnalyticsData = {
-        totalUsers: 12847,
-        activeUsers: 3421,
-        newUsers: 1256,
-        pageViews: 45632,
-        sessions: 18934,
-        bounceRate: 34.2,
-        avgSessionDuration: '4m 32s',
-        topPages: [
-          { page: '/', views: 8934, uniqueViews: 6234, avgTime: '2m 15s' },
-          { page: '/courses', views: 6543, uniqueViews: 4321, avgTime: '3m 45s' },
-          { page: '/gurukuls', views: 4321, uniqueViews: 3456, avgTime: '2m 58s' },
-          { page: '/about', views: 3456, uniqueViews: 2987, avgTime: '1m 42s' },
-          { page: '/contact', views: 2345, uniqueViews: 1876, avgTime: '1m 23s' },
-        ],
-        userLocations: [
-          { country: 'Ireland', city: 'Dublin', users: 4234, percentage: 32.9 },
-          { country: 'India', city: 'Mumbai', users: 2876, percentage: 22.4 },
-          { country: 'United Kingdom', city: 'London', users: 1987, percentage: 15.5 },
-          { country: 'United States', city: 'New York', users: 1543, percentage: 12.0 },
-          { country: 'India', city: 'Bangalore', users: 1234, percentage: 9.6 },
-          { country: 'Canada', city: 'Toronto', users: 973, percentage: 7.6 },
-        ],
-        referralSources: [
-          { source: 'Direct', users: 5432, percentage: 42.3, type: 'direct' },
-          { source: 'Google Search', users: 3456, percentage: 26.9, type: 'search' },
-          { source: 'Facebook', users: 1876, percentage: 14.6, type: 'social' },
-          { source: 'YouTube', users: 987, percentage: 7.7, type: 'social' },
-          { source: 'Twitter', users: 654, percentage: 5.1, type: 'social' },
-          { source: 'Other Websites', users: 442, percentage: 3.4, type: 'referral' },
-        ],
-        deviceTypes: [
-          { device: 'Desktop', users: 7234, percentage: 56.3 },
-          { device: 'Mobile', users: 4321, percentage: 33.6 },
-          { device: 'Tablet', users: 1292, percentage: 10.1 },
-        ],
-        trafficTrends: [
-          { date: '2025-01-20', users: 1234, sessions: 1876, pageViews: 4532 },
-          { date: '2025-01-21', users: 1456, sessions: 2134, pageViews: 5234 },
-          { date: '2025-01-22', users: 1876, sessions: 2876, pageViews: 6543 },
-          { date: '2025-01-23', users: 2134, sessions: 3234, pageViews: 7234 },
-          { date: '2025-01-24', users: 1987, sessions: 2987, pageViews: 6876 },
-          { date: '2025-01-25', users: 2345, sessions: 3456, pageViews: 7654 },
-          { date: '2025-01-26', users: 2876, sessions: 4234, pageViews: 8934 },
-        ],
-        userEngagement: {
-          returningUsers: 8234,
-          newUsers: 4613,
-          avgPagesPerSession: 2.4,
-          conversionRate: 12.3,
-        },
-      }
-
-      setAnalyticsData(mockData)
+      // TODO: Implement real analytics data from Google Analytics API or similar service
+      // For now, set to null to show "no data available" state
+      setAnalyticsData(null)
     } catch (error) {
       console.error('Error loading analytics data:', error)
+      setAnalyticsData(null)
     } finally {
       setLoading(false)
     }
@@ -172,14 +115,6 @@ export default function SiteAnalytics() {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
     return num.toString()
-  }
-
-  const calculateGrowth = (current: number, previous: number) => {
-    const growth = ((current - previous) / previous) * 100
-    return {
-      percentage: Math.abs(growth).toFixed(1),
-      isPositive: growth > 0,
-    }
   }
 
   if (loading) {
@@ -243,7 +178,7 @@ export default function SiteAnalytics() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content')}
               className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'

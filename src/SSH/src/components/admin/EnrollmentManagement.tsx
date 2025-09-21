@@ -8,7 +8,7 @@ import {
   updateEnrollmentStatus,
   bulkUpdateEnrollments,
 } from '@/lib/api/enrollments'
-import { formatDate, getStatusColor } from '@/lib/utils'
+import { formatDate, getStatusColor, toSentenceCase } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import {
   CheckCircleIcon,
@@ -24,6 +24,7 @@ export default function EnrollmentManagement() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [filteredEnrollments, setFilteredEnrollments] = useState<Enrollment[]>([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<Set<string>>(new Set())
   const [selectedEnrollments, setSelectedEnrollments] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -33,9 +34,30 @@ export default function EnrollmentManagement() {
     loadEnrollments()
   }, [])
 
+  const filterEnrollments = React.useCallback(() => {
+    let filtered = enrollments
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (enrollment) =>
+          enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          enrollment.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((enrollment) => enrollment.status === statusFilter)
+    }
+
+    setFilteredEnrollments(filtered)
+  }, [enrollments, searchTerm, statusFilter])
+
   useEffect(() => {
     filterEnrollments()
-  }, [enrollments, searchTerm, statusFilter])
+  }, [filterEnrollments])
 
   const loadEnrollments = async () => {
     try {
@@ -47,29 +69,6 @@ export default function EnrollmentManagement() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const filterEnrollments = () => {
-    let filtered = enrollments
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (enrollment) =>
-          enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          enrollment.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          enrollment.student?.student_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          enrollment.course?.course_number?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((enrollment) => enrollment.status === statusFilter)
-    }
-
-    setFilteredEnrollments(filtered)
   }
 
   const handleSelectEnrollment = (enrollmentId: string) => {
@@ -91,6 +90,7 @@ export default function EnrollmentManagement() {
   }
 
   const handleUpdateStatus = async (enrollmentId: string, status: Enrollment['status']) => {
+    setActionLoading((prev) => new Set(prev).add(enrollmentId))
     try {
       await updateEnrollmentStatus(enrollmentId, status)
       await loadEnrollments()
@@ -98,6 +98,12 @@ export default function EnrollmentManagement() {
     } catch (error) {
       console.error('Error updating enrollment:', error)
       toast.error('Failed to update enrollment')
+    } finally {
+      setActionLoading((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(enrollmentId)
+        return newSet
+      })
     }
   }
 
@@ -265,7 +271,7 @@ export default function EnrollmentManagement() {
                       Student
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Course
+                      Course Details
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -274,7 +280,7 @@ export default function EnrollmentManagement() {
                       Payment
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Enrolled
+                      Enrolled Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -313,25 +319,34 @@ export default function EnrollmentManagement() {
                           <BookOpenIcon className="h-5 w-5 text-gray-400 mr-2" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {enrollment.course?.title}
+                              {enrollment.course?.title || 'No Course'}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {enrollment.course?.course_number} •{' '}
-                              {enrollment.course?.gurukul?.name}
+                              {enrollment.course?.course_number} • Level: {enrollment.course?.level}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {enrollment.course?.gurukul?.name || 'Unknown Gurukul'} • ₹
+                              {enrollment.course?.price || 0}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge className={getStatusColor(enrollment.status)}>
-                          {enrollment.status}
+                        <Badge className={getStatusColor(enrollment.status)} size="sm">
+                          {toSentenceCase(enrollment.status)}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <CurrencyEuroIcon className="h-4 w-4 text-gray-400 mr-1" />
-                          <Badge className={getStatusColor(enrollment.payment_status)}>
-                            {enrollment.payment_status}
+                        <div className="text-sm">
+                          <div className="flex items-center mb-1">
+                            <CurrencyEuroIcon className="h-4 w-4 text-gray-400 mr-1" />
+                            <span className="font-medium">₹{enrollment.course?.price || 0}</span>
+                          </div>
+                          <Badge
+                            className={getStatusColor(enrollment.payment_status || 'pending')}
+                            size="sm"
+                          >
+                            {toSentenceCase(enrollment.payment_status || 'pending')}
                           </Badge>
                         </div>
                       </td>
@@ -345,16 +360,30 @@ export default function EnrollmentManagement() {
                               <Button
                                 size="sm"
                                 onClick={() => handleUpdateStatus(enrollment.id, 'approved')}
-                                className="bg-green-600 hover:bg-green-700"
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                title="Approve enrollment"
+                                disabled={actionLoading.has(enrollment.id)}
                               >
-                                <CheckCircleIcon className="h-4 w-4" />
+                                {actionLoading.has(enrollment.id) ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                                ) : (
+                                  <CheckCircleIcon className="h-4 w-4 mr-1" />
+                                )}
+                                Approve
                               </Button>
                               <Button
                                 size="sm"
                                 variant="danger"
                                 onClick={() => handleUpdateStatus(enrollment.id, 'rejected')}
+                                title="Reject enrollment"
+                                disabled={actionLoading.has(enrollment.id)}
                               >
-                                <XCircleIcon className="h-4 w-4" />
+                                {actionLoading.has(enrollment.id) ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                                ) : (
+                                  <XCircleIcon className="h-4 w-4 mr-1" />
+                                )}
+                                Reject
                               </Button>
                             </>
                           )}
@@ -362,10 +391,36 @@ export default function EnrollmentManagement() {
                             <Button
                               size="sm"
                               onClick={() => handleUpdateStatus(enrollment.id, 'completed')}
-                              className="bg-blue-600 hover:bg-blue-700"
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              title="Mark as completed"
+                              disabled={actionLoading.has(enrollment.id)}
                             >
-                              <ClockIcon className="h-4 w-4 mr-1" />
+                              {actionLoading.has(enrollment.id) ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                              ) : (
+                                <ClockIcon className="h-4 w-4 mr-1" />
+                              )}
                               Complete
+                            </Button>
+                          )}
+                          {enrollment.status === 'completed' && (
+                            <Badge className="bg-green-100 text-green-800" size="sm">
+                              ✓ Completed
+                            </Badge>
+                          )}
+                          {enrollment.status === 'rejected' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleUpdateStatus(enrollment.id, 'pending')}
+                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                              title="Revert to pending"
+                              disabled={actionLoading.has(enrollment.id)}
+                            >
+                              {actionLoading.has(enrollment.id) ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                              ) : (
+                                'Reset'
+                              )}
                             </Button>
                           )}
                         </div>

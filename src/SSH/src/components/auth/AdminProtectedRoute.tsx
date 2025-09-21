@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
   }
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   // requiredRole, // For future role-based access control
   // requiredPermission, // For future permission-based access control
@@ -36,4 +36,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return <>{children}</>
 }
 
-export default ProtectedRoute
+export default AdminProtectedRoute

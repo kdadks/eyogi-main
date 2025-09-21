@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader } from '../ui/Card'
+import { Card, CardContent } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Badge } from '../ui/Badge'
 import { supabaseAdmin } from '../../lib/supabase'
 import { useCourseAssignments } from '../../hooks/useCourseAssignments'
 import { usePermissions } from '../../hooks/usePermissions'
-import { Course, User, CourseAssignment } from '../../types'
+import { Course, User } from '../../types'
 import toast from 'react-hot-toast'
 import {
   PlusIcon,
@@ -46,11 +46,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
           .eq('role', 'teacher')
           .eq('status', 'active')
           .order('full_name'),
-        supabaseAdmin
-          .from('courses')
-          .select('*')
-          .eq('is_active', true)
-          .order('title'),
+        supabaseAdmin.from('courses').select('*').eq('is_active', true).order('title'),
       ])
 
       console.log('Loaded teachers:', teachersData.data)
@@ -109,7 +105,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
                   teacher_id: teacher.teacher_id,
                   using: teacherId,
                   full_name: teacher.full_name,
-                  note: teacher.teacher_id ? 'has teacher_id' : 'will generate teacher_id'
+                  note: teacher.teacher_id ? 'has teacher_id' : 'will generate teacher_id',
                 })
                 return (
                   <option key={teacher.id} value={teacherId}>
@@ -162,15 +158,14 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
 const CourseAssignmentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
-  const { assignments, loading, assignTeacherToCourse, removeAssignment, loadAssignments } =
-    useCourseAssignments()
+  const { assignments, loading, assignTeacherToCourse, removeAssignment } = useCourseAssignments()
   const { currentUser } = usePermissions()
 
   const filteredAssignments = assignments.filter(
     (assignment) =>
       assignment.course?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       assignment.teacher?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      assignment.course?.course_number.toLowerCase().includes(searchTerm.toLowerCase())
+      assignment.course?.course_number.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleAssign = async (teacherId: string, courseId: string, notes?: string) => {
@@ -229,7 +224,9 @@ const CourseAssignmentManagement: React.FC = () => {
               <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
               <p className="text-gray-600">
-                {searchTerm ? 'No assignments match your search.' : 'Start by creating your first course assignment.'}
+                {searchTerm
+                  ? 'No assignments match your search.'
+                  : 'Start by creating your first course assignment.'}
               </p>
             </CardContent>
           </Card>
@@ -258,14 +255,14 @@ const CourseAssignmentManagement: React.FC = () => {
                         Assigned: {new Date(assignment.assigned_at).toLocaleDateString()}
                       </p>
                       {assignment.notes && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Notes: {assignment.notes}
-                        </p>
+                        <p className="text-sm text-gray-600 mt-1">Notes: {assignment.notes}</p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge className="bg-green-100 text-green-800">Active</Badge>
+                    <Badge className="bg-green-100 text-green-800" size="sm">
+                      Active
+                    </Badge>
                     <Button
                       variant="outline"
                       size="sm"
