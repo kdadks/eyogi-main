@@ -35,6 +35,7 @@ import ContentManagement from './components/admin/ContentManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AdminDebug from './components/debug/AdminDebug'
+import SimpleTest from './components/debug/SimpleTest'
 
 import GurukulDetailPage from './pages/GurukulDetailPage'
 import CourseDetailPage from './pages/CourseDetailPage'
@@ -113,6 +114,7 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/debug" element={<AdminDebug />} />
+            <Route path="/admin/test" element={<SimpleTest />} />
 
             {/* Protected admin routes */}
             <Route
