@@ -7,7 +7,7 @@ const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 console.log('Supabase configuration:', {
   url: supabaseUrl ? 'Set' : 'Missing',
   anonKey: supabaseAnonKey ? 'Set' : 'Missing',
-  serviceRoleKey: supabaseServiceRoleKey ? 'Set' : 'Missing'
+  serviceRoleKey: supabaseServiceRoleKey ? 'Set' : 'Missing',
 })
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -20,8 +20,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
-    storageKey: 'eyogi-ssh-admin-console-auth', // Very unique storage key
+    detectSessionInUrl: false, // Disable URL detection to prevent conflicts
+    storageKey: 'eyogi-ssh-app-auth-v2', // Updated unique storage key
   },
 })
 

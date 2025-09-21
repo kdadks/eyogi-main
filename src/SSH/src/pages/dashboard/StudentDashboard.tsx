@@ -41,8 +41,11 @@ interface StudentStats {
 }
 
 export default function StudentDashboard() {
+  console.log('StudentDashboard: Component rendering started')
   const { user } = useWebsiteAuth()
   const { isStudent, shouldShowAnalytics, canAccess, getUserRole } = useRoleBasedUI()
+  console.log('StudentDashboard: Auth context loaded', { user: user?.id, email: user?.email })
+
   const [activeTab, setActiveTab] = useState<
     'home' | 'courses' | 'enrollments' | 'certificates' | 'profile' | 'analytics' | 'settings'
   >('home')
@@ -50,6 +53,7 @@ export default function StudentDashboard() {
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  console.log('StudentDashboard: Initial loading state set to true')
   const [stats, setStats] = useState<StudentStats>({
     totalEnrollments: 0,
     completedCourses: 0,
@@ -82,6 +86,14 @@ export default function StudentDashboard() {
       console.log('StudentDashboard: No user ID, setting loading to false')
       setLoading(false)
     }
+
+    // Failsafe timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.log('StudentDashboard: Timeout reached, forcing loading to false')
+      setLoading(false)
+    }, 10000) // 10 second timeout
+
+    return () => clearTimeout(timeout)
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadStudentData = async () => {
@@ -96,7 +108,7 @@ export default function StudentDashboard() {
       console.log('loadStudentData: Data loaded successfully', {
         enrollments: enrollmentsData.length,
         certificates: certificatesData.length,
-        courses: coursesData.length
+        courses: coursesData.length,
       })
 
       setEnrollments(enrollmentsData)
