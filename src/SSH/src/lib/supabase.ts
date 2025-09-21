@@ -1,17 +1,80 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Type definitions for complex objects
+interface Address {
+  street?: string
+  city?: string
+  state?: string
+  country?: string
+  postal_code?: string
+}
+
+interface EmergencyContact {
+  name?: string
+  relationship?: string
+  phone?: string
+  email?: string
+}
+
+interface UserPreferences {
+  theme?: 'light' | 'dark' | 'auto'
+  language?: string
+  notifications?: {
+    email?: boolean
+    push?: boolean
+    sms?: boolean
+  }
+  privacy?: {
+    profile_visibility?: 'public' | 'private' | 'friends'
+    show_email?: boolean
+    show_phone?: boolean
+  }
+}
+
+interface BrandColors {
+  primary?: string
+  secondary?: string
+  accent?: string
+  background?: string
+  text?: string
+}
+
+interface CourseSyllabus {
+  modules?: Array<{
+    title?: string
+    description?: string
+    lessons?: string[]
+    duration?: string
+  }>
+  objectives?: string[]
+  prerequisites?: string[]
+  assessment_criteria?: string[]
+}
+
+interface CourseResources {
+  videos?: string[]
+  documents?: string[]
+  links?: string[]
+  assignments?: string[]
+  quizzes?: string[]
+}
+
+interface CertificateData {
+  template_id?: string
+  student_name?: string
+  course_title?: string
+  completion_date?: string
+  grade?: string
+  instructor_name?: string
+  certificate_number?: string
+  verification_url?: string
+}
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 
-console.log('Supabase configuration:', {
-  url: supabaseUrl ? 'Set' : 'Missing',
-  anonKey: supabaseAnonKey ? 'Set' : 'Missing',
-  serviceRoleKey: supabaseServiceRoleKey ? 'Set' : 'Missing',
-})
-
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:', { supabaseUrl, supabaseAnonKey })
   throw new Error('Missing Supabase environment variables')
 }
 
@@ -51,9 +114,9 @@ export interface Database {
           status: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth: string | null
           phone: string | null
-          address: Record<string, any> | null
-          emergency_contact: Record<string, any> | null
-          preferences: Record<string, any>
+          address: Address | null
+          emergency_contact: EmergencyContact | null
+          preferences: UserPreferences
           avatar_url: string | null
           student_id: string | null
           teacher_id: string | null
@@ -70,9 +133,9 @@ export interface Database {
           status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth?: string | null
           phone?: string | null
-          address?: Record<string, any> | null
-          emergency_contact?: Record<string, any> | null
-          preferences?: Record<string, any>
+          address?: Address | null
+          emergency_contact?: EmergencyContact | null
+          preferences?: UserPreferences
           avatar_url?: string | null
           student_id?: string | null
           teacher_id?: string | null
@@ -85,9 +148,9 @@ export interface Database {
           status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
           date_of_birth?: string | null
           phone?: string | null
-          address?: Record<string, any> | null
-          emergency_contact?: Record<string, any> | null
-          preferences?: Record<string, any>
+          address?: Address | null
+          emergency_contact?: EmergencyContact | null
+          preferences?: UserPreferences
           avatar_url?: string | null
           student_id?: string | null
           teacher_id?: string | null
@@ -102,7 +165,7 @@ export interface Database {
           description: string | null
           image_url: string | null
           cover_image_url: string | null
-          brand_colors: any
+          brand_colors: BrandColors
           is_active: boolean
           sort_order: number
           meta_title: string | null
@@ -116,7 +179,7 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           cover_image_url?: string | null
-          brand_colors?: any
+          brand_colors?: BrandColors
           is_active?: boolean
           sort_order?: number
           meta_title?: string | null
@@ -128,7 +191,7 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           cover_image_url?: string | null
-          brand_colors?: any
+          brand_colors?: BrandColors
           is_active?: boolean
           sort_order?: number
           meta_title?: string | null
@@ -161,8 +224,8 @@ export interface Database {
           image_url: string | null
           cover_image_url: string | null
           video_preview_url: string | null
-          syllabus: any | null
-          resources: any
+          syllabus: CourseSyllabus | null
+          resources: CourseResources
           is_active: boolean
           featured: boolean
           tags: string[] | null
@@ -196,8 +259,8 @@ export interface Database {
           image_url?: string | null
           cover_image_url?: string | null
           video_preview_url?: string | null
-          syllabus?: any | null
-          resources?: any
+          syllabus?: CourseSyllabus | null
+          resources?: CourseResources
           is_active?: boolean
           featured?: boolean
           tags?: string[] | null
@@ -229,8 +292,8 @@ export interface Database {
           image_url?: string | null
           cover_image_url?: string | null
           video_preview_url?: string | null
-          syllabus?: any | null
-          resources?: any
+          syllabus?: CourseSyllabus | null
+          resources?: CourseResources
           is_active?: boolean
           featured?: boolean
           tags?: string[] | null
@@ -300,7 +363,7 @@ export interface Database {
           issued_at: string
           issued_by: string
           verification_code: string
-          certificate_data: any
+          certificate_data: CertificateData
           file_url: string
           created_at: string
         }
@@ -314,7 +377,7 @@ export interface Database {
           issued_at: string
           issued_by: string
           verification_code: string
-          certificate_data: any
+          certificate_data: CertificateData
           file_url: string
           created_at: string
         }
@@ -327,7 +390,7 @@ export interface Database {
           issued_at?: string
           issued_by?: string
           verification_code?: string
-          certificate_data?: any
+          certificate_data?: CertificateData
           file_url?: string
         }
       }

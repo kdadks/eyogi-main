@@ -63,21 +63,17 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
   const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    console.log('WebsiteAuthContext: Initializing...')
     // Check for stored session
     const storedUserId = localStorage.getItem('website-user-id')
-    console.log('WebsiteAuthContext: Stored user ID:', storedUserId)
     if (storedUserId) {
       loadUser(storedUserId)
     } else {
-      console.log('WebsiteAuthContext: No stored user, setting loading to false')
       setLoading(false)
       setInitialized(true)
     }
   }, [])
 
   const loadUser = async (userId: string) => {
-    console.log('WebsiteAuthContext: Loading user with ID:', userId)
     try {
       const { data, error } = await supabaseAdmin
         .from('profiles')
@@ -86,19 +82,17 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         .single()
 
       if (error) {
-        console.error('WebsiteAuthContext: Error loading user:', error)
+        console.error('Error loading user:', error)
         localStorage.removeItem('website-user-id')
         setUser(null)
       } else {
-        console.log('WebsiteAuthContext: User loaded successfully:', data?.email)
         setUser(data)
       }
     } catch (error) {
-      console.error('WebsiteAuthContext: Error in loadUser:', error)
+      console.error('Error in loadUser:', error)
       localStorage.removeItem('website-user-id')
       setUser(null)
     } finally {
-      console.log('WebsiteAuthContext: Setting loading and initialized states')
       setLoading(false)
       setInitialized(true)
     }

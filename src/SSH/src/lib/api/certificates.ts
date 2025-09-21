@@ -15,7 +15,7 @@ export async function getStudentCertificates(studentId: string): Promise<Certifi
       `,
       )
       .eq('student_id', studentId)
-      .order('issued_at', { ascending: false })
+      .order('issue_date', { ascending: false })
 
     if (error) {
       console.error('Error fetching student certificates:', error)

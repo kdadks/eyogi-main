@@ -41,10 +41,8 @@ interface StudentStats {
 }
 
 export default function StudentDashboard() {
-  console.log('StudentDashboard: Component rendering started')
   const { user } = useWebsiteAuth()
   const { isStudent, shouldShowAnalytics, canAccess, getUserRole } = useRoleBasedUI()
-  console.log('StudentDashboard: Auth context loaded', { user: user?.id, email: user?.email })
 
   const [activeTab, setActiveTab] = useState<
     'home' | 'courses' | 'enrollments' | 'certificates' | 'profile' | 'analytics' | 'settings'
@@ -53,7 +51,6 @@ export default function StudentDashboard() {
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
-  console.log('StudentDashboard: Initial loading state set to true')
   const [stats, setStats] = useState<StudentStats>({
     totalEnrollments: 0,
     completedCourses: 0,
@@ -79,37 +76,20 @@ export default function StudentDashboard() {
   const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
 
   useEffect(() => {
-    console.log('StudentDashboard: useEffect triggered', { user: user?.id, loading })
     if (user?.id) {
       loadStudentData()
     } else {
-      console.log('StudentDashboard: No user ID, setting loading to false')
       setLoading(false)
     }
-
-    // Failsafe timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      console.log('StudentDashboard: Timeout reached, forcing loading to false')
-      setLoading(false)
-    }, 10000) // 10 second timeout
-
-    return () => clearTimeout(timeout)
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadStudentData = async () => {
-    console.log('loadStudentData: Starting data load for user:', user?.id)
     try {
       const [enrollmentsData, certificatesData, coursesData] = await Promise.all([
         getStudentEnrollments(user!.id),
         getStudentCertificates(user!.id),
         getCourses(),
       ])
-
-      console.log('loadStudentData: Data loaded successfully', {
-        enrollments: enrollmentsData.length,
-        certificates: certificatesData.length,
-        courses: coursesData.length,
-      })
 
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
@@ -134,11 +114,9 @@ export default function StudentDashboard() {
         level: completedCount < 3 ? 'Beginner' : completedCount < 8 ? 'Intermediate' : 'Advanced',
         completionRate,
       })
-    } catch (error) {
-      console.error('loadStudentData: Error loading data', error)
+    } catch {
       toast.error('Failed to load dashboard data')
     } finally {
-      console.log('loadStudentData: Setting loading to false')
       setLoading(false)
     }
   }
