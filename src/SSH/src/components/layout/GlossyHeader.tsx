@@ -132,9 +132,9 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
             variants={logoVariants}
             initial="initial"
             whileHover="hover"
-            className="flex items-center space-x-3"
+            className="flex items-center gap-4"
           >
-            <Link to="/" className="flex items-center space-x-3">
+            <Link to="/" className="flex items-center gap-4">
               <div className="relative">
                 <img
                   src={logoImage}
@@ -158,7 +158,7 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          <nav className="hidden lg:flex items-center gap-3">
             {navLinks.map((link) => (
               <motion.div
                 key={link.name}
@@ -209,19 +209,21 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
           {/* Right side - Auth & CTA */}
           <div className="flex items-center space-x-4">
             {websiteUser ? (
-              <div className="hidden lg:flex items-center space-x-3">
+              <div className="hidden lg:flex items-center gap-6">
                 <motion.div
-                  className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-gray-100 backdrop-blur-sm"
+                  className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-gray-800 shadow-lg hover:shadow-xl transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                 >
-                  <User className="w-4 h-4 text-gray-600" />
+                  <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
                   <div className="flex flex-col">
-                    <span className="text-sm text-gray-800">
+                    <span className="text-sm font-medium text-gray-900">
                       {websiteUser.full_name || websiteUser.email || 'User'}
                     </span>
                     <Link
                       to="/dashboard"
-                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                      className="text-xs text-orange-600 hover:text-orange-700 hover:underline font-medium"
                     >
                       View Dashboard
                     </Link>
@@ -229,15 +231,15 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                 </motion.div>
                 <motion.button
                   onClick={websiteSignOut}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-all duration-200"
+                  className="p-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-gray-700 hover:text-gray-900 hover:bg-white/30 hover:border-white/40 shadow-lg hover:shadow-xl transition-all duration-300"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-5 h-5" />
                 </motion.button>
               </div>
             ) : (
-              <div className="hidden lg:flex items-center space-x-12">
+              <div className="hidden lg:flex items-center gap-6">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     variant="outline"
@@ -305,7 +307,7 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
               animate="open"
               exit="closed"
             >
-              <div className="px-2 pt-2 pb-3 space-y-1">
+              <div className="px-2 pt-2 pb-3 space-y-3">
                 {navLinks.map((link) => (
                   <motion.div key={link.name} variants={mobileItemVariants}>
                     <Link
@@ -339,7 +341,7 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
 
                 {/* Mobile Auth Section */}
                 <motion.div
-                  className="pt-4 border-t border-gray-200 space-y-2"
+                  className="pt-4 border-t border-gray-200 space-y-3"
                   variants={mobileItemVariants}
                 >
                   {websiteUser ? (

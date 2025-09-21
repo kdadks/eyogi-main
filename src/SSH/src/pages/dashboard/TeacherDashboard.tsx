@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -47,6 +48,8 @@ import {
   StarIcon,
   FireIcon,
   LightBulbIcon,
+  SunIcon,
+  MoonIcon,
 } from '@heroicons/react/24/outline'
 
 const courseSchema = z.object({
@@ -308,135 +311,290 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center pt-16 lg:pt-20">
-        <div className="text-center">
-          <div className="spinner w-12 h-12 mx-auto mb-4 border-4 border-blue-200 border-t-blue-600"></div>
-          <p className="text-gray-600 text-lg">Loading your teaching dashboard...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-16 lg:pt-20">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 mx-auto mb-6 border-4 border-blue-200 border-t-blue-600 rounded-full"
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Loading Dashboard</h3>
+            <p className="text-gray-600">Preparing your teaching workspace...</p>
+          </motion.div>
+        </motion.div>
       </div>
     )
   }
 
+  const getTimeOfDay = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return { greeting: 'Good morning', icon: SunIcon }
+    if (hour < 18) return { greeting: 'Good afternoon', icon: SunIcon }
+    return { greeting: 'Good evening', icon: MoonIcon }
+  }
+
+  const { greeting, icon: TimeIcon } = getTimeOfDay()
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-16 lg:pt-20">
-      {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-16 lg:top-20 z-40">
-        <div className="container-max py-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-16 lg:pt-20">
+      {/* Enhanced Modern Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-16 lg:top-20 z-40 shadow-lg"
+      >
+        <div className="container-max py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <AcademicCapIcon className="h-7 w-7 text-white" />
-              </div>
+            <div className="flex items-center gap-8">
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="h-16 w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl"
+              >
+                <AcademicCapIcon className="h-8 w-8 text-white" />
+              </motion.div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Welcome back, {user?.full_name?.split(' ')[0] || 'Teacher'}! 👋
-                </h1>
-                <p className="text-gray-600">Ready to inspire minds today?</p>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-center gap-3 mb-2"
+                >
+                  <TimeIcon className="h-6 w-6 text-amber-500" />
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+                    {greeting}, {user?.full_name?.split(' ')[0] || 'Teacher'}! 👋
+                  </h1>
+                </motion.div>
+                <motion.p
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-gray-600 text-lg"
+                >
+                  Ready to inspire minds and shape futures today?
+                </motion.p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <BellIcon className="h-6 w-6 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" />
-                {stats.pendingApprovals > 0 && (
-                  <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
-                    {stats.pendingApprovals}
-                  </span>
-                )}
-              </div>
-              <Badge className="bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300">
-                <StarIcon className="h-4 w-4 mr-1" />
-                {stats.averageRating} Rating
-              </Badge>
+            <div className="flex items-center gap-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="relative"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-3 bg-white/50 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+                >
+                  <BellIcon className="h-6 w-6 text-gray-600" />
+                  {stats.pendingApprovals > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse shadow-lg"
+                    >
+                      {stats.pendingApprovals}
+                    </motion.span>
+                  )}
+                </motion.div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200 px-4 py-2 text-sm font-semibold shadow-lg">
+                  <StarIcon className="h-5 w-5 mr-2 fill-current" />
+                  {stats.averageRating} Rating
+                </Badge>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCreateCourse(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-semibold"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <SparklesIcon className="h-5 w-5" />
+                  Create Course
+                </motion.button>
+              </motion.div>
             </div>
           </div>
 
-          {/* Navigation Pills */}
-          <div className="mt-6 flex space-x-2 bg-gray-100/50 p-1 rounded-xl w-fit">
+          {/* Enhanced Navigation Pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="mt-8 flex gap-4 bg-white/50 backdrop-blur-sm p-3 rounded-2xl w-fit border border-white/20 shadow-lg"
+          >
             {[
-              { id: 'overview', name: 'Overview', icon: ChartBarIcon },
-              { id: 'courses', name: 'My Courses', icon: BookOpenIcon },
-              { id: 'students', name: 'Students', icon: UserGroupIcon },
-              { id: 'certificates', name: 'Certificates', icon: DocumentTextIcon },
-              { id: 'analytics', name: 'Analytics', icon: ArrowTrendingUpIcon },
-            ].map((tab) => (
-              <button
+              { id: 'overview', name: 'Overview', icon: ChartBarIcon, badge: null },
+              { id: 'courses', name: 'My Courses', icon: BookOpenIcon, badge: stats.totalCourses > 0 ? stats.totalCourses : null },
+              { id: 'students', name: 'Students', icon: UserGroupIcon, badge: stats.pendingApprovals > 0 ? stats.pendingApprovals : null },
+              { id: 'certificates', name: 'Certificates', icon: DocumentTextIcon, badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null },
+              { id: 'analytics', name: 'Analytics', icon: ArrowTrendingUpIcon, badge: null },
+            ].map((tab, index) => (
+              <motion.button
                 key={tab.id}
-                onClick={() =>
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + (index * 0.1) }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
                   setActiveView(
                     tab.id as 'overview' | 'courses' | 'students' | 'certificates' | 'analytics',
                   )
-                }
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                  // Scroll to top of page
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
                   activeView === tab.id
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
                 }`}
               >
-                <tab.icon className="h-4 w-4" />
+                <tab.icon className={`h-5 w-5 ${activeView === tab.id ? 'text-white' : ''}`} />
                 <span>{tab.name}</span>
-              </button>
+                {tab.badge && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    {tab.badge}
+                  </motion.span>
+                )}
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="container-max py-8">
-        {/* Overview */}
-        {activeView === 'overview' && (
-          <div className="space-y-8">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-100 text-sm font-medium">Total Courses</p>
-                      <p className="text-3xl font-bold">{stats.totalCourses}</p>
-                    </div>
-                    <BookOpenIcon className="h-8 w-8 text-blue-200" />
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <AnimatePresence mode="wait">
+          {/* Enhanced Overview */}
+          {activeView === 'overview' && (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col gap-12"
+            >
+              {/* Enhanced Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[
+                  {
+                    title: 'Total Courses',
+                    value: stats.totalCourses,
+                    icon: BookOpenIcon,
+                    gradient: 'from-blue-500 via-blue-600 to-indigo-600',
+                    bgGradient: 'from-blue-50 via-blue-100 to-indigo-100',
+                    delay: 0.1
+                  },
+                  {
+                    title: 'Total Students',
+                    value: stats.totalStudents,
+                    icon: UserGroupIcon,
+                    gradient: 'from-green-500 via-emerald-600 to-teal-600',
+                    bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
+                    delay: 0.2
+                  },
+                  {
+                    title: 'Certificates',
+                    value: stats.certificatesIssued,
+                    icon: TrophyIcon,
+                    gradient: 'from-purple-500 via-violet-600 to-purple-600',
+                    bgGradient: 'from-purple-50 via-violet-100 to-purple-100',
+                    delay: 0.3
+                  }
+                ].map((stat) => (
+                  <motion.div
+                    key={stat.title}
+                    initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: stat.delay, duration: 0.6, type: "spring", stiffness: 100 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="group"
+                  >
+                    <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative">
+                      <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`} />
+                      <CardContent className="p-8 relative">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-3">
+                            <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                              {stat.title}
+                            </p>
+                            <motion.p
+                              initial={{ scale: 0.8 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: stat.delay + 0.2 }}
+                              className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                            >
+                              {typeof stat.value === 'string' ? stat.value : stat.value.toLocaleString()}
+                            </motion.p>
+                          </div>
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ delay: stat.delay + 0.3, type: "spring", stiffness: 200 }}
+                            whileHover={{ scale: 1.2, rotate: 10 }}
+                            className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                          >
+                            <stat.icon className="h-8 w-8 text-white" />
+                          </motion.div>
+                        </div>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: '100%' }}
+                          transition={{ delay: stat.delay + 0.5, duration: 1 }}
+                          className="mt-6"
+                        >
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: '75%' }}
+                              transition={{ delay: stat.delay + 0.7, duration: 1.5 }}
+                              className={`h-full bg-gradient-to-r ${stat.gradient} rounded-full`}
+                            />
+                          </div>
+                        </motion.div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
 
-              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-green-100 text-sm font-medium">Total Students</p>
-                      <p className="text-3xl font-bold">{stats.totalStudents}</p>
-                    </div>
-                    <UserGroupIcon className="h-8 w-8 text-green-200" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-100 text-sm font-medium">Certificates</p>
-                      <p className="text-3xl font-bold">{stats.certificatesIssued}</p>
-                    </div>
-                    <TrophyIcon className="h-8 w-8 text-purple-200" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-orange-100 text-sm font-medium">Revenue</p>
-                      <p className="text-3xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
-                    </div>
-                    <CurrencyEuroIcon className="h-8 w-8 text-orange-200" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+              {/* Enhanced Quick Actions */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
+              >
+                <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-2xl overflow-hidden">
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <SparklesIcon className="h-6 w-6 text-blue-600" />
@@ -444,7 +602,7 @@ export default function TeacherDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {quickActions.map((action, index) => (
                     <div
                       key={index}
@@ -469,6 +627,7 @@ export default function TeacherDashboard() {
                 </div>
               </CardContent>
             </Card>
+              </motion.div>
 
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Recent Activity */}
@@ -548,12 +707,19 @@ export default function TeacherDashboard() {
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Courses View */}
         {activeView === 'courses' && (
-          <div className="space-y-6">
+          <motion.div
+            key="courses"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-8"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">My Courses</h2>
@@ -672,12 +838,19 @@ export default function TeacherDashboard() {
                 })}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Students View */}
         {activeView === 'students' && (
-          <div className="space-y-6">
+          <motion.div
+            key="students"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-8"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Student Management</h2>
@@ -871,12 +1044,19 @@ export default function TeacherDashboard() {
                 )}
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
         )}
 
         {/* Certificates View */}
         {activeView === 'certificates' && (
-          <div className="space-y-6">
+          <motion.div
+            key="certificates"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-8"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Certificate Management</h2>
@@ -1022,126 +1202,240 @@ export default function TeacherDashboard() {
                 )}
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
         )}
 
-        {/* Analytics View */}
+        {/* Enhanced Analytics View */}
         {activeView === 'analytics' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Teaching Analytics</h2>
-              <p className="text-gray-600">Track your performance and student engagement</p>
-            </div>
+          <motion.div
+            key="analytics"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-12 pt-8"
+          >
+            {/* Header Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.6 }}
+              className="text-center space-y-6"
+            >
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Teaching Analytics
+              </h2>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                Track your performance and student engagement with detailed insights
+              </p>
+            </motion.div>
 
-            {/* Performance Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6 text-center">
-                  <StarIcon className="h-10 w-10 mx-auto mb-3 text-blue-200" />
-                  <div className="text-3xl font-bold">{stats.averageRating}</div>
-                  <div className="text-sm text-blue-100">Average Rating</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6 text-center">
-                  <CheckCircleIcon className="h-10 w-10 mx-auto mb-3 text-green-200" />
-                  <div className="text-3xl font-bold">85%</div>
-                  <div className="text-sm text-green-100">Completion Rate</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6 text-center">
-                  <UserGroupIcon className="h-10 w-10 mx-auto mb-3 text-purple-200" />
-                  <div className="text-3xl font-bold">
-                    {Math.round(stats.totalStudents / stats.totalCourses) || 0}
-                  </div>
-                  <div className="text-sm text-purple-100">Avg Students/Course</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 shadow-xl">
-                <CardContent className="p-6 text-center">
-                  <CurrencyEuroIcon className="h-10 w-10 mx-auto mb-3 text-orange-200" />
-                  <div className="text-3xl font-bold">
-                    {formatCurrency(stats.totalRevenue / stats.totalCourses || 0)}
-                  </div>
-                  <div className="text-sm text-orange-100">Avg Revenue/Course</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Course Performance */}
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Course Performance</h3>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {courses.map((course) => {
-                    const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
-                    const completionRate =
-                      courseEnrollments.length > 0
-                        ? Math.round(
-                            (courseEnrollments.filter((e) => e.status === 'completed').length /
-                              courseEnrollments.length) *
-                              100,
-                          )
-                        : 0
-
-                    return (
-                      <div key={course.id} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium">{course.title}</h4>
-                          <Badge
-                            className={
-                              completionRate >= 80
-                                ? 'bg-green-100 text-green-800'
-                                : completionRate >= 60
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
-                            }
+            {/* Enhanced Performance Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[
+                {
+                  title: 'Average Rating',
+                  value: stats.averageRating,
+                  icon: StarIcon,
+                  gradient: 'from-yellow-500 via-orange-500 to-red-500',
+                  bgGradient: 'from-yellow-50 via-orange-100 to-red-100',
+                  delay: 0.1
+                },
+                {
+                  title: 'Completion Rate',
+                  value: enrollments.length > 0 ? Math.round((enrollments.filter(e => e.status === 'completed').length / enrollments.length) * 100) + '%' : '0%',
+                  icon: CheckCircleIcon,
+                  gradient: 'from-green-500 via-emerald-600 to-teal-600',
+                  bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
+                  delay: 0.2
+                },
+                {
+                  title: 'Avg Students/Course',
+                  value: Math.round(stats.totalStudents / stats.totalCourses) || 0,
+                  icon: UserGroupIcon,
+                  gradient: 'from-purple-500 via-violet-600 to-indigo-600',
+                  bgGradient: 'from-purple-50 via-violet-100 to-indigo-100',
+                  delay: 0.3
+                }
+              ].map((metric) => (
+                <motion.div
+                  key={metric.title}
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: metric.delay, duration: 0.6, type: "spring", stiffness: 100 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group"
+                >
+                  <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${metric.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`} />
+                    <CardContent className="p-8 relative">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-3">
+                          <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                            {metric.title}
+                          </p>
+                          <motion.p
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: metric.delay + 0.2 }}
+                            className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
                           >
-                            {completionRate}% completion
-                          </Badge>
+                            {typeof metric.value === 'string' ? metric.value : metric.value.toLocaleString()}
+                          </motion.p>
                         </div>
-                        <div className="grid grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-600">Enrolled:</span>
-                            <div className="font-semibold">{courseEnrollments.length}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Completed:</span>
-                            <div className="font-semibold">
-                              {courseEnrollments.filter((e) => e.status === 'completed').length}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Certificates:</span>
-                            <div className="font-semibold">
-                              {courseEnrollments.filter((e) => e.certificate_issued).length}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Revenue:</span>
-                            <div className="font-semibold">
-                              {formatCurrency(
-                                courseEnrollments
-                                  .filter((e) => e.payment_status === 'paid')
-                                  .reduce((sum, e) => sum + (e.course?.price || 0), 0),
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <motion.div
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ delay: metric.delay + 0.3, type: "spring", stiffness: 200 }}
+                          whileHover={{ scale: 1.2, rotate: 10 }}
+                          className={`h-16 w-16 bg-gradient-to-r ${metric.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                        >
+                          <metric.icon className="h-8 w-8 text-white" />
+                        </motion.div>
                       </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        transition={{ delay: metric.delay + 0.5, duration: 1 }}
+                        className="mt-6"
+                      >
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: '85%' }}
+                            transition={{ delay: metric.delay + 0.7, duration: 1.5 }}
+                            className={`h-full bg-gradient-to-r ${metric.gradient} rounded-full`}
+                          />
+                        </div>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Enhanced Course Performance */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="space-y-16"
+            >
+              <div className="text-center space-y-6">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Course Performance Overview
+                </h3>
+                <p className="text-gray-600">Detailed insights into each of your courses</p>
+              </div>
+
+              <div className="grid gap-8">
+                {courses.map((course, index) => {
+                  const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
+                  const completionRate =
+                    courseEnrollments.length > 0
+                      ? Math.round(
+                          (courseEnrollments.filter((e) => e.status === 'completed').length /
+                            courseEnrollments.length) *
+                            100,
+                        )
+                      : 0
+
+                  return (
+                    <motion.div
+                      key={course.id}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.7 + index * 0.1, duration: 0.6 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="group"
+                    >
+                      <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-purple-50/50 to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardContent className="p-8 relative">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="space-y-1">
+                              <h4 className="text-xl font-bold text-gray-900">{course.title}</h4>
+                              <p className="text-gray-600">Course #{course.course_number}</p>
+                            </div>
+                            <motion.div
+                              whileHover={{ scale: 1.1 }}
+                              className="flex items-center space-x-2"
+                            >
+                              <Badge
+                                className={`text-sm font-medium px-4 py-2 ${
+                                  completionRate >= 80
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                                    : completionRate >= 60
+                                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                                      : 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
+                                }`}
+                              >
+                                {completionRate}% completion
+                              </Badge>
+                            </motion.div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[
+                              { label: 'Enrolled', value: courseEnrollments.length, icon: '👥' },
+                              { label: 'Completed', value: courseEnrollments.filter((e) => e.status === 'completed').length, icon: '✅' },
+                              { label: 'Certificates', value: courseEnrollments.filter((e) => e.certificate_issued).length, icon: '🏆' }
+                            ].map((stat, statIndex) => (
+                              <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.8 + index * 0.1 + statIndex * 0.05 }}
+                                className="bg-white/60 backdrop-blur-sm rounded-xl p-4 text-center border border-white/30 hover:border-white/50 transition-all duration-300"
+                              >
+                                <div className="text-2xl mb-2">{stat.icon}</div>
+                                <div className="text-2xl font-bold text-gray-900 mb-1">
+                                  {stat.value}
+                                </div>
+                                <div className="text-sm text-gray-600 font-medium">
+                                  {stat.label}
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+
+                          {/* Progress Bar */}
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: '100%' }}
+                            transition={{ delay: 1 + index * 0.1, duration: 1 }}
+                            className="mt-6"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                              <span className="text-sm font-bold text-gray-900">{completionRate}%</span>
+                            </div>
+                            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${completionRate}%` }}
+                                transition={{ delay: 1.2 + index * 0.1, duration: 1.5 }}
+                                className={`h-full rounded-full ${
+                                  completionRate >= 80
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                                    : completionRate >= 60
+                                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                                      : 'bg-gradient-to-r from-red-500 to-pink-600'
+                                }`}
+                              />
+                            </div>
+                          </motion.div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
 
       {/* Create Course Modal */}

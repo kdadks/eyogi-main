@@ -183,7 +183,7 @@ export default function WebsiteAuthModal({
           </CardHeader>
           <CardContent>
             {mode === 'signin' ? (
-              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
+              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="flex flex-col gap-6">
                 <Input
                   label="Email address"
                   type="email"
@@ -218,7 +218,7 @@ export default function WebsiteAuthModal({
                 </div>
               </form>
             ) : (
-              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
+              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="flex flex-col gap-6">
                 <Input
                   label="Full Name"
                   {...signUpForm.register('full_name')}

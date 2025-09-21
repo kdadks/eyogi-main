@@ -164,7 +164,7 @@ export default function CourseDetailPage() {
           <div className="container-max section-padding">
             <div className="grid lg:grid-cols-3 gap-12">
               <div className="lg:col-span-2 space-y-6">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-6">
                   <Link to="/courses" className="text-orange-600 hover:text-orange-700">
                     ← Back to Courses
                   </Link>

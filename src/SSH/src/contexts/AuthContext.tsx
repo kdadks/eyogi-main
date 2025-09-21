@@ -119,6 +119,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await supabase.auth.signOut()
       setUser(null)
       setProfile(null)
+      // Redirect to admin login page
+      window.location.href = '/ssh-app/admin/login'
     } catch {
       // Handle sign out error silently
     }

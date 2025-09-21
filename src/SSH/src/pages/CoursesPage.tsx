@@ -6,6 +6,7 @@ import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
 import Footer from '../components/layout/Footer'
+import RollingText from '../components/ui/RollingText'
 import { Course, Gurukul } from '../types'
 import { getCourses } from '../lib/api/courses'
 import { getGurukuls } from '../lib/api/gurukuls'
@@ -120,7 +121,11 @@ export default function CoursesPage() {
           },
         ]}
       />
-      <div className="min-h-screen bg-gray-50 page-with-header">
+      <div>
+        {/* Rolling Text Banner */}
+        <RollingText text="🕉️ Discover Ancient Hindu Wisdom Through Expert-Led Online Courses 🕉️" />
+
+        <div className="min-h-screen bg-gray-50 page-with-header">
         {/* Header */}
         <div className="bg-white shadow-sm">
           <div className="container-max section-padding">
@@ -271,6 +276,7 @@ export default function CoursesPage() {
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
       <Footer />

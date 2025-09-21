@@ -457,7 +457,7 @@ export default function CourseManagement() {
               </div>
 
               {/* Actions */}
-              <div className="col-span-2 flex items-center justify-end gap-1">
+              <div className="col-span-2 flex items-center justify-end gap-2">
                 <button
                   onClick={() => setViewingCourse(course)}
                   className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"

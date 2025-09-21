@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import Footer from '../components/layout/Footer'
+import RollingText from '../components/ui/RollingText'
 import {
   EnvelopeIcon,
   PhoneIcon,
@@ -154,7 +155,11 @@ export default function ContactPage() {
           },
         ]}
       />
-      <div className="min-h-screen bg-gray-50 page-with-header">
+      <div>
+        {/* Rolling Text Banner */}
+        <RollingText text="🕉️ Contact eYogi Gurukul - Your Journey to Hindu Wisdom Starts Here 🕉️" />
+
+        <div className="min-h-screen bg-gray-50 page-with-header">
         {/* Hero Section */}
         <section className="bg-gradient-to-r from-orange-50 to-red-50">
           <div className="container-max section-padding">
@@ -207,7 +212,7 @@ export default function ContactPage() {
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
                       <div className="grid md:grid-cols-2 gap-4">
                         <Input
                           label="Full Name"
@@ -274,7 +279,7 @@ export default function ContactPage() {
                   <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
                 </div>
 
-                <div className="space-y-4">
+                <div className="flex flex-col gap-6">
                   {faqItems.map((item, index) => (
                     <Card key={index} className="card-hover">
                       <CardContent className="p-6">
@@ -326,6 +331,7 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
+        </div>
       </div>
       <Footer />
     </>

@@ -140,14 +140,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="mt-8 px-4">
-          <div className="space-y-1">
+          <div className="space-y-2">
             {filteredNavigation.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  `group flex items-center px-3 py-3 text-sm font-medium rounded-md ${
                     isActive
                       ? 'bg-blue-50 border-r-2 border-blue-500 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
