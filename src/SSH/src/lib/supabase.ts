@@ -4,7 +4,14 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 
+console.log('Supabase configuration:', {
+  url: supabaseUrl ? 'Set' : 'Missing',
+  anonKey: supabaseAnonKey ? 'Set' : 'Missing',
+  serviceRoleKey: supabaseServiceRoleKey ? 'Set' : 'Missing'
+})
+
 if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables:', { supabaseUrl, supabaseAnonKey })
   throw new Error('Missing Supabase environment variables')
 }
 

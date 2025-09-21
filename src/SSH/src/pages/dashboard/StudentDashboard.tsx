@@ -75,18 +75,29 @@ export default function StudentDashboard() {
   const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('StudentDashboard: useEffect triggered', { user: user?.id, loading })
     if (user?.id) {
       loadStudentData()
+    } else {
+      console.log('StudentDashboard: No user ID, setting loading to false')
+      setLoading(false)
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadStudentData = async () => {
+    console.log('loadStudentData: Starting data load for user:', user?.id)
     try {
       const [enrollmentsData, certificatesData, coursesData] = await Promise.all([
         getStudentEnrollments(user!.id),
         getStudentCertificates(user!.id),
         getCourses(),
       ])
+
+      console.log('loadStudentData: Data loaded successfully', {
+        enrollments: enrollmentsData.length,
+        certificates: certificatesData.length,
+        courses: coursesData.length
+      })
 
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
@@ -111,9 +122,11 @@ export default function StudentDashboard() {
         level: completedCount < 3 ? 'Beginner' : completedCount < 8 ? 'Intermediate' : 'Advanced',
         completionRate,
       })
-    } catch {
+    } catch (error) {
+      console.error('loadStudentData: Error loading data', error)
       toast.error('Failed to load dashboard data')
     } finally {
+      console.log('loadStudentData: Setting loading to false')
       setLoading(false)
     }
   }
