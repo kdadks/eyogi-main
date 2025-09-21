@@ -36,15 +36,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let isMounted = true
 
-    // Get initial session
+    // Get initial session with timeout
     const getSession = async () => {
       try {
         console.log('AuthContext: Starting session initialization...')
 
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession()
+        // Create timeout promise
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Session timeout')), 5000),
+        )
+
+        let session = null
+        let sessionError = null
+
+        try {
+          const result = await Promise.race([supabase.auth.getSession(), timeoutPromise])
+          session = result.data.session
+          sessionError = result.error
+        } catch (error) {
+          console.warn('AuthContext: Session call timed out or failed:', error)
+          // Continue with null session
+        }
 
         console.log('AuthContext: Session result:', { session: !!session, error: sessionError })
 
@@ -70,22 +82,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error('AuthContext: Error getting initial session:', error)
         if (isMounted) {
+          // Force complete initialization even on error
+          setUser(null)
+          setProfile(null)
           setLoading(false)
           setInitialized(true)
+          console.log('AuthContext: Initialization completed with error')
         }
       }
     }
 
-    // Set a timeout to prevent infinite loading
+    // Set a backup timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      console.warn('AuthContext: Initialization timeout - forcing completion')
+      console.warn('AuthContext: Backup timeout - forcing completion')
       if (isMounted) {
+        setUser(null)
+        setProfile(null)
         setLoading(false)
         setInitialized(true)
       }
-    }, 10000) // 10 second timeout
+    }, 8000) // 8 second backup timeout
 
-    getSession().then(() => {
+    getSession().finally(() => {
       clearTimeout(timeoutId)
     })
 
