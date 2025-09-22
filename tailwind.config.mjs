@@ -1,3 +1,7 @@
+import tailwindcssAnimate from 'tailwindcss-animate'
+import tailwindcssTypography from '@tailwindcss/typography'
+import tailwindScrollbar from 'tailwind-scrollbar'
+
 /** @type {import('tailwindcss').Config} */
 // eslint-disable-next-line import/no-anonymous-default-export
 export default {
@@ -5,14 +9,27 @@ export default {
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    './src/app/**/*.{ts,tsx}',
+    './src/components/**/*.{ts,tsx}',
+    './src/blocks/**/*.{ts,tsx}',
+    './src/collections/**/*.{ts,tsx}',
+    './src/fields/**/*.{ts,tsx}',
+    './src/Footer/**/*.{ts,tsx}',
+    './src/Header/**/*.{ts,tsx}',
+    './src/heros/**/*.{ts,tsx}',
+    './src/hooks/**/*.{ts,tsx}',
+    './src/lib/**/*.{ts,tsx}',
+    './src/plugins/**/*.{ts,tsx}',
+    './src/providers/**/*.{ts,tsx}',
+    './src/resend/**/*.{ts,tsx}',
+    './src/schemas/**/*.{ts,tsx}',
+    './src/search/**/*.{ts,tsx}',
+    './src/utilities/**/*.{ts,tsx}',
+    // Exclude SSH app as it has its own Tailwind config
+    '!./src/SSH/**/*',
   ],
   darkMode: ['selector', '[data-theme="dark"]'],
-  plugins: [
-    require('tailwindcss-animate'),
-    require('@tailwindcss/typography'),
-    require('tailwind-scrollbar'),
-  ],
+  plugins: [tailwindcssAnimate, tailwindcssTypography, tailwindScrollbar],
   prefix: '',
   safelist: [
     'lg:col-span-4',

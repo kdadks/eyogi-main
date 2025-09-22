@@ -26,14 +26,21 @@ type NodeTypes =
 
 const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
   const { value, relationTo } = linkNode.fields.doc!
-  if (typeof value !== 'object') {
-    throw new Error('Expected value to be an object')
+
+  // Handle cases where value is just an ID (number/string) instead of object
+  if (typeof value !== 'object' || value === null) {
+    console.warn('Link node has invalid document reference:', { value, relationTo })
+    // Return a safe fallback URL
+    if (relationTo === 'posts') return '/hinduism'
+    if (relationTo === 'media') return '#'
+    return '/'
   }
+
   const slug = value.slug
 
   if (relationTo === 'posts') return `/hinduism/${slug}`
-  if (relationTo === 'media') return `${value.url}`
-  return `/${slug}`
+  if (relationTo === 'media') return `${value.url || '#'}`
+  return `/${slug || ''}`
 }
 
 const jsxConverters: JSXConvertersFunction<NodeTypes> = ({ defaultConverters }) => ({
