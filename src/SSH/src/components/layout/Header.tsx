@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import ScrollLink from '../ui/ScrollLink'
 import { useAuth } from '../providers/AuthProvider'
 import { getUserDisplayName, getUserInitials, getRoleDisplayName } from '../../lib/auth/authUtils'
-import { Bars3Icon, XMarkIcon, UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import { Button } from '../ui/Button'
 
 export default function Header() {

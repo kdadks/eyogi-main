@@ -32,12 +32,12 @@ interface DatabasePermission {
   created_at: string
 }
 
-interface RolePermission {
+interface RolePermissionData {
   id: string
   role: string
   permission_id: string
   created_at: string
-  permission: DatabasePermission
+  permission: DatabasePermission[]
 }
 
 interface Permission {
@@ -144,7 +144,7 @@ export default function AdminPermissionManagement() {
         student: [],
       }
 
-      ;(rolePermData || []).forEach((rp: any) => {
+      ;(rolePermData || []).forEach((rp: RolePermissionData) => {
         if (rolePermissionMap[rp.role]) {
           rolePermissionMap[rp.role].push(rp.permission_id)
         }
@@ -326,16 +326,11 @@ export default function AdminPermissionManagement() {
                     <div className="font-medium capitalize text-gray-900 mb-1">
                       {role === 'business_admin' ? 'Business Admin' : role}
                     </div>
-                    <Badge
-                      variant={isSelected ? "default" : "secondary"}
-                      className="text-xs"
-                    >
+                    <Badge variant={isSelected ? 'default' : 'secondary'} className="text-xs">
                       {permissionCount} permissions
                     </Badge>
                     {role === 'business_admin' && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Limited admin access
-                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Limited admin access</div>
                     )}
                   </div>
                 </div>
@@ -392,7 +387,8 @@ export default function AdminPermissionManagement() {
               </div>
             </div>
             <div className="mt-3 p-2 bg-amber-100 rounded text-xs text-amber-800">
-              <strong>Note:</strong> Business Admins cannot access user management, system permissions, or advanced analytics.
+              <strong>Note:</strong> Business Admins cannot access user management, system
+              permissions, or advanced analytics.
             </div>
           </CardContent>
         </Card>

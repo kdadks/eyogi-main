@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
@@ -8,13 +8,7 @@ import { Badge } from '../components/ui/Badge'
 import { Gurukul, Course } from '../types'
 import { getGurukul } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
-import {
-  formatCurrency,
-  formatDate,
-  getAgeGroupLabel,
-  getLevelColor,
-  generateCourseUrl,
-} from '../lib/utils'
+import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -30,13 +24,7 @@ export default function GurukulDetailPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (slug) {
-      loadData()
-    }
-  }, [slug])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const gurukulData = await getGurukul(slug!)
       if (gurukulData) {
@@ -49,7 +37,13 @@ export default function GurukulDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [slug])
+
+  useEffect(() => {
+    if (slug) {
+      loadData()
+    }
+  }, [slug, loadData])
 
   if (loading) {
     return (

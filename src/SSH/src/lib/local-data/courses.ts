@@ -1,4 +1,4 @@
-import { Course, Gurukul } from '../../types'
+import { Course, Gurukul, Enrollment } from '@/types'
 
 const STORAGE_KEYS = {
   GURUKULS: 'eyogi_gurukuls',
@@ -76,7 +76,8 @@ export async function getEnrolledCount(courseId: string): Promise<number> {
 
   const enrollments = JSON.parse(localStorage.getItem(STORAGE_KEYS.ENROLLMENTS) || '[]')
   return enrollments.filter(
-    (e: any) => e.course_id === courseId && (e.status === 'approved' || e.status === 'completed'),
+    (e: Enrollment) =>
+      e.course_id === courseId && (e.status === 'approved' || e.status === 'completed'),
   ).length
 }
 
@@ -148,6 +149,6 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
 
   return teacherCourses.map((course: Course) => ({
     ...course,
-    gurukul: gurukuls.find((g: any) => g.id === course.gurukul_id),
+    gurukul: gurukuls.find((g: Gurukul) => g.id === course.gurukul_id),
   }))
 }

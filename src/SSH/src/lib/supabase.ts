@@ -86,6 +86,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false, // Disable URL detection to prevent conflicts
     storageKey: 'eyogi-ssh-app-auth-v2', // Updated unique storage key
   },
+  // Add network debugging and increased timeouts
+  global: {
+    headers: {
+      'X-Client-Info': 'eyogi-ssh-app',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  // Increase timeouts
+  realtime: {
+    timeout: 60000,
+  },
 })
 
 // Admin client with service role key (bypasses RLS) - NO AUTH PERSISTENCE

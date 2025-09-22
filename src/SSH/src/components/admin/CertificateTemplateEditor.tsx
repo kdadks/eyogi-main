@@ -6,16 +6,15 @@ import { generateCertificatePreview, CertificateData } from '@/lib/pdf/certifica
 import {
   createCertificateTemplate,
   updateCertificateTemplate,
-  duplicateCertificateTemplate
+  duplicateCertificateTemplate,
 } from '@/lib/api/certificateTemplates'
 import toast from 'react-hot-toast'
 import {
   XMarkIcon,
   EyeIcon,
-  DocumentArrowDownIcon,
   PhotoIcon,
   PencilIcon,
-  DocumentDuplicateIcon
+  DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline'
 
 interface CertificateTemplateEditorProps {
@@ -29,7 +28,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
   template,
   isOpen,
   onClose,
-  onSave
+  onSave,
 }) => {
   const [formData, setFormData] = useState<Partial<CertificateTemplate>>({
     name: '',
@@ -39,26 +38,26 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         colors: {
           primary: '#FF6B35',
           secondary: '#2563EB',
-          text: '#1F2937'
+          text: '#1F2937',
         },
         layout: {
           orientation: 'landscape',
-          size: 'a4'
-        }
+          size: 'a4',
+        },
       },
       logos: {
         eyogi_logo_url: '/eyogiLogo.png',
-        ssh_logo_url: '/ssh-app/Images/Logo.png'
+        ssh_logo_url: '/ssh-app/Images/Logo.png',
       },
       signatures: {
         vice_chancellor_signature_url: '',
         vice_chancellor_signature_data: '',
         president_signature_url: '',
-        president_signature_data: ''
+        president_signature_data: '',
       },
       seal: {
         official_seal_url: '',
-        official_seal_data: ''
+        official_seal_data: '',
       },
       placeholders: {
         student_name: true,
@@ -67,17 +66,16 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         course_id: true,
         gurukul_name: true,
         completion_date: true,
-        certificate_number: true
-       
+        certificate_number: true,
       },
       custom_text: {
         title: 'CERTIFICATE OF COMPLETION',
         subtitle: 'This is to certify that',
         header_text: 'eYogi Gurukul',
-        footer_text: 'This certificate verifies successful completion of the course.'
-      }
+        footer_text: 'This certificate verifies successful completion of the course.',
+      },
     },
-    is_active: true
+    is_active: true,
   })
   const [loading, setLoading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>('')
@@ -104,7 +102,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         toast.success('Template updated successfully')
       } else {
         // Create new template
-        savedTemplate = await createCertificateTemplate(formData as Omit<CertificateTemplate, 'id' | 'created_at' | 'updated_at'>)
+        savedTemplate = await createCertificateTemplate(
+          formData as Omit<CertificateTemplate, 'id' | 'created_at' | 'updated_at'>,
+        )
         toast.success('Template created successfully')
       }
 
@@ -146,7 +146,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         gurukulName: 'Sample Gurukul',
         completionDate: new Date().toISOString(),
         certificateNumber: 'CERT-2024-001',
-        verificationCode: 'ABC123'
+        verificationCode: 'ABC123',
       }
 
       const preview = await generateCertificatePreview(sampleData)
@@ -159,18 +159,18 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
     }
   }
 
-  const updateTemplateData = (path: string, value: any) => {
-    setFormData(prev => {
+  const updateTemplateData = (path: string, value: unknown) => {
+    setFormData((prev) => {
       const newData = { ...prev }
       const keys = path.split('.')
-      let current: any = newData
+      let current: Record<string, unknown> = newData
 
       // Navigate to the parent of the target property
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current[keys[i]]) {
           current[keys[i]] = {}
         }
-        current = current[keys[i]]
+        current = current[keys[i]] as Record<string, unknown>
       }
 
       // Set the final value
@@ -211,7 +211,10 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+        onClick={onClose}
+      />
 
       <div className="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header - Fixed */}
@@ -221,21 +224,12 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
           </h3>
           <div className="flex items-center gap-2">
             {template && (
-              <Button
-                onClick={handleDuplicate}
-                disabled={loading}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={handleDuplicate} disabled={loading} variant="outline" size="sm">
                 <DocumentDuplicateIcon className="h-4 w-4 mr-2" />
                 Duplicate
               </Button>
             )}
-            <button
-              type="button"
-              className="text-gray-400 hover:text-gray-600"
-              onClick={onClose}
-            >
+            <button type="button" className="text-gray-400 hover:text-gray-600" onClick={onClose}>
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
@@ -243,7 +237,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-6">
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Panel - Template Configuration */}
             <div className="space-y-6">
@@ -260,7 +253,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <input
                       type="text"
                       value={formData.name || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                       placeholder="Enter template name"
                     />
@@ -272,7 +265,12 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     </label>
                     <select
                       value={formData.type || 'student'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'student' | 'teacher' }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          type: e.target.value as 'student' | 'teacher',
+                        }))
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     >
                       <option value="student">Student Certificate</option>
@@ -285,7 +283,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       type="checkbox"
                       id="is_active"
                       checked={formData.is_active || false}
-                      onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, is_active: e.target.checked }))
+                      }
                       className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                     />
                     <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
@@ -308,7 +308,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <input
                       type="color"
                       value={formData.template_data?.design?.colors?.primary || '#FF6B35'}
-                      onChange={(e) => updateTemplateData('template_data.design.colors.primary', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.design.colors.primary', e.target.value)
+                      }
                       className="w-full h-10 rounded-md border border-gray-300"
                     />
                   </div>
@@ -320,7 +322,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <input
                       type="color"
                       value={formData.template_data?.design?.colors?.secondary || '#2563EB'}
-                      onChange={(e) => updateTemplateData('template_data.design.colors.secondary', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.design.colors.secondary', e.target.value)
+                      }
                       className="w-full h-10 rounded-md border border-gray-300"
                     />
                   </div>
@@ -332,7 +336,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <input
                       type="color"
                       value={formData.template_data?.design?.colors?.text || '#1F2937'}
-                      onChange={(e) => updateTemplateData('template_data.design.colors.text', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.design.colors.text', e.target.value)
+                      }
                       className="w-full h-10 rounded-md border border-gray-300"
                     />
                   </div>
@@ -352,20 +358,22 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <input
                       type="text"
                       value={formData.template_data?.custom_text?.title || ''}
-                      onChange={(e) => updateTemplateData('template_data.custom_text.title', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.custom_text.title', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                       placeholder="CERTIFICATE OF COMPLETION"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Subtitle
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
                     <input
                       type="text"
                       value={formData.template_data?.custom_text?.subtitle || ''}
-                      onChange={(e) => updateTemplateData('template_data.custom_text.subtitle', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.custom_text.subtitle', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                       placeholder="This is to certify that"
                     />
@@ -378,7 +386,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <input
                       type="text"
                       value={formData.template_data?.custom_text?.header_text || ''}
-                      onChange={(e) => updateTemplateData('template_data.custom_text.header_text', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.custom_text.header_text', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                       placeholder="eYogi Gurukul"
                     />
@@ -390,7 +400,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     </label>
                     <textarea
                       value={formData.template_data?.custom_text?.footer_text || ''}
-                      onChange={(e) => updateTemplateData('template_data.custom_text.footer_text', e.target.value)}
+                      onChange={(e) =>
+                        updateTemplateData('template_data.custom_text.footer_text', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                       rows={3}
                       placeholder="This certificate verifies successful completion of the course."
@@ -430,7 +442,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, 'template_data.logos.eyogi_logo_data')}
+                          onChange={(e) =>
+                            handleImageUpload(e, 'template_data.logos.eyogi_logo_data')
+                          }
                           className="hidden"
                           id="eyogi-logo-upload"
                         />
@@ -448,9 +462,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
 
                   {/* SSH Logo */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      SSH Logo
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">SSH Logo</label>
                     {formData.template_data?.logos?.ssh_logo_data ? (
                       <div className="space-y-2">
                         <img
@@ -471,7 +483,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, 'template_data.logos.ssh_logo_data')}
+                          onChange={(e) =>
+                            handleImageUpload(e, 'template_data.logos.ssh_logo_data')
+                          }
                           className="hidden"
                           id="ssh-logo-upload"
                         />
@@ -509,7 +523,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                         />
                         <button
                           type="button"
-                          onClick={() => removeImage('template_data.signatures.vice_chancellor_signature_data')}
+                          onClick={() =>
+                            removeImage('template_data.signatures.vice_chancellor_signature_data')
+                          }
                           className="text-red-600 hover:text-red-700 text-sm"
                         >
                           Remove Signature
@@ -520,7 +536,12 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, 'template_data.signatures.vice_chancellor_signature_data')}
+                          onChange={(e) =>
+                            handleImageUpload(
+                              e,
+                              'template_data.signatures.vice_chancellor_signature_data',
+                            )
+                          }
                           className="hidden"
                           id="vc-signature-upload"
                         />
@@ -550,7 +571,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                         />
                         <button
                           type="button"
-                          onClick={() => removeImage('template_data.signatures.president_signature_data')}
+                          onClick={() =>
+                            removeImage('template_data.signatures.president_signature_data')
+                          }
                           className="text-red-600 hover:text-red-700 text-sm"
                         >
                           Remove Signature
@@ -561,7 +584,12 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, 'template_data.signatures.president_signature_data')}
+                          onChange={(e) =>
+                            handleImageUpload(
+                              e,
+                              'template_data.signatures.president_signature_data',
+                            )
+                          }
                           className="hidden"
                           id="president-signature-upload"
                         />
@@ -605,7 +633,9 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleImageUpload(e, 'template_data.seal.official_seal_data')}
+                        onChange={(e) =>
+                          handleImageUpload(e, 'template_data.seal.official_seal_data')
+                        }
                         className="hidden"
                         id="seal-upload"
                       />
@@ -629,11 +659,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <h4 className="text-lg font-medium">Preview</h4>
-                    <Button
-                      onClick={generatePreview}
-                      disabled={loading}
-                      size="sm"
-                    >
+                    <Button onClick={generatePreview} disabled={loading} size="sm">
                       <EyeIcon className="h-4 w-4 mr-2" />
                       Generate Preview
                     </Button>
@@ -664,11 +690,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
 
         {/* Footer - Fixed */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 flex-shrink-0">
-          <Button
-            onClick={onClose}
-            variant="outline"
-            disabled={loading}
-          >
+          <Button onClick={onClose} variant="outline" disabled={loading}>
             Cancel
           </Button>
           <Button

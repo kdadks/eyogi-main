@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Certificate, Enrollment, CertificateTemplate, Course, User } from '@/types'
+import { Certificate, Enrollment, CertificateTemplate, Course, Gurukul } from '@/types'
 import {
   // getStudentCertificates, // Available for future use
   issueCertificate,
@@ -11,7 +11,7 @@ import {
 import {
   getCertificateTemplates,
   deleteCertificateTemplate,
-  duplicateCertificateTemplate
+  duplicateCertificateTemplate,
 } from '@/lib/api/certificateTemplates'
 import { getAllEnrollments } from '@/lib/api/enrollments'
 import { getCourses } from '@/lib/api/courses'
@@ -40,7 +40,7 @@ export default function CertificateManagement() {
   const [templates, setTemplates] = useState<CertificateTemplate[]>([])
   const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([])
   const [courses, setCourses] = useState<Course[]>([])
-  const [gurukuls, setGurukuls] = useState<any[]>([])
+  const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'certificates' | 'templates' | 'issue'>('certificates')
   const [searchTerm, setSearchTerm] = useState('')
@@ -53,18 +53,14 @@ export default function CertificateManagement() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [previewData, setPreviewData] = useState<CertificateData | null>(null)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       // Load all data in parallel
       const [allEnrollments, templatesData, coursesData, gurukulData] = await Promise.all([
         getAllEnrollments(),
         getCertificateTemplates(),
         getCourses(),
-        getGurukuls()
+        getGurukuls(),
       ])
 
       const completedWithoutCerts = allEnrollments.filter(
@@ -90,7 +86,11 @@ export default function CertificateManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedTemplate])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleIssueCertificate = async (enrollmentId: string) => {
     if (!selectedTemplate) {
@@ -131,7 +131,10 @@ export default function CertificateManagement() {
     }
   }
 
-  const handleTemplateAction = (action: 'create' | 'edit' | 'duplicate', template?: CertificateTemplate) => {
+  const handleTemplateAction = (
+    action: 'create' | 'edit' | 'duplicate',
+    template?: CertificateTemplate,
+  ) => {
     if (action === 'create') {
       setEditingTemplate(undefined)
       setTemplateEditorOpen(true)
@@ -170,8 +173,8 @@ export default function CertificateManagement() {
   }
 
   const handleTemplateSave = (template: CertificateTemplate) => {
-    setTemplates(prev => {
-      const index = prev.findIndex(t => t.id === template.id)
+    setTemplates((prev) => {
+      const index = prev.findIndex((t) => t.id === template.id)
       if (index >= 0) {
         const updated = [...prev]
         updated[index] = template
@@ -185,13 +188,20 @@ export default function CertificateManagement() {
   const createCertificateData = (enrollment: Enrollment): CertificateData => {
     return {
       studentName: enrollment.student?.full_name || 'Student Name',
-      studentId: enrollment.student?.student_id || enrollment.student?.full_name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() + Math.random().toString().slice(-3) || 'STU001',
+      studentId:
+        enrollment.student?.student_id ||
+        enrollment.student?.full_name
+          ?.split(' ')
+          .map((n) => n.charAt(0))
+          .join('')
+          .toUpperCase() + Math.random().toString().slice(-3) ||
+        'STU001',
       courseName: enrollment.course?.title || 'Course Name',
       courseId: enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`,
       gurukulName: enrollment.course?.gurukul?.name || 'Gurukul Name',
       completionDate: enrollment.completed_at || new Date().toISOString(),
       certificateNumber: `CERT-${Date.now()}-${enrollment.id.slice(-4)}`,
-      verificationCode: Math.random().toString(36).substr(2, 9).toUpperCase()
+      verificationCode: Math.random().toString(36).substr(2, 9).toUpperCase(),
     }
   }
 
@@ -203,7 +213,7 @@ export default function CertificateManagement() {
 
   const handleDownloadCertificate = async (enrollment: Enrollment) => {
     try {
-      const template = templates.find(t => t.id === selectedTemplate)
+      const template = templates.find((t) => t.id === selectedTemplate)
       const certificateData = createCertificateData(enrollment)
 
       const pdfBlob = await generateCertificatePDF(certificateData, template)
@@ -226,13 +236,17 @@ export default function CertificateManagement() {
   }
 
   const handleReissueCertificate = async (certificate: Certificate) => {
-    if (!confirm('Are you sure you want to reissue this certificate? This will create a new version with updated data.')) {
+    if (
+      !confirm(
+        'Are you sure you want to reissue this certificate? This will create a new version with updated data.',
+      )
+    ) {
       return
     }
 
     try {
       // Find the corresponding enrollment to reissue the certificate
-      const enrollment = completedEnrollments.find(e => e.id === certificate.enrollment_id)
+      const enrollment = completedEnrollments.find((e) => e.id === certificate.enrollment_id)
       if (!enrollment) {
         toast.error('Cannot find enrollment record for this certificate')
         return
@@ -369,13 +383,22 @@ export default function CertificateManagement() {
                               onClick={() => {
                                 const certificateData: CertificateData = {
                                   studentName: certificate.student?.full_name || 'Student Name',
-                                  studentId: certificate.student?.student_id || certificate.student?.full_name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() + Math.random().toString().slice(-3) || 'STU001',
+                                  studentId:
+                                    certificate.student?.student_id ||
+                                    certificate.student?.full_name
+                                      ?.split(' ')
+                                      .map((n) => n.charAt(0))
+                                      .join('')
+                                      .toUpperCase() + Math.random().toString().slice(-3) ||
+                                    'STU001',
                                   courseName: certificate.course?.title || 'Course Name',
-                                  courseId: certificate.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+                                  courseId:
+                                    certificate.course?.course_number ||
+                                    `C${Math.random().toString().slice(-3)}`,
                                   gurukulName: certificate.course?.gurukul?.name || 'Gurukul Name',
                                   completionDate: certificate.issued_at,
                                   certificateNumber: certificate.certificate_number,
-                                  verificationCode: certificate.verification_code
+                                  verificationCode: certificate.verification_code,
                                 }
                                 setPreviewData(certificateData)
                                 setPreviewModalOpen(true)
@@ -384,11 +407,7 @@ export default function CertificateManagement() {
                             >
                               <EyeIcon className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              title="Download Certificate"
-                            >
+                            <Button size="sm" variant="ghost" title="Download Certificate">
                               <ArrowDownTrayIcon className="h-4 w-4" />
                             </Button>
                             <Button
@@ -428,9 +447,7 @@ export default function CertificateManagement() {
             {templates.length === 0 ? (
               <div className="text-center py-8">
                 <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No certificate templates
-                </h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No certificate templates</h3>
                 <p className="text-gray-600 mb-4">
                   Create your first certificate template to get started.
                 </p>
@@ -458,7 +475,10 @@ export default function CertificateManagement() {
                       </div>
                       <h3 className="font-semibold mb-2">{template.name}</h3>
                       <p className="text-sm text-gray-600 mb-2">
-                        Type: {template.type === 'student' ? 'Student Certificate' : 'Teacher Certificate'}
+                        Type:{' '}
+                        {template.type === 'student'
+                          ? 'Student Certificate'
+                          : 'Teacher Certificate'}
                       </p>
                       <p className="text-xs text-gray-500 mb-4">
                         Created: {formatDate(template.created_at)}
@@ -531,11 +551,13 @@ export default function CertificateManagement() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
                   >
                     <option value="">Select Template</option>
-                    {templates.filter(t => t.is_active).map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
+                    {templates
+                      .filter((t) => t.is_active)
+                      .map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
@@ -568,7 +590,7 @@ export default function CertificateManagement() {
                   >
                     <option value="">All Courses</option>
                     {courses
-                      .filter(course => !selectedGurukul || course.gurukul_id === selectedGurukul)
+                      .filter((course) => !selectedGurukul || course.gurukul_id === selectedGurukul)
                       .map((course) => (
                         <option key={course.id} value={course.id}>
                           {course.title}
@@ -667,7 +689,14 @@ export default function CertificateManagement() {
                             {enrollment.student?.full_name}
                           </div>
                           <div className="text-sm text-gray-500">
-                            ID: {enrollment.student?.student_id || enrollment.student?.full_name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() + Math.random().toString().slice(-3) || 'STU001'}
+                            ID:{' '}
+                            {enrollment.student?.student_id ||
+                              enrollment.student?.full_name
+                                ?.split(' ')
+                                .map((n) => n.charAt(0))
+                                .join('')
+                                .toUpperCase() + Math.random().toString().slice(-3) ||
+                              'STU001'}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -675,7 +704,9 @@ export default function CertificateManagement() {
                             {enrollment.course?.title}
                           </div>
                           <div className="text-sm text-gray-500">
-                            Course #{enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`}
+                            Course #
+                            {enrollment.course?.course_number ||
+                              `C${Math.random().toString().slice(-3)}`}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
@@ -742,7 +773,7 @@ export default function CertificateManagement() {
             setPreviewData(null)
           }}
           certificateData={previewData}
-          template={templates.find(t => t.id === selectedTemplate)}
+          template={templates.find((t) => t.id === selectedTemplate)}
         />
       )}
     </div>

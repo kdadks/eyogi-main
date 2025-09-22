@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface Database {
   public: {
@@ -18,7 +12,12 @@ export interface Database {
           role: 'student' | 'teacher' | 'admin'
           age: number | null
           phone: string | null
-          address: string | null
+          country: string | null
+          address_line_1: string | null
+          address_line_2: string | null
+          city: string | null
+          state: string | null
+          zip_code: string | null
           parent_guardian_name: string | null
           parent_guardian_email: string | null
           parent_guardian_phone: string | null
@@ -34,7 +33,12 @@ export interface Database {
           role?: 'student' | 'teacher' | 'admin'
           age?: number | null
           phone?: string | null
-          address?: string | null
+          country?: string | null
+          address_line_1?: string | null
+          address_line_2?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
           parent_guardian_name?: string | null
           parent_guardian_email?: string | null
           parent_guardian_phone?: string | null
@@ -50,7 +54,12 @@ export interface Database {
           role?: 'student' | 'teacher' | 'admin'
           age?: number | null
           phone?: string | null
-          address?: string | null
+          country?: string | null
+          address_line_1?: string | null
+          address_line_2?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
           parent_guardian_name?: string | null
           parent_guardian_email?: string | null
           parent_guardian_phone?: string | null

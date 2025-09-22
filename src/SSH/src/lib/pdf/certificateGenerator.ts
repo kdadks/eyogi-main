@@ -36,22 +36,22 @@ export interface CertificateDesign {
 const defaultDesign: CertificateDesign = {
   logos: {
     eyogiLogo: '/eyogiLogo.png',
-    sshLogo: '/ssh-app/Images/Logo.png'
+    sshLogo: '/ssh-app/Images/Logo.png',
   },
   signatures: {
     viceChancellor: '',
-    president: ''
+    president: '',
   },
   layout: {
     width: 297, // A4 landscape width in mm
     height: 210, // A4 landscape height in mm
-    margin: 20
+    margin: 20,
   },
   colors: {
     primary: '#FF6B35',
     secondary: '#2563EB',
-    text: '#1F2937'
-  }
+    text: '#1F2937',
+  },
 }
 
 export class CertificateGenerator {
@@ -63,7 +63,7 @@ export class CertificateGenerator {
     this.pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
     })
   }
 
@@ -126,7 +126,8 @@ export class CertificateGenerator {
     this.pdf.setFontSize(16)
     this.pdf.setTextColor(37, 99, 235) // Blue
     this.pdf.setFont('helvetica', 'bold')
-    const institutionText = template?.template_data?.custom_text?.header_text || 'eYogi Gurukul - Excellence in Learning'
+    const institutionText =
+      template?.template_data?.custom_text?.header_text || 'eYogi Gurukul - Excellence in Learning'
     const instWidth = this.pdf.getTextWidth(institutionText)
     this.pdf.text(institutionText, (width - instWidth) / 2, 35)
 
@@ -220,7 +221,7 @@ export class CertificateGenerator {
     const dateText = `Completed on ${new Date(data.completionDate).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })}`
     const dateWidth = this.pdf.getTextWidth(dateText)
     this.pdf.text(dateText, (width - dateWidth) / 2, yPosition)
@@ -247,7 +248,10 @@ export class CertificateGenerator {
         this.pdf.addImage(
           template.template_data.signatures.vice_chancellor_signature_data,
           'JPEG',
-          vcX - 25, yPosition - 15, 50, 15
+          vcX - 25,
+          yPosition - 15,
+          50,
+          15,
         )
       } else {
         // Fallback signature line
@@ -273,7 +277,10 @@ export class CertificateGenerator {
         this.pdf.addImage(
           template.template_data.signatures.president_signature_data,
           'JPEG',
-          presX - 25, yPosition - 15, 50, 15
+          presX - 25,
+          yPosition - 15,
+          50,
+          15,
         )
       } else {
         // Fallback signature line
@@ -308,7 +315,11 @@ export class CertificateGenerator {
 
     // Right side verification details - moved even further right
     this.pdf.text(`Verification Code: ${data.verificationCode}`, width - 90, height - 28)
-    this.pdf.text(`Issue Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`, width - 90, height - 23)
+    this.pdf.text(
+      `Issue Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`,
+      width - 90,
+      height - 23,
+    )
     this.pdf.text(`Verify at: verify.eyogigurukul.com`, width - 90, height - 18)
 
     // Add subtle separator line above footer
@@ -346,7 +357,6 @@ export class CertificateGenerator {
     this.pdf.setFillColor(37, 99, 235, 0.3)
     this.pdf.circle(width - 20, height - 20, 5, 'F')
   }
-
 
   private addTitleDecorations(width: number) {
     // Add decorative flourishes under the title
@@ -388,11 +398,7 @@ export class CertificateGenerator {
     try {
       // Left logo (eYogi)
       if (template?.template_data?.logos?.eyogi_logo_data) {
-        this.pdf.addImage(
-          template.template_data.logos.eyogi_logo_data,
-          'JPEG',
-          30, 18, 25, 25
-        )
+        this.pdf.addImage(template.template_data.logos.eyogi_logo_data, 'JPEG', 30, 18, 25, 25)
       } else {
         // Fallback placeholder
         this.pdf.setFillColor(255, 107, 53, 0.1)
@@ -407,7 +413,10 @@ export class CertificateGenerator {
         this.pdf.addImage(
           template.template_data.logos.ssh_logo_data,
           'JPEG',
-          width - 55, 18, 25, 25
+          width - 55,
+          18,
+          25,
+          25,
         )
       } else {
         // Fallback placeholder
@@ -429,7 +438,10 @@ export class CertificateGenerator {
         this.pdf.addImage(
           template.template_data.seal.official_seal_data,
           'JPEG',
-          x - 15, y - 15, 30, 30
+          x - 15,
+          y - 15,
+          30,
+          30,
         )
       } else {
         // Fallback placeholder seal
@@ -450,21 +462,17 @@ export class CertificateGenerator {
       console.error('Error adding official seal:', error)
     }
   }
-
 }
 
 export async function generateCertificatePDF(
   data: CertificateData,
-  template?: CertificateTemplate
+  template?: CertificateTemplate,
 ): Promise<Blob> {
   const generator = new CertificateGenerator()
   return await generator.generateCertificate(data, template)
 }
 
-export async function generateCertificatePreview(
-  data: CertificateData,
-  template?: CertificateTemplate
-): Promise<string> {
+export async function generateCertificatePreview(data: CertificateData): Promise<string> {
   const generator = new CertificateGenerator()
   return await generator.generatePreview(data)
 }

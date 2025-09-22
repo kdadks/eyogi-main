@@ -102,9 +102,12 @@ export default function ProfileEditModal({
           push: user.preferences?.notifications?.push !== false,
         },
         accessibility: {
-          large_text: user.preferences?.accessibility?.large_text || false,
-          high_contrast: user.preferences?.accessibility?.high_contrast || false,
-          reduced_motion: user.preferences?.accessibility?.reduced_motion || false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          large_text: (user.preferences as any)?.accessibility?.large_text || false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          high_contrast: (user.preferences as any)?.accessibility?.high_contrast || false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          reduced_motion: (user.preferences as any)?.accessibility?.reduced_motion || false,
         },
       },
     },

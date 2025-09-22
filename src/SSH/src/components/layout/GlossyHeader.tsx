@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User, Home } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../ui/Button'
-import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import logoImage from '/eyogiTextLess.png'
 import fallbackLogo from '/Images/Logo.png'
@@ -33,13 +32,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
-
-  // Safely get auth context - handle case where provider might not be ready
-  try {
-    useSupabaseAuth()
-  } catch {
-    // AuthProvider not available, continue without super admin context
-  }
 
   // Get website auth context
   const { user: websiteUser, signOut: websiteSignOut } = useWebsiteAuth()

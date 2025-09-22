@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   UserPlusIcon,
   MagnifyingGlassIcon,
@@ -27,11 +27,7 @@ const AdminUserManagement: React.FC = () => {
 
   const { user: currentUser } = useAuth()
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabaseAdmin
@@ -57,7 +53,11 @@ const AdminUserManagement: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentUser?.id])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const handleCreateUser = () => {
     setEditingUser(null)
@@ -208,7 +208,6 @@ const AdminUserManagement: React.FC = () => {
               <option value="student">Students</option>
               <option value="teacher">Teachers</option>
               <option value="admin">Admins</option>
-              <option value="super_admin">Super Admins</option>
               <option value="parent">Parents</option>
             </select>
           </div>
@@ -373,7 +372,7 @@ const AdminUserManagement: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleUserSaved}
-        user={editingUser}
+        user={editingUser || undefined}
         mode={editingUser ? 'edit' : 'create'}
       />
     </div>

@@ -110,17 +110,6 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 }
 
-// Features that should be hidden from students on the main university page
-const STUDENT_HIDDEN_FEATURES = [
-  'analytics.read',
-  'users.create',
-  'users.update',
-  'users.delete',
-  'admin.dashboard',
-  'settings.read',
-  'permissions.read',
-]
-
 export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children }) => {
   const { user, profile, loading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
@@ -160,17 +149,6 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
   const hasAnyPermission = (permissions: string[]): boolean => {
     const userPermissions = getUserPermissions()
     return permissions.some((permission) => userPermissions.includes(permission))
-  }
-
-  // Special check for admin access
-  const canAccessAdmin = (): boolean => {
-    return canAccess('admin', 'access')
-  }
-
-  // Check if user should see analytics/admin features on university page
-  const shouldHideFromStudent = (feature: string): boolean => {
-    const userRole = getUserRole()
-    return userRole === 'student' && STUDENT_HIDDEN_FEATURES.includes(feature)
   }
 
   const value: PermissionContextType = {

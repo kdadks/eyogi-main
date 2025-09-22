@@ -34,13 +34,13 @@ export class ChatService {
     try {
       // Step 1: Detect user persona
       const persona = this.personaDetector.detectPersona(message, user)
-      
+
       // Step 2: Classify intent
       const intentResult = this.intentClassifier.classifyIntent(message, persona)
-      
+
       // Step 3: Perform semantic search for relevant information
-      const searchResults = await this.semanticSearch.search(message, intentResult.intent, persona)
-      
+      const searchResults = await this.semanticSearch.search(message, intentResult.intent)
+
       // Step 4: Generate response
       const response = this.responseGenerator.generateResponse({
         message,
@@ -49,19 +49,20 @@ export class ChatService {
         confidence: intentResult.confidence,
         searchResults,
         user,
-        conversationHistory: this.conversationHistory
+        conversationHistory: this.conversationHistory,
       })
 
       // Step 5: Get "Did You Know" fact (30% chance)
-      const didYouKnow = Math.random() < 0.3 
-        ? this.didYouKnowService.getRandomFact(intentResult.intent, persona)
-        : undefined
+      const didYouKnow =
+        Math.random() < 0.3
+          ? this.didYouKnowService.getRandomFact(intentResult.intent, persona)
+          : undefined
 
       // Store conversation history
       this.conversationHistory.push({
         user: message,
         bot: response,
-        timestamp: new Date()
+        timestamp: new Date(),
       })
 
       // Keep only last 10 exchanges
@@ -74,7 +75,7 @@ export class ChatService {
         persona,
         intent: intentResult.intent,
         confidence: intentResult.confidence,
-        didYouKnow
+        didYouKnow,
       }
     } catch (error) {
       console.error('Error in ChatService:', error)

@@ -45,7 +45,7 @@ export const ourFileRouter = {
       // Verify user has permission to upload course content
       return { userId: user.id, uploadType: 'course_content' }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ metadata }) => {
       console.log('Course content upload complete for userId:', metadata.userId)
 
       // Save to Supabase media table with course association
@@ -60,7 +60,7 @@ export const ourFileRouter = {
       // Verify user has permission to generate certificates
       return { userId: user.id, uploadType: 'certificate' }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ metadata }) => {
       console.log('Certificate upload complete for userId:', metadata.userId)
 
       // Update certificate record in Supabase
@@ -78,7 +78,7 @@ export const ourFileRouter = {
       const user = await auth(req)
       return { userId: user.id, uploadType: 'assignment' }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ metadata }) => {
       console.log('Assignment upload complete for userId:', metadata.userId)
 
       // Save to assignment submissions table
@@ -98,7 +98,7 @@ export const ourFileRouter = {
       // Verify user has admin/teacher permissions
       return { userId: user.id, uploadType: 'media_library' }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ metadata }) => {
       console.log('Media library upload complete for userId:', metadata.userId)
 
       // Save to Supabase media table

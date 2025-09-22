@@ -1,53 +1,76 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
+import { supabase } from '../../lib/supabase'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
 const AdminLogin: React.FC = () => {
-  const { signIn, loading, isSuperAdmin, user } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const navigationAttempted = useRef(false)
-
-  // Handle redirect in useEffect to prevent infinite re-renders
-  useEffect(() => {
-    if (!loading && user && isSuperAdmin && !navigationAttempted.current) {
-      navigationAttempted.current = true
-      navigate('/admin/dashboard', { replace: true })
-    }
-  }, [user, isSuperAdmin, loading, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const { error } = await signIn(email, password)
+      console.log('Attempting login with:', email)
+
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
       if (error) {
-        toast.error((error as { message?: string })?.message || 'Login failed')
+        console.error('Login error:', error)
+        toast.error(error.message || 'Login failed')
+        return
+      }
+
+      if (!data.user) {
+        toast.error('Login failed - no user data')
+        return
+      }
+
+      console.log('Login successful, user:', data.user.id)
+
+      // Check if user has admin privileges by checking their profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError || !profile) {
+        console.error('Profile fetch error:', profileError)
+        toast.error('Unable to verify admin privileges')
+        await supabase.auth.signOut()
+        return
+      }
+
+      console.log('User role:', profile.role)
+
+      // Check if user has admin role
+      if (!['admin', 'business_admin', 'super_admin'].includes(profile.role)) {
+        toast.error('Access denied - admin privileges required')
+        await supabase.auth.signOut()
         return
       }
 
       toast.success('Welcome to Admin Console')
+      console.log('AdminLogin: Login successful, navigating immediately to dashboard...')
+
+      // Navigate immediately since login was successful and role verified
+      navigate('/admin/dashboard', { replace: true })
     } catch (error) {
+      console.error('Unexpected login error:', error)
       toast.error('An unexpected error occurred')
-      console.error('Login error:', error)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
   }
 
   return (

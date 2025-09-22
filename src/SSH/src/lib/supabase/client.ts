@@ -1,2 +1,1 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+// Placeholder for future Supabase client configuration

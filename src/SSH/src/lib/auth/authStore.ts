@@ -6,13 +6,6 @@ interface AuthState {
   initialized: boolean
 }
 
-interface AuthStore extends AuthState {
-  setUser: (user: User | null) => void
-  setLoading: (loading: boolean) => void
-  setInitialized: (initialized: boolean) => void
-  clearAuth: () => void
-}
-
 // Simple state management without external dependencies
 class AuthStateManager {
   private state: AuthState = {

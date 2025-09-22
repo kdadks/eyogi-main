@@ -14,7 +14,7 @@ export default function ProtectedRoute({
   requiredRole,
   redirectTo = '/auth/signin',
 }: ProtectedRouteProps) {
-  const { user: superAdminUser, loading: authLoading, isSuperAdmin } = useAuth()
+  const { loading: authLoading, isSuperAdmin } = useAuth()
   const { user: websiteUser, loading: websiteLoading } = useWebsiteAuth()
   const location = useLocation()
 

@@ -1,4 +1,4 @@
-import { Enrollment } from '../../types'
+import { Enrollment, Course, User, Gurukul } from '../../types'
 
 const STORAGE_KEYS = {
   ENROLLMENTS: 'eyogi_enrollments',
@@ -45,8 +45,8 @@ export async function enrollInCourse(courseId: string, studentId: string): Promi
   }
 
   // Add related data
-  const course = courses.find((c: any) => c.id === courseId)
-  const student = users.find((u: any) => u.id === studentId)
+  const course = courses.find((c: Course) => c.id === courseId)
+  const student = users.find((u: User) => u.id === studentId)
 
   const enrichedEnrollment = {
     ...newEnrollment,
@@ -72,8 +72,8 @@ export async function getStudentEnrollments(studentId: string): Promise<Enrollme
 
   return studentEnrollments
     .map((enrollment: Enrollment) => {
-      const course = courses.find((c: any) => c.id === enrollment.course_id)
-      const gurukul = course ? gurukuls.find((g: any) => g.id === course.gurukul_id) : null
+      const course = courses.find((c: Course) => c.id === enrollment.course_id)
+      const gurukul = course ? gurukuls.find((g: Gurukul) => g.id === course.gurukul_id) : null
 
       return {
         ...enrollment,
@@ -96,8 +96,8 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
   const gurukuls = JSON.parse(localStorage.getItem(STORAGE_KEYS.GURUKULS) || '[]')
 
   // Get courses taught by this teacher
-  const teacherCourses = courses.filter((c: any) => c.teacher_id === teacherId)
-  const teacherCourseIds = teacherCourses.map((c: any) => c.id)
+  const teacherCourses = courses.filter((c: Course) => c.teacher_id === teacherId)
+  const teacherCourseIds = teacherCourses.map((c: Course) => c.id)
 
   // Get enrollments for teacher's courses
   const teacherEnrollments = enrollments.filter((e: Enrollment) =>
@@ -106,9 +106,9 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
 
   return teacherEnrollments
     .map((enrollment: Enrollment) => {
-      const course = courses.find((c: any) => c.id === enrollment.course_id)
-      const gurukul = course ? gurukuls.find((g: any) => g.id === course.gurukul_id) : null
-      const student = users.find((u: any) => u.id === enrollment.student_id)
+      const course = courses.find((c: Course) => c.id === enrollment.course_id)
+      const gurukul = course ? gurukuls.find((g: Gurukul) => g.id === course.gurukul_id) : null
+      const student = users.find((u: User) => u.id === enrollment.student_id)
 
       return {
         ...enrollment,
@@ -160,8 +160,8 @@ export async function updateEnrollmentStatus(
   localStorage.setItem(STORAGE_KEYS.ENROLLMENTS, JSON.stringify(enrollments))
 
   // Add related data for return
-  const course = courses.find((c: any) => c.id === updatedEnrollment.course_id)
-  const student = users.find((u: any) => u.id === updatedEnrollment.student_id)
+  const course = courses.find((c: Course) => c.id === updatedEnrollment.course_id)
+  const student = users.find((u: User) => u.id === updatedEnrollment.student_id)
 
   return {
     ...updatedEnrollment,
@@ -204,8 +204,8 @@ export async function bulkUpdateEnrollments(
       enrollments[enrollmentIndex] = updatedEnrollment
 
       // Add related data
-      const course = courses.find((c: any) => c.id === updatedEnrollment.course_id)
-      const student = users.find((u: any) => u.id === updatedEnrollment.student_id)
+      const course = courses.find((c: Course) => c.id === updatedEnrollment.course_id)
+      const student = users.find((u: User) => u.id === updatedEnrollment.student_id)
 
       updatedEnrollments.push({
         ...updatedEnrollment,
@@ -250,9 +250,9 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
 
   return enrollments
     .map((enrollment: Enrollment) => {
-      const course = courses.find((c: any) => c.id === enrollment.course_id)
-      const gurukul = course ? gurukuls.find((g: any) => g.id === course.gurukul_id) : null
-      const student = users.find((u: any) => u.id === enrollment.student_id)
+      const course = courses.find((c: Course) => c.id === enrollment.course_id)
+      const gurukul = course ? gurukuls.find((g: Gurukul) => g.id === course.gurukul_id) : null
+      const student = users.find((u: User) => u.id === enrollment.student_id)
 
       return {
         ...enrollment,

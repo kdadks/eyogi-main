@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AuthContext, type AuthContextType } from './AuthContextTypes'
 import type { Profile } from '../types'
-
-// useAuth hook moved to hooks/useAuth.ts to fix Fast Refresh issue
 
 interface AuthProviderProps {
   children: React.ReactNode
@@ -15,6 +14,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
+  const initializationRef = React.useRef(false)
+  const location = useLocation()
 
   // Fetch user profile from database
   const fetchProfile = async (userId: string) => {
@@ -36,53 +37,139 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let isMounted = true
 
-    // Get initial session with timeout
-    const getSession = async () => {
-      try {
-        console.log('AuthContext: Starting session initialization...')
+    // Skip full initialization if on public pages (not admin pages)
+    // Handle both direct admin paths and ssh-app prefixed paths
+    const isAdminPage =
+      (location.pathname.startsWith('/admin') || location.pathname.includes('/admin')) &&
+      !location.pathname.includes('/admin/login')
 
-        // Create timeout promise
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Session timeout')), 5000),
-        )
+    // Debug logging (set to false to reduce console noise)
+    const DEBUG_AUTH = true
+    if (DEBUG_AUTH && import.meta.env.DEV) {
+      console.log('AuthContext:', {
+        path: location.pathname,
+        isAdminPage: isAdminPage,
+        action: isAdminPage ? 'initializing' : 'skipping (public page)',
+      })
+    }
+
+    if (!isAdminPage) {
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+      setInitialized(true)
+      return
+    }
+
+    // Reset initialization when moving to admin pages from non-admin pages
+    if (isAdminPage && !initialized) {
+      initializationRef.current = false
+    }
+
+    // Prevent double initialization in React StrictMode, but allow re-initialization if not completed
+    if (initializationRef.current && initialized) {
+      console.log('AuthContext: Skipping duplicate initialization (already completed)')
+      return
+    }
+
+    if (initializationRef.current && !initialized) {
+      console.log('AuthContext: Previous initialization incomplete, allowing retry')
+    } else {
+      console.log('AuthContext: First initialization attempt')
+    }
+
+    initializationRef.current = true
+
+    // Fast initialization
+    const initAuth = async () => {
+      try {
+        console.log('AuthContext: Starting fast initialization...')
 
         let session = null
         let sessionError = null
 
         try {
-          const result = await Promise.race([supabase.auth.getSession(), timeoutPromise])
+          // Simple session check without timeouts
+          console.log('AuthContext: Getting session...')
+          const result = await supabase.auth.getSession()
           session = result.data.session
           sessionError = result.error
+          console.log('AuthContext: Session check completed successfully', {
+            hasSession: !!session,
+            error: sessionError,
+          })
         } catch (error) {
-          console.warn('AuthContext: Session call timed out or failed:', error)
-          // Continue with null session
+          console.warn('AuthContext: Session check failed:', error)
+          session = null
         }
-
-        console.log('AuthContext: Session result:', { session: !!session, error: sessionError })
 
         if (!isMounted) return
 
         const currentUser = session?.user ?? null
+        console.log(
+          'AuthContext: Setting user:',
+          currentUser ? `logged in user ${currentUser.id}` : 'no user',
+        )
         setUser(currentUser)
 
-        // Fetch profile if user exists
-        if (currentUser) {
-          console.log('AuthContext: Fetching profile for user:', currentUser.id)
-          const userProfile = await fetchProfile(currentUser.id)
-          setProfile(userProfile)
-          console.log('AuthContext: Profile loaded:', !!userProfile)
+        // Only fetch profile if user exists and not on login page
+        const shouldFetchProfile = currentUser && !location.pathname.includes('/admin/login')
+        console.log('AuthContext: Profile fetch decision:', {
+          hasUser: !!currentUser,
+          currentPath: location.pathname,
+          includesLogin: location.pathname.includes('/admin/login'),
+          shouldFetchProfile,
+        })
+
+        if (shouldFetchProfile) {
+          console.log('AuthContext: User exists, fetching profile for user:', currentUser.id)
+          // Keep loading true during profile fetch
+          setLoading(true)
+          try {
+            const userProfile = await fetchProfile(currentUser.id)
+            if (isMounted) {
+              setProfile(userProfile)
+              console.log('AuthContext: Profile set:', userProfile?.role || 'no role')
+            }
+          } catch (error) {
+            console.warn('AuthContext: Profile fetch failed:', error)
+            if (isMounted) setProfile(null)
+          } finally {
+            if (isMounted) {
+              setLoading(false)
+            }
+          }
         } else {
+          console.log(
+            'AuthContext: No user or on login page, clearing profile. User:',
+            !!currentUser,
+            'Path:',
+            location.pathname,
+          )
           setProfile(null)
-          console.log('AuthContext: No user session found')
         }
 
-        setLoading(false)
-        setInitialized(true)
-        console.log('AuthContext: Initialization completed')
-      } catch (error) {
-        console.error('AuthContext: Error getting initial session:', error)
         if (isMounted) {
-          // Force complete initialization even on error
+          // Only set initialized true and loading false if we're not fetching profile
+          if (!shouldFetchProfile) {
+            console.log(
+              'AuthContext: Setting loading false and initialized true (no profile fetch needed)',
+            )
+            setLoading(false)
+            setInitialized(true)
+          } else {
+            console.log(
+              'AuthContext: Profile fetch in progress, will complete in profile fetch block',
+            )
+            setInitialized(true)
+          }
+          console.log('AuthContext: Initialization process completed')
+        } else {
+          console.warn('AuthContext: Component unmounted before completion')
+        }
+      } catch (error) {
+        console.error('AuthContext: Initialization error:', error)
+        if (isMounted) {
           setUser(null)
           setProfile(null)
           setLoading(false)
@@ -92,18 +179,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }
 
-    // Set a backup timeout to prevent infinite loading
+    // Backup timeout
     const timeoutId = setTimeout(() => {
-      console.warn('AuthContext: Backup timeout - forcing completion')
       if (isMounted) {
+        console.warn('AuthContext: Backup timeout fired - forcing initialization completion')
         setUser(null)
         setProfile(null)
         setLoading(false)
         setInitialized(true)
+      } else {
+        console.warn('AuthContext: Backup timeout fired but component unmounted')
       }
-    }, 8000) // 8 second backup timeout
+    }, 6000) // Increased to 6 seconds to give more time
 
-    getSession().finally(() => {
+    console.log('AuthContext: Starting initAuth...')
+    initAuth().finally(() => {
+      console.log('AuthContext: initAuth completed, clearing timeout')
       clearTimeout(timeoutId)
     })
 
@@ -113,19 +204,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (!isMounted) return
 
+      // Skip auth state processing on public pages unless it's a SIGNED_IN event
+      const isAdminPage = location.pathname.includes('/admin')
+      if (!isAdminPage && event !== 'SIGNED_IN') {
+        console.log(
+          'AuthContext: On public page, skipping auth state change:',
+          event,
+          'Current path:',
+          location.pathname,
+        )
+        return
+      }
+
+      console.log(
+        'Auth state changed:',
+        event,
+        session ? 'with session' : 'no session',
+        'Current path:',
+        location.pathname,
+      )
+
+      // Set loading true during auth change processing
+      setLoading(true)
+
       const currentUser = session?.user ?? null
       setUser(currentUser)
 
       // Fetch profile if user exists
       if (currentUser) {
-        const userProfile = await fetchProfile(currentUser.id)
-        setProfile(userProfile)
+        console.log('AuthContext: Fetching profile for auth change, user:', currentUser.id)
+        try {
+          const userProfile = await fetchProfile(currentUser.id)
+          if (isMounted) {
+            setProfile(userProfile)
+            console.log('AuthContext: Profile updated after auth change:', userProfile?.role)
+          }
+        } catch (error) {
+          console.error('AuthContext: Profile fetch failed in auth change:', error)
+          if (isMounted) setProfile(null)
+        }
       } else {
         setProfile(null)
+        console.log('AuthContext: No user, profile cleared')
       }
 
-      setLoading(false)
-      setInitialized(true)
+      if (isMounted) {
+        setLoading(false)
+        setInitialized(true)
+        console.log('AuthContext: Auth change processing completed')
+      }
     })
 
     return () => {
@@ -133,7 +260,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [])
+  }, [initialized, location]) // Re-run when pathname changes
 
   // Sign in for super admin only (Supabase Auth)
   const signIn = async (email: string, password: string) => {
@@ -151,7 +278,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      console.log('AuthContext: Starting signOut process...')
+      console.log('AuthContext: Starting signOut...')
 
       // Clear local state immediately
       setUser(null)
@@ -159,41 +286,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false)
       setInitialized(true)
 
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('AuthContext: Supabase signOut error:', error)
-      } else {
-        console.log('AuthContext: Supabase signOut successful')
-      }
+      // Sign out from Supabase with global scope
+      await supabase.auth.signOut({ scope: 'global' })
 
-      // Clear any cached data from localStorage/sessionStorage
-      try {
-        localStorage.removeItem('supabase.auth.token')
-        sessionStorage.clear()
-      } catch (storageError) {
-        console.warn('AuthContext: Error clearing storage:', storageError)
-      }
+      // Clear storage
+      localStorage.clear()
+      sessionStorage.clear()
 
-      // Force page reload to ensure clean state
-      console.log('AuthContext: Redirecting to login...')
-      window.location.replace('/ssh-app/admin/login')
-
+      console.log('AuthContext: SignOut completed')
     } catch (error) {
-      console.error('AuthContext: signOut error:', error)
-      // Force redirect even if there's an error
+      console.error('AuthContext: SignOut error:', error)
+      // Still clear local state
       setUser(null)
       setProfile(null)
-      window.location.replace('/ssh-app/admin/login')
     }
   }
 
-  // Check if user has admin privileges (admin, business_admin, or super_admin)
+  // Check if user has admin privileges
   const isSuperAdmin =
     !!user && !!profile && ['admin', 'business_admin', 'super_admin'].includes(profile.role)
 
   const canAccess = (): boolean => {
-    // Super admin has access to everything
     return isSuperAdmin
   }
 

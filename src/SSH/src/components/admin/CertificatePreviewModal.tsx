@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
-import { generateCertificatePreview, generateCertificatePDF, CertificateData } from '@/lib/pdf/certificateGenerator'
+import {
+  generateCertificatePreview,
+  generateCertificatePDF,
+  CertificateData,
+} from '@/lib/pdf/certificateGenerator'
 import { CertificateTemplate } from '@/types'
 import toast from 'react-hot-toast'
 
@@ -16,22 +20,16 @@ export default function CertificatePreviewModal({
   isOpen,
   onClose,
   certificateData,
-  template
+  template,
 }: CertificatePreviewModalProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
-  useEffect(() => {
-    if (isOpen && certificateData) {
-      loadPreview()
-    }
-  }, [isOpen, certificateData])
-
-  const loadPreview = async () => {
+  const loadPreview = useCallback(async () => {
     setLoading(true)
     try {
-      const preview = await generateCertificatePreview(certificateData, template)
+      const preview = await generateCertificatePreview(certificateData)
       setPreviewUrl(preview)
     } catch (error) {
       console.error('Error generating preview:', error)
@@ -39,7 +37,13 @@ export default function CertificatePreviewModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [certificateData])
+
+  useEffect(() => {
+    if (isOpen && certificateData) {
+      loadPreview()
+    }
+  }, [isOpen, certificateData, loadPreview])
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -81,10 +85,7 @@ export default function CertificatePreviewModal({
               <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
               {downloading ? 'Downloading...' : 'Download PDF'}
             </Button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
@@ -148,11 +149,15 @@ export default function CertificatePreviewModal({
               </div>
               <div>
                 <span className="text-gray-600">Certificate Number:</span>
-                <span className="ml-2 font-medium font-mono">{certificateData.certificateNumber}</span>
+                <span className="ml-2 font-medium font-mono">
+                  {certificateData.certificateNumber}
+                </span>
               </div>
               <div>
                 <span className="text-gray-600">Verification Code:</span>
-                <span className="ml-2 font-medium font-mono">{certificateData.verificationCode}</span>
+                <span className="ml-2 font-medium font-mono">
+                  {certificateData.verificationCode}
+                </span>
               </div>
             </div>
           </div>
