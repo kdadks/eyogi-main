@@ -13,7 +13,8 @@ import {
   updateEnrollmentStatus,
   bulkUpdateEnrollments,
 } from '@/lib/api/enrollments'
-import { issueCertificate, bulkIssueCertificates } from '@/lib/api/certificates'
+import { issueCertificate, bulkIssueCertificates, issueCertificateWithTemplate } from '@/lib/api/certificates'
+import { getTeacherCertificateAssignments } from '@/lib/api/certificateAssignments'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import {
   formatCurrency,
@@ -77,6 +78,7 @@ export default function TeacherDashboard() {
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
+  const [certificateAssignments, setCertificateAssignments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)
@@ -84,6 +86,9 @@ export default function TeacherDashboard() {
     'overview' | 'courses' | 'students' | 'certificates' | 'analytics'
   >('overview')
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [showIssuanceModal, setShowIssuanceModal] = useState(false)
+  const [selectedEnrollmentForCert, setSelectedEnrollmentForCert] = useState<string | null>(null)
 
   const {
     register,
@@ -109,14 +114,17 @@ export default function TeacherDashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const [coursesData, enrollmentsData, gurukulData] = await Promise.all([
+      const [coursesData, enrollmentsData, gurukulData, assignmentsData] = await Promise.all([
         getTeacherCourses(user!.id),
         getTeacherEnrollments(user!.id),
         getGurukuls(),
+        getTeacherCertificateAssignments(user!.id),
       ])
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setGurukuls(gurukulData)
+      setCertificateAssignments(assignmentsData)
+      console.log('Teacher certificate assignments:', assignmentsData)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       toast.error('Failed to load dashboard data')
@@ -195,6 +203,25 @@ export default function TeacherDashboard() {
       console.error('Error issuing certificate:', error)
       toast.error('Failed to issue certificate')
     }
+  }
+
+  const handleIssueCertificateWithTemplate = async (enrollmentId: string, templateId: string) => {
+    try {
+      await issueCertificateWithTemplate(enrollmentId, templateId)
+      await loadDashboardData()
+      setShowIssuanceModal(false)
+      setSelectedEnrollmentForCert(null)
+      setSelectedTemplate(null)
+      toast.success('Certificate issued successfully with template!')
+    } catch (error) {
+      console.error('Error issuing certificate with template:', error)
+      toast.error('Failed to issue certificate')
+    }
+  }
+
+  const openIssuanceModal = (enrollmentId: string) => {
+    setSelectedEnrollmentForCert(enrollmentId)
+    setShowIssuanceModal(true)
   }
 
   const handleBulkIssueCertificates = async () => {
@@ -821,7 +848,11 @@ export default function TeacherDashboard() {
                                 const eligibleEnrollments = courseEnrollments.filter(
                                   (e) => e.status === 'completed' && !e.certificate_issued,
                                 )
-                                if (eligibleEnrollments.length > 0) {
+                                if (eligibleEnrollments.length === 1) {
+                                  // Single enrollment - open template selection modal
+                                  openIssuanceModal(eligibleEnrollments[0].id)
+                                } else if (eligibleEnrollments.length > 1) {
+                                  // Multiple enrollments - use bulk issuance (default)
                                   bulkIssueCertificates(eligibleEnrollments.map((e) => e.id))
                                 }
                               }}
@@ -1027,7 +1058,7 @@ export default function TeacherDashboard() {
                                   !enrollment.certificate_issued && (
                                     <Button
                                       size="sm"
-                                      onClick={() => handleIssueCertificate(enrollment.id)}
+                                      onClick={() => openIssuanceModal(enrollment.id)}
                                       className="bg-gradient-to-r from-purple-500 to-purple-600"
                                     >
                                       <TrophyIcon className="h-4 w-4 mr-1" />
@@ -1074,7 +1105,7 @@ export default function TeacherDashboard() {
             </div>
 
             {/* Certificate Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                 <CardContent className="p-6 text-center">
                   <TrophyIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
@@ -1102,7 +1133,117 @@ export default function TeacherDashboard() {
                   <div className="text-sm text-blue-700">Completed Courses</div>
                 </CardContent>
               </Card>
+
+              <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                <CardContent className="p-6 text-center">
+                  <DocumentTextIcon className="h-10 w-10 text-purple-600 mx-auto mb-3" />
+                  <div className="text-3xl font-bold text-purple-900">{certificateAssignments.length}</div>
+                  <div className="text-sm text-purple-700">Available Templates</div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Available Certificate Templates */}
+            {certificateAssignments.length > 0 && (
+              <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <DocumentTextIcon className="h-6 w-6 text-purple-600" />
+                    <h3 className="text-lg font-semibold">Available Certificate Templates</h3>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {certificateAssignments.map((assignment) => {
+                      const assignedCourse = courses.find(c => c.id === assignment.course_id)
+                      const assignedGurukul = gurukuls.find(g => g.id === assignment.gurukul_id)
+
+                      return (
+                        <div
+                          key={assignment.id}
+                          className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-purple-900">
+                                {assignment.template?.name || 'Certificate Template'}
+                              </h4>
+                              <p className="text-sm text-purple-700">
+                                {assignment.template?.type || 'Student'} Certificate
+                              </p>
+                            </div>
+                            <Badge className="bg-purple-600 text-white">
+                              {assignment.course_id ? 'Course' : 'Gurukul'}
+                            </Badge>
+                          </div>
+
+                          <div className="text-sm text-purple-600 mb-3">
+                            <p><strong>Assigned to:</strong></p>
+                            {assignedCourse ? (
+                              <p>📚 {assignedCourse.title}</p>
+                            ) : assignedGurukul ? (
+                              <p>🏛️ {assignedGurukul.name} (All Courses)</p>
+                            ) : (
+                              <p>Unknown Assignment</p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-purple-500">
+                              Active Template
+                            </span>
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                                onClick={() => {
+                                  // TODO: Implement template preview
+                                  toast.info('Template preview coming soon!')
+                                }}
+                              >
+                                <EyeIcon className="h-4 w-4 mr-1" />
+                                Preview
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-purple-600 text-white hover:bg-purple-700"
+                                onClick={() => {
+                                  // Find eligible students for this template
+                                  const templateCourseEnrollments = assignedCourse
+                                    ? enrollments.filter(e =>
+                                        e.course_id === assignedCourse.id &&
+                                        e.status === 'completed' &&
+                                        !e.certificate_issued
+                                      )
+                                    : enrollments.filter(e =>
+                                        e.status === 'completed' &&
+                                        !e.certificate_issued &&
+                                        courses.some(c => c.id === e.course_id && c.gurukul_id === assignment.gurukul_id)
+                                      )
+
+                                  if (templateCourseEnrollments.length === 0) {
+                                    toast.info('No eligible students for this template')
+                                  } else if (templateCourseEnrollments.length === 1) {
+                                    setSelectedTemplate(assignment.template_id)
+                                    openIssuanceModal(templateCourseEnrollments[0].id)
+                                  } else {
+                                    toast.info(`${templateCourseEnrollments.length} students eligible for this template`)
+                                  }
+                                }}
+                              >
+                                <TrophyIcon className="h-4 w-4 mr-1" />
+                                Use Template
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Pending Certificates */}
             {stats.pendingCertificates > 0 && (
@@ -1141,7 +1282,7 @@ export default function TeacherDashboard() {
                           </div>
                           <Button
                             size="sm"
-                            onClick={() => handleIssueCertificate(enrollment.id)}
+                            onClick={() => openIssuanceModal(enrollment.id)}
                             className="w-full bg-gradient-to-r from-purple-500 to-purple-600"
                           >
                             <TrophyIcon className="h-4 w-4 mr-1" />
@@ -1645,6 +1786,157 @@ export default function TeacherDashboard() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Certificate Issuance Modal */}
+      {showIssuanceModal && selectedEnrollmentForCert && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Issue Certificate</h2>
+                  <p className="text-gray-600">Select a template to issue the certificate</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowIssuanceModal(false)
+                    setSelectedEnrollmentForCert(null)
+                    setSelectedTemplate(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {certificateAssignments.length === 0 ? (
+                <div className="text-center py-8">
+                  <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Available</h3>
+                  <p className="text-gray-600 mb-6">
+                    No certificate templates have been assigned to your courses.
+                  </p>
+                  <div className="flex space-x-4 justify-center">
+                    <Button
+                      onClick={() => handleIssueCertificate(selectedEnrollmentForCert)}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600"
+                    >
+                      <DocumentTextIcon className="h-4 w-4 mr-2" />
+                      Issue Default Certificate
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowIssuanceModal(false)
+                        setSelectedEnrollmentForCert(null)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Templates</h3>
+                    <div className="grid gap-4">
+                      {certificateAssignments.map((assignment) => {
+                        const assignedCourse = courses.find(c => c.id === assignment.course_id)
+                        const assignedGurukul = gurukuls.find(g => g.id === assignment.gurukul_id)
+                        const isSelected = selectedTemplate === assignment.template_id
+
+                        return (
+                          <div
+                            key={assignment.id}
+                            onClick={() => setSelectedTemplate(assignment.template_id)}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 hover:border-purple-300 hover:bg-purple-25'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                    isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <h4 className="font-semibold text-gray-900">
+                                    {assignment.template?.name || 'Certificate Template'}
+                                  </h4>
+                                  <Badge className={`${isSelected ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white'}`}>
+                                    {assignment.course_id ? 'Course' : 'Gurukul'}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-2">
+                                  {assignment.template?.type || 'Student'} Certificate
+                                </p>
+                                <div className="text-sm text-gray-500">
+                                  <p><strong>Assigned to:</strong></p>
+                                  {assignedCourse ? (
+                                    <p>📚 {assignedCourse.title}</p>
+                                  ) : assignedGurukul ? (
+                                    <p>🏛️ {assignedGurukul.name} (All Courses)</p>
+                                  ) : (
+                                    <p>Unknown Assignment</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <div className="flex space-x-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleIssueCertificate(selectedEnrollmentForCert)}
+                        className="text-gray-600"
+                      >
+                        <DocumentTextIcon className="h-4 w-4 mr-2" />
+                        Use Default Template
+                      </Button>
+                    </div>
+                    <div className="flex space-x-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowIssuanceModal(false)
+                          setSelectedEnrollmentForCert(null)
+                          setSelectedTemplate(null)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (selectedTemplate && selectedEnrollmentForCert) {
+                            handleIssueCertificateWithTemplate(selectedEnrollmentForCert, selectedTemplate)
+                          }
+                        }}
+                        disabled={!selectedTemplate}
+                        className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
+                      >
+                        <TrophyIcon className="h-4 w-4 mr-2" />
+                        Issue with Selected Template
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

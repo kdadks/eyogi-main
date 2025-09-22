@@ -187,6 +187,11 @@ export interface CertificateTemplate {
       header_text?: string
       footer_text?: string
     }
+    assignments?: {
+      gurukul_id?: string
+      course_id?: string
+      assigned_at?: string
+    }
   }
   is_active: boolean
   created_by?: string

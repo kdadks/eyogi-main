@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate()
+  const { updateAuthState } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -61,9 +63,14 @@ const AdminLogin: React.FC = () => {
       }
 
       toast.success('Welcome to Admin Console')
-      console.log('AdminLogin: Login successful, navigating immediately to dashboard...')
+      console.log('AdminLogin: Login successful, updating auth context directly...')
 
-      // Navigate immediately since login was successful and role verified
+      // Update auth context immediately
+      const authResult = await updateAuthState()
+      console.log('AdminLogin: Auth state updated:', authResult)
+
+      // Navigate immediately after auth state is updated
+      console.log('AdminLogin: Navigating to dashboard...')
       navigate('/admin/dashboard', { replace: true })
     } catch (error) {
       console.error('Unexpected login error:', error)

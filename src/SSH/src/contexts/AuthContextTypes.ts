@@ -13,9 +13,15 @@ export interface AuthContextType {
   // Admin sign in (Supabase Auth only)
   signIn: (email: string, password: string) => Promise<{ error: unknown }>
   signOut: () => Promise<void>
+  updateAuthState: () => Promise<{ user: User | null; profile: Profile | null }>
 
   // Check if user has admin privileges (admin, business_admin, or super_admin)
   isSuperAdmin: boolean
+
+  // Role-based permissions
+  canManageCertificates: boolean
+  canAssignTemplates: boolean
+  isTeacher: boolean
 
   // Check permissions
   canAccess: (resource: string, action: string) => boolean

@@ -436,6 +436,53 @@ export interface Database {
           notes?: string | null
         }
       }
+      certificate_assignments: {
+        Row: {
+          id: string
+          template_id: string
+          gurukul_id: string | null
+          course_id: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          template_id: string
+          gurukul_id?: string | null
+          course_id?: string | null
+          created_by: string
+        }
+        Update: {
+          template_id?: string
+          gurukul_id?: string | null
+          course_id?: string | null
+        }
+      }
+      certificate_templates: {
+        Row: {
+          id: string
+          name: string
+          type: 'student' | 'teacher' | 'participation' | 'completion'
+          template_data: any
+          is_active: boolean
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          name: string
+          type: 'student' | 'teacher' | 'participation' | 'completion'
+          template_data: any
+          is_active?: boolean
+          created_by: string
+        }
+        Update: {
+          name?: string
+          type?: 'student' | 'teacher' | 'participation' | 'completion'
+          template_data?: any
+          is_active?: boolean
+        }
+      }
       // Add other table types as needed...
     }
   }

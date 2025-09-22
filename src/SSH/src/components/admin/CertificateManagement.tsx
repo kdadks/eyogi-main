@@ -13,14 +13,20 @@ import {
   deleteCertificateTemplate,
   duplicateCertificateTemplate,
 } from '@/lib/api/certificateTemplates'
+import {
+  getCertificateAssignments,
+  deleteCertificateAssignment,
+} from '@/lib/api/certificateAssignments'
 import { getAllEnrollments } from '@/lib/api/enrollments'
 import { getCourses } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { generateCertificatePDF, CertificateData } from '@/lib/pdf/certificateGenerator'
 import { formatDate } from '@/lib/utils'
+import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import toast from 'react-hot-toast'
 import CertificateTemplateEditor from './CertificateTemplateEditor'
 import CertificatePreviewModal from './CertificatePreviewModal'
+import TemplateAssignmentModal from './TemplateAssignmentModal'
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -36,13 +42,14 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function CertificateManagement() {
+  const { canManageCertificates, canAssignTemplates, profile } = useAuth()
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [templates, setTemplates] = useState<CertificateTemplate[]>([])
   const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'certificates' | 'templates' | 'issue'>('certificates')
+  const [activeTab, setActiveTab] = useState<'certificates' | 'templates' | 'issue' | 'assignments'>('certificates')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedEnrollments, setSelectedEnrollments] = useState<Set<string>>(new Set())
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
@@ -52,15 +59,31 @@ export default function CertificateManagement() {
   const [editingTemplate, setEditingTemplate] = useState<CertificateTemplate | undefined>(undefined)
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [previewData, setPreviewData] = useState<CertificateData | null>(null)
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
+  const [assignments, setAssignments] = useState<any[]>([])
+
+  // Check access permissions
+  if (!canManageCertificates) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to access certificate management.</p>
+          <p className="text-sm text-gray-500 mt-2">Current role: {profile?.role}</p>
+        </div>
+      </div>
+    )
+  }
 
   const loadData = useCallback(async () => {
     try {
       // Load all data in parallel
-      const [allEnrollments, templatesData, coursesData, gurukulData] = await Promise.all([
+      const [allEnrollments, templatesData, coursesData, gurukulData, assignmentsData] = await Promise.all([
         getAllEnrollments(),
         getCertificateTemplates(),
         getCourses(),
         getGurukuls(),
+        getCertificateAssignments(),
       ])
 
       const completedWithoutCerts = allEnrollments.filter(
@@ -71,6 +94,7 @@ export default function CertificateManagement() {
       setTemplates(templatesData)
       setCourses(coursesData)
       setGurukuls(gurukulData)
+      setAssignments(assignmentsData)
 
       // Set default template if available
       if (templatesData.length > 0 && !selectedTemplate) {
@@ -80,6 +104,8 @@ export default function CertificateManagement() {
       // Load actual certificates from database
       // For now, use empty array until certificates API is implemented
       setCertificates([])
+
+      console.log('Loaded assignments:', assignmentsData)
     } catch (error) {
       console.error('Error loading certificate data:', error)
       toast.error('Failed to load certificate data')
@@ -308,10 +334,11 @@ export default function CertificateManagement() {
             { id: 'certificates', name: 'Recent Certificates', icon: DocumentTextIcon },
             { id: 'templates', name: 'Templates', icon: DocumentTextIcon },
             { id: 'issue', name: 'Issue Certificates', icon: PlusIcon },
+            ...(canAssignTemplates ? [{ id: 'assignments', name: 'Template Assignments', icon: FunnelIcon }] : []),
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'certificates' | 'templates' | 'issue')}
+              onClick={() => setActiveTab(tab.id as 'certificates' | 'templates' | 'issue' | 'assignments')}
               className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
@@ -753,6 +780,121 @@ export default function CertificateManagement() {
         </Card>
       )}
 
+      {/* Template Assignments Tab */}
+      {activeTab === 'assignments' && canAssignTemplates && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Template Assignments</h2>
+              <Button onClick={() => setAssignmentModalOpen(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Assign Template
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {assignments.length === 0 ? (
+              <div className="text-center py-12">
+                <FunnelIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No Template Assignments</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Assign certificate templates to specific gurukuls and courses.
+                  Teachers will then have access to issue certificates using assigned templates.
+                </p>
+                <div className="mt-6">
+                  <Button onClick={() => setAssignmentModalOpen(true)}>
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Create Assignment
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Template
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assignment Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assigned To
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {assignments.map((assignment) => {
+                      const gurukul = gurukuls.find(g => g.id === assignment.gurukul_id)
+                      const course = courses.find(c => c.id === assignment.course_id)
+
+                      return (
+                        <tr key={assignment.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {assignment.template?.name || 'Unknown Template'}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {assignment.template?.type || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge variant={assignment.course_id ? 'default' : 'secondary'}>
+                              {assignment.course_id ? 'Course Specific' : 'Gurukul Wide'}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {gurukul?.name || 'Unknown Gurukul'}
+                            </div>
+                            {course && (
+                              <div className="text-sm text-gray-500">
+                                Course: {course.title}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {assignment.created_at ? formatDate(assignment.created_at) : 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                if (confirm('Are you sure you want to remove this assignment?')) {
+                                  try {
+                                    await deleteCertificateAssignment(assignment.id)
+                                    toast.success('Assignment removed successfully')
+                                    await loadData() // Reload data after deletion
+                                  } catch (error) {
+                                    console.error('Error deleting assignment:', error)
+                                    toast.error('Failed to remove assignment')
+                                  }
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Template Editor Modal */}
       <CertificateTemplateEditor
         template={editingTemplate}
@@ -776,6 +918,17 @@ export default function CertificateManagement() {
           template={templates.find((t) => t.id === selectedTemplate)}
         />
       )}
+
+      {/* Template Assignment Modal */}
+      <TemplateAssignmentModal
+        isOpen={assignmentModalOpen}
+        onClose={() => setAssignmentModalOpen(false)}
+        onSave={async () => {
+          await loadData() // Reload data after assignment
+          setAssignmentModalOpen(false)
+        }}
+        templates={templates}
+      />
     </div>
   )
 }

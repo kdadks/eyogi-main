@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
-      <body className="bg-gradient-to-tl from-orange-400 to-red-600">
+      <body className="bg-gradient-to-tl from-orange-400 to-red-600" suppressHydrationWarning>
         <NetworkErrorBoundary>
           <TransitionRouterProvider>
             <LenisProv />
