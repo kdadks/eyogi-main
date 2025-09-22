@@ -143,8 +143,53 @@ export interface CertificateTemplate {
   id: string
   name: string
   type: 'student' | 'teacher'
-  template_data: object
+  template_data: {
+    design?: {
+      colors?: {
+        primary?: string
+        secondary?: string
+        text?: string
+      }
+      layout?: {
+        orientation?: 'portrait' | 'landscape'
+        size?: 'a4' | 'letter'
+      }
+    }
+    logos?: {
+      eyogi_logo_url?: string
+      eyogi_logo_data?: string // Base64 image data
+      ssh_logo_url?: string
+      ssh_logo_data?: string // Base64 image data
+    }
+    signatures?: {
+      vice_chancellor_signature_url?: string
+      vice_chancellor_signature_data?: string // Base64 image data
+      president_signature_url?: string
+      president_signature_data?: string // Base64 image data
+    }
+    seal?: {
+      official_seal_url?: string
+      official_seal_data?: string // Base64 image data
+    }
+    placeholders?: {
+      student_name?: boolean
+      student_id?: boolean
+      course_name?: boolean
+      course_id?: boolean
+      gurukul_name?: boolean
+      completion_date?: boolean
+      certificate_number?: boolean
+      verification_code?: boolean
+    }
+    custom_text?: {
+      title?: string
+      subtitle?: string
+      header_text?: string
+      footer_text?: string
+    }
+  }
   is_active: boolean
+  created_by?: string
   created_at: string
   updated_at: string
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -11,6 +11,7 @@ import {
   UserIcon,
   PencilIcon,
   TrashIcon,
+  EyeIcon,
   MagnifyingGlassIcon,
   UserGroupIcon,
   AcademicCapIcon,
@@ -24,12 +25,13 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [viewingUser, setViewingUser] = useState<User | null>(null)
 
   useEffect(() => {
     loadUsers()
   }, [])
 
-  const filterUsers = React.useCallback(() => {
+  const filterUsers = useCallback(() => {
     let filtered = users
 
     // Filter by search term
@@ -262,7 +264,18 @@ export default function UserManagement() {
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex space-x-2">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              console.log('View button clicked for user:', user.id, user.full_name)
+                              setViewingUser(user)
+                            }}
+                            title="View User Details"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => setEditingUser(user)}>
                             <PencilIcon className="h-4 w-4" />
                           </Button>
@@ -283,6 +296,122 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* User Details Modal */}
+      {(() => {
+        if (viewingUser) {
+          console.log('Rendering modal for viewingUser:', viewingUser)
+          return true
+        }
+        return false
+      })() && viewingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">User Details</h2>
+              <button
+                onClick={() => setViewingUser(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingUser.full_name || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Email</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingUser.email}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Role</label>
+                      <Badge className={getRoleColor(viewingUser.role)} size="sm">
+                        {toSentenceCase(viewingUser.role)}
+                      </Badge>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Student ID</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingUser.student_id || 'Not assigned'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Age</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingUser.age || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Phone</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingUser.phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {viewingUser.date_of_birth ? formatDate(viewingUser.date_of_birth) : 'Not provided'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Status</label>
+                      <Badge
+                        className={viewingUser.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+                        size="sm"
+                      >
+                        {toSentenceCase(viewingUser.status || 'active')}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address Information */}
+                {viewingUser.address && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Street</label>
+                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.street || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">City</label>
+                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.city || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">State</label>
+                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.state || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Country</label>
+                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.country || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Account Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Created</label>
+                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingUser.created_at)}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Last Updated</label>
+                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingUser.updated_at)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

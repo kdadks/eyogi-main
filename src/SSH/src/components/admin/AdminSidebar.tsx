@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   XMarkIcon,
@@ -25,6 +25,20 @@ interface AdminSidebarProps {
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { user, signOut } = useAuth()
   const { canAccessResource, getUserRole, currentUser, isSuperAdminRole } = usePermissions()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return // Prevent double-clicks
+
+    setIsSigningOut(true)
+    try {
+      console.log('AdminSidebar: Starting logout...')
+      await signOut()
+    } catch (error) {
+      console.error('AdminSidebar: Logout error:', error)
+      setIsSigningOut(false) // Reset if there's an error
+    }
+  }
 
   const navigation = [
     {
@@ -187,11 +201,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
             <button
-              onClick={signOut}
-              className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              title="Sign out"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className={`p-1 rounded-md transition-colors ${
+                isSigningOut
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+              }`}
+              title={isSigningOut ? 'Signing out...' : 'Sign out'}
             >
-              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              {isSigningOut ? (
+                <div className="h-5 w-5 border-2 border-gray-300 border-t-red-600 rounded-full animate-spin" />
+              ) : (
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>

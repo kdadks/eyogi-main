@@ -151,13 +151,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut()
+      console.log('AuthContext: Starting signOut process...')
+
+      // Clear local state immediately
       setUser(null)
       setProfile(null)
-      // Redirect to admin login page
-      window.location.href = '/ssh-app/admin/login'
-    } catch {
-      // Handle sign out error silently
+      setLoading(false)
+      setInitialized(true)
+
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('AuthContext: Supabase signOut error:', error)
+      } else {
+        console.log('AuthContext: Supabase signOut successful')
+      }
+
+      // Clear any cached data from localStorage/sessionStorage
+      try {
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+      } catch (storageError) {
+        console.warn('AuthContext: Error clearing storage:', storageError)
+      }
+
+      // Force page reload to ensure clean state
+      console.log('AuthContext: Redirecting to login...')
+      window.location.replace('/ssh-app/admin/login')
+
+    } catch (error) {
+      console.error('AuthContext: signOut error:', error)
+      // Force redirect even if there's an error
+      setUser(null)
+      setProfile(null)
+      window.location.replace('/ssh-app/admin/login')
     }
   }
 

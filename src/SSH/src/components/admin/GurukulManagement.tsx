@@ -36,6 +36,7 @@ export default function GurukulManagement() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingGurukul, setEditingGurukul] = useState<Gurukul | null>(null)
+  const [viewingGurukul, setViewingGurukul] = useState<Gurukul | null>(null)
   const [formData, setFormData] = useState<GurukulFormData>({
     name: '',
     slug: '',
@@ -404,8 +405,13 @@ export default function GurukulManagement() {
                         {formatDate(gurukul.created_at)}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="ghost">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setViewingGurukul(gurukul)}
+                            title="View Gurukul Details"
+                          >
                             <EyeIcon className="h-4 w-4" />
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => handleEdit(gurukul)}>
@@ -435,6 +441,174 @@ export default function GurukulManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Gurukul Details Modal */}
+      {viewingGurukul && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">Gurukul Details</h2>
+              <button
+                onClick={() => setViewingGurukul(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="space-y-6">
+                {/* Header with Image */}
+                <div className="flex flex-col md:flex-row gap-6 mb-6">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Name</label>
+                        <p className="mt-1 text-sm text-gray-900 font-semibold">{viewingGurukul.name}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Slug</label>
+                        <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">/{viewingGurukul.slug}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <Badge
+                          className={
+                            viewingGurukul.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }
+                          size="sm"
+                        >
+                          {viewingGurukul.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Sort Order</label>
+                        <p className="mt-1 text-sm text-gray-900">{viewingGurukul.sort_order || 'Not set'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">ID</label>
+                        <p className="mt-1 text-xs text-gray-500 font-mono break-all">{viewingGurukul.id}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">URL Path</label>
+                        <p className="mt-1 text-sm text-blue-600">/gurukuls/{viewingGurukul.slug}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {viewingGurukul.image_url && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={viewingGurukul.image_url}
+                        alt={viewingGurukul.name}
+                        className="w-48 h-32 object-cover rounded-lg border shadow-sm"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
+                  <p className="text-sm text-gray-900 leading-relaxed">
+                    {viewingGurukul.description || 'No description provided'}
+                  </p>
+                </div>
+
+
+                {/* Statistics & Performance */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics & Performance</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="flex items-center">
+                        <BookOpenIcon className="h-8 w-8 text-blue-600" />
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-blue-900">Total Courses</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {courseCounts[viewingGurukul.id] || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="flex items-center">
+                        <GlobeAltIcon className="h-8 w-8 text-green-600" />
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-green-900">Status</p>
+                          <p className="text-lg font-bold text-green-600">
+                            {viewingGurukul.is_active ? 'Live' : 'Offline'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 bg-orange-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">#</span>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-orange-900">Priority</p>
+                          <p className="text-lg font-bold text-orange-600">
+                            {viewingGurukul.sort_order || 'Not set'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technical Details */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Technical Details</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Database ID</label>
+                        <p className="mt-1 text-xs text-gray-500 font-mono break-all bg-white px-2 py-1 rounded border">{viewingGurukul.id}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Public URL</label>
+                        <p className="mt-1 text-sm text-blue-600 bg-white px-2 py-1 rounded border">
+                          /gurukuls/{viewingGurukul.slug}
+                        </p>
+                      </div>
+                      {viewingGurukul.image_url && (
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">Image URL</label>
+                          <p className="mt-1 text-xs text-gray-500 break-all bg-white px-2 py-1 rounded border">
+                            {viewingGurukul.image_url}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timestamps */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Timestamps</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Created</label>
+                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingGurukul.created_at)}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Last Updated</label>
+                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingGurukul.updated_at)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

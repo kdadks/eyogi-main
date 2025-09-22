@@ -125,7 +125,7 @@ export default function CoursesPage() {
         {/* Rolling Text Banner */}
         <RollingText text="🕉️ Discover Ancient Hindu Wisdom Through Expert-Led Online Courses 🕉️" />
 
-        <div className="min-h-screen bg-gray-50 page-with-header">
+        <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm">
           <div className="container-max section-padding">

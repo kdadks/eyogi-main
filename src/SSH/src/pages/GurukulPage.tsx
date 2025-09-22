@@ -111,7 +111,7 @@ export default function GurukulPage() {
         {/* Rolling Text Banner */}
         <RollingText text="🕉️ Explore Traditional Hindu Gurukuls - Where Ancient Wisdom Meets Modern Learning 🕉️" />
 
-        <div className="min-h-screen bg-gray-50 page-with-header">
+        <div className="min-h-screen bg-gray-50">
         {/* Hero Section (with Quick Navigation) */}
         <section className="bg-gradient-to-r from-orange-50 to-red-50">
           <div className="container-max section-padding">

@@ -2,15 +2,25 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Certificate, Enrollment } from '@/types'
+import { Certificate, Enrollment, CertificateTemplate, Course, User } from '@/types'
 import {
   // getStudentCertificates, // Available for future use
   issueCertificate,
   bulkIssueCertificates,
 } from '@/lib/api/certificates'
+import {
+  getCertificateTemplates,
+  deleteCertificateTemplate,
+  duplicateCertificateTemplate
+} from '@/lib/api/certificateTemplates'
 import { getAllEnrollments } from '@/lib/api/enrollments'
+import { getCourses } from '@/lib/api/courses'
+import { getGurukuls } from '@/lib/api/gurukuls'
+import { generateCertificatePDF, CertificateData } from '@/lib/pdf/certificateGenerator'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import CertificateTemplateEditor from './CertificateTemplateEditor'
+import CertificatePreviewModal from './CertificatePreviewModal'
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -19,24 +29,29 @@ import {
   CheckCircleIcon,
   ClockIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
+  TrashIcon,
+  DocumentDuplicateIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline'
-
-interface CertificateTemplate {
-  id: string
-  name: string
-  type: 'student' | 'teacher'
-  is_active: boolean
-  created_at: string
-}
 
 export default function CertificateManagement() {
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [templates, setTemplates] = useState<CertificateTemplate[]>([])
   const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [gurukuls, setGurukuls] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'certificates' | 'templates' | 'issue'>('certificates')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedEnrollments, setSelectedEnrollments] = useState<Set<string>>(new Set())
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [selectedGurukul, setSelectedGurukul] = useState<string>('')
+  const [selectedCourse, setSelectedCourse] = useState<string>('')
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<CertificateTemplate | undefined>(undefined)
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [previewData, setPreviewData] = useState<CertificateData | null>(null)
 
   useEffect(() => {
     loadData()
@@ -44,17 +59,27 @@ export default function CertificateManagement() {
 
   const loadData = async () => {
     try {
-      // Load all certificates (we'll need to aggregate from all students)
-      const allEnrollments = await getAllEnrollments()
+      // Load all data in parallel
+      const [allEnrollments, templatesData, coursesData, gurukulData] = await Promise.all([
+        getAllEnrollments(),
+        getCertificateTemplates(),
+        getCourses(),
+        getGurukuls()
+      ])
+
       const completedWithoutCerts = allEnrollments.filter(
         (e) => e.status === 'completed' && !e.certificate_issued,
       )
 
       setCompletedEnrollments(completedWithoutCerts)
+      setTemplates(templatesData)
+      setCourses(coursesData)
+      setGurukuls(gurukulData)
 
-      // Load actual certificate templates from database
-      // For now, use empty array until templates API is implemented
-      setTemplates([])
+      // Set default template if available
+      if (templatesData.length > 0 && !selectedTemplate) {
+        setSelectedTemplate(templatesData[0].id)
+      }
 
       // Load actual certificates from database
       // For now, use empty array until certificates API is implemented
@@ -68,6 +93,11 @@ export default function CertificateManagement() {
   }
 
   const handleIssueCertificate = async (enrollmentId: string) => {
+    if (!selectedTemplate) {
+      toast.error('Please select a certificate template')
+      return
+    }
+
     try {
       await issueCertificate(enrollmentId)
       await loadData()
@@ -85,6 +115,11 @@ export default function CertificateManagement() {
       return
     }
 
+    if (!selectedTemplate) {
+      toast.error('Please select a certificate template')
+      return
+    }
+
     try {
       await bulkIssueCertificates(Array.from(selectedEnrollments))
       await loadData()
@@ -93,6 +128,123 @@ export default function CertificateManagement() {
     } catch (error) {
       console.error('Error issuing certificates:', error)
       toast.error('Failed to issue certificates')
+    }
+  }
+
+  const handleTemplateAction = (action: 'create' | 'edit' | 'duplicate', template?: CertificateTemplate) => {
+    if (action === 'create') {
+      setEditingTemplate(undefined)
+      setTemplateEditorOpen(true)
+    } else if (action === 'edit' && template) {
+      setEditingTemplate(template)
+      setTemplateEditorOpen(true)
+    } else if (action === 'duplicate' && template) {
+      handleDuplicateTemplate(template.id)
+    }
+  }
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm('Are you sure you want to delete this template?')) {
+      return
+    }
+
+    try {
+      await deleteCertificateTemplate(templateId)
+      await loadData()
+      toast.success('Template deleted successfully')
+    } catch (error) {
+      console.error('Error deleting template:', error)
+      toast.error('Failed to delete template')
+    }
+  }
+
+  const handleDuplicateTemplate = async (templateId: string) => {
+    try {
+      await duplicateCertificateTemplate(templateId)
+      await loadData()
+      toast.success('Template duplicated successfully')
+    } catch (error) {
+      console.error('Error duplicating template:', error)
+      toast.error('Failed to duplicate template')
+    }
+  }
+
+  const handleTemplateSave = (template: CertificateTemplate) => {
+    setTemplates(prev => {
+      const index = prev.findIndex(t => t.id === template.id)
+      if (index >= 0) {
+        const updated = [...prev]
+        updated[index] = template
+        return updated
+      } else {
+        return [...prev, template]
+      }
+    })
+  }
+
+  const createCertificateData = (enrollment: Enrollment): CertificateData => {
+    return {
+      studentName: enrollment.student?.full_name || 'Student Name',
+      studentId: enrollment.student?.student_id || enrollment.student?.full_name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() + Math.random().toString().slice(-3) || 'STU001',
+      courseName: enrollment.course?.title || 'Course Name',
+      courseId: enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+      gurukulName: enrollment.course?.gurukul?.name || 'Gurukul Name',
+      completionDate: enrollment.completed_at || new Date().toISOString(),
+      certificateNumber: `CERT-${Date.now()}-${enrollment.id.slice(-4)}`,
+      verificationCode: Math.random().toString(36).substr(2, 9).toUpperCase()
+    }
+  }
+
+  const handleViewCertificate = (enrollment: Enrollment) => {
+    const certificateData = createCertificateData(enrollment)
+    setPreviewData(certificateData)
+    setPreviewModalOpen(true)
+  }
+
+  const handleDownloadCertificate = async (enrollment: Enrollment) => {
+    try {
+      const template = templates.find(t => t.id === selectedTemplate)
+      const certificateData = createCertificateData(enrollment)
+
+      const pdfBlob = await generateCertificatePDF(certificateData, template)
+
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `certificate-${certificateData.studentName.replace(/\s+/g, '-')}-${certificateData.courseId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Certificate downloaded successfully')
+    } catch (error) {
+      console.error('Error downloading certificate:', error)
+      toast.error('Failed to download certificate')
+    }
+  }
+
+  const handleReissueCertificate = async (certificate: Certificate) => {
+    if (!confirm('Are you sure you want to reissue this certificate? This will create a new version with updated data.')) {
+      return
+    }
+
+    try {
+      // Find the corresponding enrollment to reissue the certificate
+      const enrollment = completedEnrollments.find(e => e.id === certificate.enrollment_id)
+      if (!enrollment) {
+        toast.error('Cannot find enrollment record for this certificate')
+        return
+      }
+
+      // Reset the certificate_issued flag and reissue
+      await issueCertificate(enrollment.id)
+      await loadData()
+      toast.success('Certificate has been reissued successfully')
+    } catch (error) {
+      console.error('Error reissuing certificate:', error)
+      toast.error('Failed to reissue certificate')
     }
   }
 
@@ -114,11 +266,16 @@ export default function CertificateManagement() {
     }
   }
 
-  const filteredEnrollments = completedEnrollments.filter(
-    (enrollment) =>
+  const filteredEnrollments = completedEnrollments.filter((enrollment) => {
+    const matchesSearch =
       enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesGurukul = !selectedGurukul || enrollment.course?.gurukul_id === selectedGurukul
+    const matchesCourse = !selectedCourse || enrollment.course_id === selectedCourse
+
+    return matchesSearch && matchesGurukul && matchesCourse
+  })
 
   if (loading) {
     return (
@@ -132,7 +289,7 @@ export default function CertificateManagement() {
     <div className="space-y-6">
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex gap-8">
           {[
             { id: 'certificates', name: 'Recent Certificates', icon: DocumentTextIcon },
             { id: 'templates', name: 'Templates', icon: DocumentTextIcon },
@@ -141,7 +298,7 @@ export default function CertificateManagement() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'certificates' | 'templates' | 'issue')}
-              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -205,12 +362,43 @@ export default function CertificateManagement() {
                           {formatDate(certificate.issued_at)}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="ghost">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const certificateData: CertificateData = {
+                                  studentName: certificate.student?.full_name || 'Student Name',
+                                  studentId: certificate.student?.student_id || certificate.student?.full_name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() + Math.random().toString().slice(-3) || 'STU001',
+                                  courseName: certificate.course?.title || 'Course Name',
+                                  courseId: certificate.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+                                  gurukulName: certificate.course?.gurukul?.name || 'Gurukul Name',
+                                  completionDate: certificate.issued_at,
+                                  certificateNumber: certificate.certificate_number,
+                                  verificationCode: certificate.verification_code
+                                }
+                                setPreviewData(certificateData)
+                                setPreviewModalOpen(true)
+                              }}
+                              title="View Certificate"
+                            >
                               <EyeIcon className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              title="Download Certificate"
+                            >
                               <ArrowDownTrayIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleReissueCertificate(certificate)}
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                              title="Reissue Certificate"
+                            >
+                              <PencilIcon className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>
@@ -230,47 +418,82 @@ export default function CertificateManagement() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Certificate Templates</h2>
-              <Button>
+              <Button onClick={() => handleTemplateAction('create')}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 New Template
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <Card key={template.id} className="card-hover">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <DocumentTextIcon className="h-8 w-8 text-orange-600" />
-                      <Badge
-                        className={
-                          template.is_active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }
-                      >
-                        {template.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-                    <h3 className="font-semibold mb-2">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Type:{' '}
-                      {template.type === 'student' ? 'Student Certificate' : 'Teacher Certificate'}
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <EyeIcon className="h-4 w-4 mr-1" />
-                        Preview
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        Edit
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {templates.length === 0 ? (
+              <div className="text-center py-8">
+                <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No certificate templates
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Create your first certificate template to get started.
+                </p>
+                <Button onClick={() => handleTemplateAction('create')}>
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Create Template
+                </Button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {templates.map((template) => (
+                  <Card key={template.id} className="card-hover">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <DocumentTextIcon className="h-8 w-8 text-orange-600" />
+                        <Badge
+                          className={
+                            template.is_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }
+                        >
+                          {template.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <h3 className="font-semibold mb-2">{template.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Type: {template.type === 'student' ? 'Student Certificate' : 'Teacher Certificate'}
+                      </p>
+                      <p className="text-xs text-gray-500 mb-4">
+                        Created: {formatDate(template.created_at)}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleTemplateAction('edit', template)}
+                        >
+                          <PencilIcon className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleTemplateAction('duplicate', template)}
+                        >
+                          <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                          Copy
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -279,25 +502,100 @@ export default function CertificateManagement() {
       {activeTab === 'issue' && (
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-              <h2 className="text-xl font-bold">Issue Certificates</h2>
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <h2 className="text-xl font-bold">Issue Certificates</h2>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search students, courses..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search students, courses..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
-                  />
+              {/* Filters and Template Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Certificate Template
+                  </label>
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+                  >
+                    <option value="">Select Template</option>
+                    {templates.filter(t => t.is_active).map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Filter by Gurukul
+                  </label>
+                  <select
+                    value={selectedGurukul}
+                    onChange={(e) => setSelectedGurukul(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+                  >
+                    <option value="">All Gurukuls</option>
+                    {gurukuls.map((gurukul) => (
+                      <option key={gurukul.id} value={gurukul.id}>
+                        {gurukul.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Filter by Course
+                  </label>
+                  <select
+                    value={selectedCourse}
+                    onChange={(e) => setSelectedCourse(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+                  >
+                    <option value="">All Courses</option>
+                    {courses
+                      .filter(course => !selectedGurukul || course.gurukul_id === selectedGurukul)
+                      .map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.title}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedGurukul('')
+                      setSelectedCourse('')
+                      setSearchTerm('')
+                    }}
+                    className="w-full"
+                  >
+                    <FunnelIcon className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
                 </div>
               </div>
             </div>
 
             {selectedEnrollments.size > 0 && (
-              <div className="flex items-center space-x-4 p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-4 p-4 bg-green-50 rounded-lg">
                 <span className="text-sm font-medium">
                   {selectedEnrollments.size} enrollment{selectedEnrollments.size !== 1 ? 's' : ''}{' '}
                   selected
@@ -368,28 +666,51 @@ export default function CertificateManagement() {
                           <div className="text-sm font-medium text-gray-900">
                             {enrollment.student?.full_name}
                           </div>
-                          <div className="text-sm text-gray-500">{enrollment.student_id}</div>
+                          <div className="text-sm text-gray-500">
+                            ID: {enrollment.student?.student_id || enrollment.student?.full_name?.split(' ').map(n => n.charAt(0)).join('').toUpperCase() + Math.random().toString().slice(-3) || 'STU001'}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">
                             {enrollment.course?.title}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {enrollment.course?.course_number}
+                            Course #{enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {enrollment.completed_at ? formatDate(enrollment.completed_at) : '-'}
                         </td>
                         <td className="px-6 py-4">
-                          <Button
-                            size="sm"
-                            onClick={() => handleIssueCertificate(enrollment.id)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <DocumentTextIcon className="h-4 w-4 mr-1" />
-                            Issue Certificate
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewCertificate(enrollment)}
+                              disabled={!selectedTemplate}
+                              title="View Certificate"
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleIssueCertificate(enrollment.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                              disabled={!selectedTemplate}
+                            >
+                              <DocumentTextIcon className="h-4 w-4 mr-1" />
+                              Issue
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownloadCertificate(enrollment)}
+                              disabled={!selectedTemplate}
+                              title="Download PDF"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -399,6 +720,30 @@ export default function CertificateManagement() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Template Editor Modal */}
+      <CertificateTemplateEditor
+        template={editingTemplate}
+        isOpen={templateEditorOpen}
+        onClose={() => {
+          setTemplateEditorOpen(false)
+          setEditingTemplate(undefined)
+        }}
+        onSave={handleTemplateSave}
+      />
+
+      {/* Certificate Preview Modal */}
+      {previewData && (
+        <CertificatePreviewModal
+          isOpen={previewModalOpen}
+          onClose={() => {
+            setPreviewModalOpen(false)
+            setPreviewData(null)
+          }}
+          certificateData={previewData}
+          template={templates.find(t => t.id === selectedTemplate)}
+        />
       )}
     </div>
   )

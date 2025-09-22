@@ -11,6 +11,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
+import CertificateManagement from './components/admin/CertificateManagement'
 
 // Loading component
 const LoadingFallback = () => (
@@ -83,10 +84,7 @@ function AdminApp() {
                   path="certificates"
                   element={
                     <AdminProtectedRoute>
-                      <div className="p-6">
-                        <h1 className="text-2xl font-bold">Certificate Management</h1>
-                        <p>Coming in Phase 3: Certificate templates and generation</p>
-                      </div>
+                      <CertificateManagement />
                     </AdminProtectedRoute>
                   }
                 />
