@@ -5,8 +5,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "yarn build:next && yarn build:ssh",
-    "build:next": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' NEXT_TELEMETRY_DISABLED=1 next build",
+    "build": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' next build && yarn build:ssh",
+    "build:next": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' next build",
     "build:ssh": "cd src/SSH && npm install --include=dev && npx vite build && cd ../.. && node copy-ssh-files.js",
     "build:clean": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' rimraf .next && next build",
     "build:fast": "cross-env NODE_OPTIONS='--no-deprecation --max-old-space-size=8192' NEXT_TELEMETRY_DISABLED=1 next build",
