@@ -20,11 +20,13 @@ const signUpSchema = z
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
-    full_name: z.string()
+    full_name: z
+      .string()
       .min(2, 'Full name must be at least 2 characters')
       .regex(/^[a-zA-Z\s']+$/, 'Full name can only contain letters, spaces, and apostrophes'),
-    role: z.enum(['student', 'teacher']),
-    phone: z.string()
+    role: z.enum(['student', 'teacher', 'parent']),
+    phone: z
+      .string()
       .optional()
       .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
     date_of_birth: z.string().optional(),
@@ -183,7 +185,10 @@ export default function WebsiteAuthModal({
           </CardHeader>
           <CardContent>
             {mode === 'signin' ? (
-              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="flex flex-col gap-6">
+              <form
+                onSubmit={signInForm.handleSubmit(handleSignIn)}
+                className="flex flex-col gap-6"
+              >
                 <Input
                   label="Email address"
                   type="email"
@@ -218,7 +223,10 @@ export default function WebsiteAuthModal({
                 </div>
               </form>
             ) : (
-              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="flex flex-col gap-6">
+              <form
+                onSubmit={signUpForm.handleSubmit(handleSignUp)}
+                className="flex flex-col gap-6"
+              >
                 <Input
                   label="Full Name"
                   {...signUpForm.register('full_name')}
@@ -262,6 +270,7 @@ export default function WebsiteAuthModal({
                     >
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
+                      <option value="parent">Parent</option>
                     </select>
                   </div>
 

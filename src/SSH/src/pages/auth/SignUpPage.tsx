@@ -14,19 +14,26 @@ const signUpSchema = z
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
-    full_name: z.string()
+    full_name: z
+      .string()
       .min(2, 'Full name must be at least 2 characters')
       .regex(/^[a-zA-Z\s']+$/, 'Full name can only contain letters, spaces, and apostrophes'),
     age: z.number().min(4, 'Age must be at least 4').max(100, 'Age must be less than 100'),
-    role: z.enum(['student', 'teacher']),
-    phone: z.string()
+    role: z.enum(['student', 'teacher', 'parent']),
+    phone: z
+      .string()
       .optional()
       .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
-    parent_guardian_name: z.string()
+    parent_guardian_name: z
+      .string()
       .optional()
-      .refine((val) => !val || /^[a-zA-Z\s']+$/.test(val), 'Name can only contain letters, spaces, and apostrophes'),
+      .refine(
+        (val) => !val || /^[a-zA-Z\s']+$/.test(val),
+        'Name can only contain letters, spaces, and apostrophes',
+      ),
     parent_guardian_email: z.string().email().optional().or(z.literal('')),
-    parent_guardian_phone: z.string()
+    parent_guardian_phone: z
+      .string()
       .optional()
       .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
   })
@@ -78,7 +85,7 @@ export default function SignUpPage() {
         email: data.email,
         password: data.password,
         full_name: data.full_name,
-        role: data.role as 'student' | 'teacher',
+        role: data.role as 'student' | 'teacher' | 'parent',
         phone: data.phone,
       })
 
@@ -160,6 +167,7 @@ export default function SignUpPage() {
                   >
                     <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
+                    <option value="parent">Parent</option>
                   </select>
                   {errors.role && <p className="text-sm text-red-600">{errors.role.message}</p>}
                 </div>

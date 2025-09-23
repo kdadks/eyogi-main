@@ -9,8 +9,9 @@ export interface Database {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: 'student' | 'teacher' | 'admin'
+          role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
           age: number | null
+          date_of_birth: string | null
           phone: string | null
           country: string | null
           address_line_1: string | null
@@ -22,6 +23,7 @@ export interface Database {
           parent_guardian_email: string | null
           parent_guardian_phone: string | null
           student_id: string | null
+          grade: string | null
           created_at: string
           updated_at: string
         }
@@ -30,8 +32,9 @@ export interface Database {
           email: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: 'student' | 'teacher' | 'admin'
+          role?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
           age?: number | null
+          date_of_birth?: string | null
           phone?: string | null
           country?: string | null
           address_line_1?: string | null
@@ -43,6 +46,7 @@ export interface Database {
           parent_guardian_email?: string | null
           parent_guardian_phone?: string | null
           student_id?: string | null
+          grade?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -51,8 +55,9 @@ export interface Database {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: 'student' | 'teacher' | 'admin'
+          role?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
           age?: number | null
+          date_of_birth?: string | null
           phone?: string | null
           country?: string | null
           address_line_1?: string | null
@@ -64,6 +69,7 @@ export interface Database {
           parent_guardian_email?: string | null
           parent_guardian_phone?: string | null
           student_id?: string | null
+          grade?: string | null
           created_at?: string
           updated_at?: string
         }

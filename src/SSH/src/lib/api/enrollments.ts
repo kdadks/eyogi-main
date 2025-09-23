@@ -249,3 +249,63 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
     return []
   }
 }
+
+/**
+ * Get enrollments for all children of a parent
+ */
+export async function getEnrollmentsByParent(parentId: string): Promise<Enrollment[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        *,
+        courses (
+          id,
+          title,
+          description,
+          duration,
+          level,
+          price,
+          thumbnail_url,
+          gurukuls (
+            id,
+            name,
+            slug
+          )
+        ),
+        profiles!enrollments_student_id_fkey (
+          id,
+          full_name,
+          email,
+          student_id
+        )
+      `,
+      )
+      .eq('profiles.parent_id', parentId)
+      .order('enrolled_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching parent enrollments:', error)
+      return []
+    }
+
+    // Transform the data to match our interface
+    const transformedData =
+      data?.map((enrollment) => ({
+        ...enrollment,
+        course: enrollment.courses
+          ? {
+              ...enrollment.courses,
+              gurukul: enrollment.courses.gurukuls,
+            }
+          : null,
+        student: enrollment.profiles || null,
+      })) || []
+
+    return transformedData
+  } catch (error) {
+    console.error('Error fetching parent enrollments:', error)
+    return []
+  }
+}

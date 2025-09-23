@@ -30,6 +30,8 @@ export default function DashboardPage() {
         return <Navigate to="/dashboard/student" replace />
       case 'teacher':
         return <Navigate to="/dashboard/teacher" replace />
+      case 'parent':
+        return <Navigate to="/dashboard/parent" replace />
       case 'admin':
         return <Navigate to="/dashboard/admin" replace />
       default:

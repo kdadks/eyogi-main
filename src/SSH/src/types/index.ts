@@ -37,13 +37,21 @@ export interface User {
   status?: 'active' | 'inactive' | 'suspended' | 'pending_verification'
   date_of_birth?: string | null
   phone?: string | null
-  address?: Address | null
+  address_line_1?: string | null
+  address_line_2?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+  country?: string | null
   emergency_contact?: EmergencyContact | null
   preferences?: UserPreferences
   age?: number | null
   student_id?: string | null
   teacher_id?: string | null
   parent_id?: string | null
+  parent_guardian_name?: string | null
+  parent_guardian_email?: string | null
+  parent_guardian_phone?: string | null
   created_at: string
   updated_at: string
 }

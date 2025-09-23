@@ -18,6 +18,7 @@ import GurukulPage from './pages/GurukulPage'
 import StudentDashboard from './pages/dashboard/StudentDashboard'
 import TeacherDashboard from './pages/dashboard/TeacherDashboard'
 import DashboardPage from './pages/dashboard/DashboardPage'
+import ParentsDashboard from './pages/dashboard/parents/ParentsDashboard'
 
 // Admin Components
 import AdminLogin from './components/auth/AdminLogin'
@@ -97,6 +98,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="teacher">
                   <TeacherDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/parent"
+              element={
+                <ProtectedRoute requiredRole="parent">
+                  <ParentsDashboard />
                 </ProtectedRoute>
               }
             />
