@@ -9,6 +9,7 @@ import { getStudentCertificates } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
 import { enrollInCourse } from '../../lib/api/enrollments'
 import { getUserProfile } from '../../lib/api/users'
+import { getCountryName, getStateName } from '../../lib/address-utils'
 import toast from 'react-hot-toast'
 import type { Database } from '../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -1177,29 +1178,111 @@ export default function StudentDashboard() {
               </div>
               {/* Profile Information */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                <div className="flex items-center space-x-6 mb-6">
-                  <div className="h-20 w-20 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
-                    <UserIcon className="h-10 w-10 text-white" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <UserIcon className="h-8 w-8 text-gray-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Personal Information</h3>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">{user?.full_name}</h3>
-                    <p className="text-gray-600">{user?.email}</p>
-                    <p className="text-sm text-gray-500">
-                      Role: {getUserRole()?.replace('_', ' ').toUpperCase()}
-                    </p>
+                  <button
+                    onClick={async () => {
+                      if (!studentProfile) {
+                        await loadStudentProfile()
+                      }
+                      setIsProfileModalOpen(true)
+                    }}
+                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                  >
+                    <span>✏️</span>
+                    <span>Edit Profile</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Personal Information */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Personal Details
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Full Name</label>
+                        <p className="text-gray-900">{user?.full_name || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Email</label>
+                        <p className="text-gray-900">{user?.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Phone</label>
+                        <p className="text-gray-900">{studentProfile?.phone || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Date of Birth</label>
+                        <p className="text-gray-900">
+                          {studentProfile?.date_of_birth
+                            ? new Date(studentProfile.date_of_birth).toLocaleDateString()
+                            : 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Role</label>
+                        <p className="text-gray-900">
+                          {getUserRole()?.replace('_', ' ').toUpperCase() || 'Student'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Address Information */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Address Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Street Address</label>
+                        <p className="text-gray-900">
+                          {studentProfile?.address_line_1 || 'Not provided'}
+                        </p>
+                        {studentProfile?.address_line_2 && (
+                          <p className="text-gray-900">{studentProfile.address_line_2}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Show city only if available */}
+                        {studentProfile?.city && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">City</label>
+                            <p className="text-gray-900">{studentProfile.city}</p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">State</label>
+                          <p className="text-gray-900">
+                            {studentProfile?.state && studentProfile?.country
+                              ? getStateName(studentProfile.country, studentProfile.state) ||
+                                studentProfile.state
+                              : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">ZIP Code</label>
+                          <p className="text-gray-900">
+                            {studentProfile?.zip_code || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Country</label>
+                          <p className="text-gray-900">
+                            {studentProfile?.country
+                              ? getCountryName(studentProfile.country) || studentProfile.country
+                              : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={async () => {
-                    if (!studentProfile) {
-                      await loadStudentProfile()
-                    }
-                    setIsProfileModalOpen(true)
-                  }}
-                  className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300"
-                >
-                  Edit Profile
-                </button>
               </div>
             </motion.div>
           )}
@@ -1378,9 +1461,9 @@ export default function StudentDashboard() {
                 } as Profile)
               : (user as Profile)
           }
-          onUpdate={() => {
-            // Refresh user data after profile update
-            window.location.reload()
+          onUpdate={async () => {
+            // Dynamically refresh profile data after update
+            await loadStudentProfile()
           }}
         />
       )}

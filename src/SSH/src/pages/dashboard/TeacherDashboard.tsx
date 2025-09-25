@@ -20,7 +20,8 @@ import {
 } from '@/lib/api/certificates'
 import { getTeacherCertificateAssignments } from '@/lib/api/certificateAssignments'
 import { getGurukuls } from '@/lib/api/gurukuls'
-import { updateUserProfile, getUserProfile } from '@/lib/api/users'
+import { getUserProfile } from '@/lib/api/users'
+import { getCountryName, getStateName } from '@/lib/address-utils'
 import type { Database } from '@/lib/supabase'
 import {
   formatCurrency,
@@ -103,7 +104,7 @@ export default function TeacherDashboard() {
   const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)
   const [activeView, setActiveView] = useState<
-    'overview' | 'courses' | 'students' | 'certificates' | 'analytics' | 'profile' | 'settings'
+    'overview' | 'courses' | 'students' | 'certificates' | 'analytics' | 'settings'
   >('overview')
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
@@ -300,19 +301,34 @@ export default function TeacherDashboard() {
     newOutcomes[index] = value
     setLearningOutcomes(newOutcomes)
   }
-  // Calculate stats
+  // Calculate stats from real database data
   const stats = {
     totalCourses: courses.length,
-    totalStudents: enrollments.length,
+    // Count unique students (not total enrollments)
+    totalStudents: new Set(enrollments.map((e) => e.student_id).filter(Boolean)).size,
+    // Total enrollments for reference
+    totalEnrollments: enrollments.length,
     pendingApprovals: enrollments.filter((e) => e.status === 'pending').length,
     completedCourses: enrollments.filter((e) => e.status === 'completed').length,
     certificatesIssued: enrollments.filter((e) => e.certificate_issued).length,
     pendingCertificates: enrollments.filter(
       (e) => e.status === 'completed' && !e.certificate_issued,
     ).length,
+    // Calculate revenue from paid enrollments only - handles currency conversion and edge cases
     totalRevenue: enrollments
-      .filter((e) => e.payment_status === 'paid')
-      .reduce((sum, e) => sum + (e.course?.price || 0), 0),
+      .filter((e) => e.payment_status === 'paid' && e.course?.price && e.course.price > 0)
+      .reduce((sum, e) => {
+        const price = e.course?.price || 0
+        // TODO: Add currency conversion when multiple currencies are supported
+        return sum + price
+      }, 0),
+    // Calculate completion rate percentage
+    completionRate:
+      enrollments.length > 0
+        ? Math.round(
+            (enrollments.filter((e) => e.status === 'completed').length / enrollments.length) * 100,
+          )
+        : 0,
     averageRating: 0, // No rating system implemented yet
   }
   // Generate recent activity from real enrollment data
@@ -507,6 +523,7 @@ export default function TeacherDashboard() {
                   <UserIcon className="h-6 w-6 text-gray-600" />
                 </motion.div>
               </motion.div>
+              {/* Rating badge hidden until rating system is implemented
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -514,9 +531,10 @@ export default function TeacherDashboard() {
               >
                 <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200 px-4 py-2 text-sm font-semibold shadow-lg">
                   <StarIcon className="h-5 w-5 mr-2 fill-current" />
-                  {stats.averageRating} Rating
+                  Rating System Coming Soon
                 </Badge>
               </motion.div>
+              */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -563,7 +581,6 @@ export default function TeacherDashboard() {
                 badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null,
               },
               { id: 'analytics', name: 'Analytics', icon: ArrowTrendingUpIcon, badge: null },
-              { id: 'profile', name: 'Profile', icon: UserIcon, badge: null },
               { id: 'settings', name: 'Settings', icon: Cog6ToothIcon, badge: null },
             ].map((tab, index) => (
               <motion.button
@@ -581,7 +598,6 @@ export default function TeacherDashboard() {
                       | 'students'
                       | 'certificates'
                       | 'analytics'
-                      | 'profile'
                       | 'settings',
                   )
                   // Scroll to top of page
@@ -810,9 +826,7 @@ export default function TeacherDashboard() {
                             High Student Satisfaction
                           </span>
                         </div>
-                        <p className="text-sm text-blue-700">
-                          Average rating of {stats.averageRating}/5.0 from students
-                        </p>
+                        <p className="text-sm text-blue-700">Student rating system coming soon</p>
                       </div>
                       <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
                         <div className="flex items-center space-x-2 mb-2">
@@ -1462,8 +1476,8 @@ export default function TeacherDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[
                   {
-                    title: 'Average Rating',
-                    value: stats.averageRating,
+                    title: 'Rating System',
+                    value: 'Coming Soon',
                     icon: StarIcon,
                     gradient: 'from-yellow-500 via-orange-500 to-red-500',
                     bgGradient: 'from-yellow-50 via-orange-100 to-red-100',
@@ -1692,68 +1706,7 @@ export default function TeacherDashboard() {
               </motion.div>
             </motion.div>
           )}
-          {/* Profile Tab */}
-          {activeView === 'profile' && (
-            <motion.div
-              key="profile"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="space-y-8"
-            >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                  My Profile 👤
-                </h2>
-                <p className="text-xl text-gray-600">
-                  Manage your personal information and preferences
-                </p>
-              </div>
-              {/* Teaching Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{stats.totalCourses}</div>
-                  <div className="text-sm text-gray-500">Total Courses</div>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-green-600">{stats.totalStudents}</div>
-                  <div className="text-sm text-gray-500">Total Students</div>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {stats.certificatesIssued}
-                  </div>
-                  <div className="text-sm text-gray-500">Certificates Issued</div>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-purple-600">{stats.totalRevenue}</div>
-                  <div className="text-sm text-gray-500">Total Revenue</div>
-                </div>
-              </div>
-              {/* Profile Information */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                <div className="flex items-center space-x-6 mb-6">
-                  <div className="h-20 w-20 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
-                    <UserIcon className="h-10 w-10 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">{user?.full_name}</h3>
-                    <p className="text-gray-600">{user?.email}</p>
-                    <p className="text-sm text-gray-500">
-                      Role: {user?.role?.replace('_', ' ').toUpperCase() || 'Teacher'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsProfileModalOpen(true)}
-                  className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300"
-                >
-                  Edit Profile
-                </button>
-              </div>
-            </motion.div>
-          )}
+
           {/* Settings Tab */}
           {activeView === 'settings' && (
             <motion.div
@@ -1832,13 +1785,21 @@ export default function TeacherDashboard() {
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-gray-500">City</label>
-                          <p className="text-gray-900">{teacherProfile?.city || 'Not provided'}</p>
-                        </div>
+                        {/* Show city only if available */}
+                        {teacherProfile?.city && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">City</label>
+                            <p className="text-gray-900">{teacherProfile.city}</p>
+                          </div>
+                        )}
                         <div>
                           <label className="text-sm font-medium text-gray-500">State</label>
-                          <p className="text-gray-900">{teacherProfile?.state || 'Not provided'}</p>
+                          <p className="text-gray-900">
+                            {teacherProfile?.state && teacherProfile?.country
+                              ? getStateName(teacherProfile.country, teacherProfile.state) ||
+                                teacherProfile.state
+                              : 'Not provided'}
+                          </p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -1851,7 +1812,9 @@ export default function TeacherDashboard() {
                         <div>
                           <label className="text-sm font-medium text-gray-500">Country</label>
                           <p className="text-gray-900">
-                            {teacherProfile?.country || 'Not provided'}
+                            {teacherProfile?.country
+                              ? getCountryName(teacherProfile.country) || teacherProfile.country
+                              : 'Not provided'}
                           </p>
                         </div>
                       </div>
