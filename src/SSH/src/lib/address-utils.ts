@@ -594,6 +594,38 @@ export const getCountryName = (countryCode: string): string => {
   const country = countries.find((c) => c.code === countryCode)
   return country?.name || ''
 }
+
+/**
+ * Get country code by country name (reverse lookup)
+ * @param countryName - The full country name
+ * @returns The 2-letter country code or empty string if not found
+ */
+export const getCountryCodeByName = (countryName: string): string => {
+  if (!countryName) return ''
+  const country = countries.find((c) => c.name.toLowerCase() === countryName.toLowerCase())
+  return country?.code || ''
+}
+
+/**
+ * Normalize country input to country code (handles both codes and names)
+ * @param countryInput - Either a country code or country name
+ * @returns The 2-letter country code or original input if it's already a valid code
+ */
+export const normalizeToCountryCode = (countryInput: string): string => {
+  if (!countryInput) return ''
+
+  // Check if it's already a valid country code
+  const isValidCode = countries.some((c) => c.code === countryInput.toUpperCase())
+  if (isValidCode) return countryInput.toUpperCase()
+
+  // Try to convert from name to code
+  const codeFromName = getCountryCodeByName(countryInput)
+  if (codeFromName) return codeFromName
+
+  // Return original input as fallback
+  return countryInput
+}
+
 /**
  * Get state/province name by country code and state code
  * @param countryCode - The 2-letter country code

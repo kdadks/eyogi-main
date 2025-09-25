@@ -81,12 +81,7 @@ export default function CourseManagement() {
   }, [])
   const filterCourses = useCallback(() => {
     let filtered = courses
-    console.log('Filtering courses:', {
-      totalCourses: courses.length,
-      searchTerm,
-      filterGurukul,
-      filterLevel,
-    })
+
     if (searchTerm) {
       filtered = filtered.filter(
         (course) =>
@@ -113,11 +108,7 @@ export default function CourseManagement() {
         getGurukuls(),
         getAllUsers(),
       ])
-      console.log('Loaded data:', {
-        courses: coursesData.length,
-        gurukuls: gurukulData.length,
-        users: usersData.length,
-      })
+
       setCourses(coursesData)
       setGurukuls(gurukulData)
     } catch (error) {

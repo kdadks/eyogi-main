@@ -82,7 +82,6 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
       id: childId,
       email,
       full_name: childData.full_name,
-      date_of_birth: childData.date_of_birth, // Add the missing date_of_birth field
       role: 'student' as const,
       age,
       grade: childData.grade,
@@ -105,10 +104,22 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
     if (error) {
       throw new Error(`Failed to create child profile: ${error.message}`)
     }
-
-    // Parent-child relationship is now handled simply through parent_id field in profiles table
-    // No need for complex parent_child_relationships table
-
+    // Create parent-child relationship record
+    const relationshipData = {
+      parent_id: childData.parent_id,
+      child_id: childId,
+      relationship_type: 'parent',
+      is_primary_contact: true,
+      is_active: true,
+    }
+    const { error: relationshipError } = await supabaseAdmin
+      .from('parent_child_relationships')
+      .insert(relationshipData)
+    if (relationshipError) {
+      // Don't throw error here as the child profile was already created
+      // This is a non-critical secondary operation
+    } else {
+    }
     return data
   } catch (error) {
     throw error
@@ -135,8 +146,7 @@ export async function getChildrenByParentId(parentId: string): Promise<Profile[]
   }
 }
 /**
- * Update child profile - simplified to only work with profiles table
- * Parent-child relationship maintained through parent_id field
+ * Update child profile
  */
 export async function updateChild(
   childId: string,
@@ -156,7 +166,6 @@ export async function updateChild(
     }
     const updateData = {
       full_name: updates.full_name,
-      date_of_birth: updates.date_of_birth, // Add the missing date_of_birth field
       age: calculatedAge,
       grade: updates.grade,
       email: updates.email, // Allow email updates
@@ -183,8 +192,7 @@ export async function updateChild(
   }
 }
 /**
- * Delete child profile - simplified to only work with profiles table
- * Parent-child relationship is automatically handled through parent_id field
+ * Delete child profile
  */
 export async function deleteChild(childId: string): Promise<void> {
   try {

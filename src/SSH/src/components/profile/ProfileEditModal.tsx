@@ -68,19 +68,10 @@ export default function ProfileEditModal({
     address_line_2: '',
     zip_code: '',
   })
-  // Debug: Check what user data we're receiving when modal opens
+  // Initialize form when modal opens
   useEffect(() => {
     if (isOpen) {
-      console.log('🔧 ProfileEditModal - Received user prop:', {
-        id: user?.id,
-        full_name: user?.full_name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        address_line_1: (user as any)?.address_line_1,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        city: (user as any)?.city,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        hasAddressData: !!((user as any)?.address_line_1 || (user as any)?.city),
-      })
+      // User data analysis removed for cleaner code
     }
   }, [isOpen, user])
   // Load fresh user data when modal opens to ensure we have the latest address data
@@ -92,13 +83,7 @@ export default function ProfileEditModal({
           if (freshUserData) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const userData = freshUserData as any
-            console.log('ProfileEditModal: Address data loaded:', {
-              address_line_1: userData.address_line_1,
-              city: userData.city,
-              state: userData.state,
-              country: userData.country,
-              zip_code: userData.zip_code,
-            })
+
             setCurrentUser(freshUserData as Profile)
           }
         } catch (error) {
@@ -155,13 +140,7 @@ export default function ProfileEditModal({
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userData = currentUser as any
-    console.log('ProfileEditModal: Resetting form with currentUser data:', {
-      full_name: userData.full_name,
-      address_line_1: userData.address_line_1,
-      city: userData.city,
-      state: userData.state,
-      country: userData.country,
-    })
+
     // Initialize address form data
     setAddressData({
       address_line_1: (currentUser['address_line_1' as keyof typeof currentUser] as string) || '',

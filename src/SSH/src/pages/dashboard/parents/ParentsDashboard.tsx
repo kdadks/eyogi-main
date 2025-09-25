@@ -24,17 +24,17 @@ import AddChildModal from '../../../components/parents/AddChildModal'
 import ChatBotTrigger from '../../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../../components/profile/ProfileEditModal'
 import AddressForm from '../../../components/forms/AddressForm'
-import { AddressFormData, getCountryName } from '../../../lib/address-utils'
+import { AddressFormData, getCountryName, getStateName } from '../../../lib/address-utils'
+import { enrollInCourse } from '../../../lib/api/enrollments'
+import { getCourses } from '../../../lib/api/courses'
+import { getStudentEnrollments } from '../../../lib/api/enrollments'
+import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
 import {
   createChild,
   getChildrenByParentId,
   updateChild,
   deleteChild,
 } from '../../../lib/api/children'
-import { enrollInCourse } from '../../../lib/api/enrollments'
-import { getCourses } from '../../../lib/api/courses'
-import { getStudentEnrollments } from '../../../lib/api/enrollments'
-import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
 import type { Database } from '../../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 // Extended profile interface that includes address fields from database
@@ -782,7 +782,6 @@ export default function ParentsDashboard() {
           isOpen={showAddChildModal}
           onClose={() => setShowAddChildModal(false)}
           onAddChild={handleAddChild}
-          existingChildren={children}
           parentInfo={{
             address: {
               street: parentProfile?.address_line_1 || '',
@@ -803,7 +802,21 @@ export default function ParentsDashboard() {
             setChildToEdit(null)
           }}
           onAddChild={handleUpdateChild}
-          existingChildren={children}
+          isEditMode={true}
+          initialData={{
+            fullName: childToEdit.full_name,
+            date_of_birth: childToEdit.date_of_birth || '',
+            grade: childToEdit.grade,
+            phone: childToEdit.phone || '',
+            address: {
+              address_line_1: childToEdit.address_line_1 || '',
+              address_line_2: childToEdit.address_line_2 || '',
+              city: childToEdit.city || '',
+              state: childToEdit.state || '',
+              zip_code: childToEdit.zip_code || '',
+              country: childToEdit.country || 'United States',
+            },
+          }}
           parentInfo={{
             address: {
               street: parentProfile?.address_line_1 || '',
@@ -1689,7 +1702,9 @@ function SettingsTab({
               </div>
               <div>
                 {addressData.city}
-                {addressData.state && `, ${addressData.state}`} {addressData.zip_code}
+                {addressData.state &&
+                  `, ${getStateName(addressData.country, addressData.state)}`}{' '}
+                {addressData.zip_code}
               </div>
               <div>{getCountryName(addressData.country)}</div>
             </div>

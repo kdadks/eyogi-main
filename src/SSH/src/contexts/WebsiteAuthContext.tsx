@@ -69,16 +69,6 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         localStorage.removeItem('website-user-id')
         setUser(null)
       } else {
-        console.log('🔑 WebsiteAuthContext - Loaded user:', {
-          id: userData.id,
-          full_name: userData.full_name,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          address_line_1: (userData as any).address_line_1,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          city: (userData as any).city,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          hasAddress: !!((userData as any).address_line_1 || (userData as any).city),
-        })
         setUser(userData)
       }
     } catch (error) {
