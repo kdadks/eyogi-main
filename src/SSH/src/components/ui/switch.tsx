@@ -1,12 +1,10 @@
 import React from 'react'
-
 interface SwitchProps {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
   disabled?: boolean
   className?: string
 }
-
 export const Switch: React.FC<SwitchProps> = ({
   checked,
   onCheckedChange,

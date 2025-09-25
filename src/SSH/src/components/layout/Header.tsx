@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import ScrollLink from '../ui/ScrollLink'
@@ -7,13 +6,11 @@ import { useAuth } from '../providers/AuthProvider'
 import { getUserDisplayName, getUserInitials, getRoleDisplayName } from '../../lib/auth/authUtils'
 import { Bars3Icon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import { Button } from '../ui/Button'
-
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { user, signOut, loading } = useAuth()
-
   // Handle scroll effect for glass morphism
   useEffect(() => {
     const handleScroll = () => {
@@ -22,7 +19,6 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
   // Handle click outside to close user menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -33,7 +29,6 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [userMenuOpen])
-
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Gurukuls', href: '/gurukuls' },
@@ -41,16 +36,13 @@ export default function Header() {
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ]
-
   const handleSignOut = async () => {
     try {
       await signOut()
       // Navigation is handled in the signOut function
     } catch (error) {
-      console.error('Error signing out:', error)
     }
   }
-
   // Show loading state while auth is initializing
   if (!user && loading) {
     return (
@@ -84,7 +76,6 @@ export default function Header() {
       </header>
     )
   }
-
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -116,7 +107,6 @@ export default function Header() {
               </div>
             </Link>
           </div>
-
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-2">
             {navigation.map((item) => (
@@ -130,7 +120,6 @@ export default function Header() {
               </ScrollLink>
             ))}
           </div>
-
           {/* User Menu */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             {user ? (
@@ -141,7 +130,6 @@ export default function Header() {
                 >
                   Dashboard
                 </ScrollLink>
-
                 {/* User Profile Dropdown */}
                 <div className="relative user-menu-container">
                   <button
@@ -166,7 +154,6 @@ export default function Header() {
                       className={`h-3 w-3 sm:h-4 sm:w-4 text-gray-400 transition-transform duration-200 hidden sm:block ${userMenuOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
-
                   {/* Dropdown Menu */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-lg rounded-xl shadow-xl border border-gray-200/50 py-2 z-50 user-dropdown">
@@ -217,7 +204,6 @@ export default function Header() {
                 </Link>
               </div>
             )}
-
             {/* Mobile menu button */}
             <div className="md:hidden">
               <button
@@ -235,7 +221,6 @@ export default function Header() {
             </div>
           </div>
         </div>
-
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div

@@ -16,35 +16,29 @@ import {
   AcademicCapIcon,
   ArrowRightIcon,
 } from '@heroicons/react/24/outline'
-
 export default function GurukulPage() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [courseCounts, setCourseCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     loadData()
   }, [])
-
   const loadData = async () => {
     try {
       const [gurukulData, coursesData] = await Promise.all([getGurukuls(), getCourses()])
-
       setGurukuls(gurukulData)
-
       // Count courses per gurukul
       const counts: Record<string, number> = {}
       coursesData.forEach((course) => {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
-    } catch (error) {
-      console.error('Error loading data:', error)
+    } catch {
+      // Error loading data - silent fail
     } finally {
       setLoading(false)
     }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -55,7 +49,6 @@ export default function GurukulPage() {
       </div>
     )
   }
-
   return (
     <>
       <SEOHead
@@ -110,178 +103,171 @@ export default function GurukulPage() {
       <div>
         {/* Rolling Text Banner */}
         <RollingText text="🕉️ Explore Traditional Hindu Gurukuls - Where Ancient Wisdom Meets Modern Learning 🕉️" />
-
         <div className="min-h-screen bg-gray-50">
-        {/* Hero Section (with Quick Navigation) */}
-        <section className="bg-gradient-to-r from-orange-50 to-red-50">
-          <div className="container-max section-padding">
-            <div className="text-center max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                Explore Our <span className="gradient-text">Gurukuls</span>
-              </h1>
-              <p className="text-xl text-gray-600 leading-relaxed mb-8">
-                Each Gurukul specializes in different aspects of Vedic knowledge, offering
-                comprehensive learning paths designed for students of all ages. Discover ancient
-                wisdom through modern, interactive education.
-              </p>
-              <div className="flex items-center justify-center space-x-8 text-sm text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <BookOpenIcon className="h-5 w-5 text-orange-500" />
-                  <span>5 Specialized Gurukuls</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <AcademicCapIcon className="h-5 w-5 text-orange-500" />
-                  <span>63+ Courses</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UserGroupIcon className="h-5 w-5 text-orange-500" />
-                  <span>1,950+ Students</span>
-                </div>
-              </div>
-
-              {/* Quick Navigation (inside hero) */}
-              <div className="mt-8">
-                <p className="text-sm text-gray-700 mb-3"></p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {gurukuls.map((gurukul) => (
-                    <ScrollLink key={gurukul.id} to={`/gurukuls/${gurukul.slug}`}>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        aria-label={`Explore ${gurukul.name} Gurukul`}
-                        className="shadow-sm"
-                      >
-                        {gurukul.name}
-                      </Button>
-                    </ScrollLink>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Gurukuls Grid */}
-        <section className="section-padding">
-          <div className="container-max">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {gurukuls.map((gurukul) => (
-                <Card key={gurukul.id} className="card-hover overflow-hidden">
-                  <div className="aspect-video overflow-hidden">
-                    <img
-                      src={
-                        gurukul.image_url ||
-                        `https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=400&fit=crop`
-                      }
-                      alt={gurukul.name}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
+          {/* Hero Section (with Quick Navigation) */}
+          <section className="bg-gradient-to-r from-orange-50 to-red-50">
+            <div className="container-max section-padding">
+              <div className="text-center max-w-4xl mx-auto">
+                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                  Explore Our <span className="gradient-text">Gurukuls</span>
+                </h1>
+                <p className="text-xl text-gray-600 leading-relaxed mb-8">
+                  Each Gurukul specializes in different aspects of Vedic knowledge, offering
+                  comprehensive learning paths designed for students of all ages. Discover ancient
+                  wisdom through modern, interactive education.
+                </p>
+                <div className="flex items-center justify-center space-x-8 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <BookOpenIcon className="h-5 w-5 text-orange-500" />
+                    <span>5 Specialized Gurukuls</span>
                   </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{gurukul.name}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{gurukul.description}</p>
-
-                    <div className="flex items-center justify-between mb-6 text-sm text-gray-500">
-                      <div className="flex items-center space-x-2">
-                        <BookOpenIcon className="h-4 w-4" />
-                        <span>{courseCounts[gurukul.id] || 0} Courses</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <UserGroupIcon className="h-4 w-4" />
-                        <span>Active Learning</span>
-                      </div>
-                    </div>
-
-                    <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
-                      <Button className="w-full">
-                        Explore Gurukul
-                        <ArrowRightIcon className="ml-2 h-4 w-4" />
-                      </Button>
-                    </ScrollLink>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="section-padding bg-white">
-          <div className="container-max">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Why Choose Our Gurukuls?
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Our specialized approach ensures deep, authentic learning in each domain of Vedic
-                knowledge.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BookOpenIcon className="h-8 w-8 text-white" />
+                  <div className="flex items-center space-x-2">
+                    <AcademicCapIcon className="h-5 w-5 text-orange-500" />
+                    <span>63+ Courses</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <UserGroupIcon className="h-5 w-5 text-orange-500" />
+                    <span>1,950+ Students</span>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Specialized Curriculum</h3>
-                <p className="text-gray-600">
-                  Each Gurukul offers focused, in-depth study of specific aspects of Vedic
+                {/* Quick Navigation (inside hero) */}
+                <div className="mt-8">
+                  <p className="text-sm text-gray-700 mb-3"></p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {gurukuls.map((gurukul) => (
+                      <ScrollLink key={gurukul.id} to={`/gurukuls/${gurukul.slug}`}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          aria-label={`Explore ${gurukul.name} Gurukul`}
+                          className="shadow-sm"
+                        >
+                          {gurukul.name}
+                        </Button>
+                      </ScrollLink>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          {/* Gurukuls Grid */}
+          <section className="section-padding">
+            <div className="container-max">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {gurukuls.map((gurukul) => (
+                  <Card key={gurukul.id} className="card-hover overflow-hidden">
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={
+                          gurukul.image_url ||
+                          `https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=400&fit=crop`
+                        }
+                        alt={gurukul.name}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </div>
+                    <CardContent className="p-6">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">{gurukul.name}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-3">{gurukul.description}</p>
+                      <div className="flex items-center justify-between mb-6 text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <BookOpenIcon className="h-4 w-4" />
+                          <span>{courseCounts[gurukul.id] || 0} Courses</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <UserGroupIcon className="h-4 w-4" />
+                          <span>Active Learning</span>
+                        </div>
+                      </div>
+                      <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
+                        <Button className="w-full">
+                          Explore Gurukul
+                          <ArrowRightIcon className="ml-2 h-4 w-4" />
+                        </Button>
+                      </ScrollLink>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
+          {/* Features Section */}
+          <section className="section-padding bg-white">
+            <div className="container-max">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  Why Choose Our Gurukuls?
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Our specialized approach ensures deep, authentic learning in each domain of Vedic
                   knowledge.
                 </p>
               </div>
-
-              <div className="text-center">
-                <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <UserGroupIcon className="h-8 w-8 text-white" />
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <BookOpenIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Specialized Curriculum</h3>
+                  <p className="text-gray-600">
+                    Each Gurukul offers focused, in-depth study of specific aspects of Vedic
+                    knowledge.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Expert Teachers</h3>
-                <p className="text-gray-600">
-                  Learn from qualified instructors with deep knowledge and authentic understanding.
-                </p>
-              </div>
-
-              <div className="text-center">
-                <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AcademicCapIcon className="h-8 w-8 text-white" />
+                <div className="text-center">
+                  <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserGroupIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Expert Teachers</h3>
+                  <p className="text-gray-600">
+                    Learn from qualified instructors with deep knowledge and authentic
+                    understanding.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Certified Learning</h3>
-                <p className="text-gray-600">
-                  Earn certificates upon completion and showcase your achievements in Vedic studies.
-                </p>
+                <div className="text-center">
+                  <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AcademicCapIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Certified Learning</h3>
+                  <p className="text-gray-600">
+                    Earn certificates upon completion and showcase your achievements in Vedic
+                    studies.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="section-padding gradient-bg text-white">
-          <div className="container-max text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Begin Your Journey?</h2>
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Choose your path of learning and connect with the timeless wisdom of Vedic traditions.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/courses">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="bg-white text-orange-600 hover:bg-gray-100"
-                >
-                  Browse All Courses
-                </Button>
-              </Link>
-              <Link to="/auth/signup">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white text-white hover:bg-white hover:text-orange-600"
-                >
-                  Create Account
-                </Button>
-              </Link>
+          </section>
+          {/* CTA Section */}
+          <section className="section-padding gradient-bg text-white">
+            <div className="container-max text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Begin Your Journey?</h2>
+              <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+                Choose your path of learning and connect with the timeless wisdom of Vedic
+                traditions.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/courses">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="bg-white text-orange-600 hover:bg-gray-100"
+                  >
+                    Browse All Courses
+                  </Button>
+                </Link>
+                <Link to="/auth/signup">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white text-white hover:bg-white hover:text-orange-600"
+                  >
+                    Create Account
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
         </div>
       </div>
       <Footer />

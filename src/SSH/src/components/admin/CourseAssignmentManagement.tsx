@@ -16,13 +16,11 @@ import {
   BookOpenIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline'
-
 interface AssignmentModalProps {
   isOpen: boolean
   onClose: () => void
   onAssign: (teacherId: string, courseId: string, notes?: string) => Promise<boolean>
 }
-
 const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAssign }) => {
   const [teachers, setTeachers] = useState<User[]>([])
   const [courses, setCourses] = useState<Course[]>([])
@@ -30,13 +28,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
   const [selectedCourse, setSelectedCourse] = useState('')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
-
   useEffect(() => {
     if (isOpen) {
       loadData()
     }
   }, [isOpen])
-
   const loadData = async () => {
     try {
       const [teachersData, coursesData] = await Promise.all([
@@ -48,23 +44,17 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
           .order('full_name'),
         supabaseAdmin.from('courses').select('*').eq('is_active', true).order('title'),
       ])
-
-      console.log('Loaded teachers:', teachersData.data)
-      console.log('Loaded courses:', coursesData.data)
       setTeachers(teachersData.data || [])
       setCourses(coursesData.data || [])
     } catch (error) {
-      console.error('Error loading data:', error)
       toast.error('Failed to load teachers and courses')
     }
   }
-
   const handleSubmit = async () => {
     if (!selectedTeacher || !selectedCourse) {
       toast.error('Please select both teacher and course')
       return
     }
-
     setLoading(true)
     const success = await onAssign(selectedTeacher, selectedCourse, notes)
     if (success) {
@@ -75,9 +65,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
     }
     setLoading(false)
   }
-
   if (!isOpen) return null
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
@@ -87,7 +75,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
@@ -115,7 +102,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
               })}
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
             <select
@@ -131,7 +117,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
               ))}
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
             <Input
@@ -140,7 +125,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
               placeholder="Assignment notes or comments"
             />
           </div>
-
           <div className="flex space-x-3 pt-4">
             <Button onClick={handleSubmit} disabled={loading} className="flex-1">
               {loading ? 'Assigning...' : 'Assign'}
@@ -154,35 +138,29 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
     </div>
   )
 }
-
 const CourseAssignmentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const { assignments, loading, assignTeacherToCourse, removeAssignment } = useCourseAssignments()
   const { currentUser } = usePermissions()
-
   const filteredAssignments = assignments.filter(
     (assignment) =>
       assignment.course?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       assignment.teacher?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       assignment.course?.course_number.toLowerCase().includes(searchTerm.toLowerCase()),
   )
-
   const handleAssign = async (teacherId: string, courseId: string, notes?: string) => {
     if (!currentUser?.id) {
       toast.error('Unable to identify current user')
       return false
     }
-
     return await assignTeacherToCourse(teacherId, courseId, currentUser.id, notes)
   }
-
   const handleRemoveAssignment = async (assignmentId: string) => {
     if (window.confirm('Are you sure you want to remove this assignment?')) {
       await removeAssignment(assignmentId)
     }
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -190,7 +168,6 @@ const CourseAssignmentManagement: React.FC = () => {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -203,7 +180,6 @@ const CourseAssignmentManagement: React.FC = () => {
           <span>New Assignment</span>
         </Button>
       </div>
-
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -216,7 +192,6 @@ const CourseAssignmentManagement: React.FC = () => {
           />
         </div>
       </div>
-
       <div className="grid gap-4">
         {filteredAssignments.length === 0 ? (
           <Card>
@@ -278,7 +253,6 @@ const CourseAssignmentManagement: React.FC = () => {
           ))
         )}
       </div>
-
       <AssignmentModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
@@ -287,5 +261,4 @@ const CourseAssignmentManagement: React.FC = () => {
     </div>
   )
 }
-
 export default CourseAssignmentManagement

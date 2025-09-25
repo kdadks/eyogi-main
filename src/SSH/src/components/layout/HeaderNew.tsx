@@ -1,6 +1,5 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-
 const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
@@ -18,7 +17,6 @@ const Header: React.FC = () => {
               </div>
             </Link>
           </div>
-
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link
@@ -52,7 +50,6 @@ const Header: React.FC = () => {
               Contact
             </Link>
           </nav>
-
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors">
@@ -62,7 +59,6 @@ const Header: React.FC = () => {
               Sign Up
             </button>
           </div>
-
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button className="text-gray-700 hover:text-orange-600">
@@ -81,5 +77,4 @@ const Header: React.FC = () => {
     </header>
   )
 }
-
 export default Header

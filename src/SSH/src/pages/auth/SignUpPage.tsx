@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
-
 const signUpSchema = z
   .object({
     email: z.string().email('Please enter a valid email address'),
@@ -53,15 +52,12 @@ const signUpSchema = z
       path: ['parent_guardian_name'],
     },
   )
-
 type SignUpForm = z.infer<typeof signUpSchema>
-
 export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   // Note: This page is no longer used - replaced by AuthRedirect + Modal
   const { signUp } = useWebsiteAuth()
-
   const {
     register,
     handleSubmit,
@@ -74,10 +70,8 @@ export default function SignUpPage() {
       role: 'student',
     },
   })
-
   const watchAge = watch('age')
   const watchRole = watch('role')
-
   const onSubmit = async (data: SignUpForm) => {
     setLoading(true)
     try {
@@ -88,7 +82,6 @@ export default function SignUpPage() {
         role: data.role as 'student' | 'teacher' | 'parent',
         phone: data.phone,
       })
-
       if (error) {
         // Check if it's actually a success message that needs email confirmation
         if (error.includes('Account created! Please check your email')) {
@@ -99,7 +92,6 @@ export default function SignUpPage() {
         }
         return
       }
-
       toast.success('Account created successfully! You can now sign in.')
       navigate('/auth/signin')
     } catch (error: unknown) {
@@ -112,7 +104,6 @@ export default function SignUpPage() {
       setLoading(false)
     }
   }
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 page-with-header">
       <div className="max-w-2xl w-full space-y-8">
@@ -130,7 +121,6 @@ export default function SignUpPage() {
             </Link>
           </p>
         </div>
-
         <Card>
           <CardHeader>
             <h3 className="text-lg font-medium">Join eYogi Gurukul</h3>
@@ -143,7 +133,6 @@ export default function SignUpPage() {
                   {...register('full_name')}
                   error={errors.full_name?.message}
                 />
-
                 <Input
                   label="Email Address"
                   type="email"
@@ -151,14 +140,12 @@ export default function SignUpPage() {
                   {...register('email')}
                   error={errors.email?.message}
                 />
-
                 <Input
                   label="Age"
                   type="number"
                   {...register('age', { valueAsNumber: true })}
                   error={errors.age?.message}
                 />
-
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Role</label>
                   <select
@@ -171,7 +158,6 @@ export default function SignUpPage() {
                   </select>
                   {errors.role && <p className="text-sm text-red-600">{errors.role.message}</p>}
                 </div>
-
                 <Input
                   label="Phone Number (Optional)"
                   type="tel"
@@ -179,7 +165,6 @@ export default function SignUpPage() {
                   error={errors.phone?.message}
                 />
               </div>
-
               {/* Parent/Guardian Information for Minors */}
               {watchAge < 18 && watchRole === 'student' && (
                 <div className="border-t pt-6">
@@ -192,14 +177,12 @@ export default function SignUpPage() {
                       {...register('parent_guardian_name')}
                       error={errors.parent_guardian_name?.message}
                     />
-
                     <Input
                       label="Parent/Guardian Email"
                       type="email"
                       {...register('parent_guardian_email')}
                       error={errors.parent_guardian_email?.message}
                     />
-
                     <Input
                       label="Parent/Guardian Phone"
                       type="tel"
@@ -209,7 +192,6 @@ export default function SignUpPage() {
                   </div>
                 </div>
               )}
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Password"
@@ -218,7 +200,6 @@ export default function SignUpPage() {
                   {...register('password')}
                   error={errors.password?.message}
                 />
-
                 <Input
                   label="Confirm Password"
                   type="password"
@@ -227,7 +208,6 @@ export default function SignUpPage() {
                   error={errors.confirmPassword?.message}
                 />
               </div>
-
               <div className="flex items-center">
                 <input
                   id="agree-terms"
@@ -247,14 +227,12 @@ export default function SignUpPage() {
                   </Link>
                 </label>
               </div>
-
               <Button type="submit" className="w-full" loading={loading}>
                 Create Account
               </Button>
             </form>
           </CardContent>
         </Card>
-
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Need help?{' '}

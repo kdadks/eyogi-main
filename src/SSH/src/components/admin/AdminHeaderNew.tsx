@@ -1,10 +1,8 @@
 import React from 'react'
 import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
-
 interface AdminHeaderProps {
   onMenuClick: () => void
 }
-
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -18,12 +16,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-
           <div className="ml-4 lg:ml-0">
             <h1 className="text-2xl font-semibold text-gray-900">eYogi Gurukul Admin</h1>
           </div>
         </div>
-
         {/* Right side */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
@@ -39,5 +35,4 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
     </header>
   )
 }
-
 export default AdminHeader

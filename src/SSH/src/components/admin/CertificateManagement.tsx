@@ -40,7 +40,6 @@ import {
   DocumentDuplicateIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline'
-
 export default function CertificateManagement() {
   const { canManageCertificates, canAssignTemplates, profile } = useAuth()
   const [certificates, setCertificates] = useState<Certificate[]>([])
@@ -61,7 +60,6 @@ export default function CertificateManagement() {
   const [previewData, setPreviewData] = useState<CertificateData | null>(null)
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
   const [assignments, setAssignments] = useState<any[]>([])
-
   // Check access permissions
   if (!canManageCertificates) {
     return (
@@ -74,7 +72,6 @@ export default function CertificateManagement() {
       </div>
     )
   }
-
   const loadData = useCallback(async () => {
     try {
       // Load all data in parallel
@@ -85,78 +82,62 @@ export default function CertificateManagement() {
         getGurukuls(),
         getCertificateAssignments(),
       ])
-
       const completedWithoutCerts = allEnrollments.filter(
         (e) => e.status === 'completed' && !e.certificate_issued,
       )
-
       setCompletedEnrollments(completedWithoutCerts)
       setTemplates(templatesData)
       setCourses(coursesData)
       setGurukuls(gurukulData)
       setAssignments(assignmentsData)
-
       // Set default template if available
       if (templatesData.length > 0 && !selectedTemplate) {
         setSelectedTemplate(templatesData[0].id)
       }
-
       // Load actual certificates from database
       // For now, use empty array until certificates API is implemented
       setCertificates([])
-
-      console.log('Loaded assignments:', assignmentsData)
     } catch (error) {
-      console.error('Error loading certificate data:', error)
       toast.error('Failed to load certificate data')
     } finally {
       setLoading(false)
     }
   }, [selectedTemplate])
-
   useEffect(() => {
     loadData()
   }, [loadData])
-
   const handleIssueCertificate = async (enrollmentId: string) => {
     if (!selectedTemplate) {
       toast.error('Please select a certificate template')
       return
     }
-
     try {
       await issueCertificate(enrollmentId)
       await loadData()
       toast.success('Certificate issued successfully')
     } catch (error) {
-      console.error('Error issuing certificate:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to issue certificate'
       toast.error(errorMessage)
     }
   }
-
   const handleBulkIssueCertificates = async () => {
     if (selectedEnrollments.size === 0) {
       toast.error('Please select enrollments to issue certificates for')
       return
     }
-
     if (!selectedTemplate) {
       toast.error('Please select a certificate template')
       return
     }
-
     try {
       await bulkIssueCertificates(Array.from(selectedEnrollments))
       await loadData()
       setSelectedEnrollments(new Set())
       toast.success(`${selectedEnrollments.size} certificates issued successfully`)
     } catch (error) {
-      console.error('Error issuing certificates:', error)
       toast.error('Failed to issue certificates')
     }
   }
-
   const handleTemplateAction = (
     action: 'create' | 'edit' | 'duplicate',
     template?: CertificateTemplate,
@@ -171,33 +152,27 @@ export default function CertificateManagement() {
       handleDuplicateTemplate(template.id)
     }
   }
-
   const handleDeleteTemplate = async (templateId: string) => {
     if (!confirm('Are you sure you want to delete this template?')) {
       return
     }
-
     try {
       await deleteCertificateTemplate(templateId)
       await loadData()
       toast.success('Template deleted successfully')
     } catch (error) {
-      console.error('Error deleting template:', error)
       toast.error('Failed to delete template')
     }
   }
-
   const handleDuplicateTemplate = async (templateId: string) => {
     try {
       await duplicateCertificateTemplate(templateId)
       await loadData()
       toast.success('Template duplicated successfully')
     } catch (error) {
-      console.error('Error duplicating template:', error)
       toast.error('Failed to duplicate template')
     }
   }
-
   const handleTemplateSave = (template: CertificateTemplate) => {
     setTemplates((prev) => {
       const index = prev.findIndex((t) => t.id === template.id)
@@ -210,7 +185,6 @@ export default function CertificateManagement() {
       }
     })
   }
-
   const createCertificateData = (enrollment: Enrollment): CertificateData => {
     return {
       studentName: enrollment.student?.full_name || 'Student Name',
@@ -230,20 +204,16 @@ export default function CertificateManagement() {
       verificationCode: Math.random().toString(36).substr(2, 9).toUpperCase(),
     }
   }
-
   const handleViewCertificate = (enrollment: Enrollment) => {
     const certificateData = createCertificateData(enrollment)
     setPreviewData(certificateData)
     setPreviewModalOpen(true)
   }
-
   const handleDownloadCertificate = async (enrollment: Enrollment) => {
     try {
       const template = templates.find((t) => t.id === selectedTemplate)
       const certificateData = createCertificateData(enrollment)
-
       const pdfBlob = await generateCertificatePDF(certificateData, template)
-
       // Create download link
       const url = window.URL.createObjectURL(pdfBlob)
       const link = document.createElement('a')
@@ -253,14 +223,11 @@ export default function CertificateManagement() {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-
       toast.success('Certificate downloaded successfully')
     } catch (error) {
-      console.error('Error downloading certificate:', error)
       toast.error('Failed to download certificate')
     }
   }
-
   const handleReissueCertificate = async (certificate: Certificate) => {
     if (
       !confirm(
@@ -269,7 +236,6 @@ export default function CertificateManagement() {
     ) {
       return
     }
-
     try {
       // Find the corresponding enrollment to reissue the certificate
       const enrollment = completedEnrollments.find((e) => e.id === certificate.enrollment_id)
@@ -277,17 +243,14 @@ export default function CertificateManagement() {
         toast.error('Cannot find enrollment record for this certificate')
         return
       }
-
       // Reset the certificate_issued flag and reissue
       await issueCertificate(enrollment.id)
       await loadData()
       toast.success('Certificate has been reissued successfully')
     } catch (error) {
-      console.error('Error reissuing certificate:', error)
       toast.error('Failed to reissue certificate')
     }
   }
-
   const handleSelectEnrollment = (enrollmentId: string) => {
     const newSelected = new Set(selectedEnrollments)
     if (newSelected.has(enrollmentId)) {
@@ -297,7 +260,6 @@ export default function CertificateManagement() {
     }
     setSelectedEnrollments(newSelected)
   }
-
   const handleSelectAll = () => {
     if (selectedEnrollments.size === completedEnrollments.length) {
       setSelectedEnrollments(new Set())
@@ -305,18 +267,14 @@ export default function CertificateManagement() {
       setSelectedEnrollments(new Set(completedEnrollments.map((e) => e.id)))
     }
   }
-
   const filteredEnrollments = completedEnrollments.filter((enrollment) => {
     const matchesSearch =
       enrollment.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       enrollment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase())
-
     const matchesGurukul = !selectedGurukul || enrollment.course?.gurukul_id === selectedGurukul
     const matchesCourse = !selectedCourse || enrollment.course_id === selectedCourse
-
     return matchesSearch && matchesGurukul && matchesCourse
   })
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -324,7 +282,6 @@ export default function CertificateManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
@@ -351,7 +308,6 @@ export default function CertificateManagement() {
           ))}
         </nav>
       </div>
-
       {/* Recent Certificates Tab */}
       {activeTab === 'certificates' && (
         <Card>
@@ -457,7 +413,6 @@ export default function CertificateManagement() {
           </CardContent>
         </Card>
       )}
-
       {/* Templates Tab */}
       {activeTab === 'templates' && (
         <Card>
@@ -544,7 +499,6 @@ export default function CertificateManagement() {
           </CardContent>
         </Card>
       )}
-
       {/* Issue Certificates Tab */}
       {activeTab === 'issue' && (
         <Card>
@@ -565,7 +519,6 @@ export default function CertificateManagement() {
                   </div>
                 </div>
               </div>
-
               {/* Filters and Template Selection */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
@@ -587,7 +540,6 @@ export default function CertificateManagement() {
                       ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Filter by Gurukul
@@ -605,7 +557,6 @@ export default function CertificateManagement() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Filter by Course
@@ -625,7 +576,6 @@ export default function CertificateManagement() {
                       ))}
                   </select>
                 </div>
-
                 <div className="flex items-end">
                   <Button
                     variant="outline"
@@ -642,7 +592,6 @@ export default function CertificateManagement() {
                 </div>
               </div>
             </div>
-
             {selectedEnrollments.size > 0 && (
               <div className="flex items-center gap-4 p-4 bg-green-50 rounded-lg">
                 <span className="text-sm font-medium">
@@ -660,7 +609,6 @@ export default function CertificateManagement() {
               </div>
             )}
           </CardHeader>
-
           <CardContent>
             {filteredEnrollments.length === 0 ? (
               <div className="text-center py-8">
@@ -779,7 +727,6 @@ export default function CertificateManagement() {
           </CardContent>
         </Card>
       )}
-
       {/* Template Assignments Tab */}
       {activeTab === 'assignments' && canAssignTemplates && (
         <Card>
@@ -834,7 +781,6 @@ export default function CertificateManagement() {
                     {assignments.map((assignment) => {
                       const gurukul = gurukuls.find(g => g.id === assignment.gurukul_id)
                       const course = courses.find(c => c.id === assignment.course_id)
-
                       return (
                         <tr key={assignment.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -874,7 +820,6 @@ export default function CertificateManagement() {
                                     toast.success('Assignment removed successfully')
                                     await loadData() // Reload data after deletion
                                   } catch (error) {
-                                    console.error('Error deleting assignment:', error)
                                     toast.error('Failed to remove assignment')
                                   }
                                 }
@@ -894,7 +839,6 @@ export default function CertificateManagement() {
           </CardContent>
         </Card>
       )}
-
       {/* Template Editor Modal */}
       <CertificateTemplateEditor
         template={editingTemplate}
@@ -905,7 +849,6 @@ export default function CertificateManagement() {
         }}
         onSave={handleTemplateSave}
       />
-
       {/* Certificate Preview Modal */}
       {previewData && (
         <CertificatePreviewModal
@@ -918,7 +861,6 @@ export default function CertificateManagement() {
           template={templates.find((t) => t.id === selectedTemplate)}
         />
       )}
-
       {/* Template Assignment Modal */}
       <TemplateAssignmentModal
         isOpen={assignmentModalOpen}

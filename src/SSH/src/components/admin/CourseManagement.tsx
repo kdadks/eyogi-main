@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, Syllabus } from '@/types'
@@ -8,7 +8,6 @@ import { getAllUsers } from '@/lib/api/users'
 import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
-
 interface CourseFormData {
   gurukul_id: string
   course_number: string
@@ -45,7 +44,6 @@ interface CourseFormData {
   meta_description?: string
   teacher_id?: string
 }
-
 const initialFormData: CourseFormData = {
   gurukul_id: '',
   course_number: '',
@@ -64,7 +62,6 @@ const initialFormData: CourseFormData = {
   is_active: true,
   syllabus: null,
 }
-
 export default function CourseManagement() {
   const [courses, setCourses] = useState<Course[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
@@ -79,11 +76,9 @@ export default function CourseManagement() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [formData, setFormData] = useState<CourseFormData>(initialFormData)
   const [saving, setSaving] = useState(false)
-
   useEffect(() => {
     loadData()
   }, [])
-
   const filterCourses = useCallback(() => {
     let filtered = courses
     console.log('Filtering courses:', {
@@ -92,7 +87,6 @@ export default function CourseManagement() {
       filterGurukul,
       filterLevel,
     })
-
     if (searchTerm) {
       filtered = filtered.filter(
         (course) =>
@@ -101,25 +95,18 @@ export default function CourseManagement() {
           course.course_number.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
-
     if (filterGurukul) {
       filtered = filtered.filter((course) => course.gurukul_id === filterGurukul)
     }
-
     if (filterLevel) {
       filtered = filtered.filter((course) => course.level === filterLevel)
     }
-
-    console.log('Filtered courses:', filtered.length)
     setFilteredCourses(filtered)
   }, [courses, searchTerm, filterGurukul, filterLevel])
-
   useEffect(() => {
     filterCourses()
   }, [filterCourses])
-
   const loadData = async () => {
-    console.log('Starting to load data...')
     try {
       const [coursesData, gurukulData, usersData] = await Promise.all([
         getCourses(),
@@ -134,28 +121,22 @@ export default function CourseManagement() {
       setCourses(coursesData)
       setGurukuls(gurukulData)
     } catch (error) {
-      console.error('Error loading data:', error)
       toast.error('Failed to load course data')
     } finally {
       setLoading(false)
     }
   }
-
   const handleFeaturedToggle = async (course: Course) => {
     try {
       const updatedCourse = { ...course, featured: !course.featured }
       await updateCourse(course.id, updatedCourse)
-
       // Update local state
       setCourses((prev) => prev.map((c) => (c.id === course.id ? updatedCourse : c)))
-
       toast.success(`Course ${updatedCourse.featured ? 'featured' : 'unfeatured'} successfully`)
     } catch (error: unknown) {
-      console.error('Failed to toggle featured status:', error)
       toast.error('Failed to update featured status')
     }
   }
-
   const handleDelete = async (course: Course) => {
     if (window.confirm(`Are you sure you want to delete "${course.title}"?`)) {
       try {
@@ -163,18 +144,15 @@ export default function CourseManagement() {
         toast.success('Course deleted successfully')
         await loadData()
       } catch (error) {
-        console.error('Error deleting course:', error)
         toast.error('Failed to delete course')
       }
     }
   }
-
   const handleCreateCourse = async () => {
     if (!formData.title || !formData.gurukul_id || !formData.course_number) {
       toast.error('Please fill in all required fields')
       return
     }
-
     setSaving(true)
     try {
       const courseData = {
@@ -216,15 +194,12 @@ export default function CourseManagement() {
         meta_description: formData.meta_description || undefined,
         teacher_id: formData.teacher_id || undefined,
       }
-
-      console.log('Creating course with data:', JSON.stringify(courseData, null, 2))
       await createCourse(courseData)
       toast.success('Course created successfully')
       setShowCreateModal(false)
       setFormData(initialFormData)
       await loadData()
     } catch (error) {
-      console.error('Error creating course:', error)
       toast.error(
         'Failed to create course: ' + (error instanceof Error ? error.message : 'Unknown error'),
       )
@@ -232,7 +207,6 @@ export default function CourseManagement() {
       setSaving(false)
     }
   }
-
   const handleEditCourse = (course: Course) => {
     setEditingCourse(course)
     setFormData({
@@ -272,10 +246,8 @@ export default function CourseManagement() {
     })
     setShowEditModal(true)
   }
-
   const handleUpdateCourse = async () => {
     if (!editingCourse) return
-
     setSaving(true)
     try {
       const updates = {
@@ -316,7 +288,6 @@ export default function CourseManagement() {
         meta_description: formData.meta_description || undefined,
         teacher_id: formData.teacher_id || undefined,
       }
-
       await updateCourse(editingCourse.id, updates)
       toast.success('Course updated successfully')
       setShowEditModal(false)
@@ -324,20 +295,17 @@ export default function CourseManagement() {
       setFormData(initialFormData)
       await loadData()
     } catch (error) {
-      console.error('Error updating course:', error)
       toast.error('Failed to update course')
     } finally {
       setSaving(false)
     }
   }
-
   const closeModal = () => {
     setShowCreateModal(false)
     setShowEditModal(false)
     setEditingCourse(null)
     setFormData(initialFormData)
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -346,7 +314,6 @@ export default function CourseManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -391,7 +358,6 @@ export default function CourseManagement() {
           <option value="advanced">Advanced</option>
         </select>
       </div>
-
       {/* Course Grid */}
       <div className="bg-white border border-gray-200 rounded-lg">
         {/* Grid Header */}
@@ -405,7 +371,6 @@ export default function CourseManagement() {
           <div className="col-span-1">Featured</div>
           <div className="col-span-2 text-right">Actions</div>
         </div>
-
         {/* Grid Rows */}
         <div className="divide-y divide-gray-100">
           {filteredCourses.map((course) => (
@@ -418,7 +383,6 @@ export default function CourseManagement() {
                 <div className="font-medium text-gray-900 text-sm truncate">{course.title}</div>
                 <div className="text-xs text-gray-500">{course.course_number}</div>
               </div>
-
               {/* Duration */}
               <div className="col-span-1 text-xs text-gray-600">
                 <div>{course.duration_weeks}w</div>
@@ -426,15 +390,12 @@ export default function CourseManagement() {
                   <div className="text-gray-400">{course.duration_hours}h</div>
                 )}
               </div>
-
               {/* Age Group */}
               <div className="col-span-1 text-xs text-gray-600">
                 {course.age_group_min}-{course.age_group_max}
               </div>
-
               {/* Price */}
               <div className="col-span-1 text-xs text-gray-600 font-medium">${course.price}</div>
-
               {/* Level */}
               <div className="col-span-1">
                 <span
@@ -443,7 +404,6 @@ export default function CourseManagement() {
                   {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
                 </span>
               </div>
-
               {/* Status */}
               <div className="col-span-2 flex items-center gap-1">
                 <span
@@ -454,7 +414,6 @@ export default function CourseManagement() {
                   {course.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
-
               {/* Featured Toggle */}
               <div className="col-span-1">
                 <button
@@ -468,7 +427,6 @@ export default function CourseManagement() {
                   {course.featured ? 'Featured' : 'Feature'}
                 </button>
               </div>
-
               {/* Actions */}
               <div className="col-span-2 flex items-center justify-end gap-2">
                 <button
@@ -497,13 +455,11 @@ export default function CourseManagement() {
           ))}
         </div>
       </div>
-
       {filteredCourses.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           No courses found matching your criteria.
         </div>
       )}
-
       {/* Course View Modal */}
       {viewingCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -519,7 +475,6 @@ export default function CourseManagement() {
                 </button>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
               {/* Course Title */}
               <div>
@@ -528,7 +483,6 @@ export default function CourseManagement() {
                   {viewingCourse.title}
                 </div>
               </div>
-
               {/* Basic Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -606,7 +560,6 @@ export default function CourseManagement() {
                   </div>
                 </div>
               </div>
-
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -614,7 +567,6 @@ export default function CourseManagement() {
                   {viewingCourse.description}
                 </div>
               </div>
-
               {/* Detailed Description */}
               {viewingCourse.detailed_description && (
                 <div>
@@ -626,7 +578,6 @@ export default function CourseManagement() {
                   </div>
                 </div>
               )}
-
               {/* Prerequisites */}
               {viewingCourse.prerequisites && (
                 <div>
@@ -638,7 +589,6 @@ export default function CourseManagement() {
                   </div>
                 </div>
               )}
-
               {/* Learning Outcomes */}
               {viewingCourse.learning_outcomes && viewingCourse.learning_outcomes.length > 0 && (
                 <div>
@@ -657,7 +607,6 @@ export default function CourseManagement() {
                   </div>
                 </div>
               )}
-
               {/* Tags */}
               {viewingCourse.tags && viewingCourse.tags.length > 0 && (
                 <div>
@@ -680,7 +629,6 @@ export default function CourseManagement() {
           </div>
         </div>
       )}
-
       {/* Create Course Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -696,7 +644,6 @@ export default function CourseManagement() {
                 </button>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
               {/* Basic Information Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -716,7 +663,6 @@ export default function CourseManagement() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Course Number *
@@ -728,7 +674,6 @@ export default function CourseManagement() {
                     required
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                   <Input
@@ -738,7 +683,6 @@ export default function CourseManagement() {
                     required
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description *
@@ -752,7 +696,6 @@ export default function CourseManagement() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
                   <select
@@ -768,7 +711,6 @@ export default function CourseManagement() {
                     <option value="advanced">Advanced</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Delivery Method
@@ -788,7 +730,6 @@ export default function CourseManagement() {
                     <option value="hybrid">Hybrid</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
                   <Input
@@ -800,7 +741,6 @@ export default function CourseManagement() {
                     min="0"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
                   <Input
@@ -812,7 +752,6 @@ export default function CourseManagement() {
                     min="0"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Duration (weeks)
@@ -826,7 +765,6 @@ export default function CourseManagement() {
                     min="1"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Duration (hours)
@@ -844,7 +782,6 @@ export default function CourseManagement() {
                     placeholder="Optional"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
                   <Input
@@ -857,7 +794,6 @@ export default function CourseManagement() {
                     step="0.01"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                   <Input
@@ -866,7 +802,6 @@ export default function CourseManagement() {
                     placeholder="EUR"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Max Students
@@ -880,7 +815,6 @@ export default function CourseManagement() {
                     min="1"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Min Students
@@ -899,7 +833,6 @@ export default function CourseManagement() {
                   />
                 </div>
               </div>
-
               {/* Learning Outcomes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -920,7 +853,6 @@ export default function CourseManagement() {
                   rows={4}
                 />
               </div>
-
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button variant="outline" onClick={closeModal}>
@@ -934,7 +866,6 @@ export default function CourseManagement() {
           </div>
         </div>
       )}
-
       {/* Edit Course Modal */}
       {showEditModal && editingCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -950,7 +881,6 @@ export default function CourseManagement() {
                 </button>
               </div>
             </div>
-
             <div className="p-6 space-y-6">
               {/* Same form fields as create modal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -970,7 +900,6 @@ export default function CourseManagement() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Course Number *
@@ -982,7 +911,6 @@ export default function CourseManagement() {
                     required
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                   <Input
@@ -992,7 +920,6 @@ export default function CourseManagement() {
                     required
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description *
@@ -1006,7 +933,6 @@ export default function CourseManagement() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
                   <select
@@ -1022,7 +948,6 @@ export default function CourseManagement() {
                     <option value="advanced">Advanced</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Delivery Method
@@ -1042,7 +967,6 @@ export default function CourseManagement() {
                     <option value="hybrid">Hybrid</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
                   <Input
@@ -1054,7 +978,6 @@ export default function CourseManagement() {
                     min="0"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
                   <Input
@@ -1066,7 +989,6 @@ export default function CourseManagement() {
                     min="0"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Duration (weeks)
@@ -1080,7 +1002,6 @@ export default function CourseManagement() {
                     min="1"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Duration (hours)
@@ -1098,7 +1019,6 @@ export default function CourseManagement() {
                     placeholder="Optional"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
                   <Input
@@ -1111,7 +1031,6 @@ export default function CourseManagement() {
                     step="0.01"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                   <Input
@@ -1120,7 +1039,6 @@ export default function CourseManagement() {
                     placeholder="EUR"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Max Students
@@ -1134,7 +1052,6 @@ export default function CourseManagement() {
                     min="1"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Min Students
@@ -1152,7 +1069,6 @@ export default function CourseManagement() {
                     placeholder="Optional"
                   />
                 </div>
-
                 <div className="md:col-span-2 flex items-center space-x-4">
                   <label className="flex items-center">
                     <input
@@ -1174,7 +1090,6 @@ export default function CourseManagement() {
                   </label>
                 </div>
               </div>
-
               {/* Learning Outcomes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1195,7 +1110,6 @@ export default function CourseManagement() {
                   rows={4}
                 />
               </div>
-
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button variant="outline" onClick={closeModal}>

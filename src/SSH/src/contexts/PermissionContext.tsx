@@ -1,15 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useSupabaseAuth as useAuth } from '../hooks/useSupabaseAuth'
-
 interface PermissionContextType {
   canAccess: (resource: string, action: string) => boolean
   hasAnyPermission: (permissions: string[]) => boolean
   getUserPermissions: () => string[]
   isLoading: boolean
 }
-
 const PermissionContext = createContext<PermissionContextType | undefined>(undefined)
-
 export const usePermissions = () => {
   const context = useContext(PermissionContext)
   if (context === undefined) {
@@ -17,11 +14,9 @@ export const usePermissions = () => {
   }
   return context
 }
-
 interface PermissionProviderProps {
   children: React.ReactNode
 }
-
 // Enhanced permission system with granular controls
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   super_admin: [
@@ -109,58 +104,47 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     // No admin access
   ],
 }
-
 export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children }) => {
   const { user, profile, loading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
-
   useEffect(() => {
     // Permission loading is tied to auth loading
     setIsLoading(authLoading)
   }, [authLoading])
-
   const getUserRole = (): string => {
     // Admin console users without profiles are super admins
     if (user && !profile) {
       return 'super_admin'
     }
-
     // Users with profiles use their assigned role
     return profile?.role || 'student'
   }
-
   const getUserPermissions = (): string[] => {
     const userRole = getUserRole()
     return ROLE_PERMISSIONS[userRole] || []
   }
-
   const canAccess = (resource: string, action: string): boolean => {
     // Admin Console: Any Supabase authenticated user has full permissions
     if (user) {
       return true
     }
-
     // Website Dashboard: Use role-based permissions for profile users
     const permissionKey = `${resource}.${action}`
     const userPermissions = getUserPermissions()
     return userPermissions.includes(permissionKey)
   }
-
   const hasAnyPermission = (permissions: string[]): boolean => {
     const userPermissions = getUserPermissions()
     return permissions.some((permission) => userPermissions.includes(permission))
   }
-
   const value: PermissionContextType = {
     canAccess,
     hasAnyPermission,
     getUserPermissions,
     isLoading,
   }
-
   return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>
 }
-
 // Helper component for conditional rendering based on permissions
 interface PermissionGateProps {
   resource: string
@@ -168,7 +152,6 @@ interface PermissionGateProps {
   children: React.ReactNode
   fallback?: React.ReactNode
 }
-
 export const PermissionGate: React.FC<PermissionGateProps> = ({
   resource,
   action,
@@ -176,45 +159,35 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   fallback = null,
 }) => {
   const { canAccess } = usePermissions()
-
   if (canAccess(resource, action)) {
     return <>{children}</>
   }
-
   return <>{fallback}</>
 }
-
 // Hook for role-based UI customization
 export const useRoleBasedUI = () => {
   const { user, profile } = useAuth()
   const { canAccess, getUserPermissions } = usePermissions()
-
   const getUserRole = (): string => {
     if (user && !profile) return 'super_admin'
     return profile?.role || 'student'
   }
-
   const isStudent = (): boolean => {
     return getUserRole() === 'student'
   }
-
   const isTeacher = (): boolean => {
     return getUserRole() === 'teacher'
   }
-
   const isAdmin = (): boolean => {
     const role = getUserRole()
     return role === 'admin' || role === 'super_admin'
   }
-
   const canAccessAdminConsole = (): boolean => {
     return canAccess('admin', 'access')
   }
-
   const shouldShowAnalytics = (): boolean => {
     return canAccess('analytics', 'read')
   }
-
   return {
     getUserRole,
     isStudent,
@@ -226,5 +199,4 @@ export const useRoleBasedUI = () => {
     getUserPermissions,
   }
 }
-
 export default PermissionProvider

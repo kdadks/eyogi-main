@@ -1,25 +1,20 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
-
 interface ProtectedRouteProps {
   children: React.ReactNode
 }
-
 const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isSuperAdmin, loading, user, initialized } = useAuth()
   const location = useLocation()
-
   // Allow login page through
   if (location.pathname.includes('/admin/login')) {
     return <>{children}</>
   }
-
   // Redirect bare /admin to login
   if (location.pathname === '/admin' || location.pathname === '/admin/') {
     return <Navigate to="/admin/login" replace />
   }
-
   // Show loading while checking auth
   if (!initialized || loading) {
     return (
@@ -31,14 +26,11 @@ const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       </div>
     )
   }
-
   // Redirect to login if not authenticated or not admin
   if (!user || !isSuperAdmin) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />
   }
-
   // Allow access
   return <>{children}</>
 }
-
 export default AdminProtectedRoute

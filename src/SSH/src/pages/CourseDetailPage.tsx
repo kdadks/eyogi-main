@@ -20,7 +20,6 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../components/chat/ChatBotTrigger'
-
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useWebsiteAuth()
@@ -29,59 +28,48 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
   const [prerequisiteResult, setPrerequisiteResult] = useState<PrerequisiteCheckResult | null>(null)
-
   const loadCourseData = useCallback(async () => {
     if (!id) {
-      console.error('No course ID provided')
       setLoading(false)
       return
     }
-
     try {
       const [courseData, enrolledCountData] = await Promise.all([
         getCourseBySlug(id),
         getEnrolledCount(id),
       ])
-
       setCourse(courseData)
       setEnrolledCount(enrolledCountData)
-    } catch (error) {
-      console.error('Error loading course:', error)
+    } catch {
       toast.error('Failed to load course details')
     } finally {
       setLoading(false)
     }
   }, [id])
-
   useEffect(() => {
     if (id) {
       loadCourseData()
     }
   }, [id, loadCourseData])
-
   const handleEnroll = async () => {
     if (!user) {
       toast.error('Please sign in to enroll in courses')
       return
     }
-
     if (user.role !== 'student') {
       toast.error('Only students can enroll in courses')
       return
     }
-
     setEnrolling(true)
     try {
       await enrollInCourse(course!.id, user.id)
       toast.success('Enrollment request submitted! You will receive confirmation once approved.')
-    } catch (error) {
-      console.error('Error enrolling:', error)
+    } catch {
       toast.error('Failed to enroll in course')
     } finally {
       setEnrolling(false)
     }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -92,7 +80,6 @@ export default function CourseDetailPage() {
       </div>
     )
   }
-
   if (!course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -106,13 +93,11 @@ export default function CourseDetailPage() {
       </div>
     )
   }
-
   const syllabus = course?.syllabus as
     | {
         classes?: Array<{ number: number; title: string; topics: string[]; duration: string }>
       }
     | undefined
-
   return (
     <>
       <SEOHead
@@ -171,12 +156,10 @@ export default function CourseDetailPage() {
                   <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
                   <span className="text-sm text-gray-500">{course.course_number}</span>
                 </div>
-
                 <div>
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">{course.title}</h1>
                   <p className="text-xl text-gray-600 leading-relaxed">{course.description}</p>
                 </div>
-
                 <div className="flex items-center space-x-6 text-sm text-gray-600">
                   <div className="flex items-center">
                     <UserGroupIcon className="h-5 w-5 mr-2" />
@@ -191,7 +174,6 @@ export default function CourseDetailPage() {
                     <span>{enrolledCount} enrolled</span>
                   </div>
                 </div>
-
                 {course.gurukul && (
                   <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="flex items-center space-x-3">
@@ -206,7 +188,6 @@ export default function CourseDetailPage() {
                   </div>
                 )}
               </div>
-
               {/* Enrollment Card */}
               <div className="lg:col-span-1">
                 <Card className="sticky top-8">
@@ -241,7 +222,6 @@ export default function CourseDetailPage() {
                         <span className="font-medium">{course.max_students - enrolledCount}</span>
                       </div>
                     </div>
-
                     {user ? (
                       user.role === 'student' ? (
                         <div className="space-y-4">
@@ -252,7 +232,6 @@ export default function CourseDetailPage() {
                             onPrerequisiteCheck={setPrerequisiteResult}
                             showFullDetails={false}
                           />
-
                           <Button
                             className="w-full"
                             onClick={handleEnroll}
@@ -293,7 +272,6 @@ export default function CourseDetailPage() {
             </div>
           </div>
         </div>
-
         {/* Course Content */}
         <div className="container-max section-padding">
           <div className="grid lg:grid-cols-3 gap-12">
@@ -314,7 +292,6 @@ export default function CourseDetailPage() {
                   </div>
                 </CardContent>
               </Card>
-
               {/* Course Syllabus */}
               {syllabus?.classes && (
                 <Card>
@@ -344,7 +321,6 @@ export default function CourseDetailPage() {
                   </CardContent>
                 </Card>
               )}
-
               {/* Prerequisites */}
               {user && user.role === 'student' && (
                 <Card>
@@ -361,7 +337,6 @@ export default function CourseDetailPage() {
                   </CardContent>
                 </Card>
               )}
-
               {/* Prerequisites (for non-students or non-authenticated users) */}
               {(!user || user.role !== 'student') && course.prerequisites && (
                 <Card>
@@ -374,7 +349,6 @@ export default function CourseDetailPage() {
                 </Card>
               )}
             </div>
-
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">
               {/* Teacher Info */}
@@ -398,7 +372,6 @@ export default function CourseDetailPage() {
                   </CardContent>
                 </Card>
               )}
-
               {/* Course Details */}
               <Card>
                 <CardHeader>
@@ -430,7 +403,6 @@ export default function CourseDetailPage() {
             </div>
           </div>
         </div>
-
         {/* AI Chat Assistant */}
         <ChatBotTrigger
           initialMessage={course ? `Tell me more about ${course.title}` : undefined}

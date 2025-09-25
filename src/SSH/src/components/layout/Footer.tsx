@@ -1,11 +1,8 @@
 'use client'
-
 import React from 'react'
 import { Link } from 'react-router-dom'
-
 export default function Footer() {
   const currentYear = new Date().getFullYear()
-
   const footerSections = [
     {
       title: 'Gurukuls',
@@ -47,7 +44,6 @@ export default function Footer() {
       ]
     }
   ]
-
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -84,7 +80,6 @@ export default function Footer() {
               </a>
             </div>
           </div>
-
           {/* Footer Links */}
           {footerSections.map((section) => (
             <div key={section.title}>
@@ -106,7 +101,6 @@ export default function Footer() {
             </div>
           ))}
         </div>
-
         <div className="mt-8 pt-8 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">

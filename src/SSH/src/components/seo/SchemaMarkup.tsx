@@ -1,13 +1,10 @@
 import React from 'react'
 import { Helmet } from 'react-helmet-async'
-
 interface SchemaMarkupProps {
   schema: object | object[]
 }
-
 export default function SchemaMarkup({ schema }: SchemaMarkupProps) {
   const schemaArray = Array.isArray(schema) ? schema : [schema]
-  
   return (
     <Helmet>
       {schemaArray.map((schemaItem, index) => (
@@ -18,7 +15,6 @@ export default function SchemaMarkup({ schema }: SchemaMarkupProps) {
     </Helmet>
   )
 }
-
 // Pre-built schema generators for common use cases
 export const CommonSchemas = {
   // FAQ Schema for better search snippets
@@ -34,7 +30,6 @@ export const CommonSchemas = {
       }
     }))
   }),
-
   // Article Schema for blog posts
   generateArticleSchema: (article: {
     title: string
@@ -75,7 +70,6 @@ export const CommonSchemas = {
       { "@type": "Thing", "name": "Sanatan Dharma" }
     ]
   }),
-
   // Local Business Schema
   generateLocalBusinessSchema: () => ({
     "@context": "https://schema.org",
@@ -108,7 +102,6 @@ export const CommonSchemas = {
       "geoRadius": "50000"
     }
   }),
-
   // Review Schema
   generateReviewSchema: (reviews: Array<{
     author: string

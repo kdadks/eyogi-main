@@ -17,13 +17,11 @@ export type IntentType =
   | 'goodbye'
   | 'did_you_know'
   | 'general_question'
-
 export interface IntentResult {
   intent: IntentType
   confidence: number
   entities?: Record<string, string>
 }
-
 export class IntentClassifier {
   private intentPatterns: Record<IntentType, string[]> = {
     course_inquiry: [
@@ -250,11 +248,9 @@ export class IntentClassifier {
       'where',
     ],
   }
-
   classifyIntent(message: string, persona: string): IntentResult {
     const lowerMessage = message.toLowerCase()
     const scores: Record<IntentType, number> = {} as Record<IntentType, number>
-
     // Calculate scores for each intent
     Object.entries(this.intentPatterns).forEach(([intent, patterns]) => {
       let score = 0
@@ -265,50 +261,39 @@ export class IntentClassifier {
       })
       scores[intent as IntentType] = score
     })
-
     // Apply persona-based weighting
     this.applyPersonaWeighting(scores, persona)
-
     // Find the highest scoring intent
     const sortedIntents = Object.entries(scores)
       .sort(([, a], [, b]) => b - a)
       .filter(([, score]) => score > 0)
-
     if (sortedIntents.length === 0) {
       return { intent: 'general_question', confidence: 0.5 }
     }
-
     const [topIntent, topScore] = sortedIntents[0]
     const confidence = Math.min(topScore / 10, 1) // Normalize to 0-1
-
     // Extract entities
     const entities = this.extractEntities(message)
-
     return {
       intent: topIntent as IntentType,
       confidence,
       entities,
     }
   }
-
   private calculatePatternScore(pattern: string, message: string): number {
     const words = pattern.split(' ')
     let score = 0
-
     words.forEach((word) => {
       if (message.includes(word)) {
         score += word.length > 3 ? 2 : 1 // Longer words get higher scores
       }
     })
-
     // Exact phrase match gets bonus
     if (message.includes(pattern)) {
       score += 3
     }
-
     return score
   }
-
   private applyPersonaWeighting(scores: Record<IntentType, number>, persona: string) {
     switch (persona) {
       case 'student':
@@ -332,17 +317,14 @@ export class IntentClassifier {
         break
     }
   }
-
   private extractEntities(message: string): Record<string, string> {
     const entities: Record<string, string> = {}
     const lowerMessage = message.toLowerCase()
-
     // Extract course-related entities
     const courseNumbers = message.match(/[CM]\d{4}/g)
     if (courseNumbers) {
       entities.course_number = courseNumbers[0]
     }
-
     // Extract gurukul names
     const gurukuls = ['hinduism', 'mantra', 'philosophy', 'sanskrit', 'yoga']
     gurukuls.forEach((gurukul) => {
@@ -350,13 +332,11 @@ export class IntentClassifier {
         entities.gurukul = gurukul
       }
     })
-
     // Extract age mentions
     const ageMatch = message.match(/(\d+)\s*(?:years?\s*old|age)/i)
     if (ageMatch) {
       entities.age = ageMatch[1]
     }
-
     // Extract level mentions
     const levels = ['elementary', 'basic', 'intermediate', 'advanced']
     levels.forEach((level) => {
@@ -364,7 +344,6 @@ export class IntentClassifier {
         entities.level = level
       }
     })
-
     return entities
   }
 }

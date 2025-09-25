@@ -1,10 +1,8 @@
 import React from 'react'
-
 interface RollingTextProps {
   text: string
   className?: string
 }
-
 export default function RollingText({ text, className = '' }: RollingTextProps) {
   return (
     <div className={`rolling-text-container ${className}`}>

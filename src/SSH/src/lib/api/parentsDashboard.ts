@@ -3,29 +3,176 @@
 // =========================================================================
 // API functions for managing parent dashboard data and operations
 // =========================================================================
-
 import { supabaseAdmin } from '../supabase'
-import type {
-  ParentChildRelationship,
-  ChildLearningActivity,
-  ChildAssignment,
-  ChildAchievement,
-  ChildStudySession,
-  ParentDashboardStats,
-  ChildProfile,
-  ParentDashboardData,
-  AddChildRequest,
-  CreateChildAssignmentRequest,
-  CreateChildAchievementRequest,
-  LogChildActivityRequest,
-  ParentDashboardFilters,
-  ChildAssignmentWithCourse,
-} from '../../types/parentsDashboard'
-
+// Local interface definitions for parent dashboard
+interface ParentChildRelationship {
+  parent_id: string
+  child_id: string
+  relationship_type: 'parent' | 'guardian' | 'authorized_user'
+  permissions: {
+    view_progress: boolean
+    manage_courses: boolean
+    view_assignments: boolean
+    contact_teachers: boolean
+  }
+  is_primary_contact: boolean
+  is_active: boolean
+}
+interface ChildLearningActivity {
+  id: string
+  child_id: string
+  course_id?: string
+  activity_type:
+    | 'course_enrollment'
+    | 'lesson_completion'
+    | 'assignment_submission'
+    | 'quiz_completion'
+    | 'achievement_unlocked'
+    | 'study_session'
+  activity_description?: string
+  points_earned: number
+  duration_minutes?: number
+  metadata: Record<string, any>
+  created_at: string
+}
+interface ChildAssignment {
+  id: string
+  child_id: string
+  assignment_title: string
+  assignment_description?: string
+  assignment_type: 'quiz' | 'homework' | 'project' | 'exam' | 'reading'
+  submitted_date?: string
+  status: 'pending' | 'in_progress' | 'submitted' | 'graded' | 'overdue' | 'excused'
+  grade?: number
+  teacher_feedback?: string
+  estimated_duration_minutes?: number
+  difficulty_level: 'easy' | 'medium' | 'hard'
+  tags: string[]
+  created_at: string
+  updated_at: string
+}
+interface ChildAchievement {
+  child_id: string
+  course_id?: string
+  achievement_type:
+    | 'badge'
+    | 'certificate'
+    | 'perfect_score'
+    | 'improvement'
+    | 'participation'
+    | 'leadership'
+    | 'creativity'
+  achievement_title: string
+  achievement_description?: string
+  icon_url?: string
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  criteria_met?: Record<string, string | number | boolean | null>
+  metadata: Record<string, any>
+  created_at: string
+}
+interface ChildStudySession {
+  id: string
+  child_id: string
+  course_id?: string
+  session_start: string
+  session_end?: string
+  duration_minutes?: number
+  activities: any[]
+  focus_score?: number
+  notes?: string
+  created_at: string
+}
+interface ParentDashboardStats {
+  parent_id: string
+  child_id: string
+  avatar_url?: string
+  total_enrolled_courses: number
+  active_courses: number
+  total_assignments: number
+  pending_assignments: number
+  submitted_assignments: number
+  overdue_assignments: number
+  total_points: number
+  active_learning_days: number
+  last_activity_date?: string
+  average_grade?: number
+}
+interface ChildProfile {
+  child_id: string
+  course_id?: string
+  achievement_type: string
+  achievement_title: string
+  achievement_description?: string
+  icon_url?: string
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  criteria_met?: Record<string, any>
+  metadata: Record<string, any>
+  created_at: string
+}
+interface ParentDashboardData {
+  children: any[]
+  stats: ParentDashboardStats
+}
+interface AddChildRequest {
+  parent_id: string
+  child_email: string
+  child_id: string
+  relationship_type: 'parent' | 'guardian' | 'authorized_user'
+  permissions: {
+    view_progress: boolean
+    manage_courses: boolean
+    view_assignments: boolean
+    contact_teachers: boolean
+  }
+  is_primary_contact: boolean
+  is_active: boolean
+}
+interface CreateChildAssignmentRequest {
+  title: string
+  description: string
+  due_date: string
+}
+interface CreateChildAchievementRequest {
+  child_id: string
+  course_id?: string
+  achievement_type: string
+  achievement_title: string
+  achievement_description?: string
+  icon_url?: string
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  criteria_met?: Record<string, any>
+  points_earned: number
+  metadata: Record<string, any>
+}
+interface LogChildActivityRequest {
+  child_id: string
+  course_id?: string
+  activity_type:
+    | 'course_enrollment'
+    | 'lesson_completion'
+    | 'assignment_submission'
+    | 'quiz_completion'
+    | 'achievement_earned'
+  activity_description?: string
+  points_earned: number
+  duration_minutes?: number
+  metadata: Record<string, any>
+}
+interface ParentDashboardFilters {
+  child_id?: string
+  course_id?: string
+  date_range?: {
+    start: string
+    end: string
+  }
+  status?: string[]
+}
+interface ChildAssignmentWithCourse extends ChildAssignment {
+  course: any
+}
 // -------------------------------------------------------------------------
 // PARENT-CHILD RELATIONSHIP MANAGEMENT
 // -------------------------------------------------------------------------
-
 export async function addChildToParent(
   parentId: string,
   request: AddChildRequest,
@@ -38,11 +185,9 @@ export async function addChildToParent(
       .eq('email', request.child_email)
       .eq('role', 'student')
       .single()
-
     if (childError || !childProfile) {
       return { data: null, error: 'Student not found with this email address' }
     }
-
     // Check if relationship already exists
     const { data: existingRelationship } = await supabaseAdmin
       .from('parent_child_relationships')
@@ -50,11 +195,9 @@ export async function addChildToParent(
       .eq('parent_id', parentId)
       .eq('child_id', childProfile.id)
       .single()
-
     if (existingRelationship) {
       return { data: null, error: 'This child is already linked to your account' }
     }
-
     // Create the relationship
     const { data: relationship, error: relationshipError } = await supabaseAdmin
       .from('parent_child_relationships')
@@ -72,21 +215,16 @@ export async function addChildToParent(
       })
       .select()
       .single()
-
     if (relationshipError) {
       return { data: null, error: 'Failed to create parent-child relationship' }
     }
-
     // Update child's parent_id in profiles table
     await supabaseAdmin.from('profiles').update({ parent_id: parentId }).eq('id', childProfile.id)
-
     return { data: relationship, error: null }
   } catch (error) {
-    console.error('Error adding child to parent:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function getParentChildren(
   parentId: string,
 ): Promise<{ data: ChildProfile[] | null; error: string | null }> {
@@ -115,17 +253,14 @@ export async function getParentChildren(
       )
       .eq('parent_id', parentId)
       .eq('is_active', true)
-
     if (relationshipError) {
       return { data: null, error: 'Failed to fetch children' }
     }
-
     // Get dashboard stats for each child
     const childrenWithStats = await Promise.all(
       relationships?.map(async (rel) => {
         const child = rel.child as ChildProfile
         const stats = await getChildDashboardStats(child.id)
-
         return {
           ...child,
           relationship: rel,
@@ -133,14 +268,11 @@ export async function getParentChildren(
         }
       }) || [],
     )
-
     return { data: childrenWithStats, error: null }
   } catch (error) {
-    console.error('Error fetching parent children:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function removeChildFromParent(
   parentId: string,
   childId: string,
@@ -152,25 +284,19 @@ export async function removeChildFromParent(
       .update({ is_active: false })
       .eq('parent_id', parentId)
       .eq('child_id', childId)
-
     if (error) {
       return { error: 'Failed to remove child from account' }
     }
-
     // Remove parent_id from child's profile
     await supabaseAdmin.from('profiles').update({ parent_id: null }).eq('id', childId)
-
     return { error: null }
   } catch (error) {
-    console.error('Error removing child from parent:', error)
     return { error: 'An unexpected error occurred' }
   }
 }
-
 // -------------------------------------------------------------------------
 // CHILD DASHBOARD STATS
 // -------------------------------------------------------------------------
-
 export async function getChildDashboardStats(
   childId: string,
 ): Promise<{ data: ParentDashboardStats | null; error: string | null }> {
@@ -180,18 +306,14 @@ export async function getChildDashboardStats(
       .select('*')
       .eq('child_id', childId)
       .single()
-
     if (error && error.code !== 'PGRST116') {
       return { data: null, error: 'Failed to fetch dashboard stats' }
     }
-
     return { data: stats, error: null }
   } catch (error) {
-    console.error('Error fetching child dashboard stats:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function getParentDashboardData(
   parentId: string,
 ): Promise<{ data: ParentDashboardData | null; error: string | null }> {
@@ -202,18 +324,14 @@ export async function getParentDashboardData(
       .select('id, full_name, email, avatar_url')
       .eq('id', parentId)
       .single()
-
     if (parentError) {
       return { data: null, error: 'Parent not found' }
     }
-
     // Get children data
     const { data: children, error: childrenError } = await getParentChildren(parentId)
-
     if (childrenError) {
       return { data: null, error: childrenError }
     }
-
     // Calculate summary statistics
     const summary = {
       total_children: children?.length || 0,
@@ -230,7 +348,6 @@ export async function getParentDashboardData(
           children.length
         : 0,
     }
-
     return {
       data: {
         parent,
@@ -240,15 +357,12 @@ export async function getParentDashboardData(
       error: null,
     }
   } catch (error) {
-    console.error('Error fetching parent dashboard data:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 // -------------------------------------------------------------------------
 // CHILD ACTIVITIES
 // -------------------------------------------------------------------------
-
 export async function getChildRecentActivities(
   childId: string,
   limit: number = 10,
@@ -269,18 +383,14 @@ export async function getChildRecentActivities(
       .eq('child_id', childId)
       .order('created_at', { ascending: false })
       .limit(limit)
-
     if (error) {
       return { data: null, error: 'Failed to fetch activities' }
     }
-
     return { data: activities, error: null }
   } catch (error) {
-    console.error('Error fetching child activities:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function logChildActivity(
   request: LogChildActivityRequest,
 ): Promise<{ data: ChildLearningActivity | null; error: string | null }> {
@@ -299,22 +409,17 @@ export async function logChildActivity(
       })
       .select()
       .single()
-
     if (error) {
       return { data: null, error: 'Failed to log activity' }
     }
-
     return { data: activity, error: null }
   } catch (error) {
-    console.error('Error logging child activity:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 // -------------------------------------------------------------------------
 // CHILD ASSIGNMENTS
 // -------------------------------------------------------------------------
-
 export async function getChildAssignments(
   childId: string,
   filters?: ParentDashboardFilters,
@@ -338,35 +443,27 @@ export async function getChildAssignments(
       `,
       )
       .eq('child_id', childId)
-
     // Apply filters
     if (filters?.assignment_status && filters.assignment_status.length > 0) {
       query = query.in('status', filters.assignment_status)
     }
-
     if (filters?.course_id) {
       query = query.eq('course_id', filters.course_id)
     }
-
     if (filters?.date_range) {
       query = query
         .gte('due_date', filters.date_range.start)
         .lte('due_date', filters.date_range.end)
     }
-
     const { data: assignments, error } = await query.order('due_date', { ascending: true })
-
     if (error) {
       return { data: null, error: 'Failed to fetch assignments' }
     }
-
     return { data: assignments, error: null }
   } catch (error) {
-    console.error('Error fetching child assignments:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function createChildAssignment(
   request: CreateChildAssignmentRequest,
 ): Promise<{ data: ChildAssignment | null; error: string | null }> {
@@ -386,18 +483,14 @@ export async function createChildAssignment(
       })
       .select()
       .single()
-
     if (error) {
       return { data: null, error: 'Failed to create assignment' }
     }
-
     return { data: assignment, error: null }
   } catch (error) {
-    console.error('Error creating child assignment:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function updateAssignmentStatus(
   assignmentId: string,
   status: ChildAssignment['status'],
@@ -408,34 +501,27 @@ export async function updateAssignmentStatus(
       status,
       updated_at: new Date().toISOString(),
     }
-
     if (status === 'submitted') {
       updateData.submitted_date = new Date().toISOString()
       if (submissionUrl) {
         updateData.submission_url = submissionUrl
       }
     }
-
     const { error } = await supabaseAdmin
       .from('child_assignments')
       .update(updateData)
       .eq('id', assignmentId)
-
     if (error) {
       return { error: 'Failed to update assignment status' }
     }
-
     return { error: null }
   } catch (error) {
-    console.error('Error updating assignment status:', error)
     return { error: 'An unexpected error occurred' }
   }
 }
-
 // -------------------------------------------------------------------------
 // CHILD ACHIEVEMENTS
 // -------------------------------------------------------------------------
-
 export async function getChildAchievements(
   childId: string,
   filters?: ParentDashboardFilters,
@@ -454,35 +540,27 @@ export async function getChildAchievements(
       `,
       )
       .eq('child_id', childId)
-
     // Apply filters
     if (filters?.achievement_types && filters.achievement_types.length > 0) {
       query = query.in('achievement_type', filters.achievement_types)
     }
-
     if (filters?.course_id) {
       query = query.eq('course_id', filters.course_id)
     }
-
     if (filters?.date_range) {
       query = query
         .gte('earned_date', filters.date_range.start)
         .lte('earned_date', filters.date_range.end)
     }
-
     const { data: achievements, error } = await query.order('earned_date', { ascending: false })
-
     if (error) {
       return { data: null, error: 'Failed to fetch achievements' }
     }
-
     return { data: achievements, error: null }
   } catch (error) {
-    console.error('Error fetching child achievements:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 export async function awardChildAchievement(
   request: CreateChildAchievementRequest,
 ): Promise<{ data: ChildAchievement | null; error: string | null }> {
@@ -502,38 +580,29 @@ export async function awardChildAchievement(
       })
       .select()
       .single()
-
     if (error) {
       return { data: null, error: 'Failed to award achievement' }
     }
-
     return { data: achievement, error: null }
   } catch (error) {
-    console.error('Error awarding child achievement:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 // -------------------------------------------------------------------------
 // UTILITY FUNCTIONS
 // -------------------------------------------------------------------------
-
 export async function refreshDashboardStats(): Promise<{ error: string | null }> {
   try {
     // Refresh the materialized view
     const { error } = await supabaseAdmin.rpc('refresh_parent_dashboard_stats')
-
     if (error) {
       return { error: 'Failed to refresh dashboard statistics' }
     }
-
     return { error: null }
   } catch (error) {
-    console.error('Error refreshing dashboard stats:', error)
     return { error: 'An unexpected error occurred' }
   }
 }
-
 export async function getChildStudySessions(
   childId: string,
   limit: number = 10,
@@ -545,18 +614,14 @@ export async function getChildStudySessions(
       .eq('child_id', childId)
       .order('session_start', { ascending: false })
       .limit(limit)
-
     if (error) {
       return { data: null, error: 'Failed to fetch study sessions' }
     }
-
     return { data: sessions, error: null }
   } catch (error) {
-    console.error('Error fetching child study sessions:', error)
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
-
 // Helper function to check if user is parent of child
 export async function verifyParentChildRelationship(
   parentId: string,
@@ -570,7 +635,6 @@ export async function verifyParentChildRelationship(
       .eq('child_id', childId)
       .eq('is_active', true)
       .single()
-
     return !!relationship
   } catch {
     return false

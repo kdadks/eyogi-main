@@ -15,7 +15,6 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import Footer from '../components/layout/Footer'
-
 export default function HomePage() {
   const structuredData = [
     generateOrganizationSchema(),
@@ -41,7 +40,6 @@ export default function HomePage() {
       ],
     },
   ]
-
   const features = [
     {
       icon: AcademicCapIcon,
@@ -65,7 +63,6 @@ export default function HomePage() {
       description: 'Earn certificates upon completion of courses and showcase your achievements',
     },
   ]
-
   const gurukuls = [
     {
       name: 'Hinduism Gurukul',
@@ -108,7 +105,6 @@ export default function HomePage() {
       slug: 'yoga-wellness',
     },
   ]
-
   const testimonials = [
     {
       name: 'Sarah Johnson',
@@ -132,7 +128,6 @@ export default function HomePage() {
       rating: 5,
     },
   ]
-
   return (
     <>
       <SEOHead
@@ -164,7 +159,6 @@ export default function HomePage() {
       <div>
         {/* Rolling Text Banner */}
         <RollingText text="🕉️ Spirituality and Science of Hinduism University - Discover Ancient Wisdom Through Modern Learning 🕉️" />
-
         {/* Hero Section */}
         <section
           id="hero"
@@ -174,14 +168,11 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm"></div>
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-200/30 via-orange-100/20 to-transparent"></div>
-
           {/* Glossy Shine Effect */}
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 via-transparent to-transparent"></div>
           <div className="absolute inset-0 backdrop-blur-[2px] bg-white/15"></div>
-
           {/* Additional Gloss Layer */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/20"></div>
-
           <div className="relative container-max section-padding">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="space-y-6 lg:space-y-8 text-center lg:text-left">
@@ -211,7 +202,6 @@ export default function HomePage() {
                     ages.
                   </p>
                 </div>
-
                 <div className="flex flex-col gap-3 sm:gap-4 px-4 sm:px-0 sm:flex-row justify-center lg:justify-start">
                   <ScrollLink to="/courses" className="w-full sm:w-auto">
                     <Button
@@ -232,7 +222,6 @@ export default function HomePage() {
                     </Button>
                   </ScrollLink>
                 </div>
-
                 <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row sm:items-center sm:space-x-6 lg:space-x-8 text-sm text-gray-600 justify-center lg:justify-start px-2 sm:px-0">
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
@@ -248,7 +237,6 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-
               <div className="relative order-first lg:order-last overflow-visible">
                 <div className="aspect-square max-w-sm mx-auto lg:max-w-none rounded-2xl overflow-hidden shadow-2xl bg-white/30 backdrop-blur-lg border border-white/40 p-4 relative">
                   {/* Glossy Shine Overlay */}
@@ -278,7 +266,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
         {/* Features Section */}
         <section id="courses" className="section-padding bg-white">
           <div className="container-max">
@@ -292,7 +279,6 @@ export default function HomePage() {
                 everywhere.
               </p>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
               {features.map((feature, index) => (
                 <Card key={index} className="card-hover text-center glass-card">
@@ -308,7 +294,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
         {/* Gurukuls Section */}
         <section id="gurukuls" className="section-padding bg-gray-50">
           <div className="container-max">
@@ -321,7 +306,6 @@ export default function HomePage() {
                 Dharma, offering comprehensive Hindu education paths for students of all ages.
               </p>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
               {gurukuls.map((gurukul, index) => (
                 <Card key={index} className="card-hover overflow-hidden">
@@ -335,12 +319,10 @@ export default function HomePage() {
                   <CardContent className="p-4 lg:p-6">
                     <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
                     <p className="text-gray-600 mb-4 text-sm lg:text-base">{gurukul.description}</p>
-
                     <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
                       <span>{gurukul.courses} Hindu Courses</span>
                       <span>{gurukul.students} Vedic Students</span>
                     </div>
-
                     <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
                       <Button variant="primary" className="w-full min-h-[44px]">
                         Explore Hindu Gurukul
@@ -352,7 +334,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
         {/* Testimonials Section */}
         <section id="about" className="section-padding bg-white">
           <div className="container-max">
@@ -364,7 +345,6 @@ export default function HomePage() {
                 Hear from our global community of Hindu and Vedic learning students
               </p>
             </div>
-
             <div className="grid md:grid-cols-3 gap-8">
               {testimonials.map((testimonial, index) => (
                 <Card key={index} className="card-hover">
@@ -385,7 +365,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
         {/* CTA Section */}
         <section id="contact" className="section-padding gradient-bg text-white">
           <div className="container-max text-center">

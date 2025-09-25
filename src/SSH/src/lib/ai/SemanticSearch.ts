@@ -1,7 +1,6 @@
 import { getCourses } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { Course, Gurukul } from '@/types'
-
 export interface SearchResult {
   type: 'course' | 'gurukul' | 'general_info' | 'faq'
   title: string
@@ -14,7 +13,6 @@ export interface SearchResult {
     gurukul?: Gurukul
   }
 }
-
 export class SemanticSearch {
   private knowledgeBase: Array<{
     id: string
@@ -24,11 +22,9 @@ export class SemanticSearch {
     keywords: string[]
     category: string
   }> = []
-
   constructor() {
     this.initializeKnowledgeBase()
   }
-
   private initializeKnowledgeBase() {
     this.knowledgeBase = [
       // About eYogi Gurukul
@@ -58,7 +54,6 @@ export class SemanticSearch {
         ],
         category: 'about',
       },
-
       // Enrollment Process
       {
         id: 'enrollment-1',
@@ -78,7 +73,6 @@ export class SemanticSearch {
         keywords: ['requirements', 'prerequisites', 'age', 'consent', 'guardian', 'parent'],
         category: 'enrollment',
       },
-
       // Course Information
       {
         id: 'courses-1',
@@ -106,7 +100,6 @@ export class SemanticSearch {
         keywords: ['delivery', 'online', 'remote', 'physical', 'hybrid', 'video', 'in-person'],
         category: 'courses',
       },
-
       // Gurukul Information
       {
         id: 'gurukul-hinduism',
@@ -167,7 +160,6 @@ export class SemanticSearch {
         keywords: ['yoga', 'wellness', 'asanas', 'pranayama', 'meditation', 'ayurveda', 'health'],
         category: 'gurukuls',
       },
-
       // Certificates
       {
         id: 'certificates-1',
@@ -185,7 +177,6 @@ export class SemanticSearch {
         ],
         category: 'certificates',
       },
-
       // Pricing
       {
         id: 'pricing-1',
@@ -205,7 +196,6 @@ export class SemanticSearch {
         ],
         category: 'pricing',
       },
-
       // Contact Information
       {
         id: 'contact-1',
@@ -216,7 +206,6 @@ export class SemanticSearch {
         keywords: ['contact', 'email', 'phone', 'address', 'dublin', 'ireland', 'support'],
         category: 'contact',
       },
-
       // Technical Support
       {
         id: 'tech-support-1',
@@ -227,7 +216,6 @@ export class SemanticSearch {
         keywords: ['technical', 'login', 'password', 'access', 'video', 'internet', 'support'],
         category: 'technical',
       },
-
       // Did You Know Information
       {
         id: 'did-you-know-1',
@@ -248,44 +236,36 @@ export class SemanticSearch {
       },
     ]
   }
-
   async search(query: string, intent: string): Promise<SearchResult[]> {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 200))
-
     const queryWords = query.toLowerCase().split(' ')
     const results: SearchResult[] = []
-
     // Search knowledge base
     this.knowledgeBase.forEach((item) => {
       let relevanceScore = 0
-
       // Keyword matching
       item.keywords.forEach((keyword) => {
         if (query.toLowerCase().includes(keyword)) {
           relevanceScore += keyword.length > 5 ? 3 : 2
         }
       })
-
       // Content matching
       queryWords.forEach((word) => {
         if (word.length > 2 && item.content.toLowerCase().includes(word)) {
           relevanceScore += 1
         }
       })
-
       // Title matching (higher weight)
       queryWords.forEach((word) => {
         if (word.length > 2 && item.title.toLowerCase().includes(word)) {
           relevanceScore += 3
         }
       })
-
       // Intent-based boosting
       if (this.isIntentRelevant(intent, item.category)) {
         relevanceScore *= 1.5
       }
-
       if (relevanceScore > 0) {
         results.push({
           type: item.type,
@@ -296,16 +276,13 @@ export class SemanticSearch {
         })
       }
     })
-
     // Search live course data
     try {
       const courses = await getCourses()
       const gurukuls = await getGurukuls()
-
       // Search courses
       courses.forEach((course) => {
         let relevanceScore = 0
-
         queryWords.forEach((word) => {
           if (word.length > 2) {
             if (course.title.toLowerCase().includes(word)) relevanceScore += 3
@@ -314,7 +291,6 @@ export class SemanticSearch {
             if (course.level.toLowerCase().includes(word)) relevanceScore += 2
           }
         })
-
         if (relevanceScore > 0) {
           results.push({
             type: 'course',
@@ -325,11 +301,9 @@ export class SemanticSearch {
           })
         }
       })
-
       // Search gurukuls
       gurukuls.forEach((gurukul) => {
         let relevanceScore = 0
-
         queryWords.forEach((word) => {
           if (word.length > 2) {
             if (gurukul.name.toLowerCase().includes(word)) relevanceScore += 3
@@ -337,7 +311,6 @@ export class SemanticSearch {
             if (gurukul.slug.toLowerCase().includes(word)) relevanceScore += 2
           }
         })
-
         if (relevanceScore > 0) {
           results.push({
             type: 'gurukul',
@@ -349,13 +322,10 @@ export class SemanticSearch {
         }
       })
     } catch (error) {
-      console.error('Error searching live data:', error)
     }
-
     // Sort by relevance and return top results
     return results.sort((a, b) => b.relevanceScore - a.relevanceScore).slice(0, 5)
   }
-
   private isIntentRelevant(intent: string, category: string): boolean {
     const intentCategoryMap: Record<string, string[]> = {
       course_inquiry: ['courses', 'gurukuls'],
@@ -368,7 +338,6 @@ export class SemanticSearch {
       about_eyogi: ['about'],
       did_you_know: ['education', 'about'],
     }
-
     return intentCategoryMap[intent]?.includes(category) || false
   }
 }

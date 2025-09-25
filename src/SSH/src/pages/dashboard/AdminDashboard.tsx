@@ -32,7 +32,6 @@ import {
   ChartPieIcon,
   UserIcon,
 } from '@heroicons/react/24/outline'
-
 interface QuickAction {
   id: string
   title: string
@@ -41,7 +40,6 @@ interface QuickAction {
   action: () => void
   color: string
 }
-
 interface Notification {
   id: string
   type: 'info' | 'warning' | 'success' | 'error'
@@ -50,7 +48,6 @@ interface Notification {
   time: string
   unread: boolean
 }
-
 export default function AdminDashboard() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<
@@ -72,16 +69,13 @@ export default function AdminDashboard() {
     newUsers: 0,
     totalUsers: 0,
   })
-
   useEffect(() => {
     loadQuickStats()
     loadNotifications()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   const loadQuickStats = async () => {
     try {
       const [enrollmentStats, users] = await Promise.all([getEnrollmentStats(), getAllUsers()])
-
       setQuickStats({
         pendingEnrollments: enrollmentStats.pending,
         newUsers: users.filter((u) => {
@@ -92,11 +86,10 @@ export default function AdminDashboard() {
         }).length,
         totalUsers: users.length,
       })
-    } catch (error) {
-      console.error('Error loading quick stats:', error)
+    } catch {
+      // Error loading quick stats - silent fail
     }
   }
-
   const loadNotifications = () => {
     // Mock notifications - in real app, these would come from API
     setNotifications([
@@ -126,7 +119,6 @@ export default function AdminDashboard() {
       },
     ])
   }
-
   const tabs = [
     {
       id: 'overview',
@@ -193,7 +185,6 @@ export default function AdminDashboard() {
       description: 'Website Content Management',
     },
   ]
-
   const quickActions: QuickAction[] = [
     {
       id: 'new-course',
@@ -228,12 +219,9 @@ export default function AdminDashboard() {
       color: 'bg-orange-500 hover:bg-orange-600',
     },
   ]
-
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || AdminOverview
   const activeTabInfo = tabs.find((tab) => tab.id === activeTab)
-
   const unreadCount = notifications.filter((n) => n.unread).length
-
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'warning':
@@ -246,7 +234,6 @@ export default function AdminDashboard() {
         return BellIcon
     }
   }
-
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'warning':
@@ -259,7 +246,6 @@ export default function AdminDashboard() {
         return 'text-blue-600 bg-blue-100'
     }
   }
-
   return (
     <div className="min-h-screen bg-gray-50 flex page-with-header">
       {/* Sidebar */}
@@ -292,7 +278,6 @@ export default function AdminDashboard() {
             </button>
           </div>
         </div>
-
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           {tabs.map((tab) => (
@@ -337,7 +322,6 @@ export default function AdminDashboard() {
             </button>
           ))}
         </nav>
-
         {/* Sidebar Footer */}
         {sidebarOpen && (
           <div className="p-4 border-t border-gray-200">
@@ -358,7 +342,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
@@ -370,7 +353,6 @@ export default function AdminDashboard() {
                 <p className="text-sm text-gray-600">{activeTabInfo?.description}</p>
               </div>
             </div>
-
             <div className="flex items-center space-x-4">
               {/* Search */}
               <div className="relative hidden md:block">
@@ -381,7 +363,6 @@ export default function AdminDashboard() {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-64"
                 />
               </div>
-
               {/* Notifications */}
               <div className="relative">
                 <button
@@ -395,7 +376,6 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </button>
-
                 {/* Notifications Dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
@@ -441,7 +421,6 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
-
               {/* User Menu */}
               <div className="flex items-center space-x-3">
                 <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -457,7 +436,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         </header>
-
         {/* Quick Actions Bar - Only show on overview */}
         {activeTab === 'overview' && (
           <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -487,7 +465,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto">
@@ -495,7 +472,6 @@ export default function AdminDashboard() {
           </div>
         </main>
       </div>
-
       {/* Click outside to close notifications */}
       {showNotifications && (
         <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />

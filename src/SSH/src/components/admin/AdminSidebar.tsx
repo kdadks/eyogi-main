@@ -16,30 +16,23 @@ import {
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { usePermissions } from '../../hooks/usePermissions'
-
 interface AdminSidebarProps {
   isOpen: boolean
   onClose: () => void
 }
-
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { user, signOut } = useAuth()
   const { canAccessResource, getUserRole, currentUser, isSuperAdminRole } = usePermissions()
   const [isSigningOut, setIsSigningOut] = useState(false)
-
   const handleSignOut = async () => {
     if (isSigningOut) return // Prevent double-clicks
-
     setIsSigningOut(true)
     try {
-      console.log('AdminSidebar: Starting logout...')
       await signOut()
     } catch (error) {
-      console.error('AdminSidebar: Logout error:', error)
       setIsSigningOut(false) // Reset if there's an error
     }
   }
-
   const navigation = [
     {
       name: 'Dashboard',
@@ -105,7 +98,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       adminOnly: true, // Only admin and super_admin can manage permissions
     },
   ]
-
   const filteredNavigation = navigation.filter((item) => {
     // Check if item requires admin-only access
     if (item.adminOnly) {
@@ -114,15 +106,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
         return false
       }
     }
-
     // Check resource-level permissions
     if (item.permission) {
       return canAccessResource(item.permission.resource, item.permission.action)
     }
-
     return true
   })
-
   return (
     <>
       {/* Mobile backdrop */}
@@ -131,7 +120,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={onClose} />
         </div>
       )}
-
       {/* Sidebar */}
       <div
         className={`
@@ -151,7 +139,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-
         <nav className="mt-8 px-4">
           <div className="space-y-2">
             {filteredNavigation.map((item) => (
@@ -173,7 +160,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
             ))}
           </div>
         </nav>
-
         {/* User info */}
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
@@ -222,5 +208,4 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     </>
   )
 }
-
 export default AdminSidebar

@@ -9,17 +9,14 @@ import {
   getCurrentSession,
 } from './storage'
 import { authStore } from '@/lib/auth/authStore'
-
 export async function signUp(email: string, password: string, userData: Partial<LocalUser>) {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 500))
-
   // Check if user already exists
   const existingUser = findUserByEmail(email)
   if (existingUser) {
     throw new Error('User already exists with this email')
   }
-
   // Create new user
   const newUser: LocalUser = {
     id: generateId(),
@@ -37,10 +34,8 @@ export async function signUp(email: string, password: string, userData: Partial<
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }
-
   // Store user
   storeUser(newUser)
-
   // Update auth store
   const session = storeSession(newUser)
   authStore.setUser({
@@ -57,34 +52,34 @@ export async function signUp(email: string, password: string, userData: Partial<
       | 'parent',
     date_of_birth: null,
     phone: newUser.phone,
-    address: newUser.address ? { street: newUser.address } : null,
+    address_line_1: newUser.address || null,
+    address_line_2: null,
+    city: null,
+    state: null,
+    zip_code: null,
+    country: null,
     age: newUser.age,
     student_id: newUser.student_id,
     created_at: newUser.created_at,
     updated_at: newUser.updated_at,
   })
-
   return {
     user: newUser,
     session,
   }
 }
-
 export async function signIn(email: string, password: string) {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 500))
-
   // Find user
   const user = findUserByEmail(email)
   if (!user) {
     throw new Error('Invalid email or password')
   }
-
   // For demo purposes, we'll accept "123456" as the password for all test accounts
   if (password !== '123456') {
     throw new Error('Invalid email or password')
   }
-
   // Update auth store
   const session = storeSession(user)
   authStore.setUser({
@@ -101,61 +96,54 @@ export async function signIn(email: string, password: string) {
       | 'parent',
     date_of_birth: null,
     phone: user.phone,
-    address: user.address ? { street: user.address } : null,
+    address_line_1: user.address || null,
+    address_line_2: null,
+    city: null,
+    state: null,
+    zip_code: null,
+    country: null,
     age: user.age,
     student_id: user.student_id,
     created_at: user.created_at,
     updated_at: user.updated_at,
   })
-
   return {
     user,
     session,
   }
 }
-
 export async function signOut() {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 200))
-
   clearSession()
   authStore.clearAuth()
 }
-
 export async function getCurrentUser(): Promise<LocalUser | null> {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 100))
-
   const session = getCurrentSession()
   return session?.user || null
 }
-
 export async function updateProfile(userId: string, updates: Partial<LocalUser>) {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 300))
-
   const users = JSON.parse(localStorage.getItem('eyogi_users') || '[]')
   const userIndex = users.findIndex((u: LocalUser) => u.id === userId)
-
   if (userIndex === -1) {
     throw new Error('User not found')
   }
-
   const updatedUser = {
     ...users[userIndex],
     ...updates,
     updated_at: new Date().toISOString(),
   }
-
   users[userIndex] = updatedUser
   localStorage.setItem('eyogi_users', JSON.stringify(users))
-
   // Update session if it's the current user
   const currentSession = getCurrentSession()
   if (currentSession && currentSession.user.id === userId) {
     storeSession(updatedUser)
     authStore.setUser(updatedUser)
   }
-
   return updatedUser
 }

@@ -18,7 +18,6 @@ import {
   ChatBubbleLeftRightIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
-
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
@@ -26,12 +25,9 @@ const contactSchema = z.object({
   message: z.string().min(10, 'Message must be at least 10 characters'),
   type: z.enum(['general', 'course', 'technical', 'partnership']),
 })
-
 type ContactForm = z.infer<typeof contactSchema>
-
 export default function ContactPage() {
   const [loading, setLoading] = useState(false)
-
   const {
     register,
     handleSubmit,
@@ -43,7 +39,6 @@ export default function ContactPage() {
       type: 'general',
     },
   })
-
   const onSubmit = async () => {
     setLoading(true)
     try {
@@ -57,7 +52,6 @@ export default function ContactPage() {
       setLoading(false)
     }
   }
-
   const contactInfo = [
     {
       icon: EnvelopeIcon,
@@ -84,7 +78,6 @@ export default function ContactPage() {
       description: 'AI chatbot always available',
     },
   ]
-
   const faqItems = [
     {
       question: 'How do I enroll in a course?',
@@ -112,7 +105,6 @@ export default function ContactPage() {
         'Our teachers and support team are always available. You can message instructors directly, use our AI chatbot, or contact support anytime.',
     },
   ]
-
   return (
     <>
       <SEOHead
@@ -158,7 +150,6 @@ export default function ContactPage() {
       <div>
         {/* Rolling Text Banner */}
         <RollingText text="🕉️ Contact eYogi Gurukul - Your Journey to Hindu Wisdom Starts Here 🕉️" />
-
         <div className="min-h-screen bg-gray-50">
           {/* Hero Section */}
           <section className="bg-gradient-to-r from-orange-50 to-red-50">
@@ -174,7 +165,6 @@ export default function ContactPage() {
               </div>
             </div>
           </section>
-
           {/* Contact Info */}
           <section className="section-padding bg-white">
             <div className="container-max">
@@ -194,7 +184,6 @@ export default function ContactPage() {
               </div>
             </div>
           </section>
-
           {/* Contact Form & FAQ */}
           <section className="section-padding">
             <div className="container-max">
@@ -226,7 +215,6 @@ export default function ContactPage() {
                             error={errors.email?.message}
                           />
                         </div>
-
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-gray-700">
                             Inquiry Type
@@ -244,13 +232,11 @@ export default function ContactPage() {
                             <p className="text-sm text-red-600">{errors.type.message}</p>
                           )}
                         </div>
-
                         <Input
                           label="Subject"
                           {...register('subject')}
                           error={errors.subject?.message}
                         />
-
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-gray-700">Message</label>
                           <textarea
@@ -263,7 +249,6 @@ export default function ContactPage() {
                             <p className="text-sm text-red-600">{errors.message.message}</p>
                           )}
                         </div>
-
                         <Button type="submit" className="w-full" loading={loading}>
                           Send Message
                         </Button>
@@ -271,14 +256,12 @@ export default function ContactPage() {
                     </CardContent>
                   </Card>
                 </div>
-
                 {/* FAQ */}
                 <div>
                   <div className="flex items-center space-x-3 mb-6">
                     <QuestionMarkCircleIcon className="h-6 w-6 text-orange-600" />
                     <h2 className="text-2xl font-bold">Frequently Asked Questions</h2>
                   </div>
-
                   <div className="flex flex-col gap-6">
                     {faqItems.map((item, index) => (
                       <Card key={index} className="card-hover">
@@ -289,7 +272,6 @@ export default function ContactPage() {
                       </Card>
                     ))}
                   </div>
-
                   <div className="mt-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
                     <h3 className="font-semibold text-gray-900 mb-2">Need Immediate Help?</h3>
                     <p className="text-gray-600 text-sm mb-4">
@@ -304,7 +286,6 @@ export default function ContactPage() {
               </div>
             </div>
           </section>
-
           {/* CTA Section */}
           <section className="section-padding gradient-bg text-white">
             <div className="container-max text-center">

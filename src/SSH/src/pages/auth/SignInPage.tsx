@@ -8,19 +8,15 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
-
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
-
 type SignInForm = z.infer<typeof signInSchema>
-
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { signIn } = useAuth()
-
   const {
     register,
     handleSubmit,
@@ -29,17 +25,14 @@ export default function SignInPage() {
     resolver: zodResolver(signInSchema),
     mode: 'onChange',
   })
-
   const onSubmit = async (data: SignInForm) => {
     setLoading(true)
     try {
       const { error } = await signIn(data.email, data.password)
-
       if (error) {
         toast.error((error as { message?: string })?.message || 'Failed to sign in')
         return
       }
-
       toast.success('Welcome back!')
       navigate('/dashboard')
     } catch (error: unknown) {
@@ -52,7 +45,6 @@ export default function SignInPage() {
       setLoading(false)
     }
   }
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 page-with-header">
       <div className="max-w-md w-full space-y-8">
@@ -70,7 +62,6 @@ export default function SignInPage() {
             </Link>
           </p>
         </div>
-
         <Card>
           <CardHeader>
             <h3 className="text-lg font-medium">Welcome back</h3>
@@ -84,7 +75,6 @@ export default function SignInPage() {
                 {...register('email')}
                 error={errors.email?.message}
               />
-
               <Input
                 label="Password"
                 type="password"
@@ -92,7 +82,6 @@ export default function SignInPage() {
                 {...register('password')}
                 error={errors.password?.message}
               />
-
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
@@ -105,7 +94,6 @@ export default function SignInPage() {
                     Remember me
                   </label>
                 </div>
-
                 <div className="text-sm">
                   <Link
                     to="/auth/forgot-password"
@@ -115,14 +103,12 @@ export default function SignInPage() {
                   </Link>
                 </div>
               </div>
-
               <Button type="submit" className="w-full" loading={loading}>
                 Sign in
               </Button>
             </form>
           </CardContent>
         </Card>
-
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Need help?{' '}

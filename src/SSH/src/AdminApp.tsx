@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { PermissionProvider } from './contexts/PermissionContext'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
-
 // Admin Components
 import AdminLogin from './components/auth/AdminLogin'
 import AdminLayout from './components/admin/AdminLayout'
@@ -12,14 +11,12 @@ import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
 import CertificateManagement from './components/admin/CertificateManagement'
-
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
   </div>
 )
-
 function AdminApp() {
   return (
     <AuthProvider>
@@ -29,7 +26,6 @@ function AdminApp() {
             <Routes>
               {/* Public route for login */}
               <Route path="/admin/login" element={<AdminLogin />} />
-
               {/* Protected routes with admin layout */}
               <Route
                 path="/admin/*"
@@ -42,7 +38,6 @@ function AdminApp() {
                 {/* Dashboard Route */}
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-
                 {/* User Management Routes */}
                 <Route
                   path="users"
@@ -52,7 +47,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Course Management Routes */}
                 <Route
                   path="courses"
@@ -65,7 +59,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Enrollment Management Routes */}
                 <Route
                   path="enrollments"
@@ -78,7 +71,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Certificate Management Routes */}
                 <Route
                   path="certificates"
@@ -88,7 +80,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Content Management Routes */}
                 <Route
                   path="content"
@@ -101,7 +92,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Analytics Routes */}
                 <Route
                   path="analytics"
@@ -114,7 +104,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Permission Management Routes */}
                 <Route
                   path="permissions"
@@ -124,7 +113,6 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
-
                 {/* Settings Routes */}
                 <Route
                   path="settings"
@@ -138,7 +126,6 @@ function AdminApp() {
                   }
                 />
               </Route>
-
               {/* Unauthorized page */}
               <Route
                 path="/admin/unauthorized"
@@ -159,17 +146,14 @@ function AdminApp() {
                   </div>
                 }
               />
-
               {/* Catch all route */}
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
           </Suspense>
-
           <Toaster position="top-right" />
         </div>
       </PermissionProvider>
     </AuthProvider>
   )
 }
-
 export default AdminApp

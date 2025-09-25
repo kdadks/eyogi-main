@@ -4,11 +4,9 @@ export interface SitemapUrl {
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
   priority?: number
 }
-
 export function generateSitemap(): string {
   const baseUrl = 'https://eyogi-gurukul.vercel.app'
   const currentDate = new Date().toISOString().split('T')[0]
-
   const urls: SitemapUrl[] = [
     // Main Pages - High Priority
     {
@@ -41,7 +39,6 @@ export function generateSitemap(): string {
       changefreq: 'monthly',
       priority: 0.7
     },
-
     // Gurukul Pages - High Priority for Hindu Keywords
     {
       loc: `${baseUrl}/gurukuls/hinduism`,
@@ -73,7 +70,6 @@ export function generateSitemap(): string {
       changefreq: 'weekly',
       priority: 0.8
     },
-
     // Auth Pages
     {
       loc: `${baseUrl}/auth/signin`,
@@ -87,7 +83,6 @@ export function generateSitemap(): string {
       changefreq: 'monthly',
       priority: 0.6
     },
-
     // Course Filter Pages for SEO
     {
       loc: `${baseUrl}/courses?level=elementary`,
@@ -114,7 +109,6 @@ export function generateSitemap(): string {
       priority: 0.7
     }
   ]
-
   const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(url => `  <url>
@@ -124,13 +118,10 @@ ${urls.map(url => `  <url>
     ${url.priority ? `<priority>${url.priority}</priority>` : ''}
   </url>`).join('\n')}
 </urlset>`
-
   return xmlContent
 }
-
 export function generateRobotsTxt(): string {
   const baseUrl = 'https://eyogi-gurukul.vercel.app'
-  
   return `User-agent: *
 Allow: /
 Disallow: /dashboard/
@@ -138,26 +129,20 @@ Disallow: /auth/
 Disallow: /api/
 Disallow: /_next/
 Disallow: /admin/
-
 # Allow specific auth pages for SEO
 Allow: /auth/signin
 Allow: /auth/signup
-
 # Sitemap
 Sitemap: ${baseUrl}/sitemap.xml
-
 # Crawl-delay for respectful crawling
 Crawl-delay: 1
-
 # Special instructions for major search engines
 User-agent: Googlebot
 Allow: /
 Crawl-delay: 1
-
 User-agent: Bingbot
 Allow: /
 Crawl-delay: 2
-
 User-agent: Slurp
 Allow: /
 Crawl-delay: 2`

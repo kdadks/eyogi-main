@@ -22,7 +22,6 @@ import {
 import toast from 'react-hot-toast'
 import { usePermissions } from '../../contexts/PermissionContext'
 import { supabaseAdmin } from '../../lib/supabase'
-
 interface DatabasePermission {
   id: string
   name: string
@@ -31,7 +30,6 @@ interface DatabasePermission {
   action: string
   created_at: string
 }
-
 interface RolePermissionData {
   id: string
   role: string
@@ -39,7 +37,6 @@ interface RolePermissionData {
   created_at: string
   permission: DatabasePermission[]
 }
-
 interface Permission {
   id: string
   name: string
@@ -48,7 +45,6 @@ interface Permission {
   resource: string
   action: string
 }
-
 // Icon mapping for different resources
 const getIconForResource = (resource: string): React.ReactNode => {
   switch (resource.toLowerCase()) {
@@ -80,7 +76,6 @@ const getIconForResource = (resource: string): React.ReactNode => {
       return <AlertCircle className="h-4 w-4" />
   }
 }
-
 const ROLE_DEFAULTS = {
   admin: [],
   business_admin: [],
@@ -88,7 +83,6 @@ const ROLE_DEFAULTS = {
   teacher: [],
   student: [],
 }
-
 export default function AdminPermissionManagement() {
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>(ROLE_DEFAULTS)
@@ -97,20 +91,16 @@ export default function AdminPermissionManagement() {
   const [hasChanges, setHasChanges] = useState(false)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const { canAccess } = usePermissions()
-
   // Load permissions from database
   const loadPermissions = async () => {
     try {
       setIsLoadingData(true)
-
       // Load all permissions
       const { data: permissionsData, error: permError } = await supabaseAdmin
         .from('permissions')
         .select('*')
         .order('resource, action')
-
       if (permError) throw permError
-
       // Load all role permissions with permission details
       const { data: rolePermData, error: roleError } = await supabaseAdmin.from('role_permissions')
         .select(`
@@ -120,9 +110,7 @@ export default function AdminPermissionManagement() {
           created_at,
           permission:permissions(*)
         `)
-
       if (roleError) throw roleError
-
       // Convert database permissions to UI format
       const uiPermissions: Permission[] = (permissionsData || []).map((perm) => ({
         id: perm.id,
@@ -132,9 +120,7 @@ export default function AdminPermissionManagement() {
         resource: perm.resource,
         action: perm.action,
       }))
-
       setPermissions(uiPermissions)
-
       // Group role permissions by role
       const rolePermissionMap: Record<string, string[]> = {
         admin: [],
@@ -143,69 +129,55 @@ export default function AdminPermissionManagement() {
         teacher: [],
         student: [],
       }
-
       ;(rolePermData || []).forEach((rp: RolePermissionData) => {
         if (rolePermissionMap[rp.role]) {
           rolePermissionMap[rp.role].push(rp.permission_id)
         }
       })
-
       setRolePermissions(rolePermissionMap)
     } catch (error) {
-      console.error('Error loading permissions:', error)
       toast.error('Failed to load permissions from database')
     } finally {
       setIsLoadingData(false)
     }
   }
-
   // Save permissions to database
   const savePermissions = async () => {
     if (!canAccess('permissions', 'update')) {
       toast.error("You don't have permission to update permissions")
       return
     }
-
     try {
       setLoading(true)
-
       // Delete existing role permissions for the selected role
       const { error: deleteError } = await supabaseAdmin
         .from('role_permissions')
         .delete()
         .eq('role', selectedRole)
-
       if (deleteError) throw deleteError
-
       // Insert new role permissions
       if (rolePermissions[selectedRole].length > 0) {
         const rolePermissionInserts = rolePermissions[selectedRole].map((permissionId) => ({
           role: selectedRole,
           permission_id: permissionId,
         }))
-
         const { error: insertError } = await supabaseAdmin
           .from('role_permissions')
           .insert(rolePermissionInserts)
-
         if (insertError) throw insertError
       }
-
       setHasChanges(false)
       toast.success(`Permissions saved for ${selectedRole} role`)
     } catch (error) {
-      console.error('Error saving permissions:', error)
       toast.error('Failed to save permissions to database')
     } finally {
       setLoading(false)
     }
   }
-
   // Load data on component mount
   useEffect(() => {
     loadPermissions()
   }, [])
-
   // Check if user can access this page
   if (!canAccess('permissions', 'view')) {
     return (
@@ -218,7 +190,6 @@ export default function AdminPermissionManagement() {
       </div>
     )
   }
-
   if (isLoadingData) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -229,27 +200,22 @@ export default function AdminPermissionManagement() {
       </div>
     )
   }
-
   const handlePermissionChange = (permissionId: string, checked: boolean) => {
     setRolePermissions((prev) => {
       const currentPermissions = prev[selectedRole] || []
       const newPermissions = checked
         ? [...currentPermissions, permissionId]
         : currentPermissions.filter((p) => p !== permissionId)
-
       setHasChanges(true)
       return {
         ...prev,
         [selectedRole]: newPermissions,
       }
     })
-
     toast.success(`Permission ${checked ? 'granted' : 'removed'} for ${selectedRole}`)
   }
-
   const roles = Object.keys(ROLE_DEFAULTS)
   const currentPermissions = rolePermissions[selectedRole] || []
-
   // Group permissions by resource
   const groupedPermissions = permissions.reduce(
     (acc, permission) => {
@@ -262,7 +228,6 @@ export default function AdminPermissionManagement() {
     },
     {} as Record<string, Permission[]>,
   )
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -291,14 +256,12 @@ export default function AdminPermissionManagement() {
           </Button>
         </div>
       </div>
-
       {hasChanges && (
         <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
           <span className="text-sm text-yellow-800">You have unsaved changes</span>
         </div>
       )}
-
       <Card>
         <CardHeader>
           <CardTitle>Role Selection</CardTitle>
@@ -311,7 +274,6 @@ export default function AdminPermissionManagement() {
             {roles.map((role) => {
               const isSelected = selectedRole === role
               const permissionCount = (rolePermissions[role] || []).length
-
               return (
                 <div
                   key={role}
@@ -339,7 +301,6 @@ export default function AdminPermissionManagement() {
           </div>
         </CardContent>
       </Card>
-
       {selectedRole === 'business_admin' && (
         <Card className="border-amber-200 bg-amber-50">
           <CardHeader>
@@ -393,7 +354,6 @@ export default function AdminPermissionManagement() {
           </CardContent>
         </Card>
       )}
-
       <div className="space-y-6">
         {Object.entries(groupedPermissions).map(([resource, resourcePermissions]) => (
           <Card key={resource}>

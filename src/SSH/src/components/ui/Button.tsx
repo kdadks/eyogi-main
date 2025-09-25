@@ -1,17 +1,13 @@
 'use client'
-
 'use client'
-
 import React, { useRef } from 'react'
 import { cn } from '@/lib/utils'
-
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   children: React.ReactNode
 }
-
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     { className, variant = 'primary', size = 'md', loading = false, disabled, children, ...props },
@@ -19,7 +15,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const baseClasses =
       'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
-
     const variants = {
       primary: 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500',
       secondary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
@@ -28,7 +23,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-orange-500',
       danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
     }
-
     const sizes = {
       sm: 'px-3 py-1.5 text-sm min-h-[40px]',
       md: 'px-4 py-2 text-sm min-h-[44px]',
@@ -36,7 +30,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
     // ref for ripple creation - combine with forwarded ref
     const ref = useRef<HTMLButtonElement | null>(null)
-
     // Combine refs
     React.useEffect(() => {
       if (forwardedRef) {
@@ -47,7 +40,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         }
       }
     }, [forwardedRef])
-
     // preserve any external onMouseDown and onKeyDown passed via props
     const externalOnMouseDown = props.onMouseDown as
       | React.MouseEventHandler<HTMLButtonElement>
@@ -55,7 +47,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const externalOnKeyDown = props.onKeyDown as
       | React.KeyboardEventHandler<HTMLButtonElement>
       | undefined
-
     // ripple colors per variant
     const rippleColors: Record<string, string> = {
       primary: 'rgba(255,165,0,0.28)', // orange
@@ -64,14 +55,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ghost: 'rgba(0,0,0,0.08)',
       danger: 'rgba(239,68,68,0.22)',
     }
-
     const rippleDuration = 350 // ms (shorter)
     const rippleSizeFactor = 0.5 // smaller base size
-
     const createRipple = (x: number, y: number) => {
       const btn = ref.current
       if (!btn) return
-
       const rect = btn.getBoundingClientRect()
       const size = Math.max(rect.width, rect.height) * rippleSizeFactor
       const ripple = document.createElement('span')
@@ -87,15 +75,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ripple.style.opacity = '1'
       ripple.style.transition = `transform ${rippleDuration}ms cubic-bezier(.22,.9,.31,1), opacity ${rippleDuration}ms ease-out`
       ripple.style.zIndex = '10'
-
       btn.appendChild(ripple)
-
       // trigger animation
       requestAnimationFrame(() => {
         ripple.style.transform = 'scale(3)'
         ripple.style.opacity = '0'
       })
-
       // cleanup after animation
       const remove = () => {
         try {
@@ -108,13 +93,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // fallback
       setTimeout(remove, rippleDuration + 50)
     }
-
     const handleMouseDown: React.MouseEventHandler<HTMLButtonElement> = (e) => {
       // run external handler first
       externalOnMouseDown?.(e)
       createRipple(e.clientX, e.clientY)
     }
-
     const handleKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (e) => {
       // run external handler first
       externalOnKeyDown?.(e)
@@ -129,7 +112,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         createRipple(cx, cy)
       }
     }
-
     return (
       <button
         ref={ref}
@@ -169,5 +151,4 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     )
   },
 )
-
 Button.displayName = 'Button'

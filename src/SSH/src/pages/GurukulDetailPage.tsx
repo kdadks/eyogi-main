@@ -17,13 +17,11 @@ import {
   ArrowRightIcon,
   AcademicCapIcon,
 } from '@heroicons/react/24/outline'
-
 export default function GurukulDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const [gurukul, setGurukul] = useState<Gurukul | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
-
   const loadData = useCallback(async () => {
     try {
       const gurukulData = await getGurukul(slug!)
@@ -32,19 +30,17 @@ export default function GurukulDetailPage() {
         const coursesData = await getCourses({ gurukul_id: gurukulData.id })
         setCourses(coursesData)
       }
-    } catch (error) {
-      console.error('Error loading gurukul:', error)
+    } catch {
+      // Error loading gurukul - silent fail
     } finally {
       setLoading(false)
     }
   }, [slug])
-
   useEffect(() => {
     if (slug) {
       loadData()
     }
   }, [slug, loadData])
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -55,7 +51,6 @@ export default function GurukulDetailPage() {
       </div>
     )
   }
-
   if (!gurukul) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -69,7 +64,6 @@ export default function GurukulDetailPage() {
       </div>
     )
   }
-
   const levelCounts = courses.reduce(
     (acc, course) => {
       acc[course.level] = (acc[course.level] || 0) + 1
@@ -77,7 +71,6 @@ export default function GurukulDetailPage() {
     },
     {} as Record<string, number>,
   )
-
   return (
     <>
       <SEOHead
@@ -154,7 +147,6 @@ export default function GurukulDetailPage() {
                     ← Back to Gurukuls
                   </Link>
                 </div>
-
                 <div>
                   <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                     {gurukul.name}
@@ -163,7 +155,6 @@ export default function GurukulDetailPage() {
                     {gurukul.description}
                   </p>
                 </div>
-
                 <div className="flex items-center space-x-8 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <BookOpenIcon className="h-5 w-5 text-orange-500" />
@@ -178,7 +169,6 @@ export default function GurukulDetailPage() {
                     <span>Expert Teachers</span>
                   </div>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to={`/courses?gurukul=${gurukul.id}`}>
                     <Button size="lg">
@@ -193,7 +183,6 @@ export default function GurukulDetailPage() {
                   </Link>
                 </div>
               </div>
-
               <div className="relative">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                   <img
@@ -209,7 +198,6 @@ export default function GurukulDetailPage() {
             </div>
           </div>
         </section>
-
         {/* Stats Section */}
         <section className="section-padding bg-white">
           <div className="container-max">
@@ -239,7 +227,6 @@ export default function GurukulDetailPage() {
             </div>
           </div>
         </section>
-
         {/* Courses Section */}
         <section className="section-padding">
           <div className="container-max">
@@ -251,7 +238,6 @@ export default function GurukulDetailPage() {
                 Explore our comprehensive curriculum designed for all learning levels
               </p>
             </div>
-
             {courses.length === 0 ? (
               <div className="text-center py-12">
                 <BookOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -272,16 +258,12 @@ export default function GurukulDetailPage() {
                         <p className="text-sm font-medium text-gray-700">{course.course_number}</p>
                       </div>
                     </div>
-
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-2">
                         <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
                       </div>
-
                       <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
-
                       <p className="text-gray-600 mb-4 line-clamp-3">{course.description}</p>
-
                       <div className="space-y-2 mb-4 text-sm text-gray-500">
                         <div className="flex items-center">
                           <UserGroupIcon className="h-4 w-4 mr-2" />
@@ -298,7 +280,6 @@ export default function GurukulDetailPage() {
                           <span>{formatCurrency(course.price)}</span>
                         </div>
                       </div>
-
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-500">
                           {course.delivery_method === 'remote' && '🌐 Online'}
@@ -316,7 +297,6 @@ export default function GurukulDetailPage() {
             )}
           </div>
         </section>
-
         {/* CTA Section */}
         <section className="section-padding gradient-bg text-white">
           <div className="container-max text-center">

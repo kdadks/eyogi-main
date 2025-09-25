@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { useRoleBasedUI } from '../../contexts/PermissionContext'
@@ -8,7 +8,24 @@ import { getStudentEnrollments } from '../../lib/api/enrollments'
 import { getStudentCertificates } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
 import { enrollInCourse } from '../../lib/api/enrollments'
+import { getUserProfile } from '../../lib/api/users'
 import toast from 'react-hot-toast'
+import type { Database } from '../../lib/supabase'
+type Profile = Database['public']['Tables']['profiles']['Row']
+// Extended profile interface that includes address fields from database
+interface ProfileWithAddress {
+  id: string
+  email: string
+  full_name: string
+  phone?: string
+  date_of_birth?: string
+  address_line_1?: string
+  address_line_2?: string
+  city?: string
+  state?: string
+  zip_code?: string
+  country?: string
+}
 import {
   HomeIcon,
   BookOpenIcon,
@@ -23,10 +40,10 @@ import {
   CogIcon,
   SunIcon,
   MoonIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
-
 interface StudentStats {
   totalEnrollments: number
   completedCourses: number
@@ -39,11 +56,9 @@ interface StudentStats {
   level: string
   completionRate: number
 }
-
 export default function StudentDashboard() {
   const { user } = useWebsiteAuth()
   const { isStudent, shouldShowAnalytics, canAccess, getUserRole } = useRoleBasedUI()
-
   const [activeTab, setActiveTab] = useState<
     'home' | 'courses' | 'enrollments' | 'certificates' | 'profile' | 'analytics' | 'settings'
   >('home')
@@ -63,18 +78,28 @@ export default function StudentDashboard() {
     level: 'Intermediate',
     completionRate: 0,
   })
-
   // Profile Modal
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-
+  // Student Profile State
+  interface StudentProfile {
+    id: string
+    full_name: string
+    phone?: string
+    date_of_birth?: string
+    address_line_1?: string
+    address_line_2?: string
+    city?: string
+    state?: string
+    zip_code?: string
+    country?: string
+  }
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null)
   // Search and Filter State
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [courseFilter, setCourseFilter] = useState<string>('all')
-
   // Enrollment Loading State
   const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null)
-
   useEffect(() => {
     if (user?.id) {
       loadStudentData()
@@ -82,7 +107,6 @@ export default function StudentDashboard() {
       setLoading(false)
     }
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const loadStudentData = async () => {
     try {
       const [enrollmentsData, certificatesData, coursesData] = await Promise.all([
@@ -90,27 +114,63 @@ export default function StudentDashboard() {
         getStudentCertificates(user!.id),
         getCourses(),
       ])
-
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
       setAvailableCourses(coursesData)
-
       // Calculate stats
       const completedCount = enrollmentsData.filter((e) => e.status === 'completed').length
       const activeCount = enrollmentsData.filter((e) => e.status === 'approved').length
       const totalSpent = enrollmentsData.reduce((sum, e) => sum + (e.course?.price || 0), 0)
       const completionRate =
         enrollmentsData.length > 0 ? (completedCount / enrollmentsData.length) * 100 : 0
-
+      // Calculate average grade from completed enrollments with final_grade
+      const gradesFromEnrollments = enrollmentsData
+        .filter((e) => e.status === 'completed' && e.final_grade)
+        .map((e) => parseFloat(e.final_grade))
+        .filter((grade) => !isNaN(grade))
+      const averageGrade =
+        gradesFromEnrollments.length > 0
+          ? Math.round(
+              gradesFromEnrollments.reduce((sum, grade) => sum + grade, 0) /
+                gradesFromEnrollments.length,
+            )
+          : 0
+      // Calculate learning streak from recent completion dates
+      const completedEnrollments = enrollmentsData
+        .filter((e) => e.status === 'completed' && e.completed_at)
+        .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
+      let learningStreak = 0
+      if (completedEnrollments.length > 0) {
+        const today = new Date()
+        const oneDayMs = 24 * 60 * 60 * 1000
+        let currentDate = new Date(today)
+        for (const enrollment of completedEnrollments) {
+          const completedDate = new Date(enrollment.completed_at!)
+          const daysDiff = Math.floor((currentDate.getTime() - completedDate.getTime()) / oneDayMs)
+          if (daysDiff <= 1) {
+            learningStreak++
+            currentDate = completedDate
+          } else {
+            break
+          }
+        }
+      }
+      // Calculate XP points based on real achievements
+      const baseXP = completedCount * 100 // 100 XP per completed course
+      const certificateXP = certificatesData.length * 50 // 50 XP per certificate
+      const progressXP = enrollmentsData
+        .filter((e) => e.status === 'approved')
+        .reduce((sum, e) => sum + (e.progress_percentage || 0), 0) // 1 XP per progress percentage point
+      const xpPoints = baseXP + certificateXP + Math.round(progressXP)
       setStats({
         totalEnrollments: enrollmentsData.length,
         completedCourses: completedCount,
         activeCourses: activeCount,
         certificatesEarned: certificatesData.length,
         totalSpent,
-        averageGrade: 85,
-        learningStreak: 7,
-        xpPoints: 1250 + completedCount * 100,
+        averageGrade,
+        learningStreak,
+        xpPoints,
         level: completedCount < 3 ? 'Beginner' : completedCount < 8 ? 'Intermediate' : 'Advanced',
         completionRate,
       })
@@ -120,23 +180,50 @@ export default function StudentDashboard() {
       setLoading(false)
     }
   }
-
+  // Load student profile from database
+  const loadStudentProfile = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const profile = await getUserProfile(user.id)
+      if (profile) {
+        // Cast to ProfileWithAddress since database has flat address fields
+        const profileWithAddress = profile as unknown as ProfileWithAddress
+        const studentProfileData = {
+          id: profileWithAddress.id,
+          full_name: profileWithAddress.full_name,
+          phone: profileWithAddress.phone || undefined,
+          date_of_birth: profileWithAddress.date_of_birth || undefined,
+          address_line_1: profileWithAddress.address_line_1 || undefined,
+          address_line_2: profileWithAddress.address_line_2 || undefined,
+          city: profileWithAddress.city || undefined,
+          state: profileWithAddress.state || undefined,
+          zip_code: profileWithAddress.zip_code || undefined,
+          country: profileWithAddress.country || undefined,
+        }
+        setStudentProfile(studentProfileData)
+      }
+    } catch {
+      // Error loading student profile - silent fail
+    }
+  }, [user?.id])
+  // Load profile when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      loadStudentProfile()
+    }
+  }, [user?.id, loadStudentProfile])
   const handleEnrollment = async (courseId: string) => {
     if (!user?.id) {
       toast.error('Please log in to enroll in courses')
       return
     }
-
     try {
       setEnrollingCourseId(courseId)
       await enrollInCourse(courseId, user.id)
-
       // Reload student data to reflect new enrollment
       await loadStudentData()
-
       // Switch to enrollments tab to show the new pending enrollment
       setActiveTab('enrollments')
-
       toast.success('Successfully enrolled! Your enrollment is pending teacher approval.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to enroll in course')
@@ -144,16 +231,13 @@ export default function StudentDashboard() {
       setEnrollingCourseId(null)
     }
   }
-
   const getTimeOfDay = () => {
     const hour = new Date().getHours()
     if (hour < 12) return { greeting: 'Good morning', icon: SunIcon }
     if (hour < 18) return { greeting: 'Good afternoon', icon: SunIcon }
     return { greeting: 'Good evening', icon: MoonIcon }
   }
-
   const { greeting, icon: TimeIcon } = getTimeOfDay()
-
   const tabs = [
     {
       id: 'home',
@@ -227,7 +311,6 @@ export default function StudentDashboard() {
         ]
       : []),
   ].filter((tab) => tab.available)
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-16 lg:pt-20">
@@ -254,7 +337,6 @@ export default function StudentDashboard() {
       </div>
     )
   }
-
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-16 lg:pt-20">
@@ -334,7 +416,6 @@ export default function StudentDashboard() {
                 </motion.div>
               </div>
             </div>
-
             {/* Enhanced Navigation Pills */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -386,7 +467,6 @@ export default function StudentDashboard() {
             </motion.div>
           </div>
         </motion.div>
-
         <div className="max-w-7xl mx-auto px-6 py-10">
           <AnimatePresence mode="wait">
             {/* Home Tab */}
@@ -509,7 +589,6 @@ export default function StudentDashboard() {
                     </motion.div>
                   ))}
                 </div>
-
                 {/* Learning Progress Section */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -525,7 +604,6 @@ export default function StudentDashboard() {
                       Overall completion: {Math.round(stats.completionRate)}%
                     </div>
                   </div>
-
                   {/* Overall Progress Bar */}
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
@@ -551,7 +629,6 @@ export default function StudentDashboard() {
                       </motion.div>
                     </div>
                   </div>
-
                   {/* Active Course Progress */}
                   {enrollments.filter((e) => e.status === 'approved').length > 0 && (
                     <div className="space-y-4">
@@ -562,7 +639,7 @@ export default function StudentDashboard() {
                         .filter((e) => e.status === 'approved')
                         .slice(0, 3)
                         .map((enrollment, index) => {
-                          const progress = Math.random() * 100 // In real app, this would come from actual progress data
+                          const progress = enrollment.progress_percentage || 0 // Use real progress from database
                           return (
                             <motion.div
                               key={enrollment.id}
@@ -609,7 +686,6 @@ export default function StudentDashboard() {
                         })}
                     </div>
                   )}
-
                   {/* Learning Goals */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <h4 className="text-lg font-semibold text-gray-800 mb-4">Learning Goals 🎯</h4>
@@ -650,7 +726,6 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 </motion.div>
-
                 {/* Available Features Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Available Features */}
@@ -692,7 +767,6 @@ export default function StudentDashboard() {
                         ))}
                     </div>
                   </div>
-
                   {/* Administrative Features (if available) */}
                   {!isStudent() && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20">
@@ -732,7 +806,6 @@ export default function StudentDashboard() {
               </motion.div>
             )}
           </AnimatePresence>
-
           {/* My Courses Tab */}
           {activeTab === 'courses' && (
             <motion.div
@@ -749,7 +822,6 @@ export default function StudentDashboard() {
                 </h2>
                 <p className="text-xl text-gray-600">Track your progress and continue learning</p>
               </div>
-
               {/* Course Progress Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {enrollments
@@ -771,12 +843,14 @@ export default function StudentDashboard() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>Progress</span>
-                          <span className="font-semibold">0%</span>
+                          <span className="font-semibold">
+                            {enrollment.progress_percentage || 0}%
+                          </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-gradient-to-r from-green-500 to-teal-500 h-2 rounded-full"
-                            style={{ width: '0%' }}
+                            style={{ width: `${enrollment.progress_percentage || 0}%` }}
                           ></div>
                         </div>
                       </div>
@@ -792,7 +866,6 @@ export default function StudentDashboard() {
                   </div>
                 )}
               </div>
-
               {/* Course Suggestions */}
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-gray-900">Recommended Courses for You 🎯</h3>
@@ -849,7 +922,6 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
           )}
-
           {/* My Enrollments Tab */}
           {activeTab === 'enrollments' && (
             <motion.div
@@ -866,7 +938,6 @@ export default function StudentDashboard() {
                 </h2>
                 <p className="text-xl text-gray-600">Track your enrollment status and history</p>
               </div>
-
               {/* Search and Filter Controls */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -916,7 +987,6 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
-
               {/* Enrollment Status Cards */}
               <div className="space-y-4">
                 {enrollments
@@ -1010,7 +1080,6 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
           )}
-
           {/* My Certificates Tab */}
           {activeTab === 'certificates' && (
             <motion.div
@@ -1029,7 +1098,6 @@ export default function StudentDashboard() {
                   Your earned certificates and accomplishments
                 </p>
               </div>
-
               {/* Certificate Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {certificates.map((certificate) => (
@@ -1068,7 +1136,6 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
           )}
-
           {/* Profile Tab */}
           {activeTab === 'profile' && (
             <motion.div
@@ -1087,7 +1154,6 @@ export default function StudentDashboard() {
                   Manage your personal information and preferences
                 </p>
               </div>
-
               {/* Learning Statistics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
@@ -1109,7 +1175,6 @@ export default function StudentDashboard() {
                   <div className="text-sm text-gray-500">Day Streak</div>
                 </div>
               </div>
-
               {/* Profile Information */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
                 <div className="flex items-center space-x-6 mb-6">
@@ -1124,9 +1189,13 @@ export default function StudentDashboard() {
                     </p>
                   </div>
                 </div>
-
                 <button
-                  onClick={() => setIsProfileModalOpen(true)}
+                  onClick={async () => {
+                    if (!studentProfile) {
+                      await loadStudentProfile()
+                    }
+                    setIsProfileModalOpen(true)
+                  }}
                   className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-300"
                 >
                   Edit Profile
@@ -1134,7 +1203,6 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
           )}
-
           {/* Analytics Tab (Admin Only) */}
           {activeTab === 'analytics' && shouldShowAnalytics() && (
             <motion.div
@@ -1151,7 +1219,6 @@ export default function StudentDashboard() {
                 </h2>
                 <p className="text-xl text-gray-600">System analytics and reports</p>
               </div>
-
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
                 <div className="flex items-center space-x-4 mb-6">
                   <ChartBarIcon className="h-8 w-8 text-purple-600" />
@@ -1164,9 +1231,8 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
           )}
-
-          {/* Settings Tab (Admin Only) */}
-          {activeTab === 'settings' && canAccess('settings', 'read') && (
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
             <motion.div
               key="settings"
               initial={{ opacity: 0, y: 20 }}
@@ -1177,38 +1243,144 @@ export default function StudentDashboard() {
             >
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-600 to-slate-600 bg-clip-text text-transparent">
-                  System Settings ⚙️
+                  Account Settings ⚙️
                 </h2>
-                <p className="text-xl text-gray-600">Configure system settings</p>
-              </div>
-
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                <div className="flex items-center space-x-4 mb-6">
-                  <CogIcon className="h-8 w-8 text-gray-600" />
-                  <h3 className="text-xl font-semibold text-gray-900">System Configuration</h3>
-                </div>
-                <p className="text-gray-600">
-                  System configuration options are available here for users with appropriate
-                  permissions.
+                <p className="text-xl text-gray-600">
+                  Manage your account preferences and information
                 </p>
               </div>
+              {/* Account Settings Section */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <CogIcon className="h-8 w-8 text-gray-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Account Information</h3>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!studentProfile) {
+                        await loadStudentProfile()
+                      }
+                      setIsProfileModalOpen(true)
+                    }}
+                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                    <span>Edit Profile</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Personal Information */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Personal Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Full Name</label>
+                        <p className="text-gray-900">{user?.full_name || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Email</label>
+                        <p className="text-gray-900">{user?.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Phone</label>
+                        <p className="text-gray-900">{studentProfile?.phone || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Date of Birth</label>
+                        <p className="text-gray-900">
+                          {studentProfile?.date_of_birth
+                            ? new Date(studentProfile.date_of_birth).toLocaleDateString()
+                            : 'Not provided'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Address Information */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Address Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Street Address</label>
+                        <p className="text-gray-900">
+                          {studentProfile?.address_line_1 || 'Not provided'}
+                        </p>
+                        {studentProfile?.address_line_2 && (
+                          <p className="text-gray-900">{studentProfile.address_line_2}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">City</label>
+                          <p className="text-gray-900">{studentProfile?.city || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">State</label>
+                          <p className="text-gray-900">{studentProfile?.state || 'Not provided'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">ZIP Code</label>
+                          <p className="text-gray-900">
+                            {studentProfile?.zip_code || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Country</label>
+                          <p className="text-gray-900">
+                            {studentProfile?.country || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* System Settings (Admin Only) */}
+              {canAccess('settings', 'read') && (
+                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <CogIcon className="h-8 w-8 text-purple-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">System Configuration</h3>
+                  </div>
+                  <p className="text-gray-600">
+                    Advanced system configuration options are available here for users with
+                    administrative permissions.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
         </div>
       </div>
-
       <ChatBotTrigger />
-
       {/* Profile Edit Modal */}
       {isProfileModalOpen && user && (
         <ProfileEditModal
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
-          user={user}
+          user={
+            studentProfile
+              ? ({
+                  ...user,
+                  // Override with address data from studentProfile which has the latest address info
+                  address_line_1: studentProfile.address_line_1,
+                  address_line_2: studentProfile.address_line_2,
+                  city: studentProfile.city,
+                  state: studentProfile.state,
+                  zip_code: studentProfile.zip_code,
+                  country: studentProfile.country,
+                } as Profile)
+              : (user as Profile)
+          }
           onUpdate={() => {
-            setIsProfileModalOpen(false)
-            // TODO: Update user context with new data
-            // This would ideally update the WebsiteAuth context
+            // Refresh user data after profile update
+            window.location.reload()
           }}
         />
       )}

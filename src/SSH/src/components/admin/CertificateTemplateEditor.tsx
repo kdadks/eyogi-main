@@ -16,14 +16,12 @@ import {
   PencilIcon,
   DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline'
-
 interface CertificateTemplateEditorProps {
   template?: CertificateTemplate
   isOpen: boolean
   onClose: () => void
   onSave: (template: CertificateTemplate) => void
 }
-
 const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
   template,
   isOpen,
@@ -79,23 +77,19 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
   })
   const [loading, setLoading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>('')
-
   useEffect(() => {
     if (template) {
       setFormData(template)
     }
   }, [template])
-
   const handleSave = async () => {
     if (!formData.name?.trim()) {
       toast.error('Please enter a template name')
       return
     }
-
     setLoading(true)
     try {
       let savedTemplate: CertificateTemplate
-
       if (template?.id) {
         // Update existing template
         savedTemplate = await updateCertificateTemplate(template.id, formData)
@@ -107,20 +101,16 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         )
         toast.success('Template created successfully')
       }
-
       onSave(savedTemplate)
       onClose()
     } catch (error) {
-      console.error('Error saving template:', error)
       toast.error('Failed to save template')
     } finally {
       setLoading(false)
     }
   }
-
   const handleDuplicate = async () => {
     if (!template?.id) return
-
     setLoading(true)
     try {
       const duplicatedTemplate = await duplicateCertificateTemplate(template.id)
@@ -128,13 +118,11 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       onSave(duplicatedTemplate)
       onClose()
     } catch (error) {
-      console.error('Error duplicating template:', error)
       toast.error('Failed to duplicate template')
     } finally {
       setLoading(false)
     }
   }
-
   const generatePreview = async () => {
     setLoading(true)
     try {
@@ -148,23 +136,19 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         certificateNumber: 'CERT-2024-001',
         verificationCode: 'ABC123',
       }
-
       const preview = await generateCertificatePreview(sampleData)
       setPreviewUrl(preview)
     } catch (error) {
-      console.error('Error generating preview:', error)
       toast.error('Failed to generate preview')
     } finally {
       setLoading(false)
     }
   }
-
   const updateTemplateData = (path: string, value: unknown) => {
     setFormData((prev) => {
       const newData = { ...prev }
       const keys = path.split('.')
       let current: Record<string, unknown> = newData
-
       // Navigate to the parent of the target property
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current[keys[i]]) {
@@ -172,29 +156,24 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         }
         current = current[keys[i]] as Record<string, unknown>
       }
-
       // Set the final value
       current[keys[keys.length - 1]] = value
       return newData
     })
   }
-
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, path: string) => {
     const file = event.target.files?.[0]
     if (!file) return
-
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file')
       return
     }
-
     // Check file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast.error('Image size should be less than 2MB')
       return
     }
-
     const reader = new FileReader()
     reader.onload = (e) => {
       const base64Data = e.target?.result as string
@@ -202,20 +181,16 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
     }
     reader.readAsDataURL(file)
   }
-
   const removeImage = (path: string) => {
     updateTemplateData(path, '')
   }
-
   if (!isOpen) return null
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
         onClick={onClose}
       />
-
       <div className="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header - Fixed */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
@@ -234,7 +209,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
             </button>
           </div>
         </div>
-
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -258,7 +232,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       placeholder="Enter template name"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Certificate Type
@@ -277,7 +250,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       <option value="teacher">Teacher Certificate</option>
                     </select>
                   </div>
-
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -294,7 +266,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                   </div>
                 </CardContent>
               </Card>
-
               {/* Design Settings */}
               <Card>
                 <CardHeader>
@@ -314,7 +285,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       className="w-full h-10 rounded-md border border-gray-300"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Secondary Color
@@ -328,7 +298,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       className="w-full h-10 rounded-md border border-gray-300"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Text Color
@@ -344,7 +313,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                   </div>
                 </CardContent>
               </Card>
-
               {/* Custom Text */}
               <Card>
                 <CardHeader>
@@ -365,7 +333,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       placeholder="CERTIFICATE OF COMPLETION"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
                     <input
@@ -378,7 +345,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       placeholder="This is to certify that"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Header Text
@@ -393,7 +359,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       placeholder="eYogi Gurukul"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Footer Text
@@ -410,7 +375,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                   </div>
                 </CardContent>
               </Card>
-
               {/* Logo Uploads */}
               <Card>
                 <CardHeader>
@@ -459,7 +423,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       </div>
                     )}
                   </div>
-
                   {/* SSH Logo */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">SSH Logo</label>
@@ -502,7 +465,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                   </div>
                 </CardContent>
               </Card>
-
               {/* Signature Uploads */}
               <Card>
                 <CardHeader>
@@ -556,7 +518,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       </div>
                     )}
                   </div>
-
                   {/* President Signature */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -606,7 +567,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                   </div>
                 </CardContent>
               </Card>
-
               {/* Official Seal Upload */}
               <Card>
                 <CardHeader>
@@ -652,7 +612,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                 </CardContent>
               </Card>
             </div>
-
             {/* Right Panel - Preview */}
             <div className="space-y-6">
               <Card>
@@ -687,7 +646,6 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
             </div>
           </div>
         </div>
-
         {/* Footer - Fixed */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 flex-shrink-0">
           <Button onClick={onClose} variant="outline" disabled={loading}>
@@ -705,5 +663,4 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
     </div>
   )
 }
-
 export default CertificateTemplateEditor

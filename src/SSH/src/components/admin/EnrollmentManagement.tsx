@@ -19,7 +19,6 @@ import {
   CurrencyEuroIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-
 export default function EnrollmentManagement() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [filteredEnrollments, setFilteredEnrollments] = useState<Enrollment[]>([])
@@ -29,14 +28,11 @@ export default function EnrollmentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [bulkLoading, setBulkLoading] = useState(false)
-
   useEffect(() => {
     loadEnrollments()
   }, [])
-
   const filterEnrollments = React.useCallback(() => {
     let filtered = enrollments
-
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
@@ -46,31 +42,25 @@ export default function EnrollmentManagement() {
           enrollment.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
-
     // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter((enrollment) => enrollment.status === statusFilter)
     }
-
     setFilteredEnrollments(filtered)
   }, [enrollments, searchTerm, statusFilter])
-
   useEffect(() => {
     filterEnrollments()
   }, [filterEnrollments])
-
   const loadEnrollments = async () => {
     try {
       const data = await getAllEnrollments()
       setEnrollments(data)
     } catch (error) {
-      console.error('Error loading enrollments:', error)
       toast.error('Failed to load enrollments')
     } finally {
       setLoading(false)
     }
   }
-
   const handleSelectEnrollment = (enrollmentId: string) => {
     const newSelected = new Set(selectedEnrollments)
     if (newSelected.has(enrollmentId)) {
@@ -80,7 +70,6 @@ export default function EnrollmentManagement() {
     }
     setSelectedEnrollments(newSelected)
   }
-
   const handleSelectAll = () => {
     if (selectedEnrollments.size === filteredEnrollments.length) {
       setSelectedEnrollments(new Set())
@@ -88,7 +77,6 @@ export default function EnrollmentManagement() {
       setSelectedEnrollments(new Set(filteredEnrollments.map((e) => e.id)))
     }
   }
-
   const handleUpdateStatus = async (enrollmentId: string, status: Enrollment['status']) => {
     setActionLoading((prev) => new Set(prev).add(enrollmentId))
     try {
@@ -96,7 +84,6 @@ export default function EnrollmentManagement() {
       await loadEnrollments()
       toast.success(`Enrollment ${status} successfully`)
     } catch (error) {
-      console.error('Error updating enrollment:', error)
       toast.error('Failed to update enrollment')
     } finally {
       setActionLoading((prev) => {
@@ -106,13 +93,11 @@ export default function EnrollmentManagement() {
       })
     }
   }
-
   const handleBulkUpdate = async (status: Enrollment['status']) => {
     if (selectedEnrollments.size === 0) {
       toast.error('Please select enrollments to update')
       return
     }
-
     setBulkLoading(true)
     try {
       await bulkUpdateEnrollments(Array.from(selectedEnrollments), status)
@@ -120,13 +105,11 @@ export default function EnrollmentManagement() {
       setSelectedEnrollments(new Set())
       toast.success(`${selectedEnrollments.size} enrollments ${status} successfully`)
     } catch (error) {
-      console.error('Error bulk updating enrollments:', error)
       toast.error('Failed to update enrollments')
     } finally {
       setBulkLoading(false)
     }
   }
-
   const stats = {
     total: enrollments.length,
     pending: enrollments.filter((e) => e.status === 'pending').length,
@@ -134,7 +117,6 @@ export default function EnrollmentManagement() {
     completed: enrollments.filter((e) => e.status === 'completed').length,
     rejected: enrollments.filter((e) => e.status === 'rejected').length,
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -142,7 +124,6 @@ export default function EnrollmentManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -178,13 +159,11 @@ export default function EnrollmentManagement() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters and Actions */}
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">Enrollment Management</h2>
-
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -197,7 +176,6 @@ export default function EnrollmentManagement() {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
-
               {/* Status Filter */}
               <select
                 value={statusFilter}
@@ -212,7 +190,6 @@ export default function EnrollmentManagement() {
               </select>
             </div>
           </div>
-
           {/* Bulk Actions */}
           {selectedEnrollments.size > 0 && (
             <div className="flex items-center space-x-4 p-4 bg-blue-50 rounded-lg">
@@ -243,7 +220,6 @@ export default function EnrollmentManagement() {
             </div>
           )}
         </CardHeader>
-
         <CardContent>
           {filteredEnrollments.length === 0 ? (
             <div className="text-center py-8">

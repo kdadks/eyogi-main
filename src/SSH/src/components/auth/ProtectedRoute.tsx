@@ -2,13 +2,11 @@ import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
-
 interface ProtectedRouteProps {
   children: React.ReactNode
   requiredRole?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
   redirectTo?: string
 }
-
 export default function ProtectedRoute({
   children,
   requiredRole,
@@ -17,7 +15,6 @@ export default function ProtectedRoute({
   const { loading: authLoading, isSuperAdmin } = useAuth()
   const { user: websiteUser, loading: websiteLoading } = useWebsiteAuth()
   const location = useLocation()
-
   // Show loading spinner while either auth is initializing
   if (authLoading || websiteLoading) {
     return (
@@ -29,26 +26,21 @@ export default function ProtectedRoute({
       </div>
     )
   }
-
   // Check if user is authenticated (either super admin or website user)
   const isAuthenticated = isSuperAdmin || !!websiteUser
-
   // Redirect to sign in if not authenticated
   if (!isAuthenticated) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />
   }
-
   // Super admin has access to everything
   if (isSuperAdmin) {
     return <>{children}</>
   }
-
   // For website users, check role if required
   if (requiredRole && websiteUser?.role !== requiredRole) {
     // Redirect to appropriate dashboard based on user role
     const dashboardPath = websiteUser?.role ? `/dashboard/${websiteUser.role}` : '/dashboard'
     return <Navigate to={dashboardPath} replace />
   }
-
   return <>{children}</>
 }

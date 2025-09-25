@@ -1,5 +1,4 @@
 import React from 'react'
-
 interface SEOHeadProps {
   title?: string
   description?: string
@@ -10,7 +9,6 @@ interface SEOHeadProps {
   structuredData?: object | object[]
   noIndex?: boolean
 }
-
 export default function SEOHead({
   title,
   description,
@@ -26,12 +24,10 @@ export default function SEOHead({
     'Learn authentic Hindu traditions, Vedic philosophy, Sanskrit, mantras, and yoga through comprehensive online courses. Discover Sanatan Dharma wisdom with expert teachers in our traditional Gurukul system.'
   const siteUrl =
     typeof window !== 'undefined' ? window.location.origin : 'https://eyogi-gurukul.vercel.app'
-
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle
   const fullDescription = description || siteDescription
   const fullCanonicalUrl = canonicalUrl ? `${siteUrl}${canonicalUrl}` : siteUrl
   const fullOgImage = ogImage || `${siteUrl}/og-image.jpg`
-
   // Core SEO keywords for Hindu/Vedic content
   const coreKeywords = [
     'Hindu',
@@ -74,13 +70,10 @@ export default function SEOHead({
     'Hindu Spirituality',
     'Vedic Lifestyle',
   ]
-
   const allKeywords = [...coreKeywords, ...keywords].join(', ')
-
   React.useEffect(() => {
     // Update document title
     document.title = fullTitle
-
     // Update meta description
     const metaDescription = document.querySelector('meta[name="description"]')
     if (metaDescription) {
@@ -91,7 +84,6 @@ export default function SEOHead({
       meta.content = fullDescription
       document.head.appendChild(meta)
     }
-
     // Update keywords
     const metaKeywords = document.querySelector('meta[name="keywords"]')
     if (metaKeywords) {
@@ -102,7 +94,6 @@ export default function SEOHead({
       meta.content = allKeywords
       document.head.appendChild(meta)
     }
-
     // Update canonical URL
     let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
     if (canonicalLink) {
@@ -113,7 +104,6 @@ export default function SEOHead({
       canonicalLink.href = fullCanonicalUrl
       document.head.appendChild(canonicalLink)
     }
-
     // Update Open Graph tags
     const updateOGTag = (property: string, content: string) => {
       let ogTag = document.querySelector(`meta[property="${property}"]`)
@@ -126,14 +116,12 @@ export default function SEOHead({
         document.head.appendChild(ogTag)
       }
     }
-
     updateOGTag('og:title', fullTitle)
     updateOGTag('og:description', fullDescription)
     updateOGTag('og:type', ogType)
     updateOGTag('og:url', fullCanonicalUrl)
     updateOGTag('og:image', fullOgImage)
     updateOGTag('og:site_name', 'eYogi Gurukul')
-
     // Update Twitter Card tags
     const updateTwitterTag = (name: string, content: string) => {
       let twitterTag = document.querySelector(`meta[name="${name}"]`)
@@ -146,12 +134,10 @@ export default function SEOHead({
         document.head.appendChild(twitterTag)
       }
     }
-
     updateTwitterTag('twitter:card', 'summary_large_image')
     updateTwitterTag('twitter:title', fullTitle)
     updateTwitterTag('twitter:description', fullDescription)
     updateTwitterTag('twitter:image', fullOgImage)
-
     // Update robots meta
     const robotsTag = document.querySelector('meta[name="robots"]')
     const robotsContent = noIndex
@@ -165,13 +151,11 @@ export default function SEOHead({
       meta.content = robotsContent
       document.head.appendChild(meta)
     }
-
     // Add structured data
     if (structuredData) {
       // Remove existing structured data
       const existingScripts = document.querySelectorAll('script[type="application/ld+json"]')
       existingScripts.forEach((script) => script.remove())
-
       // Add new structured data
       const schemaArray = Array.isArray(structuredData) ? structuredData : [structuredData]
       schemaArray.forEach((schema, index) => {
@@ -192,6 +176,5 @@ export default function SEOHead({
     structuredData,
     noIndex,
   ])
-
   return null
 }

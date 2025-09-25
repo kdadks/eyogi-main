@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-
 interface SEOData {
   title: string
   description: string
@@ -9,33 +8,27 @@ interface SEOData {
   ogImage?: string
   structuredData?: object
 }
-
 export function useSEO(seoData: SEOData) {
   const location = useLocation()
-
   useEffect(() => {
     // Update page title
     document.title = seoData.title
-
     // Update meta description
     const metaDescription = document.querySelector('meta[name="description"]')
     if (metaDescription) {
       metaDescription.setAttribute('content', seoData.description)
     }
-
     // Update canonical URL
     const canonicalLink = document.querySelector('link[rel="canonical"]')
     if (canonicalLink) {
       canonicalLink.setAttribute('href', seoData.canonicalUrl || window.location.href)
     }
-
     // Add structured data
     if (seoData.structuredData) {
       const existingScript = document.querySelector('script[type="application/ld+json"]')
       if (existingScript) {
         existingScript.remove()
       }
-
       const script = document.createElement('script')
       script.type = 'application/ld+json'
       script.textContent = JSON.stringify(seoData.structuredData)
@@ -43,7 +36,6 @@ export function useSEO(seoData: SEOData) {
     }
   }, [seoData, location])
 }
-
 export function generatePageSEO(
   title: string,
   description: string,
@@ -55,7 +47,6 @@ export function generatePageSEO(
     'Indian Hindu Culture', 'Sanatan', 'Sanatan Dharma', 'Hindu Education',
     'Vedic Learning', 'Hindu Philosophy', 'Hindu Traditions', 'Hindu Online Learning'
   ]
-
   return {
     title: `${title} | eYogi Gurukul - Hindu Education & Vedic Learning`,
     description,

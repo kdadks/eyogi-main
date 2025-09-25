@@ -1,5 +1,4 @@
 import { Course } from '../../types'
-
 export interface OrganizationSchema {
   '@context': 'https://schema.org'
   '@type': 'EducationalOrganization'
@@ -25,7 +24,6 @@ export interface OrganizationSchema {
   educationalCredentialAwarded: string
   hasCredential: string[]
 }
-
 export interface CourseSchema {
   '@context': 'https://schema.org'
   '@type': 'Course'
@@ -59,7 +57,6 @@ export interface CourseSchema {
     name: string
   }[]
 }
-
 export interface WebsiteSchema {
   '@context': 'https://schema.org'
   '@type': 'WebSite'
@@ -81,7 +78,6 @@ export interface WebsiteSchema {
     name: string
   }[]
 }
-
 export interface BreadcrumbSchema {
   '@context': 'https://schema.org'
   '@type': 'BreadcrumbList'
@@ -92,7 +88,6 @@ export interface BreadcrumbSchema {
     item: string
   }>
 }
-
 export function generateOrganizationSchema(): OrganizationSchema {
   return {
     '@context': 'https://schema.org',
@@ -133,7 +128,6 @@ export function generateOrganizationSchema(): OrganizationSchema {
     ],
   }
 }
-
 export function generateCourseSchema(course: Course): CourseSchema {
   return {
     '@context': 'https://schema.org',
@@ -171,7 +165,6 @@ export function generateCourseSchema(course: Course): CourseSchema {
     ],
   }
 }
-
 export function generateWebsiteSchema(): WebsiteSchema {
   return {
     '@context': 'https://schema.org',
@@ -205,7 +198,6 @@ export function generateWebsiteSchema(): WebsiteSchema {
     ],
   }
 }
-
 export function generateBreadcrumbSchema(
   items: Array<{ name: string; url: string }>,
 ): BreadcrumbSchema {

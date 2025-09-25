@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react'
 import { useAuth as useAuthHook } from '@/hooks/useAuth'
 import { User } from '@/types'
-
 interface AuthContextType {
   user: User | null
   loading: boolean
@@ -10,9 +9,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>
   updateUser: (user: User) => void
 }
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -20,14 +17,11 @@ export function useAuth() {
   }
   return context
 }
-
 interface AuthProviderProps {
   children: React.ReactNode
 }
-
 export default function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuthHook()
-
   // Listen for storage changes (multi-tab support)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -35,11 +29,9 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         auth.refreshUser()
       }
     }
-    
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [auth])
-
   return (
     <AuthContext.Provider value={auth}>
       {children}

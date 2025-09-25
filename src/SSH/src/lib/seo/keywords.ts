@@ -19,7 +19,6 @@ export const PRIMARY_KEYWORDS = [
   'Vedic Science',
   'Vedic Lifestyle'
 ]
-
 export const SECONDARY_KEYWORDS = [
   // Educational Keywords
   'Hindu Education',
@@ -37,7 +36,6 @@ export const SECONDARY_KEYWORDS = [
   'Hindu Religion Courses',
   'Hindu Studies Online',
   'Hindu Knowledge Online',
-  
   // Gurukul Keywords
   'Hindu Gurukul',
   'Hindu Gurukul Online',
@@ -48,7 +46,6 @@ export const SECONDARY_KEYWORDS = [
   'Gurukul Education',
   'Authentic Gurukul',
   'Modern Gurukul',
-  
   // Subject-Specific Keywords
   'Sanskrit Learning',
   'Sanskrit Courses',
@@ -61,7 +58,6 @@ export const SECONDARY_KEYWORDS = [
   'Yoga Philosophy',
   'Hindu Yoga',
   'Traditional Yoga',
-  
   // Cultural Keywords
   'Hindu Traditions',
   'Hindu Practices',
@@ -75,7 +71,6 @@ export const SECONDARY_KEYWORDS = [
   'Hindu Mythology',
   'Hindu Scriptures',
   'Hindu Texts',
-  
   // Dharma Keywords
   'Dharma Education',
   'Dharmic Living',
@@ -86,7 +81,6 @@ export const SECONDARY_KEYWORDS = [
   'Dharma Wisdom',
   'Dharma Studies'
 ]
-
 export const LONG_TAIL_KEYWORDS = [
   // Question-based Keywords
   'What is Hinduism',
@@ -99,7 +93,6 @@ export const LONG_TAIL_KEYWORDS = [
   'Best Hindu Learning Platform',
   'Authentic Hindu Education',
   'Traditional Hindu Learning',
-  
   // Location-based Keywords
   'Hindu Education Ireland',
   'Hindu Courses Dublin',
@@ -107,7 +100,6 @@ export const LONG_TAIL_KEYWORDS = [
   'Vedic Education Ireland',
   'Hindu Culture Ireland',
   'Sanskrit Learning Ireland',
-  
   // Age-specific Keywords
   'Hindu Education for Children',
   'Hindu Learning for Kids',
@@ -115,14 +107,12 @@ export const LONG_TAIL_KEYWORDS = [
   'Hindu Culture for Youth',
   'Vedic Education for Adults',
   'Hindu Courses for Families',
-  
   // Comparison Keywords
   'Best Hindu Education Platform',
   'Top Vedic Learning Site',
   'Authentic Hindu Courses',
   'Traditional vs Modern Hindu Education',
   'Online vs Offline Hindu Learning',
-  
   // Problem-solving Keywords
   'Learn Hindu Religion from Home',
   'Hindu Education During COVID',
@@ -131,7 +121,6 @@ export const LONG_TAIL_KEYWORDS = [
   'Online Hindu Gurukul',
   'Digital Hindu Education'
 ]
-
 export const CONTENT_KEYWORDS = [
   // Content-specific Keywords
   'Hindu Stories',
@@ -146,7 +135,6 @@ export const CONTENT_KEYWORDS = [
   'Hindu Music',
   'Hindu Dance',
   'Hindu Architecture',
-  
   // Spiritual Keywords
   'Hindu Meditation',
   'Hindu Prayer',
@@ -158,7 +146,6 @@ export const CONTENT_KEYWORDS = [
   'Hindu Moksha',
   'Hindu Enlightenment',
   'Hindu Self-Realization',
-  
   // Practical Keywords
   'Hindu Daily Practices',
   'Hindu Lifestyle',
@@ -170,10 +157,8 @@ export const CONTENT_KEYWORDS = [
   'Hindu Parenting',
   'Hindu Family Values'
 ]
-
 export function getKeywordsForPage(pageType: string, additionalKeywords: string[] = []): string[] {
   const baseKeywords = [...PRIMARY_KEYWORDS, ...SECONDARY_KEYWORDS.slice(0, 10)]
-  
   switch (pageType) {
     case 'home':
       return [...baseKeywords, ...LONG_TAIL_KEYWORDS.slice(0, 15), ...additionalKeywords]
@@ -189,10 +174,8 @@ export function getKeywordsForPage(pageType: string, additionalKeywords: string[
       return [...baseKeywords, ...additionalKeywords]
   }
 }
-
 export function generateMetaDescription(pageType: string, customDescription?: string): string {
   if (customDescription) return customDescription
-
   const descriptions = {
     home: 'Learn authentic Hindu traditions, Vedic philosophy, Sanskrit, mantras, and yoga through comprehensive online courses. Discover Sanatan Dharma wisdom with expert teachers in our traditional Gurukul system.',
     courses: 'Explore comprehensive Hindu education courses covering Vedic philosophy, Sanskrit, mantras, yoga, and Sanatan Dharma. Expert-led online classes for all age groups from traditional Gurukuls.',
@@ -200,6 +183,5 @@ export function generateMetaDescription(pageType: string, customDescription?: st
     about: 'Discover eYogi Gurukul\'s mission to connect ancient Hindu wisdom with modern learning. Learn about our authentic Vedic education approach, expert teachers, and global community of Sanatan Dharma learners.',
     contact: 'Contact eYogi Gurukul for questions about Hindu courses, Vedic education, enrollment, or Sanatan Dharma learning. Get support for your spiritual education journey.'
   }
-
   return descriptions[pageType as keyof typeof descriptions] || descriptions.home
 }

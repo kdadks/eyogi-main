@@ -19,7 +19,6 @@ import {
   Bars3Icon,
   LinkIcon,
 } from '@heroicons/react/24/outline'
-
 interface ContentPage {
   id: string
   title: string
@@ -33,7 +32,6 @@ interface ContentPage {
   updated_at: string
   views: number
 }
-
 interface HeaderMenuItem {
   id: string
   name: string
@@ -44,7 +42,6 @@ interface HeaderMenuItem {
   parent_id?: string
   children?: HeaderMenuItem[]
 }
-
 interface PageFormData {
   title: string
   slug: string
@@ -53,7 +50,6 @@ interface PageFormData {
   content: string
   meta_description: string
 }
-
 interface MenuFormData {
   name: string
   href: string
@@ -61,7 +57,6 @@ interface MenuFormData {
   parent_id: string
   is_active: boolean
 }
-
 export default function ContentManagement() {
   const [pages, setPages] = useState<ContentPage[]>([])
   const [menuItems, setMenuItems] = useState<HeaderMenuItem[]>([])
@@ -71,7 +66,6 @@ export default function ContentManagement() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<'pages' | 'menu'>('pages')
-
   // Page Management States
   const [showPageForm, setShowPageForm] = useState(false)
   const [editingPage, setEditingPage] = useState<ContentPage | null>(null)
@@ -85,7 +79,6 @@ export default function ContentManagement() {
     meta_description: '',
   })
   const [pageFormLoading, setPageFormLoading] = useState(false)
-
   // Menu Management States
   const [showMenuForm, setShowMenuForm] = useState(false)
   const [editingMenuItem, setEditingMenuItem] = useState<HeaderMenuItem | null>(null)
@@ -97,11 +90,9 @@ export default function ContentManagement() {
     is_active: true,
   })
   const [menuFormLoading, setMenuFormLoading] = useState(false)
-
   useEffect(() => {
     loadData()
   }, [])
-
   useEffect(() => {
     // Auto-generate slug when title changes
     if (pageFormData.title && !editingPage) {
@@ -111,7 +102,6 @@ export default function ContentManagement() {
       }))
     }
   }, [pageFormData.title, editingPage])
-
   const loadData = async () => {
     setLoading(true)
     try {
@@ -120,16 +110,13 @@ export default function ContentManagement() {
       setPages([])
       setMenuItems([])
     } catch (error) {
-      console.error('Error loading data:', error)
       toast.error('Failed to load content data')
     } finally {
       setLoading(false)
     }
   }
-
   const filterPages = React.useCallback(() => {
     let filtered = pages
-
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
@@ -139,24 +126,19 @@ export default function ContentManagement() {
           page.content.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
-
     // Filter by type
     if (typeFilter !== 'all') {
       filtered = filtered.filter((page) => page.type === typeFilter)
     }
-
     // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter((page) => page.status === statusFilter)
     }
-
     setFilteredPages(filtered)
   }, [pages, searchTerm, typeFilter, statusFilter])
-
   useEffect(() => {
     filterPages()
   }, [filterPages])
-
   // Page Management Functions
   const resetPageForm = () => {
     setPageFormData({
@@ -171,15 +153,12 @@ export default function ContentManagement() {
     setEditingPage(null)
     setViewingPage(null)
   }
-
   const handlePageSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setPageFormLoading(true)
-
     try {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500))
-
       if (editingPage) {
         // Update existing page
         const updatedPages = pages.map((page) =>
@@ -206,16 +185,13 @@ export default function ContentManagement() {
         setPages([...pages, newPage])
         toast.success('Page created successfully')
       }
-
       resetPageForm()
     } catch (error) {
-      console.error('Error saving page:', error)
       toast.error('Failed to save page')
     } finally {
       setPageFormLoading(false)
     }
   }
-
   const handleEditPage = (page: ContentPage) => {
     setEditingPage(page)
     setPageFormData({
@@ -228,29 +204,23 @@ export default function ContentManagement() {
     })
     setShowPageForm(true)
   }
-
   const handleViewPage = (page: ContentPage) => {
     setViewingPage(page)
   }
-
   const handleDeletePage = async (pageId: string) => {
     if (!confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
       return
     }
-
     try {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 300))
-
       const updatedPages = pages.filter((page) => page.id !== pageId)
       setPages(updatedPages)
       toast.success('Page deleted successfully')
     } catch (error) {
-      console.error('Error deleting page:', error)
       toast.error('Failed to delete page')
     }
   }
-
   // Menu Management Functions
   const resetMenuForm = () => {
     setMenuFormData({
@@ -263,15 +233,12 @@ export default function ContentManagement() {
     setShowMenuForm(false)
     setEditingMenuItem(null)
   }
-
   const handleMenuSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMenuFormLoading(true)
-
     try {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500))
-
       if (editingMenuItem) {
         // Update existing menu item
         const updatedMenuItems = menuItems.map((item) =>
@@ -295,16 +262,13 @@ export default function ContentManagement() {
         setMenuItems([...menuItems, newMenuItem])
         toast.success('Menu item created successfully')
       }
-
       resetMenuForm()
     } catch (error) {
-      console.error('Error saving menu item:', error)
       toast.error('Failed to save menu item')
     } finally {
       setMenuFormLoading(false)
     }
   }
-
   const handleEditMenuItem = (menuItem: HeaderMenuItem) => {
     setEditingMenuItem(menuItem)
     setMenuFormData({
@@ -316,41 +280,33 @@ export default function ContentManagement() {
     })
     setShowMenuForm(true)
   }
-
   const handleDeleteMenuItem = async (menuItemId: string) => {
     if (!confirm('Are you sure you want to delete this menu item? This action cannot be undone.')) {
       return
     }
-
     try {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 300))
-
       const updatedMenuItems = menuItems.filter((item) => item.id !== menuItemId)
       setMenuItems(updatedMenuItems)
       toast.success('Menu item deleted successfully')
     } catch (error) {
-      console.error('Error deleting menu item:', error)
       toast.error('Failed to delete menu item')
     }
   }
-
   const handleToggleMenuStatus = async (menuItemId: string, currentStatus: boolean) => {
     try {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 200))
-
       const updatedMenuItems = menuItems.map((item) =>
         item.id === menuItemId ? { ...item, is_active: !currentStatus } : item,
       )
       setMenuItems(updatedMenuItems)
       toast.success(`Menu item ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
     } catch (error) {
-      console.error('Error updating menu item status:', error)
       toast.error('Failed to update menu item status')
     }
   }
-
   const getStatusColor = (status: string) => {
     const colors = {
       published: 'bg-green-100 text-green-800',
@@ -359,7 +315,6 @@ export default function ContentManagement() {
     }
     return colors[status as keyof typeof colors] || colors.draft
   }
-
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'page':
@@ -372,7 +327,6 @@ export default function ContentManagement() {
         return DocumentTextIcon
     }
   }
-
   const iconOptions = [
     { value: 'HomeIcon', label: 'Home' },
     { value: 'GlobeAltIcon', label: 'Globe' },
@@ -382,7 +336,6 @@ export default function ContentManagement() {
     { value: 'BookOpenIcon', label: 'Book' },
     { value: 'UserGroupIcon', label: 'Users' },
   ]
-
   const stats = {
     totalPages: pages.length,
     published: pages.filter((p) => p.status === 'published').length,
@@ -392,7 +345,6 @@ export default function ContentManagement() {
     totalMenuItems: menuItems.length,
     activeMenuItems: menuItems.filter((m) => m.is_active).length,
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -403,7 +355,6 @@ export default function ContentManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -435,7 +386,6 @@ export default function ContentManagement() {
           </CardContent>
         </Card>
       </div>
-
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
@@ -463,7 +413,6 @@ export default function ContentManagement() {
           </button>
         </nav>
       </div>
-
       {/* Page View Modal */}
       {viewingPage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -475,7 +424,6 @@ export default function ContentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">Page Information</h3>
@@ -506,12 +454,10 @@ export default function ContentManagement() {
                     </p>
                   </div>
                 </div>
-
                 <div>
                   <h3 className="font-semibold mb-2">Meta Description</h3>
                   <p className="text-sm text-gray-600">{viewingPage.meta_description}</p>
                 </div>
-
                 <div>
                   <h3 className="font-semibold mb-2">Content Preview</h3>
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
@@ -523,7 +469,6 @@ export default function ContentManagement() {
           </div>
         </div>
       )}
-
       {/* Pages Tab */}
       {activeTab === 'pages' && (
         <div className="space-y-6">
@@ -561,7 +506,6 @@ export default function ContentManagement() {
                       helperText="URL-friendly identifier"
                     />
                   </div>
-
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Page Type</label>
@@ -580,7 +524,6 @@ export default function ContentManagement() {
                         <option value="gurukul">Gurukul Page</option>
                       </select>
                     </div>
-
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Status</label>
                       <select
@@ -599,7 +542,6 @@ export default function ContentManagement() {
                       </select>
                     </div>
                   </div>
-
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700">
                       Meta Description
@@ -614,7 +556,6 @@ export default function ContentManagement() {
                       placeholder="Brief description for search engines..."
                     />
                   </div>
-
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700">Content</label>
                     <textarea
@@ -628,7 +569,6 @@ export default function ContentManagement() {
                       required
                     />
                   </div>
-
                   <div className="flex space-x-4">
                     <Button type="submit" loading={pageFormLoading}>
                       <CheckIcon className="h-4 w-4 mr-2" />
@@ -642,13 +582,11 @@ export default function ContentManagement() {
               </CardContent>
             </Card>
           )}
-
           {/* Pages Management */}
           <Card>
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
                 <h2 className="text-xl font-bold">Pages & Content</h2>
-
                 <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
                   {/* Search */}
                   <div className="relative">
@@ -661,7 +599,6 @@ export default function ContentManagement() {
                       className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
-
                   {/* Type Filter */}
                   <select
                     value={typeFilter}
@@ -673,7 +610,6 @@ export default function ContentManagement() {
                     <option value="blog">Blog Posts</option>
                     <option value="gurukul">Gurukul Pages</option>
                   </select>
-
                   {/* Status Filter */}
                   <select
                     value={statusFilter}
@@ -685,7 +621,6 @@ export default function ContentManagement() {
                     <option value="draft">Draft</option>
                     <option value="archived">Archived</option>
                   </select>
-
                   <Button onClick={() => setShowPageForm(true)}>
                     <PlusIcon className="h-4 w-4 mr-2" />
                     New Page
@@ -693,7 +628,6 @@ export default function ContentManagement() {
                 </div>
               </div>
             </CardHeader>
-
             <CardContent>
               {filteredPages.length === 0 ? (
                 <div className="text-center py-8">
@@ -796,7 +730,6 @@ export default function ContentManagement() {
           </Card>
         </div>
       )}
-
       {/* Header Menu Tab */}
       {activeTab === 'menu' && (
         <div className="space-y-6">
@@ -834,7 +767,6 @@ export default function ContentManagement() {
                       placeholder="/page-url"
                     />
                   </div>
-
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Icon</label>
@@ -853,7 +785,6 @@ export default function ContentManagement() {
                         ))}
                       </select>
                     </div>
-
                     <div className="flex items-center space-x-2 pt-6">
                       <input
                         type="checkbox"
@@ -869,7 +800,6 @@ export default function ContentManagement() {
                       </label>
                     </div>
                   </div>
-
                   <div className="flex space-x-4">
                     <Button type="submit" loading={menuFormLoading}>
                       <CheckIcon className="h-4 w-4 mr-2" />
@@ -883,7 +813,6 @@ export default function ContentManagement() {
               </CardContent>
             </Card>
           )}
-
           {/* Menu Management */}
           <Card>
             <CardHeader>
@@ -898,7 +827,6 @@ export default function ContentManagement() {
                 </Button>
               </div>
             </CardHeader>
-
             <CardContent>
               {menuItems.length === 0 ? (
                 <div className="text-center py-8">
@@ -920,7 +848,6 @@ export default function ContentManagement() {
                             <Bars3Icon className="h-4 w-4 text-gray-400 cursor-move" />
                             <span className="text-sm text-gray-500">#{menuItem.order}</span>
                           </div>
-
                           <div className="flex items-center space-x-3">
                             {menuItem.icon && (
                               <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -933,7 +860,6 @@ export default function ContentManagement() {
                             </div>
                           </div>
                         </div>
-
                         <div className="flex items-center space-x-4">
                           <Badge
                             className={
@@ -944,7 +870,6 @@ export default function ContentManagement() {
                           >
                             {menuItem.is_active ? 'Active' : 'Inactive'}
                           </Badge>
-
                           <div className="flex space-x-2">
                             <Button
                               size="sm"

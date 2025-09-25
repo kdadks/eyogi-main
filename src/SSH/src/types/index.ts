@@ -5,14 +5,12 @@ export interface Address {
   postal_code?: string
   country?: string
 }
-
 export interface EmergencyContact {
   name?: string
   relationship?: string
   phone?: string
   email?: string
 }
-
 export interface UserPreferences {
   language?: string
   notifications?: {
@@ -26,7 +24,6 @@ export interface UserPreferences {
     reduced_motion?: boolean
   }
 }
-
 export interface User {
   id: string
   email: string
@@ -55,7 +52,6 @@ export interface User {
   created_at: string
   updated_at: string
 }
-
 export interface Gurukul {
   id: string
   name: string
@@ -67,7 +63,6 @@ export interface Gurukul {
   created_at: string
   updated_at: string
 }
-
 export interface Course {
   id: string
   gurukul_id: string
@@ -111,7 +106,6 @@ export interface Course {
   teacher?: User
   enrolled_count?: number
 }
-
 export interface Enrollment {
   id: string
   student_id: string
@@ -124,12 +118,13 @@ export interface Enrollment {
   payment_id?: string
   certificate_issued: boolean
   certificate_url?: string
+  progress_percentage?: number
+  final_grade?: string
   created_at: string
   updated_at: string
   course?: Course
   student?: User
 }
-
 export interface Certificate {
   id: string
   enrollment_id: string
@@ -146,7 +141,6 @@ export interface Certificate {
   course?: Course
   student?: User
 }
-
 export interface CertificateTemplate {
   id: string
   name: string
@@ -206,7 +200,6 @@ export interface CertificateTemplate {
   created_at: string
   updated_at: string
 }
-
 export interface DashboardStats {
   total_students: number
   total_courses: number
@@ -215,7 +208,6 @@ export interface DashboardStats {
   recent_enrollments: Enrollment[]
   popular_courses: Course[]
 }
-
 export interface PrerequisiteCheckResult {
   canEnroll: boolean
   missingPrerequisites: {
@@ -232,7 +224,6 @@ export interface PrerequisiteCheckResult {
   }
   message: string
 }
-
 export interface CourseProgress {
   course_id: string
   student_id: string
@@ -244,7 +235,6 @@ export interface CourseProgress {
   created_at: string
   updated_at: string
 }
-
 export interface CourseAssignment {
   id: string
   teacher_id: string
@@ -259,7 +249,6 @@ export interface CourseAssignment {
   teacher?: User
   assigned_by_user?: User
 }
-
 // Database profile type (from Supabase)
 export type Profile = {
   id: string
@@ -277,7 +266,6 @@ export type Profile = {
   created_at: string
   updated_at: string
 }
-
 export interface Syllabus {
   classes?: Array<{
     number: number

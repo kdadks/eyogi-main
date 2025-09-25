@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-
 // Type definitions for complex objects
 interface Address {
   street?: string
@@ -8,14 +7,12 @@ interface Address {
   country?: string
   postal_code?: string
 }
-
 interface EmergencyContact {
   name?: string
   relationship?: string
   phone?: string
   email?: string
 }
-
 interface UserPreferences {
   theme?: 'light' | 'dark' | 'auto'
   language?: string
@@ -30,7 +27,6 @@ interface UserPreferences {
     show_phone?: boolean
   }
 }
-
 interface BrandColors {
   primary?: string
   secondary?: string
@@ -38,7 +34,6 @@ interface BrandColors {
   background?: string
   text?: string
 }
-
 interface CourseSyllabus {
   modules?: Array<{
     title?: string
@@ -50,7 +45,6 @@ interface CourseSyllabus {
   prerequisites?: string[]
   assessment_criteria?: string[]
 }
-
 interface CourseResources {
   videos?: string[]
   documents?: string[]
@@ -58,7 +52,6 @@ interface CourseResources {
   assignments?: string[]
   quizzes?: string[]
 }
-
 interface CertificateData {
   template_id?: string
   student_name?: string
@@ -69,15 +62,12 @@ interface CertificateData {
   certificate_number?: string
   verification_url?: string
 }
-
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
-
 // Client for regular user operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -100,7 +90,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     timeout: 60000,
   },
 })
-
 // Admin client with service role key (bypasses RLS) - NO AUTH PERSISTENCE
 export const supabaseAdmin = supabaseServiceRoleKey
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -112,7 +101,6 @@ export const supabaseAdmin = supabaseServiceRoleKey
       },
     })
   : supabase
-
 // Database types (generated from Supabase schema)
 export interface Database {
   public: {

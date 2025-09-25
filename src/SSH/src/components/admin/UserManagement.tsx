@@ -17,7 +17,6 @@ import {
   AcademicCapIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
-
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
@@ -26,14 +25,11 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [viewingUser, setViewingUser] = useState<User | null>(null)
-
   useEffect(() => {
     loadUsers()
   }, [])
-
   const filterUsers = useCallback(() => {
     let filtered = users
-
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
@@ -43,31 +39,25 @@ export default function UserManagement() {
           user.student_id?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
-
     // Filter by role
     if (roleFilter !== 'all') {
       filtered = filtered.filter((user) => user.role === roleFilter)
     }
-
     setFilteredUsers(filtered)
   }, [users, searchTerm, roleFilter])
-
   useEffect(() => {
     filterUsers()
   }, [filterUsers])
-
   const loadUsers = async () => {
     try {
       const data = await getAllUsers()
       setUsers(data)
     } catch (error) {
-      console.error('Error loading users:', error)
       toast.error('Failed to load users')
     } finally {
       setLoading(false)
     }
   }
-
   const handleUpdateRole = async (userId: string, newRole: User['role']) => {
     try {
       await updateUserRole(userId, newRole)
@@ -75,33 +65,27 @@ export default function UserManagement() {
       setEditingUser(null)
       toast.success('User role updated successfully')
     } catch (error) {
-      console.error('Error updating user role:', error)
       toast.error('Failed to update user role')
     }
   }
-
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return
     }
-
     try {
       await deleteUser(userId)
       await loadUsers()
       toast.success('User deleted successfully')
     } catch (error) {
-      console.error('Error deleting user:', error)
       toast.error('Failed to delete user')
     }
   }
-
   const stats = {
     total: users.length,
     students: users.filter((u) => u.role === 'student').length,
     teachers: users.filter((u) => u.role === 'teacher').length,
     admins: users.filter((u) => u.role === 'admin').length,
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -109,7 +93,6 @@ export default function UserManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -143,13 +126,11 @@ export default function UserManagement() {
           </CardContent>
         </Card>
       </div>
-
       {/* User Management */}
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">User Management</h2>
-
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -162,7 +143,6 @@ export default function UserManagement() {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
-
               {/* Role Filter */}
               <select
                 value={roleFilter}
@@ -177,7 +157,6 @@ export default function UserManagement() {
             </div>
           </div>
         </CardHeader>
-
         <CardContent>
           {filteredUsers.length === 0 ? (
             <div className="text-center py-8">
@@ -269,7 +248,6 @@ export default function UserManagement() {
                             size="sm"
                             variant="ghost"
                             onClick={() => {
-                              console.log('View button clicked for user:', user.id, user.full_name)
                               setViewingUser(user)
                             }}
                             title="View User Details"
@@ -296,122 +274,173 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
-
       {/* User Details Modal */}
       {(() => {
         if (viewingUser) {
-          console.log('Rendering modal for viewingUser:', viewingUser)
           return true
         }
         return false
-      })() && viewingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-900">User Details</h2>
-              <button
-                onClick={() => setViewingUser(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto">
-              <div className="space-y-6">
-                {/* Basic Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingUser.full_name || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Email</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingUser.email}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Role</label>
-                      <Badge className={getRoleColor(viewingUser.role)} size="sm">
-                        {toSentenceCase(viewingUser.role)}
-                      </Badge>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Student ID</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingUser.student_id || 'Not assigned'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Age</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingUser.age || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Phone</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingUser.phone || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {viewingUser.date_of_birth ? formatDate(viewingUser.date_of_birth) : 'Not provided'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Status</label>
-                      <Badge
-                        className={viewingUser.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
-                        size="sm"
-                      >
-                        {toSentenceCase(viewingUser.status || 'active')}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Address Information */}
-                {viewingUser.address && (
+      })() &&
+        viewingUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-bold text-gray-900">User Details</h2>
+                <button
+                  onClick={() => setViewingUser(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <div className="space-y-6">
+                  {/* Basic Information */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Street</label>
-                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.street || 'Not provided'}</p>
+                        <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {viewingUser.full_name || 'Not provided'}
+                        </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">City</label>
-                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.city || 'Not provided'}</p>
+                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <p className="mt-1 text-sm text-gray-900">{viewingUser.email}</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">State</label>
-                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.state || 'Not provided'}</p>
+                        <label className="block text-sm font-medium text-gray-700">Role</label>
+                        <Badge className={getRoleColor(viewingUser.role)} size="sm">
+                          {toSentenceCase(viewingUser.role)}
+                        </Badge>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Country</label>
-                        <p className="mt-1 text-sm text-gray-900">{viewingUser.address.country || 'Not provided'}</p>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Student ID
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {viewingUser.student_id || 'Not assigned'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Age</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {viewingUser.age || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Phone</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {viewingUser.phone || 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Date of Birth
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {viewingUser.date_of_birth
+                            ? formatDate(viewingUser.date_of_birth)
+                            : 'Not provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <Badge
+                          className={
+                            viewingUser.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }
+                          size="sm"
+                        >
+                          {toSentenceCase(viewingUser.status || 'active')}
+                        </Badge>
                       </div>
                     </div>
                   </div>
-                )}
-
-                {/* Account Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Address Information */}
+                  {(viewingUser.address_line_1 || viewingUser.city) && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Created</label>
-                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingUser.created_at)}</p>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Street Address
+                          </label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {viewingUser.address_line_1 || 'Not provided'}
+                          </p>
+                          {viewingUser.address_line_2 && (
+                            <p className="mt-1 text-sm text-gray-900">
+                              {viewingUser.address_line_2}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">City</label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {viewingUser.city || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">State</label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {viewingUser.state || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            ZIP Code
+                          </label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {viewingUser.zip_code || 'Not provided'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Country</label>
+                          <p className="mt-1 text-sm text-gray-900">
+                            {viewingUser.country || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Last Updated</label>
-                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingUser.updated_at)}</p>
+                  )}
+                  {/* Account Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Account Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Created</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {formatDate(viewingUser.created_at)}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Last Updated
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {formatDate(viewingUser.updated_at)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   )
 }

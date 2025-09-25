@@ -7,31 +7,25 @@ import { WebsiteAuthProvider } from './contexts/WebsiteAuthContext'
 import { PermissionProvider } from './contexts/PermissionContext'
 import { SessionManager } from './lib/sessionManager'
 import './index.css'
-
 // Initialize session management before rendering (only in production or when needed)
 if (import.meta.env.PROD || import.meta.env.VITE_FORCE_SESSION_MANAGEMENT) {
   SessionManager.initializeSessionManagement()
     .then(() => {
-      console.log('Session management initialized, starting app...')
+      // Session management initialized
     })
-    .catch((error) => {
-      console.warn('Session management initialization failed:', error)
+    .catch(() => {
+      // Session management initialization failed
     })
-} else {
-  console.log('Session management skipped in development mode')
 }
-
 // Keep essential error handlers for production monitoring
 window.addEventListener('error', (event) => {
   if (event.message.includes('prototype')) {
-    console.error('🔍 Prototype error detected:', event.message)
+    // Prototype error detected
   }
 })
-
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('🚨 Unhandled promise rejection:', event.reason)
+window.addEventListener('unhandledrejection', () => {
+  // Unhandled promise rejection
 })
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter

@@ -1,26 +1,20 @@
 import { supabaseAdmin } from '../supabase'
 import { CertificateTemplate } from '@/types'
-
 export async function getCertificateTemplates(): Promise<CertificateTemplate[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('certificate_templates')
       .select('*')
       .order('created_at', { ascending: false })
-
     if (error) {
-      console.error('Error fetching certificate templates:', error)
       // Return default templates if database doesn't exist yet
       return getDefaultTemplates()
     }
-
     return data || getDefaultTemplates()
   } catch (error) {
-    console.error('Error in getCertificateTemplates:', error)
     return getDefaultTemplates()
   }
 }
-
 export async function createCertificateTemplate(
   template: Omit<CertificateTemplate, 'id' | 'created_at' | 'updated_at'>
 ): Promise<CertificateTemplate> {
@@ -34,18 +28,14 @@ export async function createCertificateTemplate(
       })
       .select()
       .single()
-
     if (error) {
       throw new Error(`Failed to create template: ${error.message}`)
     }
-
     return data
   } catch (error) {
-    console.error('Error creating certificate template:', error)
     throw error
   }
 }
-
 export async function updateCertificateTemplate(
   id: string,
   updates: Partial<CertificateTemplate>
@@ -60,34 +50,27 @@ export async function updateCertificateTemplate(
       .eq('id', id)
       .select()
       .single()
-
     if (error) {
       throw new Error(`Failed to update template: ${error.message}`)
     }
-
     return data
   } catch (error) {
-    console.error('Error updating certificate template:', error)
     throw error
   }
 }
-
 export async function deleteCertificateTemplate(id: string): Promise<void> {
   try {
     const { error } = await supabaseAdmin
       .from('certificate_templates')
       .delete()
       .eq('id', id)
-
     if (error) {
       throw new Error(`Failed to delete template: ${error.message}`)
     }
   } catch (error) {
-    console.error('Error deleting certificate template:', error)
     throw error
   }
 }
-
 export async function duplicateCertificateTemplate(id: string): Promise<CertificateTemplate> {
   try {
     // Get the original template
@@ -96,11 +79,9 @@ export async function duplicateCertificateTemplate(id: string): Promise<Certific
       .select('*')
       .eq('id', id)
       .single()
-
     if (fetchError || !original) {
       throw new Error('Template not found')
     }
-
     // Create a duplicate with a new name
     const duplicate = {
       ...original,
@@ -110,14 +91,11 @@ export async function duplicateCertificateTemplate(id: string): Promise<Certific
       created_at: undefined,
       updated_at: undefined
     }
-
     return await createCertificateTemplate(duplicate)
   } catch (error) {
-    console.error('Error duplicating certificate template:', error)
     throw error
   }
 }
-
 // Default templates to use when database is not available
 function getDefaultTemplates(): CertificateTemplate[] {
   return [
@@ -215,7 +193,6 @@ function getDefaultTemplates(): CertificateTemplate[] {
     }
   ]
 }
-
 export async function getActiveCertificateTemplates(type?: 'student' | 'teacher'): Promise<CertificateTemplate[]> {
   const templates = await getCertificateTemplates()
   return templates.filter(template => {

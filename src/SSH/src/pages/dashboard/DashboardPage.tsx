@@ -2,11 +2,9 @@ import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
-
 export default function DashboardPage() {
   const { loading: authLoading, isSuperAdmin } = useAuth()
   const { user: websiteUser, loading: websiteLoading } = useWebsiteAuth()
-
   if (authLoading || websiteLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center page-with-header">
@@ -17,12 +15,10 @@ export default function DashboardPage() {
       </div>
     )
   }
-
   // Redirect super admin to admin console
   if (isSuperAdmin) {
     return <Navigate to="/admin/dashboard" replace />
   }
-
   // Redirect website users based on role
   if (websiteUser) {
     switch (websiteUser.role) {
@@ -38,7 +34,6 @@ export default function DashboardPage() {
         return <Navigate to="/auth/signin" replace />
     }
   }
-
   // Not authenticated
   return <Navigate to="/auth/signin" replace />
 }

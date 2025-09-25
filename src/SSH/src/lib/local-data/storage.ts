@@ -15,18 +15,15 @@ export interface LocalUser {
   created_at: string
   updated_at: string
 }
-
 export interface LocalSession {
   user: LocalUser
   access_token: string
   expires_at: number
 }
-
 // Generate unique IDs
 export function generateId(): string {
   return Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
 }
-
 // Generate student ID
 export function generateStudentId(): string {
   const year = new Date().getFullYear()
@@ -35,7 +32,6 @@ export function generateStudentId(): string {
   const nextNumber = currentYearUsers.length + 1
   return `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
 }
-
 // Storage keys
 const STORAGE_KEYS = {
   USERS: 'eyogi_users',
@@ -45,65 +41,52 @@ const STORAGE_KEYS = {
   ENROLLMENTS: 'eyogi_enrollments',
   CERTIFICATES: 'eyogi_certificates',
 }
-
 // User management
 export function getStoredUsers(): LocalUser[] {
   const users = localStorage.getItem(STORAGE_KEYS.USERS)
   return users ? JSON.parse(users) : []
 }
-
 export function storeUser(user: LocalUser): void {
   const users = getStoredUsers()
   const existingIndex = users.findIndex((u) => u.id === user.id)
-
   if (existingIndex >= 0) {
     users[existingIndex] = { ...user, updated_at: new Date().toISOString() }
   } else {
     users.push(user)
   }
-
   localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users))
 }
-
 export function findUserByEmail(email: string): LocalUser | null {
   const users = getStoredUsers()
   return users.find((u) => u.email === email) || null
 }
-
 export function findUserById(id: string): LocalUser | null {
   const users = getStoredUsers()
   return users.find((u) => u.id === id) || null
 }
-
 // Session management
 export function getCurrentSession(): LocalSession | null {
   const session = localStorage.getItem(STORAGE_KEYS.CURRENT_SESSION)
   if (!session) return null
-
   const parsed = JSON.parse(session)
   if (Date.now() > parsed.expires_at) {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_SESSION)
     return null
   }
-
   return parsed
 }
-
 export function storeSession(user: LocalUser): LocalSession {
   const session: LocalSession = {
     user,
     access_token: generateId(),
     expires_at: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
   }
-
   localStorage.setItem(STORAGE_KEYS.CURRENT_SESSION, JSON.stringify(session))
   return session
 }
-
 export function clearSession(): void {
   localStorage.removeItem(STORAGE_KEYS.CURRENT_SESSION)
 }
-
 // Initialize default data
 export function initializeDefaultData(): void {
   // Initialize test users if not exists
@@ -160,7 +143,6 @@ export function initializeDefaultData(): void {
     ]
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(testUsers))
   }
-
   // Initialize gurukuls if not exists
   if (!localStorage.getItem(STORAGE_KEYS.GURUKULS)) {
     const defaultGurukuls = [
@@ -222,7 +204,6 @@ export function initializeDefaultData(): void {
     ]
     localStorage.setItem(STORAGE_KEYS.GURUKULS, JSON.stringify(defaultGurukuls))
   }
-
   // Initialize courses if not exists
   if (!localStorage.getItem(STORAGE_KEYS.COURSES)) {
     const defaultCourses = [
@@ -372,12 +353,10 @@ export function initializeDefaultData(): void {
     ]
     localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(defaultCourses))
   }
-
   // Initialize empty arrays for other data
   if (!localStorage.getItem(STORAGE_KEYS.ENROLLMENTS)) {
     localStorage.setItem(STORAGE_KEYS.ENROLLMENTS, JSON.stringify([]))
   }
-
   if (!localStorage.getItem(STORAGE_KEYS.CERTIFICATES)) {
     localStorage.setItem(STORAGE_KEYS.CERTIFICATES, JSON.stringify([]))
   }

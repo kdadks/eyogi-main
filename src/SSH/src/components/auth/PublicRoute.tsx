@@ -1,15 +1,12 @@
 import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
-
 interface PublicRouteProps {
   children: React.ReactNode
   redirectAuthenticated?: boolean
 }
-
 export default function PublicRoute({ children, redirectAuthenticated = true }: PublicRouteProps) {
   const { user, loading, initialized } = useAuth()
-
   // Show loading while auth is initializing
   if (!initialized || loading) {
     return (
@@ -21,11 +18,9 @@ export default function PublicRoute({ children, redirectAuthenticated = true }: 
       </div>
     )
   }
-
   // Redirect authenticated users to their dashboard
   if (user && redirectAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
-
   return <>{children}</>
 }

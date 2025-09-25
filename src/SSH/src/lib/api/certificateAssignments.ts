@@ -1,7 +1,6 @@
 import { supabase, supabaseAdmin } from '../supabase'
 import { getGurukuls } from './gurukuls'
 import { getCourses } from './courses'
-
 export interface CertificateAssignment {
   id: string
   template_id: string
@@ -10,20 +9,17 @@ export interface CertificateAssignment {
   created_by: string
   created_at: string
   updated_at: string
-
   // Relations
   template?: any
   gurukul?: any
   course?: any
   creator?: any
 }
-
 export interface CreateCertificateAssignmentData {
   template_id: string
   gurukul_id?: string
   course_id?: string
 }
-
 // Get all assignments with filters
 export const getCertificateAssignments = async (filters?: {
   template_id?: string
@@ -41,7 +37,6 @@ export const getCertificateAssignments = async (filters?: {
         creator:profiles(*)
       `)
       .order('created_at', { ascending: false })
-
     // Apply filters
     if (filters?.template_id) {
       query = query.eq('template_id', filters.template_id)
@@ -52,28 +47,20 @@ export const getCertificateAssignments = async (filters?: {
     if (filters?.course_id) {
       query = query.eq('course_id', filters.course_id)
     }
-
     const { data, error } = await query
-
     if (error) {
       // If table doesn't exist, return empty array instead of throwing
       if (error.message.includes('relation "certificate_assignments" does not exist')) {
-        console.warn('Certificate assignments table does not exist yet. Returning empty array.')
         return []
       }
-      console.error('Error getting certificate assignments:', error)
       throw error
     }
-
-    console.log('Fetched assignments from database:', data)
     return data as CertificateAssignment[]
   } catch (error) {
-    console.error('Error getting certificate assignments:', error)
     // Return empty array if there's any database issue
     return []
   }
 }
-
 // Get assignments for a teacher's courses
 export const getTeacherCertificateAssignments = async (teacherId: string) => {
   try {
@@ -83,10 +70,8 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
       .from('courses')
       .select('id, gurukul_id')
       .eq('teacher_id', teacherId)
-
     // If no courses found or teacher_id doesn't exist, try course_assignments table
     if (coursesError || !teacherCourses || teacherCourses.length === 0) {
-      console.log('Trying course_assignments table for teacher courses...')
       const { data: assignments, error: assignmentError } = await supabaseAdmin
         .from('course_assignments')
         .select(`
@@ -95,7 +80,6 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
         `)
         .eq('teacher_id', teacherId)
         .eq('is_active', true)
-
       if (!assignmentError && assignments) {
         teacherCourses = assignments.map(a => ({
           id: a.courses.id,
@@ -104,19 +88,14 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
         coursesError = null
       }
     }
-
     if (coursesError) {
-      console.warn('Error fetching teacher courses:', coursesError)
       return []
     }
-
     if (teacherCourses.length === 0) {
       return []
     }
-
     const courseIds = teacherCourses.map(tc => tc.id)
     const gurukulIds = [...new Set(teacherCourses.map(tc => tc.gurukul_id))]
-
     // Get assignments for teacher's courses or gurukuls
     const { data: assignments, error: assignmentsError } = await supabaseAdmin
       .from('certificate_assignments')
@@ -128,49 +107,36 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
         creator:profiles(*)
       `)
       .or(`course_id.in.(${courseIds.join(',')}),gurukul_id.in.(${gurukulIds.join(',')})`)
-
     if (assignmentsError) {
       // If table doesn't exist, return empty array instead of throwing
       if (assignmentsError.message.includes('relation "certificate_assignments" does not exist')) {
-        console.warn('Certificate assignments table does not exist yet. Returning empty array.')
         return []
       }
-      console.error('Error fetching teacher assignments:', assignmentsError)
       return []
     }
-
-    console.log('Teacher assignments found:', assignments?.length || 0)
     return assignments as CertificateAssignment[] || []
   } catch (error) {
-    console.error('Error getting teacher certificate assignments:', error)
     return []
   }
 }
-
 // Create assignment
 export const createCertificateAssignment = async (assignmentData: CreateCertificateAssignmentData) => {
   try {
     // Get the current user
     const { data: { user } } = await supabase.auth.getUser()
-
     if (!user) {
       throw new Error('User not authenticated')
     }
-
     // Validate that at least one of gurukul_id or course_id is provided
     if (!assignmentData.gurukul_id && !assignmentData.course_id) {
       throw new Error('Either gurukul_id or course_id must be provided')
     }
-
     const insertData = {
       template_id: assignmentData.template_id,
       gurukul_id: assignmentData.gurukul_id || null,
       course_id: assignmentData.course_id || null,
       created_by: user.id,
     }
-
-    console.log('Creating assignment with data:', insertData)
-
     const { data, error } = await supabaseAdmin
       .from('certificate_assignments')
       .insert(insertData)
@@ -182,10 +148,7 @@ export const createCertificateAssignment = async (assignmentData: CreateCertific
         creator:profiles(*)
       `)
       .single()
-
     if (error) {
-      console.error('Error creating certificate assignment:', error)
-
       // Provide helpful error messages
       if (error.message.includes('relation "certificate_assignments" does not exist')) {
         throw new Error('Certificate assignments table does not exist. Please contact administrator to set up the database.')
@@ -193,17 +156,13 @@ export const createCertificateAssignment = async (assignmentData: CreateCertific
       if (error.message.includes('check constraint "check_assignment_target"')) {
         throw new Error('Either gurukul or course must be selected for assignment.')
       }
-
       throw error
     }
-
     return data as CertificateAssignment
   } catch (error) {
-    console.error('Error creating certificate assignment:', error)
     throw error
   }
 }
-
 // Update assignment
 export const updateCertificateAssignment = async (id: string, updates: Partial<CreateCertificateAssignmentData>) => {
   try {
@@ -211,7 +170,6 @@ export const updateCertificateAssignment = async (id: string, updates: Partial<C
     if (updates.gurukul_id && updates.course_id) {
       throw new Error('Cannot assign to both gurukul and course simultaneously')
     }
-
     const { data, error } = await supabaseAdmin
       .from('certificate_assignments')
       .update({
@@ -229,19 +187,14 @@ export const updateCertificateAssignment = async (id: string, updates: Partial<C
         creator:profiles(*)
       `)
       .single()
-
     if (error) {
-      console.error('Error updating certificate assignment:', error)
       throw error
     }
-
     return data as CertificateAssignment
   } catch (error) {
-    console.error('Error updating certificate assignment:', error)
     throw error
   }
 }
-
 // Delete assignment
 export const deleteCertificateAssignment = async (id: string) => {
   try {
@@ -249,19 +202,14 @@ export const deleteCertificateAssignment = async (id: string) => {
       .from('certificate_assignments')
       .delete()
       .eq('id', id)
-
     if (error) {
-      console.error('Error deleting certificate assignment:', error)
       throw error
     }
-
     return true
   } catch (error) {
-    console.error('Error deleting certificate assignment:', error)
     throw error
   }
 }
-
 // Get available gurukuls for assignment
 export const getAvailableGurukuls = async () => {
   try {
@@ -272,11 +220,9 @@ export const getAvailableGurukuls = async () => {
       status: g.is_active ? 'active' : 'inactive'
     }))
   } catch (error) {
-    console.error('Error getting available gurukuls:', error)
     throw error
   }
 }
-
 // Get available courses for assignment
 export const getAvailableCourses = async (gurukulId?: string) => {
   try {
@@ -289,7 +235,6 @@ export const getAvailableCourses = async (gurukulId?: string) => {
       status: 'active' // Assuming all returned courses are active
     }))
   } catch (error) {
-    console.error('Error getting available courses:', error)
     throw error
   }
 }

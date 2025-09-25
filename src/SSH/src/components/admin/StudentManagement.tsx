@@ -30,7 +30,6 @@ import {
   PlusIcon,
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline'
-
 interface StudentWithEnrollments extends User {
   enrollments: Array<Enrollment & { course?: Course & { gurukul?: Gurukul } }>
   total_enrollments: number
@@ -42,7 +41,6 @@ interface StudentWithEnrollments extends User {
   parent_guardian_email?: string
   parent_guardian_phone?: string
 }
-
 interface StudentFormData {
   full_name: string
   email: string
@@ -54,7 +52,6 @@ interface StudentFormData {
   parent_guardian_phone: string
   role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
 }
-
 export default function StudentManagement() {
   const [students, setStudents] = useState<StudentWithEnrollments[]>([])
   const [courses, setCourses] = useState<Course[]>([])
@@ -64,14 +61,12 @@ export default function StudentManagement() {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'by-course' | 'details' | 'communication'
   >('overview')
-
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [courseFilter, setCourseFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [ageGroupFilter, setAgeGroupFilter] = useState<string>('all')
   const [gurukulFilter, setGurukulFilter] = useState<string>('all')
-
   // Student Details
   const [viewingStudent, setViewingStudent] = useState<StudentWithEnrollments | null>(null)
   const [editingStudent, setEditingStudent] = useState<StudentWithEnrollments | null>(null)
@@ -88,7 +83,6 @@ export default function StudentManagement() {
     role: 'student',
   })
   const [formLoading, setFormLoading] = useState(false)
-
   // Communication
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set())
   const [showCommunicationPanel, setShowCommunicationPanel] = useState(false)
@@ -97,15 +91,12 @@ export default function StudentManagement() {
     message: '',
     type: 'email' as 'email' | 'sms',
   })
-
   useEffect(() => {
     loadData()
   }, [])
-
   useEffect(() => {
     const filterStudents = () => {
       let filtered = students
-
       // Search filter
       if (searchTerm) {
         filtered = filtered.filter(
@@ -116,21 +107,18 @@ export default function StudentManagement() {
             student.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
         )
       }
-
       // Course filter
       if (courseFilter !== 'all') {
         filtered = filtered.filter((student) =>
           student.enrollments.some((e) => e.course_id === courseFilter),
         )
       }
-
       // Status filter (enrollment status)
       if (statusFilter !== 'all') {
         filtered = filtered.filter((student) =>
           student.enrollments.some((e) => e.status === statusFilter),
         )
       }
-
       // Age group filter
       if (ageGroupFilter !== 'all') {
         const [minAge, maxAge] = ageGroupFilter.split('-').map(Number)
@@ -138,22 +126,17 @@ export default function StudentManagement() {
           (student) => student.age && student.age >= minAge && student.age <= maxAge,
         )
       }
-
       // Gurukul filter
       if (gurukulFilter !== 'all') {
         filtered = filtered.filter((student) =>
           student.enrollments.some((e) => e.course?.gurukul_id === gurukulFilter),
         )
       }
-
       setFilteredStudents(filtered)
     }
-
     filterStudents()
   }, [students, searchTerm, courseFilter, statusFilter, ageGroupFilter, gurukulFilter])
-
   // Removed duplicate filterStudents function
-
   const loadData = async () => {
     try {
       const [usersData, coursesData, enrollmentsData, gurukulData] = await Promise.all([
@@ -162,19 +145,15 @@ export default function StudentManagement() {
         getAllEnrollments(),
         getGurukuls(),
       ])
-
       setCourses(coursesData)
       setGurukuls(gurukulData)
-
       // Filter only students and enrich with enrollment data
       const studentsOnly = usersData.filter((user) => user.role === 'student')
-
       const enrichedStudents = studentsOnly.map((student) => {
         const studentEnrollments = enrollmentsData.filter((e) => e.student_id === student.id)
         const completedCourses = studentEnrollments.filter((e) => e.status === 'completed').length
         const pendingEnrollments = studentEnrollments.filter((e) => e.status === 'pending').length
         const totalSpent = studentEnrollments.reduce((sum, e) => sum + (e.course?.price || 0), 0)
-
         return {
           ...student,
           enrollments: studentEnrollments,
@@ -184,20 +163,16 @@ export default function StudentManagement() {
           total_spent: totalSpent,
         }
       })
-
       setStudents(enrichedStudents as StudentWithEnrollments[])
     } catch (error) {
-      console.error('Error loading student data:', error)
       toast.error('Failed to load student data')
     } finally {
       setLoading(false)
     }
   }
-
   const handleViewStudent = (student: StudentWithEnrollments) => {
     setViewingStudent(student)
   }
-
   const handleEditStudent = (student: StudentWithEnrollments) => {
     setEditingStudent(student)
     setStudentFormData({
@@ -206,11 +181,9 @@ export default function StudentManagement() {
       age: student.age || 16,
       phone: student.phone || '',
       address:
-        typeof student.address === 'string'
-          ? student.address
-          : student.address
-            ? `${student.address.street || ''} ${student.address.city || ''} ${student.address.state || ''}`.trim()
-            : '',
+        [student.address_line_1, student.city, student.state, student.zip_code, student.country]
+          .filter(Boolean)
+          .join(', ') || '',
       parent_guardian_name: student.parent_guardian_name || '',
       parent_guardian_email: student.parent_guardian_email || '',
       parent_guardian_phone: student.parent_guardian_phone || '',
@@ -218,7 +191,6 @@ export default function StudentManagement() {
     })
     setShowStudentForm(true)
   }
-
   const handleDeleteStudent = async (studentId: string) => {
     if (
       !confirm(
@@ -227,19 +199,15 @@ export default function StudentManagement() {
     ) {
       return
     }
-
     try {
       await deleteUser(studentId)
       await loadData()
       toast.success('Student deleted successfully')
     } catch (error) {
-      console.error('Error deleting student:', error)
       toast.error('Failed to delete student')
     }
   }
-
   // Removed unused handleUpdateRole function
-
   const handleSelectStudent = (studentId: string) => {
     const newSelected = new Set(selectedStudents)
     if (newSelected.has(studentId)) {
@@ -249,7 +217,6 @@ export default function StudentManagement() {
     }
     setSelectedStudents(newSelected)
   }
-
   const handleSelectAll = () => {
     if (selectedStudents.size === filteredStudents.length) {
       setSelectedStudents(new Set())
@@ -257,7 +224,6 @@ export default function StudentManagement() {
       setSelectedStudents(new Set(filteredStudents.map((s) => s.id)))
     }
   }
-
   const handleBulkCommunication = () => {
     if (selectedStudents.size === 0) {
       toast.error('Please select students to communicate with')
@@ -265,7 +231,6 @@ export default function StudentManagement() {
     }
     setShowCommunicationPanel(true)
   }
-
   const handleSendCommunication = async () => {
     try {
       // Simulate API call
@@ -280,7 +245,6 @@ export default function StudentManagement() {
       toast.error('Failed to send communication')
     }
   }
-
   const exportStudentData = () => {
     // Create CSV data
     filteredStudents.map((student) => ({
@@ -295,11 +259,9 @@ export default function StudentManagement() {
       'Total Spent': `€${student.total_spent}`,
       'Joined Date': formatDate(student.created_at),
     }))
-
     // In a real app, this would generate and download a CSV file
     toast.success('Student data exported successfully')
   }
-
   const resetStudentForm = () => {
     setStudentFormData({
       full_name: '',
@@ -315,11 +277,9 @@ export default function StudentManagement() {
     setShowStudentForm(false)
     setEditingStudent(null)
   }
-
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormLoading(true)
-
     try {
       if (editingStudent) {
         // Update existing student - in real app, this would call updateUser API
@@ -332,21 +292,17 @@ export default function StudentManagement() {
       }
       resetStudentForm()
     } catch (error) {
-      console.error('Error saving student:', error)
       toast.error('Failed to save student')
     } finally {
       setFormLoading(false)
     }
   }
-
   // Removed unused getStudentsByGurukul function
-
   const getStudentsByCourse = () => {
     const courseGroups: Record<
       string,
       { course: Course & { gurukul?: Gurukul }; students: StudentWithEnrollments[] }
     > = {}
-
     filteredStudents.forEach((student) => {
       student.enrollments.forEach((enrollment) => {
         if (enrollment.course) {
@@ -363,10 +319,8 @@ export default function StudentManagement() {
         }
       })
     })
-
     return courseGroups
   }
-
   const stats = {
     totalStudents: students.length,
     activeStudents: students.filter((s) => s.enrollments.some((e) => e.status === 'approved'))
@@ -390,7 +344,6 @@ export default function StudentManagement() {
           )
         : 0,
   }
-
   const ageGroups = [
     { value: '4-7', label: 'Elementary (4-7)' },
     { value: '8-11', label: 'Basic (8-11)' },
@@ -398,7 +351,6 @@ export default function StudentManagement() {
     { value: '16-19', label: 'Advanced (16-19)' },
     { value: '20-100', label: 'Adult (20+)' },
   ]
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -409,7 +361,6 @@ export default function StudentManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Student Statistics Cards */}
@@ -421,7 +372,6 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Total Students</div>
           </CardContent>
         </Card>
-
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <CheckCircleIcon className="h-6 w-6 text-green-600 mx-auto mb-2" />
@@ -429,7 +379,6 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Active Students</div>
           </CardContent>
         </Card>
-
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <PlusIcon className="h-6 w-6 text-purple-600 mx-auto mb-2" />
@@ -437,7 +386,6 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">New (7 days)</div>
           </CardContent>
         </Card>
-
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <DocumentTextIcon className="h-6 w-6 text-orange-600 mx-auto mb-2" />
@@ -447,7 +395,6 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">With Certificates</div>
           </CardContent>
         </Card>
-
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <CalendarIcon className="h-6 w-6 text-indigo-600 mx-auto mb-2" />
@@ -455,7 +402,6 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Average Age</div>
           </CardContent>
         </Card>
-
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <ChartBarIcon className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
@@ -463,7 +409,6 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Completion Rate</div>
           </CardContent>
         </Card>
-
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-bold text-red-600">€{stats.totalRevenue}</div>
@@ -471,7 +416,6 @@ export default function StudentManagement() {
           </CardContent>
         </Card>
       </div>
-
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
@@ -498,7 +442,6 @@ export default function StudentManagement() {
           ))}
         </nav>
       </div>
-
       {/* Filters Bar */}
       <Card>
         <CardContent className="p-4">
@@ -515,7 +458,6 @@ export default function StudentManagement() {
                 />
               </div>
             </div>
-
             <select
               value={gurukulFilter}
               onChange={(e) => setGurukulFilter(e.target.value)}
@@ -528,7 +470,6 @@ export default function StudentManagement() {
                 </option>
               ))}
             </select>
-
             <select
               value={courseFilter}
               onChange={(e) => setCourseFilter(e.target.value)}
@@ -541,7 +482,6 @@ export default function StudentManagement() {
                 </option>
               ))}
             </select>
-
             <select
               value={ageGroupFilter}
               onChange={(e) => setAgeGroupFilter(e.target.value)}
@@ -554,7 +494,6 @@ export default function StudentManagement() {
                 </option>
               ))}
             </select>
-
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -567,7 +506,6 @@ export default function StudentManagement() {
               <option value="rejected">Rejected</option>
             </select>
           </div>
-
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-gray-600">
               Showing {filteredStudents.length} of {students.length} students
@@ -593,7 +531,6 @@ export default function StudentManagement() {
           </div>
         </CardContent>
       </Card>
-
       {/* Student Details Modal */}
       {viewingStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -605,7 +542,6 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Personal Information */}
                 <div>
@@ -624,7 +560,6 @@ export default function StudentManagement() {
                         <p className="text-xs text-gray-500">ID: {viewingStudent.student_id}</p>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4 pt-4">
                       <div>
                         <p className="text-gray-600">Age:</p>
@@ -645,20 +580,25 @@ export default function StudentManagement() {
                         <p className="font-medium">{formatDate(viewingStudent.created_at)}</p>
                       </div>
                     </div>
-
-                    {viewingStudent.address && (
+                    {(viewingStudent.address_line_1 || viewingStudent.city) && (
                       <div>
                         <p className="text-gray-600">Address:</p>
                         <p className="font-medium">
-                          {typeof viewingStudent.address === 'string'
-                            ? viewingStudent.address
-                            : `${viewingStudent.address.street || ''} ${viewingStudent.address.city || ''} ${viewingStudent.address.state || ''} ${viewingStudent.address.postal_code || ''} ${viewingStudent.address.country || ''}`.trim()}
+                          {[
+                            viewingStudent.address_line_1,
+                            viewingStudent.address_line_2,
+                            viewingStudent.city,
+                            viewingStudent.state,
+                            viewingStudent.zip_code,
+                            viewingStudent.country,
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
                         </p>
                       </div>
                     )}
                   </div>
                 </div>
-
                 {/* Enrollment Information */}
                 <div>
                   <h3 className="font-semibold mb-4 flex items-center">
@@ -692,7 +632,6 @@ export default function StudentManagement() {
                         <div className="text-xs text-purple-800">Total Spent</div>
                       </div>
                     </div>
-
                     <div>
                       <h4 className="font-medium mb-2">Course Enrollments</h4>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -729,7 +668,6 @@ export default function StudentManagement() {
                   </div>
                 </div>
               </div>
-
               {/* Parent/Guardian Information for Minors */}
               {viewingStudent.age &&
                 viewingStudent.age < 18 &&
@@ -765,7 +703,6 @@ export default function StudentManagement() {
           </div>
         </div>
       )}
-
       {/* Student Form Modal */}
       {showStudentForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -779,7 +716,6 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-
               <form onSubmit={handleStudentSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
@@ -800,7 +736,6 @@ export default function StudentManagement() {
                     required
                   />
                 </div>
-
                 <div className="grid md:grid-cols-3 gap-4">
                   <Input
                     label="Age"
@@ -839,7 +774,6 @@ export default function StudentManagement() {
                     </select>
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Address</label>
                   <textarea
@@ -851,7 +785,6 @@ export default function StudentManagement() {
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
                   />
                 </div>
-
                 {/* Parent/Guardian Info for Minors */}
                 {studentFormData.age < 18 && (
                   <div className="border-t pt-6">
@@ -892,7 +825,6 @@ export default function StudentManagement() {
                     </div>
                   </div>
                 )}
-
                 <div className="flex space-x-4">
                   <Button type="submit" loading={formLoading}>
                     {editingStudent ? 'Update Student' : 'Create Student'}
@@ -906,7 +838,6 @@ export default function StudentManagement() {
           </div>
         </div>
       )}
-
       {/* Communication Panel */}
       {showCommunicationPanel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -918,14 +849,12 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-
               <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
                   Sending to {selectedStudents.size} selected student
                   {selectedStudents.size !== 1 ? 's' : ''}
                 </p>
               </div>
-
               <div className="space-y-4">
                 <div className="flex space-x-4">
                   <label className="flex items-center">
@@ -959,7 +888,6 @@ export default function StudentManagement() {
                     SMS
                   </label>
                 </div>
-
                 {communicationData.type === 'email' && (
                   <Input
                     label="Subject"
@@ -970,7 +898,6 @@ export default function StudentManagement() {
                     required
                   />
                 )}
-
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Message</label>
                   <textarea
@@ -983,7 +910,6 @@ export default function StudentManagement() {
                     required
                   />
                 </div>
-
                 <div className="flex space-x-4">
                   <Button onClick={handleSendCommunication}>
                     Send {communicationData.type === 'email' ? 'Email' : 'SMS'}
@@ -997,7 +923,6 @@ export default function StudentManagement() {
           </div>
         </div>
       )}
-
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1019,7 +944,6 @@ export default function StudentManagement() {
                     {toSentenceCase(student.role)}
                   </Badge>
                 </div>
-
                 <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                   <div className="bg-gray-50 p-2 rounded">
                     <div className="text-sm font-bold">{student.total_enrollments}</div>
@@ -1034,7 +958,6 @@ export default function StudentManagement() {
                     <div className="text-xs text-gray-600">Spent</div>
                   </div>
                 </div>
-
                 <div className="flex space-x-2">
                   <Button size="sm" onClick={() => handleViewStudent(student)}>
                     <EyeIcon className="h-4 w-4 mr-1" />
@@ -1050,7 +973,6 @@ export default function StudentManagement() {
           ))}
         </div>
       )}
-
       {activeTab === 'by-course' && (
         <div className="space-y-6">
           {Object.entries(getStudentsByCourse()).map(([courseId, { course, students }]) => (
@@ -1132,7 +1054,6 @@ export default function StudentManagement() {
           ))}
         </div>
       )}
-
       {activeTab === 'details' && (
         <Card>
           <CardHeader>
@@ -1152,7 +1073,6 @@ export default function StudentManagement() {
               </div>
             </div>
           </CardHeader>
-
           <CardContent>
             {filteredStudents.length === 0 ? (
               <div className="text-center py-8">
@@ -1307,7 +1227,6 @@ export default function StudentManagement() {
           </CardContent>
         </Card>
       )}
-
       {activeTab === 'communication' && (
         <Card>
           <CardHeader>
@@ -1360,7 +1279,6 @@ export default function StudentManagement() {
                       </div>
                     </div>
                   </div>
-
                   <div className="space-y-1 text-xs text-gray-600">
                     <div className="flex items-center">
                       <EnvelopeIcon className="h-3 w-3 mr-1" />

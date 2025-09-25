@@ -9,12 +9,10 @@ import { Input } from '../ui/Input'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
-
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
-
 const signUpSchema = z
   .object({
     email: z.string().email('Please enter a valid email address'),
@@ -35,17 +33,14 @@ const signUpSchema = z
     message: "Passwords don't match",
     path: ['confirmPassword'],
   })
-
 type SignInForm = z.infer<typeof signInSchema>
 type SignUpForm = z.infer<typeof signUpSchema>
-
 interface WebsiteAuthModalProps {
   isOpen: boolean
   onClose: () => void
   initialMode?: 'signin' | 'signup'
   redirectAfterAuth?: string | false // false means stay on current page
 }
-
 export default function WebsiteAuthModal({
   isOpen,
   onClose,
@@ -56,19 +51,16 @@ export default function WebsiteAuthModal({
   const [loading, setLoading] = useState(false)
   const { signIn, signUp } = useWebsiteAuth()
   const navigate = useNavigate()
-
   // Reset mode when modal opens with different initialMode
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode)
     }
   }, [isOpen, initialMode])
-
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
     mode: 'onChange',
   })
-
   const signUpForm = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
     mode: 'onChange',
@@ -76,7 +68,6 @@ export default function WebsiteAuthModal({
       role: 'student',
     },
   })
-
   // Handle escape key to close modal and prevent body scroll
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -84,33 +75,27 @@ export default function WebsiteAuthModal({
         onClose()
       }
     }
-
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
     }
-
     return () => {
       document.removeEventListener('keydown', handleEscape)
       document.body.style.overflow = 'unset'
     }
   }, [isOpen, onClose])
-
   const handleSignIn = async (data: SignInForm) => {
     setLoading(true)
     try {
       const { error } = await signIn(data.email, data.password)
-
       if (error) {
         toast.error(error)
         return
       }
-
       toast.success('Welcome back!')
       onClose()
-
       // Conditionally redirect after successful login
       if (redirectAfterAuth !== false) {
         navigate(redirectAfterAuth)
@@ -125,7 +110,6 @@ export default function WebsiteAuthModal({
       setLoading(false)
     }
   }
-
   const handleSignUp = async (data: SignUpForm) => {
     setLoading(true)
     try {
@@ -137,12 +121,10 @@ export default function WebsiteAuthModal({
         phone: data.phone,
         date_of_birth: data.date_of_birth,
       })
-
       if (error) {
         toast.error(error)
         return
       }
-
       toast.success('Account created successfully! You can now sign in.')
       setMode('signin')
       signUpForm.reset()
@@ -156,15 +138,12 @@ export default function WebsiteAuthModal({
       setLoading(false)
     }
   }
-
   if (!isOpen) return null
-
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
     }
   }
-
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 overflow-y-auto animate-in fade-in duration-200"
@@ -196,7 +175,6 @@ export default function WebsiteAuthModal({
                   {...signInForm.register('email')}
                   error={signInForm.formState.errors.email?.message}
                 />
-
                 <Input
                   label="Password"
                   type="password"
@@ -204,11 +182,9 @@ export default function WebsiteAuthModal({
                   {...signInForm.register('password')}
                   error={signInForm.formState.errors.password?.message}
                 />
-
                 <Button type="submit" className="w-full" loading={loading}>
                   Sign in
                 </Button>
-
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
                     Don't have an account?{' '}
@@ -232,7 +208,6 @@ export default function WebsiteAuthModal({
                   {...signUpForm.register('full_name')}
                   error={signUpForm.formState.errors.full_name?.message}
                 />
-
                 <Input
                   label="Email address"
                   type="email"
@@ -240,7 +215,6 @@ export default function WebsiteAuthModal({
                   {...signUpForm.register('email')}
                   error={signUpForm.formState.errors.email?.message}
                 />
-
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Password"
@@ -249,7 +223,6 @@ export default function WebsiteAuthModal({
                     {...signUpForm.register('password')}
                     error={signUpForm.formState.errors.password?.message}
                   />
-
                   <Input
                     label="Confirm Password"
                     type="password"
@@ -258,7 +231,6 @@ export default function WebsiteAuthModal({
                     error={signUpForm.formState.errors.confirmPassword?.message}
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
@@ -273,7 +245,6 @@ export default function WebsiteAuthModal({
                       <option value="parent">Parent</option>
                     </select>
                   </div>
-
                   <Input
                     label="Phone (Optional)"
                     type="tel"
@@ -281,18 +252,15 @@ export default function WebsiteAuthModal({
                     error={signUpForm.formState.errors.phone?.message}
                   />
                 </div>
-
                 <Input
                   label="Date of Birth (Optional)"
                   type="date"
                   {...signUpForm.register('date_of_birth')}
                   error={signUpForm.formState.errors.date_of_birth?.message}
                 />
-
                 <Button type="submit" className="w-full" loading={loading}>
                   Create Account
                 </Button>
-
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
                     Already have an account?{' '}

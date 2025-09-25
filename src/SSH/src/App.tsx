@@ -1,25 +1,21 @@
 import React, { Suspense, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-
 // Layout Components
 import { GlossyHeader } from './components/layout/GlossyHeader'
 import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
 import AuthRedirect from './components/auth/AuthRedirect'
-
 // SSH Website Components
 import HomePage from './pages/HomePage'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import CoursesPage from './pages/CoursesPage'
 import GurukulPage from './pages/GurukulPage'
-
 // Dashboard Components
 import StudentDashboard from './pages/dashboard/StudentDashboard'
 import TeacherDashboard from './pages/dashboard/TeacherDashboard'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import ParentsDashboard from './pages/dashboard/parents/ParentsDashboard'
-
 // Admin Components
 import AdminLogin from './components/auth/AdminLogin'
 import AdminLayout from './components/admin/AdminLayout'
@@ -35,10 +31,8 @@ import CertificateManagement from './components/admin/CertificateManagement'
 import ContentManagement from './components/admin/ContentManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
-
 import GurukulDetailPage from './pages/GurukulDetailPage'
 import CourseDetailPage from './pages/CourseDetailPage'
-
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -48,20 +42,16 @@ const LoadingFallback = () => (
     </div>
   </div>
 )
-
 function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin')
-
   const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
     setAuthModalMode(mode)
     setIsAuthModalOpen(true)
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
       <GlossyHeader onOpenAuthModal={openAuthModal} />
-
       {/* Main content with top padding to account for fixed header */}
       <main className="pt-16 lg:pt-20">
         <Suspense fallback={<LoadingFallback />}>
@@ -72,10 +62,8 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/gurukuls" element={<GurukulPage />} />
-
             {/* Auth Redirects - Opens modals instead of separate pages */}
             <Route path="/auth/*" element={<AuthRedirect openModal={openAuthModal} />} />
-
             {/* User Dashboard Routes */}
             <Route
               path="/dashboard"
@@ -117,10 +105,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-
             {/* Protected admin routes */}
             <Route
               path="/admin/*"
@@ -134,7 +120,6 @@ function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<AdminUserManagementNew />} />
               <Route path="permissions" element={<AdminPermissionManagement />} />
-
               {/* Course Management */}
               <Route path="courses" element={<CourseManagement />} />
               <Route path="course-assignments" element={<CourseAssignmentManagement />} />
@@ -144,17 +129,14 @@ function App() {
               <Route path="content" element={<ContentManagement />} />
               <Route path="analytics" element={<SiteAnalytics />} />
             </Route>
-
             {/* Detail pages */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />
             <Route path="/gurukuls/:slug" element={<GurukulDetailPage />} />
-
             {/* Catch all route - redirect to homepage */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
-
       <Toaster
         position="top-right"
         toastOptions={{
@@ -165,7 +147,6 @@ function App() {
           },
         }}
       />
-
       {/* Website Auth Modal - Rendered at app level to avoid positioning issues */}
       <WebsiteAuthModal
         isOpen={isAuthModalOpen}
@@ -176,5 +157,4 @@ function App() {
     </div>
   )
 }
-
 export default App

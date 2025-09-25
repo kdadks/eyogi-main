@@ -1,16 +1,13 @@
 import React, { useState } from 'react'
 import ChatBot from './ChatBot'
 import { SparklesIcon } from '@heroicons/react/24/outline'
-
 interface ChatBotTriggerProps {
   className?: string
   initialMessage?: string
 }
-
 export default function ChatBotTrigger({ className, initialMessage }: ChatBotTriggerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-
   return (
     <>
       {/* Floating Chat Button */}
@@ -23,7 +20,6 @@ export default function ChatBotTrigger({ className, initialMessage }: ChatBotTri
           <div className="relative">
             {/* Pulse Animation */}
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full animate-ping opacity-20"></div>
-
             {/* Main Button */}
             <button
               onClick={() => setIsOpen(true)}
@@ -44,7 +40,6 @@ export default function ChatBotTrigger({ className, initialMessage }: ChatBotTri
                 )}
               </div>
             </button>
-
             {/* Tooltip */}
             {!isHovered && (
               <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap hidden sm:block">
@@ -55,7 +50,6 @@ export default function ChatBotTrigger({ className, initialMessage }: ChatBotTri
           </div>
         </div>
       )}
-
       {/* Chat Interface */}
       <ChatBot isOpen={isOpen} onClose={() => setIsOpen(false)} initialMessage={initialMessage} />
     </>

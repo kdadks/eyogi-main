@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { PrerequisiteCheckResult, Course } from '../../types'
 import { checkCoursePrerequisites, getPrerequisiteCourses } from '../../lib/api/prerequisites'
 import { CheckCircle, XCircle, AlertTriangle, BookOpen, Award, TrendingUp } from 'lucide-react'
-
 interface PrerequisiteCheckerProps {
   courseId: string
   studentId: string
   onPrerequisiteCheck?: (result: PrerequisiteCheckResult) => void
   showFullDetails?: boolean
 }
-
 export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
   courseId,
   studentId,
@@ -20,37 +18,30 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
   const [prerequisiteCourses, setPrerequisiteCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     const checkPrerequisites = async () => {
       try {
         setLoading(true)
         setError(null)
-
         const [result, prereqCourses] = await Promise.all([
           checkCoursePrerequisites(courseId, studentId),
           getPrerequisiteCourses(courseId),
         ])
-
         setPrerequisiteResult(result)
         setPrerequisiteCourses(prereqCourses)
-
         if (onPrerequisiteCheck) {
           onPrerequisiteCheck(result)
         }
       } catch (err) {
         setError('Failed to check prerequisites')
-        console.error('Error checking prerequisites:', err)
       } finally {
         setLoading(false)
       }
     }
-
     if (courseId && studentId) {
       checkPrerequisites()
     }
   }, [courseId, studentId, onPrerequisiteCheck])
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
@@ -59,7 +50,6 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
       </div>
     )
   }
-
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -70,11 +60,9 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
       </div>
     )
   }
-
   if (!prerequisiteResult) {
     return null
   }
-
   return (
     <div className="space-y-4">
       {/* Main Status */}
@@ -105,14 +93,12 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
           {prerequisiteResult.message}
         </p>
       </div>
-
       {/* Detailed Prerequisites (if there are any) */}
       {showFullDetails &&
         (prerequisiteCourses.length > 0 ||
           prerequisiteResult.missingPrerequisites.skills.length > 0) && (
           <div className="border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 mb-3">Course Prerequisites</h4>
-
             {/* Required Courses */}
             {prerequisiteCourses.length > 0 && (
               <div className="mb-4">
@@ -126,7 +112,6 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
                       (mc) => mc.id === course.id,
                     )
                     const isCompleted = !missingCourse
-
                     return (
                       <div
                         key={course.id}
@@ -168,7 +153,6 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
                 </div>
               </div>
             )}
-
             {/* Required Skills */}
             {prerequisiteResult.missingPrerequisites.skills.length > 0 && (
               <div className="mb-4">
@@ -188,7 +172,6 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
                 </div>
               </div>
             )}
-
             {/* Required Level */}
             {prerequisiteResult.missingPrerequisites.level && (
               <div>
@@ -216,5 +199,4 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
     </div>
   )
 }
-
 export default PrerequisiteChecker

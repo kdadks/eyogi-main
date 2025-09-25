@@ -8,14 +8,12 @@ import {
 } from '@/lib/pdf/certificateGenerator'
 import { CertificateTemplate } from '@/types'
 import toast from 'react-hot-toast'
-
 interface CertificatePreviewModalProps {
   isOpen: boolean
   onClose: () => void
   certificateData: CertificateData
   template?: CertificateTemplate
 }
-
 export default function CertificatePreviewModal({
   isOpen,
   onClose,
@@ -25,31 +23,26 @@ export default function CertificatePreviewModal({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState(false)
-
   const loadPreview = useCallback(async () => {
     setLoading(true)
     try {
       const preview = await generateCertificatePreview(certificateData)
       setPreviewUrl(preview)
     } catch (error) {
-      console.error('Error generating preview:', error)
       toast.error('Failed to generate certificate preview')
     } finally {
       setLoading(false)
     }
   }, [certificateData])
-
   useEffect(() => {
     if (isOpen && certificateData) {
       loadPreview()
     }
   }, [isOpen, certificateData, loadPreview])
-
   const handleDownload = async () => {
     setDownloading(true)
     try {
       const pdfBlob = await generateCertificatePDF(certificateData, template)
-
       const url = window.URL.createObjectURL(pdfBlob)
       const link = document.createElement('a')
       link.href = url
@@ -58,18 +51,14 @@ export default function CertificatePreviewModal({
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-
       toast.success('Certificate downloaded successfully')
     } catch (error) {
-      console.error('Error downloading certificate:', error)
       toast.error('Failed to download certificate')
     } finally {
       setDownloading(false)
     }
   }
-
   if (!isOpen) return null
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -90,7 +79,6 @@ export default function CertificatePreviewModal({
             </button>
           </div>
         </div>
-
         {/* Preview Content */}
         <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
           {loading ? (
@@ -115,7 +103,6 @@ export default function CertificatePreviewModal({
             </div>
           )}
         </div>
-
         {/* Certificate Details */}
         <div className="px-6 pb-6">
           <div className="bg-gray-50 rounded-lg p-4">

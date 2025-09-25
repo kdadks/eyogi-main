@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User, Home } from 'lucide-react'
@@ -8,14 +7,12 @@ import { Button } from '../ui/Button'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import logoImage from '/eyogiTextLess.png'
 import fallbackLogo from '/Images/Logo.png'
-
 interface NavLink {
   name: string
   href: string
   icon?: React.ReactNode
   external?: boolean
 }
-
 const navLinks: NavLink[] = [
   { name: 'Home', href: '/', icon: <GraduationCap className="w-4 h-4" /> },
   { name: 'About', href: '/about', icon: <Users className="w-4 h-4" /> },
@@ -23,19 +20,15 @@ const navLinks: NavLink[] = [
   { name: 'Gurukuls', href: '/gurukuls', icon: <GraduationCap className="w-4 h-4" /> },
   { name: 'Contact', href: '/contact', icon: <Users className="w-4 h-4" /> },
 ]
-
 interface GlossyHeaderProps {
   onOpenAuthModal?: (mode?: 'signin' | 'signup') => void
 }
-
 export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const location = useLocation()
-
   // Get website auth context
   const { user: websiteUser, signOut: websiteSignOut } = useWebsiteAuth()
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
@@ -43,7 +36,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
   const headerVariants = {
     top: {
       background: 'rgba(255, 255, 255, 0.05)',
@@ -56,7 +48,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
     },
   }
-
   const logoVariants = {
     initial: { scale: 1, filter: 'drop-shadow(0 0 0px rgba(255, 165, 0, 0))' },
     hover: {
@@ -65,7 +56,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
       transition: { duration: 0.3 },
     },
   }
-
   const linkVariants = {
     initial: {
       scale: 1,
@@ -79,7 +69,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
       boxShadow: '0 4px 20px rgba(255, 165, 0, 0.3)',
     },
   }
-
   const mobileMenuVariants = {
     closed: {
       opacity: 0,
@@ -99,12 +88,10 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
       },
     },
   }
-
   const mobileItemVariants = {
     closed: { opacity: 0, x: -20 },
     open: { opacity: 1, x: 0 },
   }
-
   return (
     <motion.header
       className="fixed top-0 left-0 right-0 z-50 border-b border-white/10"
@@ -148,7 +135,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
               </div>
             </Link>
           </motion.div>
-
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-3">
             {navLinks.map((link) => (
@@ -179,7 +165,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                 </Link>
               </motion.div>
             ))}
-
             {/* Main Site Link */}
             <motion.div
               variants={linkVariants}
@@ -197,7 +182,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
               </a>
             </motion.div>
           </nav>
-
           {/* Right side - Auth & CTA */}
           <div className="flex items-center space-x-4">
             {websiteUser ? (
@@ -254,7 +238,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                 </motion.div>
               </div>
             )}
-
             {/* Mobile menu button */}
             <motion.button
               className="lg:hidden p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
@@ -288,7 +271,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
             </motion.button>
           </div>
         </div>
-
         {/* Mobile Navigation */}
         <AnimatePresence>
           {isMobileMenuOpen && (
@@ -316,7 +298,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                     </Link>
                   </motion.div>
                 ))}
-
                 {/* Main Site Link for Mobile */}
                 <motion.div variants={mobileItemVariants} className="pt-2 border-t border-gray-200">
                   <a
@@ -330,7 +311,6 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                     <span>← eYogi Gurukul</span>
                   </a>
                 </motion.div>
-
                 {/* Mobile Auth Section */}
                 <motion.div
                   className="pt-4 border-t border-gray-200 space-y-3"

@@ -14,7 +14,6 @@ import {
   ClockIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
-
 interface DashboardStats {
   totalUsers: number
   totalStudents: number
@@ -30,7 +29,6 @@ interface DashboardStats {
     time: string
   }>
 }
-
 export default function AdminOverview() {
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -44,11 +42,9 @@ export default function AdminOverview() {
     recentActivity: []
   })
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     loadStats()
   }, [])
-
   const loadStats = async () => {
     try {
       const [users, courses, gurukuls, enrollmentStats] = await Promise.all([
@@ -57,10 +53,8 @@ export default function AdminOverview() {
         getGurukuls(),
         getEnrollmentStats()
       ])
-
       const students = users.filter(u => u.role === 'student')
       const teachers = users.filter(u => u.role === 'teacher')
-
       setStats({
         totalUsers: users.length,
         totalStudents: students.length,
@@ -78,12 +72,10 @@ export default function AdminOverview() {
         ]
       })
     } catch (error) {
-      console.error('Error loading stats:', error)
     } finally {
       setLoading(false)
     }
   }
-
   const statCards = [
     {
       title: 'Total Users',
@@ -142,7 +134,6 @@ export default function AdminOverview() {
       bgColor: 'bg-emerald-100'
     }
   ]
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -150,7 +141,6 @@ export default function AdminOverview() {
       </div>
     )
   }
-
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
@@ -171,7 +161,6 @@ export default function AdminOverview() {
           </Card>
         ))}
       </div>
-
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Enrollment Trends */}
         <div className="lg:col-span-2">
@@ -191,7 +180,6 @@ export default function AdminOverview() {
                   </div>
                   <div className="text-2xl font-bold text-blue-600">{stats.totalEnrollments}</div>
                 </div>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-yellow-50 rounded-lg">
                     <p className="font-medium text-yellow-800">Pending</p>
@@ -206,7 +194,6 @@ export default function AdminOverview() {
             </CardContent>
           </Card>
         </div>
-
         {/* Recent Activity */}
         <div>
           <Card>

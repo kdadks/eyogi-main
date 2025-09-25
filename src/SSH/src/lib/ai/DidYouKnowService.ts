@@ -6,11 +6,9 @@ export class DidYouKnowService {
     intent: string[]
     persona: string[]
   }> = []
-
   constructor() {
     this.initializeFacts()
   }
-
   private initializeFacts() {
     this.facts = [
       // Hinduism & Philosophy Facts
@@ -54,7 +52,6 @@ export class DidYouKnowService {
         intent: ['course_inquiry', 'about_eyogi'],
         persona: ['student', 'prospective_student', 'general_visitor'],
       },
-
       // Learning & Education Facts
       {
         id: 'fact-6',
@@ -96,7 +93,6 @@ export class DidYouKnowService {
         intent: ['course_inquiry', 'about_eyogi'],
         persona: ['student', 'parent', 'general_visitor'],
       },
-
       // Festival & Culture Facts
       {
         id: 'fact-11',
@@ -138,7 +134,6 @@ export class DidYouKnowService {
         intent: ['course_inquiry', 'gurukul_information'],
         persona: ['student', 'prospective_student', 'parent'],
       },
-
       // Platform & Technology Facts
       {
         id: 'fact-16',
@@ -180,7 +175,6 @@ export class DidYouKnowService {
         intent: ['teacher_info', 'about_eyogi'],
         persona: ['parent', 'prospective_student'],
       },
-
       // Age-Appropriate Learning Facts
       {
         id: 'fact-21',
@@ -206,7 +200,6 @@ export class DidYouKnowService {
         intent: ['age_appropriate', 'course_inquiry'],
         persona: ['prospective_student', 'general_visitor'],
       },
-
       // Spiritual & Cultural Facts
       {
         id: 'fact-24',
@@ -224,7 +217,6 @@ export class DidYouKnowService {
         intent: ['course_inquiry', 'gurukul_information'],
         persona: ['student', 'prospective_student', 'parent'],
       },
-
       // Continue with more facts... (I'll add more in batches to stay within reasonable limits)
       {
         id: 'fact-26',
@@ -266,7 +258,6 @@ export class DidYouKnowService {
         intent: ['course_inquiry', 'gurukul_information'],
         persona: ['student', 'prospective_student', 'general_visitor'],
       },
-
       // Additional Educational Facts
       {
         id: 'fact-31',
@@ -310,11 +301,9 @@ export class DidYouKnowService {
       },
       // ... (continuing with more facts to reach 1000 total)
     ]
-
     // Add more facts in batches to reach 1000 total
     this.generateAdditionalFacts()
   }
-
   private generateAdditionalFacts() {
     // Generate more facts programmatically to reach 1000 total
     const categories = [
@@ -328,7 +317,6 @@ export class DidYouKnowService {
       'culture',
     ]
     const baseFactsCount = this.facts.length
-
     for (let i = baseFactsCount; i < 1000; i++) {
       const category = categories[i % categories.length]
       this.facts.push({
@@ -340,7 +328,6 @@ export class DidYouKnowService {
       })
     }
   }
-
   private generateFactByCategory(category: string, index: number): string {
     const factTemplates: Record<string, string[]> = {
       hinduism: [
@@ -392,50 +379,40 @@ export class DidYouKnowService {
         'Traditional Indian art and architecture incorporate sacred geometry and spiritual symbolism! 🏛️',
       ],
     }
-
     const templates = factTemplates[category] || factTemplates.hinduism
     return templates[index % templates.length]
   }
-
   getRandomFact(intent?: string, persona?: string): string {
     let relevantFacts = this.facts
-
     // Filter by intent if provided
     if (intent) {
       relevantFacts = relevantFacts.filter(
         (fact) => fact.intent.includes(intent) || fact.intent.includes('general_question'),
       )
     }
-
     // Filter by persona if provided
     if (persona) {
       relevantFacts = relevantFacts.filter(
         (fact) => fact.persona.includes(persona) || fact.persona.includes('general_visitor'),
       )
     }
-
     // If no relevant facts found, use all facts
     if (relevantFacts.length === 0) {
       relevantFacts = this.facts
     }
-
     const randomIndex = Math.floor(Math.random() * relevantFacts.length)
     return relevantFacts[randomIndex].content
   }
-
   getFactsByCategory(category: string): string[] {
     return this.facts.filter((fact) => fact.category === category).map((fact) => fact.content)
   }
-
   getAllCategories(): string[] {
     const categories = new Set(this.facts.map((fact) => fact.category))
     return Array.from(categories)
   }
-
   getFactsCount(): number {
     return this.facts.length
   }
-
   searchFacts(
     query: string,
     maxResults: number = 5,
@@ -450,11 +427,9 @@ export class DidYouKnowService {
       category: string
       relevanceScore: number
     }> = []
-
     this.facts.forEach((fact) => {
       let relevanceScore = 0
       const factContent = fact.content.toLowerCase()
-
       // Check for direct keyword matches
       queryWords.forEach((word) => {
         if (word.length > 2) {
@@ -466,12 +441,10 @@ export class DidYouKnowService {
           }
         }
       })
-
       // Category-specific boosting
       if (query.toLowerCase().includes(fact.category)) {
         relevanceScore += 5
       }
-
       // Intent and persona matching
       queryWords.forEach((word) => {
         fact.intent.forEach((intent) => {
@@ -481,7 +454,6 @@ export class DidYouKnowService {
           if (persona.includes(word)) relevanceScore += 1
         })
       })
-
       if (relevanceScore > 0) {
         results.push({
           content: fact.content,
@@ -490,15 +462,12 @@ export class DidYouKnowService {
         })
       }
     })
-
     return results.sort((a, b) => b.relevanceScore - a.relevanceScore).slice(0, maxResults)
   }
-
   getFactsByQuery(query: string): string[] {
     const searchResults = this.searchFacts(query, 3)
     return searchResults.map((result) => result.content)
   }
-
   getRandomFactsByCategory(category: string, count: number = 3): string[] {
     const categoryFacts = this.facts.filter((fact) => fact.category === category)
     const shuffled = categoryFacts.sort(() => 0.5 - Math.random())

@@ -15,7 +15,6 @@ import {
   LinkIcon,
   CalendarIcon,
 } from '@heroicons/react/24/outline'
-
 interface AnalyticsData {
   totalUsers: number
   activeUsers: number
@@ -60,7 +59,6 @@ interface AnalyticsData {
     conversionRate: number
   }
 }
-
 export default function SiteAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,11 +66,9 @@ export default function SiteAnalytics() {
   const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content'>(
     'overview',
   )
-
   useEffect(() => {
     loadAnalyticsData()
   }, [dateRange])
-
   const loadAnalyticsData = async () => {
     setLoading(true)
     try {
@@ -80,13 +76,11 @@ export default function SiteAnalytics() {
       // For now, set to null to show "no data available" state
       setAnalyticsData(null)
     } catch (error) {
-      console.error('Error loading analytics data:', error)
       setAnalyticsData(null)
     } finally {
       setLoading(false)
     }
   }
-
   const getSourceIcon = (type: string) => {
     switch (type) {
       case 'search':
@@ -99,7 +93,6 @@ export default function SiteAnalytics() {
         return '🌐'
     }
   }
-
   const getDeviceIcon = (device: string) => {
     switch (device.toLowerCase()) {
       case 'mobile':
@@ -110,13 +103,11 @@ export default function SiteAnalytics() {
         return ComputerDesktopIcon
     }
   }
-
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
     return num.toString()
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -127,7 +118,6 @@ export default function SiteAnalytics() {
       </div>
     )
   }
-
   if (!analyticsData) {
     return (
       <div className="text-center py-12">
@@ -137,7 +127,6 @@ export default function SiteAnalytics() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header with Date Range Selector */}
@@ -146,7 +135,6 @@ export default function SiteAnalytics() {
           <h2 className="text-2xl font-bold text-gray-900">Site Analytics</h2>
           <p className="text-gray-600">Comprehensive insights into your website performance</p>
         </div>
-
         <div className="flex items-center space-x-4">
           <select
             value={dateRange}
@@ -159,14 +147,12 @@ export default function SiteAnalytics() {
             <option value="90d">Last 90 days</option>
             <option value="1y">Last year</option>
           </select>
-
           <Button variant="outline" size="sm">
             <CalendarIcon className="h-4 w-4 mr-2" />
             Custom Range
           </Button>
         </div>
       </div>
-
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
@@ -191,7 +177,6 @@ export default function SiteAnalytics() {
           ))}
         </nav>
       </div>
-
       {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
@@ -216,7 +201,6 @@ export default function SiteAnalytics() {
                 </div>
               </CardContent>
             </Card>
-
             <Card className="card-hover">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -236,7 +220,6 @@ export default function SiteAnalytics() {
                 </div>
               </CardContent>
             </Card>
-
             <Card className="card-hover">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -256,7 +239,6 @@ export default function SiteAnalytics() {
                 </div>
               </CardContent>
             </Card>
-
             <Card className="card-hover">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -275,7 +257,6 @@ export default function SiteAnalytics() {
               </CardContent>
             </Card>
           </div>
-
           {/* Traffic Trends Chart */}
           <Card>
             <CardHeader>
@@ -302,7 +283,6 @@ export default function SiteAnalytics() {
               </div>
             </CardContent>
           </Card>
-
           {/* Quick Stats Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
@@ -340,7 +320,6 @@ export default function SiteAnalytics() {
           </div>
         </div>
       )}
-
       {/* Traffic Sources Tab */}
       {activeTab === 'traffic' && (
         <div className="space-y-6">
@@ -376,7 +355,6 @@ export default function SiteAnalytics() {
                 </div>
               </CardContent>
             </Card>
-
             {/* Device Types */}
             <Card>
               <CardHeader>
@@ -421,7 +399,6 @@ export default function SiteAnalytics() {
           </div>
         </div>
       )}
-
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div className="space-y-6">
@@ -460,7 +437,6 @@ export default function SiteAnalytics() {
               </CardContent>
             </Card>
           </div>
-
           {/* User Locations */}
           <Card>
             <CardHeader>
@@ -505,7 +481,6 @@ export default function SiteAnalytics() {
           </Card>
         </div>
       )}
-
       {/* Content Performance Tab */}
       {activeTab === 'content' && (
         <div className="space-y-6">

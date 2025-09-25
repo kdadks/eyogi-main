@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,24 +7,16 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { updateUserProfile } from '../../lib/api/users'
+import AddressForm from '../forms/AddressForm'
+import { AddressFormData } from '../../lib/address-utils'
+import { updateUserProfile, getUserProfile } from '../../lib/api/users'
 import type { Database } from '../../lib/supabase'
-
 type Profile = Database['public']['Tables']['profiles']['Row']
-
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
   phone: z.string().optional(),
   date_of_birth: z.string().optional(),
-  address: z
-    .object({
-      street: z.string().optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      postal_code: z.string().optional(),
-      country: z.string().optional(),
-    })
-    .optional(),
+  // Address fields handled by AddressForm component
   emergency_contact: z
     .object({
       name: z.string().optional(),
@@ -53,16 +45,13 @@ const profileSchema = z.object({
     })
     .optional(),
 })
-
 type ProfileForm = z.infer<typeof profileSchema>
-
 interface ProfileEditModalProps {
   isOpen: boolean
   onClose: () => void
   user: Profile
   onUpdate: (updatedUser: Profile) => void
 }
-
 export default function ProfileEditModal({
   isOpen,
   onClose,
@@ -70,49 +59,147 @@ export default function ProfileEditModal({
   onUpdate,
 }: ProfileEditModalProps) {
   const [loading, setLoading] = useState(false)
-
+  const [currentUser, setCurrentUser] = useState<Profile>(user)
+  const [addressData, setAddressData] = useState<AddressFormData>({
+    country: '',
+    state: '',
+    city: '',
+    address_line_1: '',
+    address_line_2: '',
+    zip_code: '',
+  })
+  // Debug: Check what user data we're receiving when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔧 ProfileEditModal - Received user prop:', {
+        id: user?.id,
+        full_name: user?.full_name,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        address_line_1: (user as any)?.address_line_1,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        city: (user as any)?.city,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        hasAddressData: !!((user as any)?.address_line_1 || (user as any)?.city),
+      })
+    }
+  }, [isOpen, user])
+  // Load fresh user data when modal opens to ensure we have the latest address data
+  useEffect(() => {
+    const loadFreshUserData = async () => {
+      if (isOpen && user?.id) {
+        try {
+          const freshUserData = await getUserProfile(user.id)
+          if (freshUserData) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const userData = freshUserData as any
+            console.log('ProfileEditModal: Address data loaded:', {
+              address_line_1: userData.address_line_1,
+              city: userData.city,
+              state: userData.state,
+              country: userData.country,
+              zip_code: userData.zip_code,
+            })
+            setCurrentUser(freshUserData as Profile)
+          }
+        } catch (error) {
+          // Fall back to the passed user data if there's an error
+          setCurrentUser(user)
+        }
+      }
+    }
+    if (isOpen) {
+      loadFreshUserData()
+    } else {
+      // Reset to original user when modal closes
+      setCurrentUser(user)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, user?.id])
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: user.full_name || '',
-      phone: user.phone || '',
-      date_of_birth: user.date_of_birth || '',
-      address: {
-        street: user.address?.street || '',
-        city: user.address?.city || '',
-        state: user.address?.state || '',
-        postal_code: user.address?.postal_code || '',
-        country: user.address?.country || '',
-      },
+      full_name: currentUser.full_name || '',
+      phone: currentUser.phone || '',
+      date_of_birth: currentUser.date_of_birth || '',
+      // Address fields handled separately by AddressForm component
       emergency_contact: {
-        name: user.emergency_contact?.name || '',
-        relationship: user.emergency_contact?.relationship || '',
-        phone: user.emergency_contact?.phone || '',
-        email: user.emergency_contact?.email || '',
+        name: currentUser.emergency_contact?.name || '',
+        relationship: currentUser.emergency_contact?.relationship || '',
+        phone: currentUser.emergency_contact?.phone || '',
+        email: currentUser.emergency_contact?.email || '',
       },
       preferences: {
-        language: user.preferences?.language || 'english',
+        language: currentUser.preferences?.language || 'english',
         notifications: {
-          email: user.preferences?.notifications?.email !== false,
-          sms: user.preferences?.notifications?.sms !== false,
-          push: user.preferences?.notifications?.push !== false,
+          email: currentUser.preferences?.notifications?.email !== false,
+          sms: currentUser.preferences?.notifications?.sms !== false,
+          push: currentUser.preferences?.notifications?.push !== false,
         },
         accessibility: {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          large_text: (user.preferences as any)?.accessibility?.large_text || false,
+          large_text: (currentUser.preferences as any)?.accessibility?.large_text || false,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          high_contrast: (user.preferences as any)?.accessibility?.high_contrast || false,
+          high_contrast: (currentUser.preferences as any)?.accessibility?.high_contrast || false,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          reduced_motion: (user.preferences as any)?.accessibility?.reduced_motion || false,
+          reduced_motion: (currentUser.preferences as any)?.accessibility?.reduced_motion || false,
         },
       },
     },
   })
-
+  // Reset form when currentUser changes (after fresh data is loaded)
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userData = currentUser as any
+    console.log('ProfileEditModal: Resetting form with currentUser data:', {
+      full_name: userData.full_name,
+      address_line_1: userData.address_line_1,
+      city: userData.city,
+      state: userData.state,
+      country: userData.country,
+    })
+    // Initialize address form data
+    setAddressData({
+      address_line_1: (currentUser['address_line_1' as keyof typeof currentUser] as string) || '',
+      address_line_2: (currentUser['address_line_2' as keyof typeof currentUser] as string) || '',
+      city: (currentUser['city' as keyof typeof currentUser] as string) || '',
+      state: (currentUser['state' as keyof typeof currentUser] as string) || '',
+      zip_code: (currentUser['zip_code' as keyof typeof currentUser] as string) || '',
+      country: (currentUser['country' as keyof typeof currentUser] as string) || '',
+    })
+    reset({
+      full_name: currentUser.full_name || '',
+      phone: currentUser.phone || '',
+      date_of_birth: currentUser.date_of_birth || '',
+      // Address fields handled separately by AddressForm component
+      emergency_contact: {
+        name: currentUser.emergency_contact?.name || '',
+        relationship: currentUser.emergency_contact?.relationship || '',
+        phone: currentUser.emergency_contact?.phone || '',
+        email: currentUser.emergency_contact?.email || '',
+      },
+      preferences: {
+        language: currentUser.preferences?.language || 'english',
+        notifications: {
+          email: currentUser.preferences?.notifications?.email !== false,
+          sms: currentUser.preferences?.notifications?.sms !== false,
+          push: currentUser.preferences?.notifications?.push !== false,
+        },
+        accessibility: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          large_text: (currentUser.preferences as any)?.accessibility?.large_text || false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          high_contrast: (currentUser.preferences as any)?.accessibility?.high_contrast || false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          reduced_motion: (currentUser.preferences as any)?.accessibility?.reduced_motion || false,
+        },
+      },
+    })
+  }, [currentUser, reset])
   const onSubmit = async (data: ProfileForm) => {
     setLoading(true)
     try {
@@ -120,31 +207,33 @@ export default function ProfileEditModal({
         full_name: data.full_name,
         phone: data.phone || null,
         date_of_birth: data.date_of_birth || null,
-        address: data.address || null,
+        // Use addressData instead of form data for address fields
+        address_line_1: addressData.address_line_1 || null,
+        address_line_2: addressData.address_line_2 || null,
+        city: addressData.city || null,
+        state: addressData.state || null,
+        zip_code: addressData.zip_code || null,
+        country: addressData.country || null,
         emergency_contact: data.emergency_contact || null,
         preferences: data.preferences || {},
-      })
-
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
       toast.success('Profile updated successfully!')
       // Cast the result back to Profile type since the database returns the correct format
       onUpdate(updatedUser as Profile)
       onClose()
     } catch (error) {
-      console.error('Error updating profile:', error)
       toast.error('Failed to update profile')
     } finally {
       setLoading(false)
     }
   }
-
   if (!isOpen) return null
-
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose()
     }
   }
-
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -162,7 +251,6 @@ export default function ProfileEditModal({
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
-
           <div className="p-6 space-y-8">
             {/* Personal Information */}
             <Card>
@@ -184,52 +272,28 @@ export default function ProfileEditModal({
                     error={errors.date_of_birth?.message}
                   />
                   <div className="text-sm text-gray-600">
-                    <strong>Email:</strong> {user.email} (Cannot be changed)
+                    <strong>Email:</strong> {currentUser.email} (Cannot be changed)
                   </div>
                   <div className="text-sm text-gray-600">
-                    <strong>Student ID:</strong> {user.student_id} (System Generated)
+                    <strong>Student ID:</strong> {currentUser.student_id} (System Generated)
                   </div>
                 </div>
               </CardContent>
             </Card>
-
             {/* Address */}
             <Card>
               <CardHeader>
                 <h3 className="text-lg font-semibold">Address</h3>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    label="Street Address"
-                    {...register('address.street')}
-                    error={errors.address?.street?.message}
-                    className="md:col-span-2"
-                  />
-                  <Input
-                    label="City"
-                    {...register('address.city')}
-                    error={errors.address?.city?.message}
-                  />
-                  <Input
-                    label="State/Province"
-                    {...register('address.state')}
-                    error={errors.address?.state?.message}
-                  />
-                  <Input
-                    label="Postal Code"
-                    {...register('address.postal_code')}
-                    error={errors.address?.postal_code?.message}
-                  />
-                  <Input
-                    label="Country"
-                    {...register('address.country')}
-                    error={errors.address?.country?.message}
-                  />
-                </div>
+              <CardContent>
+                <AddressForm
+                  data={addressData}
+                  onChange={setAddressData}
+                  showOptionalFields={true}
+                  required={false}
+                />
               </CardContent>
             </Card>
-
             {/* Emergency Contact */}
             <Card>
               <CardHeader>
@@ -261,7 +325,6 @@ export default function ProfileEditModal({
                 </div>
               </CardContent>
             </Card>
-
             {/* Notifications */}
             <Card>
               <CardHeader>
@@ -296,7 +359,6 @@ export default function ProfileEditModal({
                 </div>
               </CardContent>
             </Card>
-
             {/* Accessibility */}
             <Card>
               <CardHeader>
@@ -332,7 +394,6 @@ export default function ProfileEditModal({
               </CardContent>
             </Card>
           </div>
-
           <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
             <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               Cancel

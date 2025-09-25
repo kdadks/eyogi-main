@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../../contexts/WebsiteAuthContext'
 import { Badge } from '../../../components/ui/Badge'
@@ -19,9 +19,12 @@ import {
   AcademicCapIcon,
   CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
+import { User, MapPin, X } from 'lucide-react'
 import AddChildModal from '../../../components/parents/AddChildModal'
 import ChatBotTrigger from '../../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../../components/profile/ProfileEditModal'
+import AddressForm from '../../../components/forms/AddressForm'
+import { AddressFormData, getCountryName } from '../../../lib/address-utils'
 import {
   createChild,
   getChildrenByParentId,
@@ -31,7 +34,22 @@ import {
 import { enrollInCourse } from '../../../lib/api/enrollments'
 import { getCourses } from '../../../lib/api/courses'
 import { getStudentEnrollments } from '../../../lib/api/enrollments'
-
+import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
+import type { Database } from '../../../lib/supabase'
+type Profile = Database['public']['Tables']['profiles']['Row']
+// Extended profile interface that includes address fields from database
+interface ProfileWithAddress {
+  id: string
+  email: string
+  full_name: string
+  phone?: string
+  address_line_1?: string
+  address_line_2?: string
+  city?: string
+  state?: string
+  zip_code?: string
+  country?: string
+}
 interface Child {
   student_id: string
   full_name: string
@@ -48,8 +66,17 @@ interface Child {
   enrolled_courses: Course[]
   recent_activity: Activity[]
   achievements: Achievement[]
+  upcoming_assignments?: Activity[] // Optional - not yet implemented
+  // Address information from database
+  address_line_1?: string
+  address_line_2?: string
+  city?: string
+  state?: string
+  zip_code?: string
+  country?: string
+  phone?: string
+  date_of_birth?: string
 }
-
 interface Course {
   id: string
   title: string
@@ -63,7 +90,6 @@ interface Course {
   estimated_completion_date: string
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
 }
-
 interface Activity {
   id: string
   type: string
@@ -71,7 +97,6 @@ interface Activity {
   date: string
   course_id?: string
 }
-
 interface Achievement {
   id: string
   title: string
@@ -79,7 +104,17 @@ interface Achievement {
   icon: string
   earned_date: string
 }
-
+interface ParentProfile {
+  id: string
+  full_name: string
+  phone?: string
+  address_line_1?: string
+  address_line_2?: string
+  city?: string
+  state?: string
+  zip_code?: string
+  country?: string
+}
 interface AvailableCourse {
   id: string
   title: string
@@ -92,7 +127,6 @@ interface AvailableCourse {
   instructor: string
   rating: number
 }
-
 interface ParentStats {
   totalChildren: number
   activeEnrollments: number
@@ -103,14 +137,11 @@ interface ParentStats {
   upcomingEvents: number
   totalLearningHours: number
 }
-
 export default function ParentsDashboard() {
   const { user } = useWebsiteAuth()
-
   const [activeTab, setActiveTab] = useState<
     'home' | 'children' | 'enrollments' | 'progress' | 'settings' | 'analytics'
   >('home')
-
   const [children, setChildren] = useState<Child[]>([])
   const [courses, setCourses] = useState<AvailableCourse[]>([])
   const [coursesLoading, setCoursesLoading] = useState(false)
@@ -121,6 +152,7 @@ export default function ParentsDashboard() {
   const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<AvailableCourse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null)
   const [stats, setStats] = useState<ParentStats>({
     totalChildren: 0,
     activeEnrollments: 0,
@@ -131,40 +163,74 @@ export default function ParentsDashboard() {
     upcomingEvents: 0,
     totalLearningHours: 0,
   })
-
   const loadParentData = useCallback(async () => {
     try {
-      // TODO: Replace with real API calls
-      // For now, just set empty stats since we're removing mock data
+      // Calculate real stats from actual children data - with safe property access
       setStats({
         totalChildren: children.length,
-        activeEnrollments: children.reduce((sum, child) => sum + child.enrolled_courses.length, 0),
-        completedCourses: children.reduce(
-          (sum, child) =>
-            sum + child.enrolled_courses.filter((course) => course.progress === 100).length,
+        activeEnrollments: children.reduce(
+          (sum, child) => sum + (child.enrolled_courses?.length || 0),
           0,
         ),
-        certificatesEarned: children.reduce((sum, child) => sum + child.achievements.length, 0),
-        weeklyProgress: 85,
-        monthlySpending: 2500,
-        upcomingEvents: 3,
-        totalLearningHours: children.reduce((sum, child) => sum + child.learning_time.monthly, 0),
+        completedCourses: children.reduce(
+          (sum, child) =>
+            sum + (child.enrolled_courses?.filter((course) => course.progress === 100).length || 0),
+          0,
+        ),
+        certificatesEarned: children.reduce(
+          (sum, child) => sum + (child.achievements?.length || 0),
+          0,
+        ),
+        weeklyProgress:
+          children.length > 0
+            ? Math.round(
+                (children.reduce((sum, child) => sum + (child.learning_time?.weekly || 0) / 7, 0) /
+                  children.length) *
+                  10,
+              )
+            : 0,
+        monthlySpending: 0, // Will be calculated from actual enrollment fees when payment system is implemented
+        upcomingEvents: 0, // upcoming_assignments not implemented yet
+        totalLearningHours: children.reduce(
+          (sum, child) => sum + (child.learning_time?.monthly || 0),
+          0,
+        ),
       })
-    } catch (error) {
-      console.error('Error loading parent data:', error)
+    } catch {
       toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
   }, [children])
-
+  // Load parent profile from database
+  const loadParentProfile = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const profile = await getUserProfile(user.id)
+      if (profile) {
+        // Cast to ProfileWithAddress since database has flat address fields
+        const profileWithAddress = profile as unknown as ProfileWithAddress
+        setParentProfile({
+          id: profileWithAddress.id,
+          full_name: profileWithAddress.full_name,
+          phone: profileWithAddress.phone || undefined,
+          address_line_1: profileWithAddress.address_line_1 || undefined,
+          address_line_2: profileWithAddress.address_line_2 || undefined,
+          city: profileWithAddress.city || undefined,
+          state: profileWithAddress.state || undefined,
+          zip_code: profileWithAddress.zip_code || undefined,
+          country: profileWithAddress.country || undefined,
+        })
+      }
+    } catch {
+      // Silent error handling
+    }
+  }, [user?.id])
   // Load children from database
   const loadChildren = useCallback(async () => {
     if (!user?.id) return
-
     try {
       const childrenProfiles = await getChildrenByParentId(user.id)
-
       // Convert database profiles to Child interface and fetch enrollments
       const convertedChildren: Child[] = await Promise.all(
         childrenProfiles.map(async (profile) => {
@@ -181,10 +247,8 @@ export default function ParentsDashboard() {
               age--
             }
           }
-
           // Fetch enrollments for this child
           const enrollments = await getStudentEnrollments(profile.id)
-
           // Transform enrollments to match Course interface expected by Child
           const enrolled_courses = enrollments.map((enrollment) => ({
             id: enrollment.course?.id || enrollment.course_id,
@@ -204,30 +268,35 @@ export default function ParentsDashboard() {
             estimated_completion_date: '',
             difficulty: 'Beginner' as const,
           }))
-
           return {
             student_id: profile.id,
             full_name: profile.full_name || 'Unknown',
             age: age,
             grade: profile.grade || 'Not Set', // Use grade from database
-            avatar: age < 10 ? '�' : age < 15 ? '🧒' : '👤',
+            avatar: age < 10 ? '👶' : age < 15 ? '🧒' : '👤',
             overall_progress: 0,
             streak_days: 0,
             learning_time: { daily: 0, weekly: 0, monthly: 0 },
             enrolled_courses,
             recent_activity: [],
             achievements: [],
+            // Store address data from database
+            address_line_1: profile.address_line_1 || '',
+            address_line_2: profile.address_line_2 || '',
+            city: profile.city || '',
+            state: profile.state || '',
+            zip_code: profile.zip_code || '',
+            country: profile.country || '',
+            phone: profile.phone || '',
+            date_of_birth: profile.date_of_birth || '',
           }
         }),
       )
-
       setChildren(convertedChildren)
-    } catch (error) {
-      console.error('Error loading children:', error)
+    } catch {
       toast.error('Failed to load children')
     }
   }, [user?.id])
-
   // Helper function to map course level to difficulty
   const mapCourseLevel = (
     level: 'elementary' | 'basic' | 'intermediate' | 'advanced',
@@ -244,13 +313,11 @@ export default function ParentsDashboard() {
         return 'Beginner'
     }
   }
-
   // Load courses from database
   const loadCourses = useCallback(async () => {
     try {
       setCoursesLoading(true)
       const coursesData = await getCourses()
-
       // Transform course data to AvailableCourse format
       const transformedCourses: AvailableCourse[] = coursesData.map((course) => ({
         id: course.id,
@@ -263,47 +330,39 @@ export default function ParentsDashboard() {
         instructor: course.teacher?.full_name || 'Instructor',
         rating: 4.5, // Default rating since not in database yet
       }))
-
       setCourses(transformedCourses)
-    } catch (error) {
-      console.error('Error loading courses:', error)
+    } catch {
       toast.error('Failed to load courses')
       setCourses([])
     } finally {
       setCoursesLoading(false)
     }
   }, [])
-
   useEffect(() => {
     if (user?.id) {
       loadParentData()
       loadChildren()
+      loadParentProfile()
     } else {
       setLoading(false)
     }
-  }, [user?.id, loadParentData, loadChildren])
-
+  }, [user?.id, loadParentData, loadChildren, loadParentProfile])
+  // Debug: Check what user data is available in ParentsDashboard (one-time log)
   // Load courses once when component mounts
   useEffect(() => {
     loadCourses()
   }, [loadCourses])
-
   const handleAddChild = async (childData: {
     fullName: string
     date_of_birth: string
     grade: string
     phone?: string
-    address_line_1?: string
-    city?: string
-    state?: string
-    zip_code?: string
-    country?: string
+    address: AddressFormData
   }) => {
     if (!user?.id) {
       toast.error('User not authenticated')
       return
     }
-
     try {
       // Create child in database
       const newChildProfile = await createChild({
@@ -312,13 +371,12 @@ export default function ParentsDashboard() {
         grade: childData.grade,
         parent_id: user.id,
         phone: childData.phone,
-        address_line_1: childData.address_line_1,
-        city: childData.city,
-        state: childData.state,
-        zip_code: childData.zip_code,
-        country: childData.country,
+        address_line_1: childData.address.address_line_1,
+        city: childData.address.city,
+        state: childData.address.state,
+        zip_code: childData.address.zip_code,
+        country: childData.address.country,
       })
-
       // Calculate age from date of birth for local state
       const birthDate = new Date(childData.date_of_birth)
       const today = new Date()
@@ -327,7 +385,6 @@ export default function ParentsDashboard() {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--
       }
-
       // Convert database profile to Child interface for local state
       const newChild: Child = {
         student_id: newChildProfile.student_id || `temp-${Date.now()}`,
@@ -342,88 +399,69 @@ export default function ParentsDashboard() {
         recent_activity: [],
         achievements: [],
       }
-
       setChildren((prev) => [...prev, newChild])
       setShowAddChildModal(false)
       toast.success(`${childData.fullName} has been added successfully!`)
       loadParentData() // Refresh stats
-    } catch (error) {
-      console.error('Error creating child:', error)
+    } catch {
       toast.error('Failed to add child. Please try again.')
     }
   }
-
   const handleCourseEnrollment = (course: AvailableCourse) => {
     if (children.length === 0) {
       toast.error('Please add a child first before enrolling in courses')
       return
     }
-
     setSelectedCourse(course)
     setShowChildSelectionModal(true)
   }
-
   const handleChildSelection = async (childId: string) => {
     if (!selectedCourse) return
-
     const selectedChild = children.find((child) => child.student_id === childId)
     if (!selectedChild) return
-
     try {
       // Actually enroll child in course using the API
       await enrollInCourse(selectedCourse.id, selectedChild.student_id)
       toast.success(`${selectedChild.full_name} has been enrolled in ${selectedCourse.title}!`)
-
       // Refresh children data to update enrollments
       loadChildren()
-    } catch (error) {
-      console.error('Error enrolling child:', error)
+    } catch {
       toast.error('Failed to enroll child in course. Please try again.')
     } finally {
       setShowChildSelectionModal(false)
       setSelectedCourse(null)
     }
   }
-
   const handleEditChild = async (childId: string) => {
     try {
       const child = children.find((child) => child.student_id === childId)
       if (!child) return
-
       setChildToEdit(child)
       setShowEditChildModal(true)
-    } catch (error) {
-      console.error('Error opening edit modal:', error)
+    } catch {
       toast.error('Failed to open edit modal')
     }
   }
-
   const handleUpdateChild = async (childData: {
     fullName: string
     date_of_birth: string
     grade: string
     phone?: string
-    address_line_1?: string
-    city?: string
-    state?: string
-    zip_code?: string
-    country?: string
+    address: AddressFormData
   }) => {
     try {
       if (!childToEdit) return
-
       await updateChild(childToEdit.student_id, {
         full_name: childData.fullName,
         date_of_birth: childData.date_of_birth,
         grade: childData.grade,
         phone: childData.phone,
-        address_line_1: childData.address_line_1,
-        city: childData.city,
-        state: childData.state,
-        zip_code: childData.zip_code,
-        country: childData.country,
+        address_line_1: childData.address.address_line_1,
+        city: childData.address.city,
+        state: childData.address.state,
+        zip_code: childData.address.zip_code,
+        country: childData.address.country,
       })
-
       // Update local state
       setChildren((prev) =>
         prev.map((child) =>
@@ -436,20 +474,16 @@ export default function ParentsDashboard() {
             : child,
         ),
       )
-
       setShowEditChildModal(false)
       setChildToEdit(null)
       toast.success(`${childData.fullName} updated successfully!`)
-    } catch (error) {
-      console.error('Error updating child:', error)
+    } catch {
       toast.error('Failed to update child')
     }
   }
-
   const handleDeleteChild = async (childId: string) => {
     const childToDelete = children.find((child) => child.student_id === childId)
     if (!childToDelete) return
-
     if (
       !window.confirm(
         `Are you sure you want to remove ${childToDelete.full_name}? This action cannot be undone.`,
@@ -457,30 +491,23 @@ export default function ParentsDashboard() {
     ) {
       return
     }
-
     try {
       await deleteChild(childId)
-
       // Remove from local state
       setChildren((prev) => prev.filter((child) => child.student_id !== childId))
-
       toast.success(`${childToDelete.full_name} has been removed`)
       loadParentData() // Refresh stats
-    } catch (error) {
-      console.error('Error deleting child:', error)
+    } catch {
       toast.error('Failed to delete child')
     }
   }
-
   const getTimeOfDay = () => {
     const hour = new Date().getHours()
     if (hour < 12) return { greeting: 'Good morning', icon: SunIcon }
     if (hour < 18) return { greeting: 'Good afternoon', icon: SunIcon }
     return { greeting: 'Good evening', icon: MoonIcon }
   }
-
   const { greeting, icon: TimeIcon } = getTimeOfDay()
-
   const tabs = [
     {
       id: 'home',
@@ -533,7 +560,6 @@ export default function ParentsDashboard() {
       available: true,
     },
   ]
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-16 lg:pt-20">
@@ -560,7 +586,6 @@ export default function ParentsDashboard() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-16 lg:pt-20">
       {/* Animated Background Elements */}
@@ -590,7 +615,6 @@ export default function ParentsDashboard() {
           }}
         />
       </div>
-
       {/* Enhanced Modern Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -632,17 +656,17 @@ export default function ParentsDashboard() {
                 </motion.p>
               </div>
             </div>
-
             <div className="flex items-center space-x-4">
               <motion.button
-                onClick={() => setIsProfileModalOpen(true)}
+                onClick={() => {
+                  setIsProfileModalOpen(true)
+                }}
                 className="p-3 rounded-xl bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 text-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <CogIcon className="h-5 w-5" />
               </motion.button>
-
               <div className="flex items-center space-x-3">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -661,7 +685,6 @@ export default function ParentsDashboard() {
           </div>
         </div>
       </motion.div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Reduced from py-10 to py-6 */}
@@ -719,7 +742,6 @@ export default function ParentsDashboard() {
             </motion.div>
           </div>
         </motion.div>
-
         {/* Tab Content */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -750,11 +772,10 @@ export default function ParentsDashboard() {
             {activeTab === 'enrollments' && <EnrollmentsTab children={children} />}
             {activeTab === 'progress' && <ProgressTab children={children} stats={stats} />}
             {activeTab === 'analytics' && <AnalyticsTab children={children} stats={stats} />}
-            {activeTab === 'settings' && <SettingsTab user={user} />}
+            {activeTab === 'settings' && <SettingsTab user={user} parentProfile={parentProfile} />}
           </motion.div>
         </AnimatePresence>
       </div>
-
       {/* Modals */}
       {showAddChildModal && (
         <AddChildModal
@@ -764,17 +785,16 @@ export default function ParentsDashboard() {
           existingChildren={children}
           parentInfo={{
             address: {
-              street: '',
-              city: '',
-              state: '',
-              country: 'United States',
-              postal_code: '',
+              street: parentProfile?.address_line_1 || '',
+              city: parentProfile?.city || '',
+              state: parentProfile?.state || '',
+              country: parentProfile?.country || 'United States',
+              postal_code: parentProfile?.zip_code || '',
             },
-            phone: user?.phone || undefined,
+            phone: parentProfile?.phone || user?.phone || undefined,
           }}
         />
       )}
-
       {showEditChildModal && childToEdit && (
         <AddChildModal
           isOpen={showEditChildModal}
@@ -783,40 +803,41 @@ export default function ParentsDashboard() {
             setChildToEdit(null)
           }}
           onAddChild={handleUpdateChild}
-          existingChildren={children.filter((child) => child.student_id !== childToEdit.student_id)}
+          existingChildren={children}
           parentInfo={{
             address: {
-              street: '',
-              city: '',
-              state: '',
-              country: 'United States',
-              postal_code: '',
+              street: parentProfile?.address_line_1 || '',
+              city: parentProfile?.city || '',
+              state: parentProfile?.state || '',
+              country: parentProfile?.country || 'United States',
+              postal_code: parentProfile?.zip_code || '',
             },
-            phone: user?.phone || undefined,
-          }}
-          editMode={true}
-          childToEdit={{
-            fullName: childToEdit.full_name,
-            grade: childToEdit.grade,
-            date_of_birth: new Date(new Date().getFullYear() - childToEdit.age, 0, 1)
-              .toISOString()
-              .split('T')[0],
+            phone: parentProfile?.phone || user?.phone || undefined,
           }}
         />
       )}
-
-      {isProfileModalOpen && (
+      {isProfileModalOpen && user && parentProfile && (
         <ProfileEditModal
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
-          user={user!}
+          user={
+            {
+              ...user,
+              // Override with address data from parentProfile which has the latest address info
+              address_line_1: parentProfile.address_line_1,
+              address_line_2: parentProfile.address_line_2,
+              city: parentProfile.city,
+              state: parentProfile.state,
+              zip_code: parentProfile.zip_code,
+              country: parentProfile.country,
+            } as Profile
+          }
           onUpdate={() => {
             // Refresh user data after profile update
             window.location.reload()
           }}
         />
       )}
-
       {/* Child Selection Modal for Course Enrollment */}
       {showChildSelectionModal && selectedCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -842,7 +863,6 @@ export default function ParentsDashboard() {
                 </svg>
               </button>
             </div>
-
             <div className="mb-4 p-4 bg-blue-50 rounded-lg">
               <h4 className="font-semibold text-blue-900">{selectedCourse.title}</h4>
               <p className="text-sm text-blue-700">
@@ -852,7 +872,6 @@ export default function ParentsDashboard() {
                 ₹{selectedCourse.price} • {selectedCourse.duration}
               </p>
             </div>
-
             <div className="space-y-3">
               {children.length === 0 ? (
                 <div className="text-center py-8">
@@ -891,7 +910,6 @@ export default function ParentsDashboard() {
                 ))
               )}
             </div>
-
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowChildSelectionModal(false)}
@@ -903,13 +921,11 @@ export default function ParentsDashboard() {
           </motion.div>
         </div>
       )}
-
       {/* Chat Bot */}
       <ChatBotTrigger />
     </div>
   )
 }
-
 // Home Tab Component
 function HomeTab({
   stats,
@@ -965,7 +981,6 @@ function HomeTab({
       delay: 0.4,
     },
   ]
-
   return (
     <div className="space-y-6">
       {/* Reduced from space-y-8 to space-y-6 */}
@@ -1027,7 +1042,6 @@ function HomeTab({
           </motion.div>
         ))}
       </div>
-
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Activity */}
@@ -1059,7 +1073,8 @@ function HomeTab({
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-900">{child.full_name}</p>
                     <p className="text-xs text-gray-600">
-                      Progress: {child.overall_progress}% • {child.enrolled_courses.length} courses
+                      Progress: {child.overall_progress}% • {child.enrolled_courses?.length || 0}{' '}
+                      courses
                     </p>
                   </div>
                   <div className="text-right">
@@ -1075,7 +1090,6 @@ function HomeTab({
             </div>
           </div>
         </motion.div>
-
         {/* Quick Actions */}
         <motion.div
           className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-6"
@@ -1099,7 +1113,6 @@ function HomeTab({
                 <UserPlusIcon className="h-6 w-6" />
                 <span className="font-semibold">Add New Child</span>
               </motion.button>
-
               <motion.button
                 className="w-full flex items-center space-x-4 p-4 rounded-xl bg-white/60 hover:bg-white/80 border border-white/30 text-gray-700 hover:text-gray-900 transition-all duration-300"
                 whileHover={{ scale: 1.02, y: -2 }}
@@ -1112,7 +1125,6 @@ function HomeTab({
           </div>
         </motion.div>
       </div>
-
       {/* Course Enrollment Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1138,7 +1150,6 @@ function HomeTab({
             </svg>
           </motion.button>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {coursesLoading
             ? // Loading skeleton
@@ -1184,9 +1195,7 @@ function HomeTab({
                       <div className="text-xs text-gray-600">{course.duration}</div>
                     </div>
                   </div>
-
                   <p className="text-xs text-gray-600 mb-3">{course.description}</p>
-
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
                       <div className="flex text-yellow-400">
@@ -1200,7 +1209,6 @@ function HomeTab({
                     </div>
                     <span className="text-xs text-gray-600">{course.instructor}</span>
                   </div>
-
                   <motion.button
                     onClick={() => onCourseEnrollment(course)}
                     className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
@@ -1216,7 +1224,6 @@ function HomeTab({
     </div>
   )
 }
-
 // Children Tab Component
 function ChildrenTab({
   children,
@@ -1243,7 +1250,6 @@ function ChildrenTab({
           <span>Add Child</span>
         </motion.button>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         {children.map((child, index) => (
@@ -1292,7 +1298,6 @@ function ChildrenTab({
                   </svg>
                 </motion.button>
               </div>
-
               <div className="flex items-center space-x-4 mb-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg">
                   {child.full_name.charAt(0)}
@@ -1304,7 +1309,6 @@ function ChildrenTab({
                   </p>
                 </div>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
@@ -1318,11 +1322,10 @@ function ChildrenTab({
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div className="bg-white/60 rounded-xl p-4 border border-white/30">
                     <p className="text-xl font-bold text-gray-900">
-                      {child.enrolled_courses.length}
+                      {child.enrolled_courses?.length || 0}
                     </p>
                     <p className="text-xs text-gray-600 font-medium">Courses</p>
                   </div>
@@ -1339,21 +1342,18 @@ function ChildrenTab({
     </div>
   )
 }
-
 // Enrollments Tab Component
 function EnrollmentsTab({ children }: { children: Child[] }) {
   const allEnrollments = children.flatMap((child) =>
-    child.enrolled_courses.map((course: Course) => ({
+    (child.enrolled_courses || []).map((course: Course) => ({
       ...course,
       childName: child.full_name,
       childId: child.student_id,
     })),
   )
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Course Enrollments</h2>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         {allEnrollments.map((enrollment, index) => (
@@ -1376,7 +1376,6 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
                 {enrollment.progress}%
               </Badge>
             </div>
-
             <div className="space-y-3">
               <div>
                 <div className="flex justify-between text-sm mb-1">
@@ -1390,7 +1389,6 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
                   />
                 </div>
               </div>
-
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Enrolled: {enrollment.enrollment_date}</span>
                 <span className="text-gray-600">Grade: {enrollment.current_grade || 'N/A'}</span>
@@ -1402,13 +1400,11 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
     </div>
   )
 }
-
 // Progress Tab Component
 function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStats }) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Progress Reports</h2>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         <motion.div
@@ -1423,7 +1419,6 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
             <p className="text-gray-600">Average completion this week</p>
           </div>
         </motion.div>
-
         <motion.div
           className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
           initial={{ x: 50, opacity: 0 }}
@@ -1437,7 +1432,6 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
           </div>
         </motion.div>
       </div>
-
       <div className="space-y-4">
         {children.map((child, index) => (
           <motion.div
@@ -1462,7 +1456,6 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
                 <div className="text-sm text-gray-600">Overall</div>
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="text-xl font-bold text-gray-900">{child.learning_time.daily}</div>
@@ -1483,13 +1476,11 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
     </div>
   )
 }
-
 // Analytics Tab Component
 function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentStats }) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Analytics & Insights</h2>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         <motion.div
@@ -1502,7 +1493,6 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
           <div className="text-2xl font-bold text-gray-900">{stats.certificatesEarned}</div>
           <div className="text-sm text-gray-600">Certificates</div>
         </motion.div>
-
         <motion.div
           className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center"
           initial={{ scale: 0 }}
@@ -1513,7 +1503,6 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
           <div className="text-2xl font-bold text-gray-900">{stats.activeEnrollments}</div>
           <div className="text-sm text-gray-600">Active Courses</div>
         </motion.div>
-
         <motion.div
           className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center"
           initial={{ scale: 0 }}
@@ -1524,7 +1513,6 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
           <div className="text-2xl font-bold text-gray-900">{stats.totalLearningHours}</div>
           <div className="text-sm text-gray-600">Hours Learned</div>
         </motion.div>
-
         <motion.div
           className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center"
           initial={{ scale: 0 }}
@@ -1536,7 +1524,6 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
           <div className="text-sm text-gray-600">Upcoming Events</div>
         </motion.div>
       </div>
-
       <motion.div
         className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
         initial={{ y: 50, opacity: 0 }}
@@ -1569,17 +1556,89 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
     </div>
   )
 }
-
 // Settings Tab Component
 function SettingsTab({
   user,
+  parentProfile,
 }: {
   user: { id: string; email: string; full_name: string; role: string } | null
+  parentProfile: ParentProfile | null
 }) {
+  const [showEditProfile, setShowEditProfile] = useState(false)
+  const [addressData, setAddressData] = useState<AddressFormData>({
+    country: '',
+    state: '',
+    city: '',
+    address_line_1: '',
+    address_line_2: '',
+    zip_code: '',
+  })
+  const [personalInfo, setPersonalInfo] = useState({
+    full_name: user?.full_name || '',
+    phone: '',
+  })
+  // Load existing user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setPersonalInfo({
+        full_name: user.full_name || '',
+        phone: parentProfile?.phone || '', // Load from parentProfile
+      })
+    }
+  }, [user, parentProfile])
+  // Load address data from parentProfile - prevent infinite loops with ref
+  const addressLoadedRef = useRef(false)
+  useEffect(() => {
+    if (parentProfile && !addressLoadedRef.current) {
+      setAddressData({
+        country: parentProfile.country || '',
+        state: parentProfile.state || '',
+        city: parentProfile.city || '',
+        address_line_1: parentProfile.address_line_1 || '',
+        address_line_2: parentProfile.address_line_2 || '',
+        zip_code: parentProfile.zip_code || '',
+      })
+      addressLoadedRef.current = true
+    }
+  }, [parentProfile])
+  const handleSaveProfile = async () => {
+    try {
+      if (!user?.id) {
+        toast.error('User not authenticated')
+        return
+      }
+      // Update user profile with personal info and address data
+      const updateData = {
+        full_name: personalInfo.full_name,
+        phone: personalInfo.phone,
+        address_line_1: addressData.address_line_1,
+        address_line_2: addressData.address_line_2,
+        city: addressData.city,
+        state: addressData.state,
+        zip_code: addressData.zip_code,
+        country: addressData.country,
+      }
+      await updateUserProfile(user.id, updateData as Parameters<typeof updateUserProfile>[1])
+      toast.success('Profile updated successfully!')
+      setShowEditProfile(false)
+    } catch {
+      toast.error('Failed to update profile')
+    }
+  }
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
-
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
+        <motion.button
+          onClick={() => setShowEditProfile(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <User className="h-4 w-4" />
+          <span>Edit Profile</span>
+        </motion.button>
+      </div>
       <motion.div
         className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
         initial={{ y: 50, opacity: 0 }}
@@ -1606,9 +1665,50 @@ function SettingsTab({
               {user?.role || 'Parent'}
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-2">Phone</label>
+            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+              {personalInfo.phone || 'Not provided'}
+            </div>
+          </div>
         </div>
       </motion.div>
-
+      <motion.div
+        className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
+        <div className="px-3 py-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
+          {addressData.address_line_1 ? (
+            <div className="space-y-1">
+              <div className="font-medium text-gray-900">
+                {addressData.address_line_1}
+                {addressData.address_line_2 && `, ${addressData.address_line_2}`}
+              </div>
+              <div>
+                {addressData.city}
+                {addressData.state && `, ${addressData.state}`} {addressData.zip_code}
+              </div>
+              <div>{getCountryName(addressData.country)}</div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-4">
+              <div className="text-center">
+                <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500">No address provided</p>
+                <button
+                  onClick={() => setShowEditProfile(true)}
+                  className="text-blue-600 hover:text-blue-800 text-sm mt-1"
+                >
+                  Add address
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
       <motion.div
         className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
         initial={{ y: 50, opacity: 0 }}
@@ -1629,8 +1729,112 @@ function SettingsTab({
             <input type="checkbox" className="rounded" />
             <span className="text-gray-900">Weekly progress reports</span>
           </label>
+          <label className="flex items-center space-x-3">
+            <input type="checkbox" className="rounded" />
+            <span className="text-gray-900">Course completion certificates</span>
+          </label>
         </div>
       </motion.div>
+      {/* Edit Profile Modal */}
+      <AnimatePresence>
+        {showEditProfile && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Edit Profile</h3>
+                <button
+                  onClick={() => setShowEditProfile(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6">
+                {/* Horizontal Layout with Two Columns */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column - Personal Information */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      Personal Information
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={personalInfo.full_name}
+                          onChange={(e) =>
+                            setPersonalInfo((prev) => ({ ...prev, full_name: e.target.value }))
+                          }
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter your full name"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={personalInfo.phone}
+                          onChange={(e) =>
+                            setPersonalInfo((prev) => ({ ...prev, phone: e.target.value }))
+                          }
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter your phone number"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Right Column - Address Information */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
+                      🏠 Address Information
+                    </h4>
+                    <AddressForm
+                      data={addressData}
+                      onChange={setAddressData}
+                      showOptionalFields={true}
+                      required={true}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowEditProfile(false)}
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 font-medium"
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  onClick={handleSaveProfile}
+                  className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Save Changes
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabase'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
-
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate()
   const { updateAuthState } = useAuth()
@@ -12,74 +11,51 @@ const AdminLogin: React.FC = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
-      console.log('Attempting login with:', email)
-
       // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-
       if (error) {
-        console.error('Login error:', error)
         toast.error(error.message || 'Login failed')
         return
       }
-
       if (!data.user) {
         toast.error('Login failed - no user data')
         return
       }
-
-      console.log('Login successful, user:', data.user.id)
-
       // Check if user has admin privileges by checking their profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single()
-
       if (profileError || !profile) {
-        console.error('Profile fetch error:', profileError)
         toast.error('Unable to verify admin privileges')
         await supabase.auth.signOut()
         return
       }
-
-      console.log('User role:', profile.role)
-
       // Check if user has admin role
       if (!['admin', 'business_admin', 'super_admin'].includes(profile.role)) {
         toast.error('Access denied - admin privileges required')
         await supabase.auth.signOut()
         return
       }
-
       toast.success('Welcome to Admin Console')
-      console.log('AdminLogin: Login successful, updating auth context directly...')
-
       // Update auth context immediately
       const authResult = await updateAuthState()
-      console.log('AdminLogin: Auth state updated:', authResult)
-
       // Navigate immediately after auth state is updated
-      console.log('AdminLogin: Navigating to dashboard...')
       navigate('/admin/dashboard', { replace: true })
     } catch (error) {
-      console.error('Unexpected login error:', error)
       toast.error('An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-md w-full p-8">
@@ -88,7 +64,6 @@ const AdminLogin: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">eYogi Gurukul SSH University</h1>
             <p className="text-gray-600">Admin Console</p>
           </div>
-
           <form onSubmit={handleSubmit} className="flex flex-col gap-8">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -104,7 +79,6 @@ const AdminLogin: React.FC = () => {
                 placeholder="admin@eyogi.com"
               />
             </div>
-
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -132,7 +106,6 @@ const AdminLogin: React.FC = () => {
                 </button>
               </div>
             </div>
-
             <button
               type="submit"
               disabled={isLoading}
@@ -148,7 +121,6 @@ const AdminLogin: React.FC = () => {
               )}
             </button>
           </form>
-
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
               Admin access only. Contact support if you need assistance.
@@ -159,5 +131,4 @@ const AdminLogin: React.FC = () => {
     </div>
   )
 }
-
 export default AdminLogin

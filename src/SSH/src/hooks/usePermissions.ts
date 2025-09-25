@@ -1,6 +1,5 @@
 import { useWebsiteAuth } from '../contexts/WebsiteAuthContext'
 import { useSupabaseAuth } from './useSupabaseAuth'
-
 // Component permissions mapping
 const COMPONENT_PERMISSIONS = {
   // Admin components
@@ -15,37 +14,29 @@ const COMPONENT_PERMISSIONS = {
   SiteAnalytics: ['admin', 'super_admin'],
   AdminPermissionManagement: ['admin', 'super_admin'],
   AdminUserManagementNew: ['admin', 'super_admin'],
-
   // Teacher components
   TeacherDashboard: ['teacher', 'admin', 'super_admin'],
-
   // Student components
   StudentDashboard: ['student', 'admin', 'super_admin'],
 } as const
-
 type ComponentName = keyof typeof COMPONENT_PERMISSIONS
 type UserRole = 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
-
 export function usePermissions() {
   const { user: websiteUser, canAccess: websiteCanAccess } = useWebsiteAuth()
   const { profile, user: authUser } = useSupabaseAuth()
-
   const canAccessComponent = (componentName: ComponentName): boolean => {
     // For admin routes, use AuthContext profile
     if (authUser && profile) {
       const allowedRoles = COMPONENT_PERMISSIONS[componentName]
       return (allowedRoles as readonly string[]).includes(profile.role)
     }
-
     // For website routes, use WebsiteAuth user
     if (websiteUser) {
       const allowedRoles = COMPONENT_PERMISSIONS[componentName]
       return (allowedRoles as readonly string[]).includes(websiteUser.role)
     }
-
     return false
   }
-
   const canAccessResource = (resource: string, action: string = 'read'): boolean => {
     // For admin routes, use AuthContext profile
     if (authUser && profile) {
@@ -68,15 +59,12 @@ export function usePermissions() {
       }
       return false
     }
-
     // For website routes, use WebsiteAuth permissions
     if (websiteUser) {
       return websiteCanAccess(resource, action)
     }
-
     return false
   }
-
   const getUserRole = (): UserRole | null => {
     // For admin routes, use AuthContext profile
     if (authUser && profile) {
@@ -85,27 +73,21 @@ export function usePermissions() {
     // For website routes, use WebsiteAuth user
     return (websiteUser?.role as UserRole) || null
   }
-
   const isTeacher = (): boolean => {
     return getUserRole() === 'teacher'
   }
-
   const isBusinessAdmin = (): boolean => {
     return getUserRole() === 'business_admin'
   }
-
   const isAdmin = (): boolean => {
     return getUserRole() === 'admin'
   }
-
   const isSuperAdminRole = (): boolean => {
     return getUserRole() === 'super_admin'
   }
-
   const isStudent = (): boolean => {
     return getUserRole() === 'student'
   }
-
   return {
     canAccessComponent,
     canAccessResource,

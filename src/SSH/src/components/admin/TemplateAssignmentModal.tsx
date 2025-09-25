@@ -14,27 +14,23 @@ import {
   AcademicCapIcon,
   BuildingOfficeIcon,
 } from '@heroicons/react/24/outline'
-
 interface TemplateAssignmentModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: () => void
   templates: CertificateTemplate[]
 }
-
 interface Gurukul {
   id: string
   name: string
   status: string
 }
-
 interface Course {
   id: string
   title: string
   gurukul_id: string
   status: string
 }
-
 export default function TemplateAssignmentModal({
   isOpen,
   onClose,
@@ -49,19 +45,16 @@ export default function TemplateAssignmentModal({
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-
   useEffect(() => {
     if (isOpen) {
       loadData()
     }
   }, [isOpen])
-
   useEffect(() => {
     if (assignmentType === 'course' && selectedGurukul) {
       loadCourses()
     }
   }, [selectedGurukul, assignmentType])
-
   const loadData = async () => {
     setLoading(true)
     try {
@@ -72,42 +65,34 @@ export default function TemplateAssignmentModal({
       setGurukuls(gurukulData)
       setCourses(courseData)
     } catch (error) {
-      console.error('Error loading data:', error)
       toast.error('Failed to load data')
     } finally {
       setLoading(false)
     }
   }
-
   const loadCourses = async () => {
     try {
       const courseData = await getAvailableCourses(selectedGurukul)
       setCourses(courseData)
       setSelectedCourse('') // Reset course selection when gurukul changes
     } catch (error) {
-      console.error('Error loading courses:', error)
       toast.error('Failed to load courses')
     }
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!selectedTemplate) {
       toast.error('Please select a template')
       return
     }
-
     if (assignmentType === 'gurukul' && !selectedGurukul) {
       toast.error('Please select a gurukul')
       return
     }
-
     if (assignmentType === 'course' && !selectedCourse) {
       toast.error('Please select a course')
       return
     }
-
     setSaving(true)
     try {
       const assignmentData: CreateCertificateAssignmentData = {
@@ -115,14 +100,12 @@ export default function TemplateAssignmentModal({
         gurukul_id: assignmentType === 'gurukul' ? selectedGurukul : undefined,
         course_id: assignmentType === 'course' ? selectedCourse : undefined,
       }
-
       // Ensure we don't send both gurukul_id and course_id
       if (assignmentType === 'gurukul') {
         delete assignmentData.course_id
       } else if (assignmentType === 'course') {
         delete assignmentData.gurukul_id
       }
-
       console.log('Assignment Modal - Sending data:', {
         assignmentType,
         selectedTemplate,
@@ -136,19 +119,16 @@ export default function TemplateAssignmentModal({
           hasCourse: !!selectedCourse
         }
       })
-
       await createCertificateAssignment(assignmentData)
       toast.success('Template assigned successfully')
       onSave()
       handleClose()
     } catch (error) {
-      console.error('Error creating assignment:', error)
       toast.error('Failed to assign template')
     } finally {
       setSaving(false)
     }
   }
-
   const handleClose = () => {
     setSelectedTemplate('')
     setAssignmentType('course')
@@ -156,7 +136,6 @@ export default function TemplateAssignmentModal({
     setSelectedCourse('')
     onClose()
   }
-
   // Reset course when gurukul changes and assignment type is gurukul
   const handleGurukulChange = (gurukulId: string) => {
     setSelectedGurukul(gurukulId)
@@ -164,13 +143,10 @@ export default function TemplateAssignmentModal({
       setSelectedCourse('') // Clear course for gurukul assignments
     }
   }
-
   if (!isOpen) return null
-
   const filteredCourses = courses.filter(course =>
     assignmentType === 'course' ? course.gurukul_id === selectedGurukul : true
   )
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
@@ -183,7 +159,6 @@ export default function TemplateAssignmentModal({
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Template Selection */}
           <div>
@@ -204,7 +179,6 @@ export default function TemplateAssignmentModal({
               ))}
             </select>
           </div>
-
           {/* Assignment Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,7 +217,6 @@ export default function TemplateAssignmentModal({
               </button>
             </div>
           </div>
-
           {/* Gurukul Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -264,7 +237,6 @@ export default function TemplateAssignmentModal({
               ))}
             </select>
           </div>
-
           {/* Course Selection (only for course assignments) */}
           {assignmentType === 'course' && (
             <div>
@@ -292,7 +264,6 @@ export default function TemplateAssignmentModal({
               )}
             </div>
           )}
-
           {/* Assignment Scope Info */}
           <div className="bg-blue-50 p-3 rounded-md">
             <div className="flex">
@@ -310,7 +281,6 @@ export default function TemplateAssignmentModal({
               </div>
             </div>
           </div>
-
           <div className="flex gap-3 pt-4">
             <Button
               type="button"

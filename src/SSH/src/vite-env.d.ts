@@ -1,5 +1,4 @@
 /// <reference types="vite/client" />
-
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string
   readonly VITE_SUPABASE_ANON_KEY: string
@@ -27,7 +26,6 @@ interface ImportMetaEnv {
   readonly VITE_RATE_LIMIT_REQUESTS: string
   readonly VITE_RATE_LIMIT_WINDOW: string
 }
-
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }

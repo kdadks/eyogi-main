@@ -19,14 +19,12 @@ import {
   XMarkIcon,
   CheckIcon,
 } from '@heroicons/react/24/outline'
-
 interface GurukulFormData {
   name: string
   slug: string
   description: string
   image_url: string
 }
-
 export default function GurukulManagement() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [courseCounts, setCourseCounts] = useState<Record<string, number>>({})
@@ -44,11 +42,9 @@ export default function GurukulManagement() {
     image_url: '',
   })
   const [formLoading, setFormLoading] = useState(false)
-
   useEffect(() => {
     loadData()
   }, [])
-
   useEffect(() => {
     // Auto-generate slug when name changes
     if (formData.name && !editingGurukul) {
@@ -58,36 +54,24 @@ export default function GurukulManagement() {
       }))
     }
   }, [formData.name, editingGurukul])
-
   const loadData = async () => {
     try {
-      console.log('Loading gurukul data...')
       const [gurukulData, coursesData] = await Promise.all([getAllGurukuls(), getCourses()])
-
-      console.log('Gurukul data received:', gurukulData)
-      console.log('Courses data received:', coursesData)
-
       setGurukuls(gurukulData)
-
       // Count courses per gurukul
       const counts: Record<string, number> = {}
       coursesData.forEach((course) => {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
-
-      console.log('Data loading completed. Gurukuls count:', gurukulData.length)
     } catch (error) {
-      console.error('Error loading data:', error)
       toast.error('Failed to load gurukul data')
     } finally {
       setLoading(false)
     }
   }
-
   const filterGurukuls = React.useCallback(() => {
     let filtered = gurukuls
-
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
@@ -97,20 +81,16 @@ export default function GurukulManagement() {
           gurukul.description.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
-
     // Filter by status
     if (statusFilter !== 'all') {
       const isActive = statusFilter === 'active'
       filtered = filtered.filter((gurukul) => gurukul.is_active === isActive)
     }
-
     setFilteredGurukuls(filtered)
   }, [gurukuls, searchTerm, statusFilter])
-
   useEffect(() => {
     filterGurukuls()
   }, [filterGurukuls])
-
   const resetForm = () => {
     setFormData({
       name: '',
@@ -121,11 +101,9 @@ export default function GurukulManagement() {
     setShowCreateForm(false)
     setEditingGurukul(null)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormLoading(true)
-
     try {
       if (editingGurukul) {
         await updateGurukul(editingGurukul.id, formData)
@@ -138,17 +116,14 @@ export default function GurukulManagement() {
         })
         toast.success('Gurukul created successfully')
       }
-
       await loadData()
       resetForm()
     } catch (error) {
-      console.error('Error saving gurukul:', error)
       toast.error('Failed to save gurukul')
     } finally {
       setFormLoading(false)
     }
   }
-
   const handleEdit = (gurukul: Gurukul) => {
     setEditingGurukul(gurukul)
     setFormData({
@@ -159,40 +134,33 @@ export default function GurukulManagement() {
     })
     setShowCreateForm(true)
   }
-
   const handleDelete = async (gurukulId: string) => {
     if (!confirm('Are you sure you want to delete this gurukul? This action cannot be undone.')) {
       return
     }
-
     try {
       await deleteGurukul(gurukulId)
       await loadData()
       toast.success('Gurukul deleted successfully')
     } catch (error) {
-      console.error('Error deleting gurukul:', error)
       toast.error('Failed to delete gurukul')
     }
   }
-
   const handleToggleStatus = async (gurukulId: string, currentStatus: boolean) => {
     try {
       await updateGurukul(gurukulId, { is_active: !currentStatus })
       await loadData()
       toast.success(`Gurukul ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
     } catch (error) {
-      console.error('Error updating gurukul status:', error)
       toast.error('Failed to update gurukul status')
     }
   }
-
   const stats = {
     total: gurukuls.length,
     active: gurukuls.filter((g) => g.is_active).length,
     inactive: gurukuls.filter((g) => g.is_active === false).length,
     totalCourses: Object.values(courseCounts).reduce((sum, count) => sum + count, 0),
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -200,7 +168,6 @@ export default function GurukulManagement() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -230,7 +197,6 @@ export default function GurukulManagement() {
           </CardContent>
         </Card>
       </div>
-
       {/* Create/Edit Form */}
       {showCreateForm && (
         <Card>
@@ -261,7 +227,6 @@ export default function GurukulManagement() {
                   helperText="URL-friendly identifier"
                 />
               </div>
-
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
@@ -274,14 +239,12 @@ export default function GurukulManagement() {
                   required
                 />
               </div>
-
               <Input
                 label="Image URL"
                 value={formData.image_url}
                 onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
                 helperText="Optional: URL to gurukul image"
               />
-
               <div className="flex space-x-4">
                 <Button type="submit" loading={formLoading}>
                   <CheckIcon className="h-4 w-4 mr-2" />
@@ -295,13 +258,11 @@ export default function GurukulManagement() {
           </CardContent>
         </Card>
       )}
-
       {/* Gurukul Management */}
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <h2 className="text-xl font-bold">Gurukul Management</h2>
-
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -314,7 +275,6 @@ export default function GurukulManagement() {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
-
               {/* Status Filter */}
               <select
                 value={statusFilter}
@@ -325,7 +285,6 @@ export default function GurukulManagement() {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
-
               <Button onClick={() => setShowCreateForm(true)}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 New Gurukul
@@ -333,7 +292,6 @@ export default function GurukulManagement() {
             </div>
           </div>
         </CardHeader>
-
         <CardContent>
           {filteredGurukuls.length === 0 ? (
             <div className="text-center py-8">
@@ -441,7 +399,6 @@ export default function GurukulManagement() {
           )}
         </CardContent>
       </Card>
-
       {/* Gurukul Details Modal */}
       {viewingGurukul && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -511,7 +468,6 @@ export default function GurukulManagement() {
                     </div>
                   )}
                 </div>
-
                 {/* Description */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
@@ -519,8 +475,6 @@ export default function GurukulManagement() {
                     {viewingGurukul.description || 'No description provided'}
                   </p>
                 </div>
-
-
                 {/* Statistics & Performance */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics & Performance</h3>
@@ -562,7 +516,6 @@ export default function GurukulManagement() {
                     </div>
                   </div>
                 </div>
-
                 {/* Technical Details */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Technical Details</h3>
@@ -589,7 +542,6 @@ export default function GurukulManagement() {
                     </div>
                   </div>
                 </div>
-
                 {/* Timestamps */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Timestamps</h3>

@@ -1,7 +1,6 @@
 import { User } from '@/types'
 import { SearchResult } from './SemanticSearch'
 import { DidYouKnowService } from './DidYouKnowService'
-
 export interface ResponseContext {
   message: string
   persona: string
@@ -11,14 +10,11 @@ export interface ResponseContext {
   user: User | null
   conversationHistory: Array<{ user: string; bot: string; timestamp: Date }>
 }
-
 export class ResponseGenerator {
   private didYouKnowService: DidYouKnowService
-
   constructor() {
     this.didYouKnowService = new DidYouKnowService()
   }
-
   private responseTemplates: Record<string, Record<string, string[]>> = {
     greeting: {
       student: [
@@ -167,35 +163,27 @@ export class ResponseGenerator {
       ],
     },
   }
-
   generateResponse(context: ResponseContext): string {
     const { message, persona, intent, searchResults, user } = context
-
     // Handle "Did You Know" queries specially
     if (intent === 'did_you_know') {
       return this.generateDidYouKnowResponse(message, persona)
     }
-
     // Get appropriate response template
     const templates = this.responseTemplates[intent]?.[persona] ||
       this.responseTemplates[intent]?.['general_visitor'] || [
         "I'd be happy to help you with that! Let me provide you with the information you need:",
       ]
-
     const template = templates[Math.floor(Math.random() * templates.length)]
-
     // Build response based on search results
     let response = template
-
     if (searchResults.length > 0) {
       response += '\n\n'
-
       // Add relevant information from search results
       const topResults = searchResults.slice(0, 3)
       topResults.forEach((result, index) => {
         if (index === 0) {
           response += `📚 **${result.title}**\n${result.content}\n\n`
-
           // Add navigation links for course and gurukul results
           if (result.type === 'course' && result.metadata?.course) {
             response += `🔗 [View Course Details](/courses/${result.metadata.course.id})\n\n`
@@ -206,38 +194,29 @@ export class ResponseGenerator {
           response += `• **${result.title}**: ${this.truncateContent(result.content, 100)}\n\n`
         }
       })
-
       // Add general navigation links based on intent
       response += this.addIntentBasedLinks(intent)
     } else {
       // Fallback responses when no search results
       response += this.generateFallbackResponse(intent)
     }
-
     // Add personalized touches
     response = this.addPersonalizedTouches(response, user, persona, intent)
-
     // Add helpful suggestions
     response += this.generateSuggestions(intent)
-
     return response.trim()
   }
-
   private generateDidYouKnowResponse(message: string, persona: string): string {
     const templates =
       this.responseTemplates.did_you_know[persona] ||
       this.responseTemplates.did_you_know['general_visitor']
     const template = templates[Math.floor(Math.random() * templates.length)]
-
     let response = template + '\n\n'
-
     // Check if user is asking about a specific topic
     const specificQuery = this.extractSpecificQuery(message)
-
     if (specificQuery) {
       // Search for facts related to the specific query
       const searchResults = this.didYouKnowService.searchFacts(specificQuery, 3)
-
       if (searchResults.length > 0) {
         response += `🎯 **Facts about "${specificQuery}":**\n\n`
         searchResults.forEach((result, index) => {
@@ -247,7 +226,6 @@ export class ResponseGenerator {
         // Fallback to random facts from related category
         const category = this.getCategoryFromQuery(specificQuery)
         const randomFacts = this.didYouKnowService.getRandomFactsByCategory(category, 3)
-
         response += `🌟 **Here are some amazing facts related to your interest:**\n\n`
         randomFacts.forEach((fact, index) => {
           response += `${index + 1}. ${fact}\n\n`
@@ -260,29 +238,23 @@ export class ResponseGenerator {
         this.didYouKnowService.getRandomFact(),
         this.didYouKnowService.getRandomFact(),
       ]
-
       response += `🎲 **Random Amazing Facts:**\n\n`
       randomFacts.forEach((fact, index) => {
         response += `${index + 1}. ${fact}\n\n`
       })
     }
-
     // Add exploration links
     response += '🔗 **Explore More:**\n'
     response += '• [Browse All Courses](/courses) - Discover courses on these topics\n'
     response += '• [Explore Gurukuls](/gurukuls) - Learn more about our specialized schools\n'
     response += '• [About eYogi](/about) - Understand our educational philosophy\n\n'
-
     // Add suggestion for more facts
     response +=
       "💡 Want to learn more? Ask me about specific topics like 'Sanskrit facts', 'Yoga wisdom', 'Hindu philosophy', or 'Mantra science'!"
-
     return response
   }
-
   private extractSpecificQuery(message: string): string {
     const lowerMessage = message.toLowerCase()
-
     // Look for specific topic mentions
     const topics = [
       'sanskrit',
@@ -326,28 +298,23 @@ export class ResponseGenerator {
       'krishna',
       'rama',
     ]
-
     for (const topic of topics) {
       if (lowerMessage.includes(topic)) {
         return topic
       }
     }
-
     // Look for "about X" patterns
     const aboutMatch = lowerMessage.match(/about\s+(\w+)/i)
     if (aboutMatch) {
       return aboutMatch[1]
     }
-
     // Look for "X facts" patterns
     const factsMatch = lowerMessage.match(/(\w+)\s+facts?/i)
     if (factsMatch) {
       return factsMatch[1]
     }
-
     return ''
   }
-
   private getCategoryFromQuery(query: string): string {
     const categoryMap: Record<string, string> = {
       sanskrit: 'sanskrit',
@@ -366,10 +333,8 @@ export class ResponseGenerator {
       vedic: 'hinduism',
       vedas: 'hinduism',
     }
-
     return categoryMap[query.toLowerCase()] || 'hinduism'
   }
-
   private addIntentBasedLinks(intent: string): string {
     const linkSets: Record<string, string> = {
       course_inquiry:
@@ -389,10 +354,8 @@ export class ResponseGenerator {
       did_you_know:
         '\n🔗 **Learn More:**\n• [Browse Courses](/courses)\n• [Explore Gurukuls](/gurukuls)\n• [About eYogi](/about)\n',
     }
-
     return linkSets[intent] || ''
   }
-
   private generateFallbackResponse(intent: string): string {
     const fallbacks: Record<string, string> = {
       course_inquiry:
@@ -414,13 +377,11 @@ export class ResponseGenerator {
       technical_support:
         '\n\nFor technical issues: try refreshing your browser, check your internet connection, or clear your browser cache. For persistent problems, contact support@eyogigurukul.com with details about your issue.',
     }
-
     return (
       fallbacks[intent] ||
       "\n\nI'm here to help with any questions about eYogi Gurukul, our courses, enrollment, or Vedic education in general!"
     )
   }
-
   private addPersonalizedTouches(
     response: string,
     user: User | null,
@@ -429,24 +390,19 @@ export class ResponseGenerator {
   ): string {
     if (user) {
       const firstName = user.full_name?.split(' ')[0] || 'friend'
-
       if (intent === 'student_progress' && user.role === 'student') {
         response += `\n\n🎯 ${firstName}, you can check your detailed progress in your student dashboard where you'll find all your enrolled courses, completion status, and certificates!`
       }
-
       if (intent === 'course_inquiry' && user.age) {
         const ageGroup = this.getAgeGroupForAge(user.age)
         response += `\n\n💡 Based on your age (${user.age}), I recommend looking at our ${ageGroup} level courses which are perfectly designed for your learning stage!`
       }
     }
-
     if (persona === 'parent') {
       response += `\n\n👨‍👩‍👧‍👦 As a parent, you'll be pleased to know that all our courses include progress reports and we maintain open communication about your child's learning journey.`
     }
-
     return response
   }
-
   private generateSuggestions(intent: string): string {
     const suggestions: Record<string, string[]> = {
       course_inquiry: [
@@ -490,22 +446,18 @@ export class ResponseGenerator {
         'Shall I tell you about our founders and team?',
       ],
     }
-
     const intentSuggestions = suggestions[intent]
     if (intentSuggestions && intentSuggestions.length > 0) {
       const randomSuggestion =
         intentSuggestions[Math.floor(Math.random() * intentSuggestions.length)]
       return `\n\n❓ ${randomSuggestion}`
     }
-
     return '\n\n💬 Feel free to ask me anything else about eYogi Gurukul!'
   }
-
   private truncateContent(content: string, maxLength: number): string {
     if (content.length <= maxLength) return content
     return content.substring(0, maxLength) + '...'
   }
-
   private getAgeGroupForAge(age: number): string {
     if (age >= 4 && age <= 7) return 'Elementary'
     if (age >= 8 && age <= 11) return 'Basic'

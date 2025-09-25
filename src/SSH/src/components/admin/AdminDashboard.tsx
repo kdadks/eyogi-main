@@ -8,7 +8,6 @@ import {
   ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
-
 interface DashboardStats {
   totalUsers: number
   totalCourses: number
@@ -17,7 +16,6 @@ interface DashboardStats {
   recentEnrollments: number
   activeUsers: number
 }
-
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -28,17 +26,14 @@ const AdminDashboard: React.FC = () => {
     activeUsers: 0,
   })
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     loadDashboardStats()
   }, [])
-
   const loadDashboardStats = async () => {
     try {
       // Make all queries in parallel for speed
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
       const [
         totalUsersResult,
         totalCoursesResult,
@@ -60,7 +55,6 @@ const AdminDashboard: React.FC = () => {
           .select('*', { count: 'exact', head: true })
           .eq('status', 'active'),
       ])
-
       setStats({
         totalUsers: totalUsersResult.count || 0,
         totalCourses: totalCoursesResult.count || 0,
@@ -70,7 +64,6 @@ const AdminDashboard: React.FC = () => {
         activeUsers: activeUsersResult.count || 0,
       })
     } catch (error) {
-      console.error('Error loading dashboard stats:', error)
       // Show zero values on error instead of mock data
       setStats({
         totalUsers: 0,
@@ -84,7 +77,6 @@ const AdminDashboard: React.FC = () => {
       setLoading(false)
     }
   }
-
   const statCards = [
     {
       title: 'Total Users',
@@ -129,7 +121,6 @@ const AdminDashboard: React.FC = () => {
       change: 'Last 30 days',
     },
   ]
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -138,7 +129,6 @@ const AdminDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600">Loading analytics...</p>
         </div>
-
         {/* Skeleton Stats Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, index) => (
@@ -166,7 +156,6 @@ const AdminDashboard: React.FC = () => {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -174,7 +163,6 @@ const AdminDashboard: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Welcome to the eYogi Gurukul Admin Console</p>
       </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((card, index) => (
@@ -205,7 +193,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         ))}
       </div>
-
       {/* Quick Actions */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -218,19 +205,16 @@ const AdminDashboard: React.FC = () => {
               <h3 className="font-medium text-gray-900">Add New User</h3>
               <p className="text-sm text-gray-500">Create student or teacher account</p>
             </button>
-
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <BookOpenIcon className="h-8 w-8 text-green-600 mb-2" />
               <h3 className="font-medium text-gray-900">Create Course</h3>
               <p className="text-sm text-gray-500">Set up a new course</p>
             </button>
-
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <ClipboardDocumentListIcon className="h-8 w-8 text-yellow-600 mb-2" />
               <h3 className="font-medium text-gray-900">Manage Enrollments</h3>
               <p className="text-sm text-gray-500">Review pending enrollments</p>
             </button>
-
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <ChartBarIcon className="h-8 w-8 text-purple-600 mb-2" />
               <h3 className="font-medium text-gray-900">View Reports</h3>
@@ -239,7 +223,6 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* Recent Activity */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -257,5 +240,4 @@ const AdminDashboard: React.FC = () => {
     </div>
   )
 }
-
 export default AdminDashboard

@@ -14,7 +14,6 @@ import {
   HeartIcon,
   StarIcon,
 } from '@heroicons/react/24/outline'
-
 export default function AboutPage() {
   const values = [
     {
@@ -42,7 +41,6 @@ export default function AboutPage() {
         'Providing high-quality, structured learning experiences with certified instructors.',
     },
   ]
-
   const team = [
     {
       name: 'Dr. Rajesh Sharma',
@@ -66,14 +64,12 @@ export default function AboutPage() {
       bio: 'Expert in educational technology with a passion for making ancient wisdom accessible.',
     },
   ]
-
   const stats = [
     { number: '1,950+', label: 'Students Worldwide' },
     { number: '63+', label: 'Courses Available' },
     { number: '5', label: 'Specialized Gurukuls' },
     { number: '25+', label: 'Expert Teachers' },
   ]
-
   return (
     <>
       <SEOHead
@@ -127,7 +123,6 @@ export default function AboutPage() {
       <div>
         {/* Rolling Text Banner */}
         <RollingText text="🕉️ About eYogi Gurukul - Bridging Ancient Hindu Wisdom with Modern Learning 🕉️" />
-
         <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
         <section className="bg-gradient-to-r from-orange-50 to-red-50">
@@ -155,7 +150,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
         {/* Mission Section */}
         <section className="section-padding bg-white">
           <div className="container-max">
@@ -195,7 +189,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
         {/* Stats Section */}
         <section className="section-padding gradient-bg text-white">
           <div className="container-max">
@@ -213,7 +206,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
         {/* Values Section */}
         <section className="section-padding bg-white">
           <div className="container-max">
@@ -223,7 +215,6 @@ export default function AboutPage() {
                 The principles that guide our mission to share Vedic wisdom with the world
               </p>
             </div>
-
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {values.map((value, index) => (
                 <Card key={index} className="text-center card-hover">
@@ -239,7 +230,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
         {/* Team Section */}
         <section className="section-padding">
           <div className="container-max">
@@ -249,7 +239,6 @@ export default function AboutPage() {
                 Dedicated educators and technologists committed to sharing ancient wisdom
               </p>
             </div>
-
             <div className="grid md:grid-cols-3 gap-8">
               {team.map((member, index) => (
                 <Card key={index} className="text-center card-hover">
@@ -270,7 +259,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
         {/* Vision Section */}
         <section className="section-padding bg-white">
           <div className="container-max">
@@ -316,7 +304,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
         {/* CTA Section */}
         <section className="section-padding gradient-bg text-white">
           <div className="container-max text-center">

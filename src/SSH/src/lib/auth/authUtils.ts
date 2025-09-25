@@ -1,13 +1,10 @@
 import { User } from '@/types'
-
 export function getUserDisplayName(user: User | null): string {
   if (!user) return 'Guest'
   return user.full_name || user.email || 'User'
 }
-
 export function getUserInitials(user: User | null): string {
   if (!user || !user.full_name) return 'U'
-
   return user.full_name
     .split(' ')
     .map((word) => word.charAt(0))
@@ -15,7 +12,6 @@ export function getUserInitials(user: User | null): string {
     .toUpperCase()
     .slice(0, 2)
 }
-
 export function getRoleDisplayName(role: User['role']): string {
   const roleNames = {
     student: 'Student',
@@ -27,7 +23,6 @@ export function getRoleDisplayName(role: User['role']): string {
   }
   return roleNames[role] || 'User'
 }
-
 export function getRoleColor(role: User['role']): string {
   const roleColors = {
     student: 'bg-blue-100 text-blue-800',
@@ -39,16 +34,13 @@ export function getRoleColor(role: User['role']): string {
   }
   return roleColors[role] || 'bg-gray-100 text-gray-800'
 }
-
 export function canAccessRoute(user: User | null, requiredRole?: User['role']): boolean {
   if (!user) return false
   if (!requiredRole) return true
   return user.role === requiredRole
 }
-
 export function getDefaultRedirectPath(user: User | null): string {
   if (!user) return '/auth/signin'
-
   switch (user.role) {
     case 'student':
       return '/dashboard/student'

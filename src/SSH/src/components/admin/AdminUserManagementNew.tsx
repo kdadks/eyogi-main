@@ -13,9 +13,7 @@ import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import type { Database } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import UserFormModal from './UserFormModal'
-
 type Profile = Database['public']['Tables']['profiles']['Row']
-
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,9 +22,7 @@ const AdminUserManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Profile | null>(null)
-
   const { user: currentUser } = useAuth()
-
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
@@ -34,93 +30,72 @@ const AdminUserManagement: React.FC = () => {
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
-
       if (error) {
-        console.error('Error loading users:', error)
         toast.error('Failed to load users')
         return
       }
-
       // Filter out Supabase auth users (users without proper profile data)
       const validUsers = (data || []).filter(
         (user) => user.full_name && user.email && user.role && user.id !== currentUser?.id, // Don't show current admin user
       )
-
       setUsers(validUsers)
     } catch (error) {
-      console.error('Error loading users:', error)
       toast.error('Failed to load users')
     } finally {
       setLoading(false)
     }
   }, [currentUser?.id])
-
   useEffect(() => {
     loadUsers()
   }, [loadUsers])
-
   const handleCreateUser = () => {
     setEditingUser(null)
     setIsModalOpen(true)
   }
-
   const handleEditUser = (user: Profile) => {
     // Prevent editing super admin users
     if (user.role === 'super_admin' && currentUser?.id !== user.id) {
       toast.error('Cannot edit super admin users')
       return
     }
-
     setEditingUser(user)
     setIsModalOpen(true)
   }
-
   const handleDeleteUser = async (userId: string, userRole: string) => {
     // Prevent deleting super admin users
     if (userRole === 'super_admin') {
       toast.error('Cannot delete super admin users')
       return
     }
-
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return
     }
-
     try {
       const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
-
       if (error) {
-        console.error('Error deleting user:', error)
         toast.error('Failed to delete user')
         return
       }
-
       toast.success('User deleted successfully')
       loadUsers() // Refresh the list
     } catch (error) {
-      console.error('Error deleting user:', error)
       toast.error('Failed to delete user')
     }
   }
-
   const handleUserSaved = () => {
     setIsModalOpen(false)
     setEditingUser(null)
     loadUsers() // Refresh the list
   }
-
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.student_id && user.student_id.toLowerCase().includes(searchTerm.toLowerCase()))
-
     const matchesRole = roleFilter === 'all' || user.role === roleFilter
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter
-
     return matchesSearch && matchesRole && matchesStatus
   })
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'super_admin':
@@ -137,7 +112,6 @@ const AdminUserManagement: React.FC = () => {
         return 'bg-gray-100 text-gray-800'
     }
   }
-
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -152,11 +126,9 @@ const AdminUserManagement: React.FC = () => {
         return 'bg-gray-100 text-gray-800'
     }
   }
-
   const isProtectedUser = (user: Profile): boolean => {
     return user.role === 'super_admin' || user.id === currentUser?.id
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -164,7 +136,6 @@ const AdminUserManagement: React.FC = () => {
       </div>
     )
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -181,7 +152,6 @@ const AdminUserManagement: React.FC = () => {
           Add User
         </button>
       </div>
-
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
@@ -196,7 +166,6 @@ const AdminUserManagement: React.FC = () => {
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
           {/* Role Filter */}
           <div>
             <select
@@ -211,7 +180,6 @@ const AdminUserManagement: React.FC = () => {
               <option value="parent">Parents</option>
             </select>
           </div>
-
           {/* Status Filter */}
           <div>
             <select
@@ -226,7 +194,6 @@ const AdminUserManagement: React.FC = () => {
               <option value="pending_verification">Pending</option>
             </select>
           </div>
-
           {/* Results count */}
           <div className="flex items-center text-sm text-gray-500">
             <FunnelIcon className="h-4 w-4 mr-1" />
@@ -234,7 +201,6 @@ const AdminUserManagement: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* Users Table */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -320,7 +286,6 @@ const AdminUserManagement: React.FC = () => {
                       >
                         <EyeIcon className="h-4 w-4" />
                       </button>
-
                       <button
                         onClick={() => handleEditUser(user)}
                         disabled={isProtectedUser(user) && currentUser?.id !== user.id}
@@ -333,7 +298,6 @@ const AdminUserManagement: React.FC = () => {
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
-
                       <button
                         onClick={() => handleDeleteUser(user.id, user.role)}
                         disabled={isProtectedUser(user)}
@@ -353,7 +317,6 @@ const AdminUserManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
-
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <UserPlusIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -366,7 +329,6 @@ const AdminUserManagement: React.FC = () => {
           </div>
         )}
       </div>
-
       {/* User Form Modal */}
       <UserFormModal
         isOpen={isModalOpen}
@@ -378,5 +340,4 @@ const AdminUserManagement: React.FC = () => {
     </div>
   )
 }
-
 export default AdminUserManagement

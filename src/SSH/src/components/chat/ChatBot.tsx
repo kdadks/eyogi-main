@@ -17,25 +17,20 @@ import {
   MicrophoneIcon,
   StopIcon,
 } from '@heroicons/react/24/outline'
-
 // Speech Recognition API type declarations
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList
 }
-
 interface SpeechRecognitionResultList {
   [index: number]: SpeechRecognitionResult
 }
-
 interface SpeechRecognitionResult {
   [index: number]: SpeechRecognitionAlternative
 }
-
 interface SpeechRecognitionAlternative {
   transcript: string
   confidence: number
 }
-
 interface SpeechRecognition extends EventTarget {
   continuous: boolean
   interimResults: boolean
@@ -47,14 +42,12 @@ interface SpeechRecognition extends EventTarget {
   start(): void
   stop(): void
 }
-
 declare global {
   interface Window {
     SpeechRecognition?: new () => SpeechRecognition
     webkitSpeechRecognition?: new () => SpeechRecognition
   }
 }
-
 interface ChatMessage {
   id: string
   type: 'user' | 'bot'
@@ -65,13 +58,11 @@ interface ChatMessage {
   confidence?: number
   didYouKnow?: string
 }
-
 interface ChatBotProps {
   isOpen: boolean
   onClose: () => void
   initialMessage?: string
 }
-
 export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProps) {
   const { user } = useAuth()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -81,7 +72,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
   const [chatService] = useState(() => new ChatService())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-
   useEffect(() => {
     if (isOpen) {
       // Initialize chat with welcome message
@@ -94,12 +84,10 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         intent: 'greeting',
       }
       setMessages([welcomeMessage])
-
       // Focus input with preventScroll
       setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100)
     }
   }, [isOpen, user])
-
   // Prevent page scroll when chatbot is open
   useEffect(() => {
     if (isOpen) {
@@ -113,24 +101,20 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
           e.preventDefault()
         }
       }
-
       document.addEventListener('keydown', handleKeyDown)
       return () => {
         document.removeEventListener('keydown', handleKeyDown)
       }
     }
   }, [isOpen])
-
   useEffect(() => {
     if (initialMessage && isOpen) {
       handleSendMessage(initialMessage)
     }
   }, [initialMessage, isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     scrollToBottom()
   }, [messages])
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth',
@@ -138,27 +122,22 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       inline: 'nearest',
     })
   }
-
   const handleSendMessage = async (message?: string) => {
     const messageText = message || inputMessage.trim()
     if (!messageText) return
-
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       type: 'user',
       content: messageText,
       timestamp: new Date(),
     }
-
     setMessages((prev) => [...prev, userMessage])
     setInputMessage('')
     setIsTyping(true)
-
     // Maintain focus on input to prevent scroll issues
     setTimeout(() => {
       inputRef.current?.focus({ preventScroll: true })
     }, 0)
-
     try {
       // Convert Supabase User to local User type for ChatService
       const localUser = user
@@ -173,13 +152,10 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
             updated_at: user.updated_at || '',
           }
         : null
-
       // Process message through AI service
       const response = await chatService.processMessage(messageText, localUser)
-
       // Simulate typing delay
       await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000))
-
       const botMessage: ChatMessage = {
         id: `bot-${Date.now()}`,
         type: 'bot',
@@ -190,10 +166,8 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         confidence: response.confidence,
         didYouKnow: response.didYouKnow,
       }
-
       setMessages((prev) => [...prev, botMessage])
     } catch (error) {
-      console.error('Error processing message:', error)
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         type: 'bot',
@@ -206,7 +180,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       setIsTyping(false)
     }
   }
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -214,36 +187,28 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       handleSendMessage()
     }
   }
-
   const handleVoiceInput = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition
       if (!SpeechRecognition) return
-
       const recognition = new SpeechRecognition()
-
       recognition.continuous = false
       recognition.interimResults = false
       recognition.lang = 'en-US'
-
       recognition.onstart = () => {
         setIsListening(true)
       }
-
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript
         setInputMessage(transcript)
         setIsListening(false)
       }
-
       recognition.onerror = () => {
         setIsListening(false)
       }
-
       recognition.onend = () => {
         setIsListening(false)
       }
-
       if (isListening) {
         recognition.stop()
       } else {
@@ -253,7 +218,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
       alert('Speech recognition is not supported in your browser.')
     }
   }
-
   const clearChat = () => {
     setMessages([])
     const welcomeMessage: ChatMessage = {
@@ -264,7 +228,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
     }
     setMessages([welcomeMessage])
   }
-
   const quickQuestions = [
     'What courses are available for my age?',
     'How do I enroll in a course?',
@@ -275,9 +238,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
     'Tell me an interesting fact',
     'Share some Sanskrit wisdom',
   ]
-
   if (!isOpen) return null
-
   return (
     <div
       className="fixed z-50 animate-in slide-in-from-bottom-4 slide-in-from-right-4 duration-300 
@@ -324,7 +285,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
             </div>
           </div>
         </CardHeader>
-
         {/* Chat Messages */}
         <CardContent className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-800">
           {messages.map((message) => (
@@ -352,7 +312,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                       <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                     )}
                   </div>
-
                   {/* Message Content */}
                   <div
                     className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
@@ -378,7 +337,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                         message.content
                       )}
                     </div>
-
                     {/* AI Metadata */}
                     {message.type === 'bot' && (message.persona || message.intent) && (
                       <div className="mt-2 pt-2 border-t border-gray-600 flex items-center space-x-2">
@@ -399,7 +357,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                         )}
                       </div>
                     )}
-
                     {/* Did You Know Section */}
                     {message.didYouKnow && (
                       <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-600">
@@ -414,7 +371,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                     )}
                   </div>
                 </div>
-
                 {/* Timestamp */}
                 <div
                   className={`mt-1 text-xs text-gray-400 ${message.type === 'user' ? 'text-right' : 'text-left'}`}
@@ -424,7 +380,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
               </div>
             </div>
           ))}
-
           {/* Typing Indicator */}
           {isTyping && (
             <div className="flex justify-start">
@@ -448,10 +403,8 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
               </div>
             </div>
           )}
-
           <div ref={messagesEndRef} />
         </CardContent>
-
         {/* Quick Questions */}
         {messages.length <= 1 && (
           <div className="px-2 sm:px-4 pb-2 sm:pb-4 bg-gray-800">
@@ -474,7 +427,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
             </div>
           </div>
         )}
-
         {/* Chat Input */}
         <div className="p-2 sm:p-4 border-t border-gray-600 bg-gray-900 rounded-b-lg">
           <form
@@ -521,7 +473,6 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
               <PaperAirplaneIcon className="h-4 w-4" />
             </Button>
           </form>
-
           <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-400 space-y-1 sm:space-y-0">
             <span className="text-center sm:text-left">
               Press Enter to send • Shift+Enter for new line
