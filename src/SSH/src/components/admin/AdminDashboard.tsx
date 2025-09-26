@@ -63,7 +63,7 @@ const AdminDashboard: React.FC = () => {
         recentEnrollments: recentEnrollmentsResult.count || 0,
         activeUsers: activeUsersResult.count || 0,
       })
-    } catch (error) {
+    } catch {
       // Show zero values on error instead of mock data
       setStats({
         totalUsers: 0,

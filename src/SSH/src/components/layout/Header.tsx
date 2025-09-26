@@ -41,6 +41,7 @@ export default function Header() {
       await signOut()
       // Navigation is handled in the signOut function
     } catch (error) {
+      console.error('Error signing out:', error)
     }
   }
   // Show loading state while auth is initializing

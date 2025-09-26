@@ -321,7 +321,8 @@ export class SemanticSearch {
           })
         }
       })
-    } catch (error) {
+    } catch {
+      // Ignore errors in semantic search
     }
     // Sort by relevance and return top results
     return results.sort((a, b) => b.relevanceScore - a.relevanceScore).slice(0, 5)

@@ -29,7 +29,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     setIsSigningOut(true)
     try {
       await signOut()
-    } catch (error) {
+    } catch {
       setIsSigningOut(false) // Reset if there's an error
     }
   }

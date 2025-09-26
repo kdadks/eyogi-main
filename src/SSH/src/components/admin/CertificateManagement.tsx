@@ -12,6 +12,7 @@ import {
 import {
   getCertificateAssignments,
   deleteCertificateAssignment,
+  type CertificateAssignment,
 } from '@/lib/api/certificateAssignments'
 import { getAllEnrollments } from '@/lib/api/enrollments'
 import { getCourses } from '@/lib/api/courses'
@@ -57,21 +58,8 @@ export default function CertificateManagement() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [previewData, setPreviewData] = useState<CertificateData | null>(null)
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
-  const [assignments, setAssignments] = useState<any[]>([])
-  // Check access permissions
-  if (!canManageCertificates) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">
-            You don't have permission to access certificate management.
-          </p>
-          <p className="text-sm text-gray-500 mt-2">Current role: {profile?.role}</p>
-        </div>
-      </div>
-    )
-  }
+  const [assignments, setAssignments] = useState<CertificateAssignment[]>([])
+  // All hooks must be called before any early returns
   const loadData = useCallback(async () => {
     try {
       // Load all data in parallel
@@ -100,7 +88,7 @@ export default function CertificateManagement() {
       const certificatesData = await getAllCertificates()
       setCertificates(certificatesData)
       console.log(`Loaded ${certificatesData.length} certificates for admin view`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load certificate data')
     } finally {
       setLoading(false)
@@ -137,7 +125,7 @@ export default function CertificateManagement() {
       await loadData()
       setSelectedEnrollments(new Set())
       toast.success(`${selectedEnrollments.size} certificates issued successfully`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to issue certificates')
     }
   }
@@ -163,7 +151,7 @@ export default function CertificateManagement() {
       await deleteCertificateTemplate(templateId)
       await loadData()
       toast.success('Template deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete template')
     }
   }
@@ -172,7 +160,7 @@ export default function CertificateManagement() {
       await duplicateCertificateTemplate(templateId)
       await loadData()
       toast.success('Template duplicated successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to duplicate template')
     }
   }
@@ -227,7 +215,7 @@ export default function CertificateManagement() {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
       toast.success('Certificate downloaded successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to download certificate')
     }
   }
@@ -250,7 +238,7 @@ export default function CertificateManagement() {
       await issueCertificate(enrollment.id)
       await loadData()
       toast.success('Certificate has been reissued successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to reissue certificate')
     }
   }
@@ -282,6 +270,20 @@ export default function CertificateManagement() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="spinner w-8 h-8"></div>
+      </div>
+    )
+  }
+  // Check access permissions
+  if (!canManageCertificates) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600">
+            You don't have permission to access certificate management.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">Current role: {profile?.role}</p>
+        </div>
       </div>
     )
   }
@@ -824,7 +826,7 @@ export default function CertificateManagement() {
                                     await deleteCertificateAssignment(assignment.id)
                                     toast.success('Assignment removed successfully')
                                     await loadData() // Reload data after deletion
-                                  } catch (error) {
+                                  } catch {
                                     toast.error('Failed to remove assignment')
                                   }
                                 }

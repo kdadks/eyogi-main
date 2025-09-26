@@ -64,7 +64,7 @@ export default function GurukulManagement() {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load gurukul data')
     } finally {
       setLoading(false)
@@ -118,7 +118,7 @@ export default function GurukulManagement() {
       }
       await loadData()
       resetForm()
-    } catch (error) {
+    } catch {
       toast.error('Failed to save gurukul')
     } finally {
       setFormLoading(false)
@@ -142,7 +142,7 @@ export default function GurukulManagement() {
       await deleteGurukul(gurukulId)
       await loadData()
       toast.success('Gurukul deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete gurukul')
     }
   }
@@ -151,7 +151,7 @@ export default function GurukulManagement() {
       await updateGurukul(gurukulId, { is_active: !currentStatus })
       await loadData()
       toast.success(`Gurukul ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to update gurukul status')
     }
   }
@@ -421,11 +421,15 @@ export default function GurukulManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Name</label>
-                        <p className="mt-1 text-sm text-gray-900 font-semibold">{viewingGurukul.name}</p>
+                        <p className="mt-1 text-sm text-gray-900 font-semibold">
+                          {viewingGurukul.name}
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Slug</label>
-                        <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">/{viewingGurukul.slug}</p>
+                        <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">
+                          /{viewingGurukul.slug}
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -441,16 +445,24 @@ export default function GurukulManagement() {
                         </Badge>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Sort Order</label>
-                        <p className="mt-1 text-sm text-gray-900">{viewingGurukul.sort_order || 'Not set'}</p>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Sort Order
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {viewingGurukul.sort_order || 'Not set'}
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">ID</label>
-                        <p className="mt-1 text-xs text-gray-500 font-mono break-all">{viewingGurukul.id}</p>
+                        <p className="mt-1 text-xs text-gray-500 font-mono break-all">
+                          {viewingGurukul.id}
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">URL Path</label>
-                        <p className="mt-1 text-sm text-blue-600">/gurukuls/{viewingGurukul.slug}</p>
+                        <p className="mt-1 text-sm text-blue-600">
+                          /gurukuls/{viewingGurukul.slug}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -477,7 +489,9 @@ export default function GurukulManagement() {
                 </div>
                 {/* Statistics & Performance */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics & Performance</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Statistics & Performance
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <div className="flex items-center">
@@ -522,18 +536,26 @@ export default function GurukulManagement() {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Database ID</label>
-                        <p className="mt-1 text-xs text-gray-500 font-mono break-all bg-white px-2 py-1 rounded border">{viewingGurukul.id}</p>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Database ID
+                        </label>
+                        <p className="mt-1 text-xs text-gray-500 font-mono break-all bg-white px-2 py-1 rounded border">
+                          {viewingGurukul.id}
+                        </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Public URL</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Public URL
+                        </label>
                         <p className="mt-1 text-sm text-blue-600 bg-white px-2 py-1 rounded border">
                           /gurukuls/{viewingGurukul.slug}
                         </p>
                       </div>
                       {viewingGurukul.image_url && (
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700">Image URL</label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Image URL
+                          </label>
                           <p className="mt-1 text-xs text-gray-500 break-all bg-white px-2 py-1 rounded border">
                             {viewingGurukul.image_url}
                           </p>
@@ -548,11 +570,17 @@ export default function GurukulManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Created</label>
-                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingGurukul.created_at)}</p>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {formatDate(viewingGurukul.created_at)}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Last Updated</label>
-                      <p className="mt-1 text-sm text-gray-900">{formatDate(viewingGurukul.updated_at)}</p>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Last Updated
+                      </label>
+                      <p className="mt-1 text-sm text-gray-900">
+                        {formatDate(viewingGurukul.updated_at)}
+                      </p>
                     </div>
                   </div>
                 </div>

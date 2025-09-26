@@ -47,7 +47,7 @@ export function useAuth() {
       } else {
         authStore.setUser(null)
       }
-    } catch (error) {
+    } catch {
       authStore.setUser(null)
     } finally {
       authStore.setLoading(false)
@@ -62,6 +62,7 @@ export function useAuth() {
       // Redirect to home page after sign out
       window.location.href = '/'
     } catch (error) {
+      console.error('Error signing out:', error)
     } finally {
       authStore.setLoading(false)
     }

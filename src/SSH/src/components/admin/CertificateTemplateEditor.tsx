@@ -103,7 +103,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       }
       onSave(savedTemplate)
       onClose()
-    } catch (error) {
+    } catch {
       toast.error('Failed to save template')
     } finally {
       setLoading(false)
@@ -117,7 +117,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       toast.success('Template duplicated successfully')
       onSave(duplicatedTemplate)
       onClose()
-    } catch (error) {
+    } catch {
       toast.error('Failed to duplicate template')
     } finally {
       setLoading(false)
@@ -138,7 +138,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       }
       const preview = await generateCertificatePreview(sampleData)
       setPreviewUrl(preview)
-    } catch (error) {
+    } catch {
       toast.error('Failed to generate preview')
     } finally {
       setLoading(false)

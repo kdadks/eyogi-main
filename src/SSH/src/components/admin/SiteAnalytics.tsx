@@ -75,7 +75,7 @@ export default function SiteAnalytics() {
       // TODO: Implement real analytics data from Google Analytics API or similar service
       // For now, set to null to show "no data available" state
       setAnalyticsData(null)
-    } catch (error) {
+    } catch {
       setAnalyticsData(null)
     } finally {
       setLoading(false)

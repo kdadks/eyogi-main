@@ -98,7 +98,7 @@ export async function checkCoursePrerequisites(
       result.message = generatePrerequisiteMessage(result.missingPrerequisites)
     }
     return result
-  } catch (error) {
+  } catch {
     return {
       canEnroll: false,
       missingPrerequisites: {
@@ -250,7 +250,7 @@ async function getStudentProfile(studentId: string): Promise<User | null> {
       return null
     }
     return data
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -267,7 +267,7 @@ export async function getCoursesRequiringPrerequisite(courseId: string): Promise
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -288,7 +288,7 @@ export async function getPrerequisiteCourses(courseId: string): Promise<Course[]
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }

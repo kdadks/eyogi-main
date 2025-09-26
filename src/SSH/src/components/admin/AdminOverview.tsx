@@ -12,7 +12,7 @@ import {
   ChartBarIcon,
   ArrowTrendingUpIcon,
   ClockIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 interface DashboardStats {
   totalUsers: number
@@ -39,7 +39,7 @@ export default function AdminOverview() {
     totalEnrollments: 0,
     pendingEnrollments: 0,
     completedEnrollments: 0,
-    recentActivity: []
+    recentActivity: [],
   })
   const [loading, setLoading] = useState(true)
   useEffect(() => {
@@ -51,10 +51,10 @@ export default function AdminOverview() {
         getAllUsers(),
         getCourses(),
         getGurukuls(),
-        getEnrollmentStats()
+        getEnrollmentStats(),
       ])
-      const students = users.filter(u => u.role === 'student')
-      const teachers = users.filter(u => u.role === 'teacher')
+      const students = users.filter((u) => u.role === 'student')
+      const teachers = users.filter((u) => u.role === 'teacher')
       setStats({
         totalUsers: users.length,
         totalStudents: students.length,
@@ -65,13 +65,18 @@ export default function AdminOverview() {
         pendingEnrollments: enrollmentStats.pending,
         completedEnrollments: enrollmentStats.completed,
         recentActivity: [
-          { type: 'enrollment', message: 'New student enrolled in Hindu Philosophy', time: '2 hours ago' },
+          {
+            type: 'enrollment',
+            message: 'New student enrolled in Hindu Philosophy',
+            time: '2 hours ago',
+          },
           { type: 'course', message: 'Sanskrit Basics course updated', time: '4 hours ago' },
           { type: 'user', message: 'New teacher account created', time: '6 hours ago' },
-          { type: 'certificate', message: '5 certificates issued', time: '1 day ago' }
-        ]
+          { type: 'certificate', message: '5 certificates issued', time: '1 day ago' },
+        ],
       })
     } catch (error) {
+      console.error('Error loading admin overview:', error)
     } finally {
       setLoading(false)
     }
@@ -82,57 +87,57 @@ export default function AdminOverview() {
       value: stats.totalUsers,
       icon: UserGroupIcon,
       color: 'text-blue-600',
-      bgColor: 'bg-blue-100'
+      bgColor: 'bg-blue-100',
     },
     {
       title: 'Students',
       value: stats.totalStudents,
       icon: AcademicCapIcon,
       color: 'text-green-600',
-      bgColor: 'bg-green-100'
+      bgColor: 'bg-green-100',
     },
     {
       title: 'Teachers',
       value: stats.totalTeachers,
       icon: UserGroupIcon,
       color: 'text-purple-600',
-      bgColor: 'bg-purple-100'
+      bgColor: 'bg-purple-100',
     },
     {
       title: 'Courses',
       value: stats.totalCourses,
       icon: BookOpenIcon,
       color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
+      bgColor: 'bg-orange-100',
     },
     {
       title: 'Gurukuls',
       value: stats.totalGurukuls,
       icon: DocumentTextIcon,
       color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100'
+      bgColor: 'bg-indigo-100',
     },
     {
       title: 'Total Enrollments',
       value: stats.totalEnrollments,
       icon: ChartBarIcon,
       color: 'text-red-600',
-      bgColor: 'bg-red-100'
+      bgColor: 'bg-red-100',
     },
     {
       title: 'Pending Approvals',
       value: stats.pendingEnrollments,
       icon: ClockIcon,
       color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100'
+      bgColor: 'bg-yellow-100',
     },
     {
       title: 'Completed',
       value: stats.completedEnrollments,
       icon: CheckCircleIcon,
       color: 'text-emerald-600',
-      bgColor: 'bg-emerald-100'
-    }
+      bgColor: 'bg-emerald-100',
+    },
   ]
   if (loading) {
     return (
@@ -204,11 +209,17 @@ export default function AdminOverview() {
               <div className="space-y-4">
                 {stats.recentActivity.map((activity, index) => (
                   <div key={index} className="flex items-start space-x-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      activity.type === 'enrollment' ? 'bg-blue-500' :
-                      activity.type === 'course' ? 'bg-green-500' :
-                      activity.type === 'user' ? 'bg-purple-500' : 'bg-orange-500'
-                    }`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 ${
+                        activity.type === 'enrollment'
+                          ? 'bg-blue-500'
+                          : activity.type === 'course'
+                            ? 'bg-green-500'
+                            : activity.type === 'user'
+                              ? 'bg-purple-500'
+                              : 'bg-orange-500'
+                      }`}
+                    />
                     <div className="flex-1">
                       <p className="text-sm font-medium">{activity.message}</p>
                       <p className="text-xs text-gray-500">{activity.time}</p>

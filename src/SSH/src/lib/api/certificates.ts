@@ -137,100 +137,96 @@ export async function getChildrenCertificates(
 }
 
 export async function issueCertificate(enrollmentId: string): Promise<Certificate> {
-  try {
-    // Get enrollment details
-    const { data: enrollment, error: enrollmentError } = await supabaseAdmin
-      .from('enrollments')
-      .select(
-        `
+  // Get enrollment details
+  const { data: enrollment, error: enrollmentError } = await supabaseAdmin
+    .from('enrollments')
+    .select(
+      `
         *,
         courses (*),
         profiles!enrollments_student_id_fkey (*)
       `,
-      )
-      .eq('id', enrollmentId)
-      .single()
-    if (enrollmentError || !enrollment) {
-      throw new Error('Enrollment not found')
-    }
-    if (enrollment.status !== 'completed') {
-      throw new Error('Can only issue certificates for completed courses')
-    }
-    // Check if certificate already exists by looking at enrollment record
-    if (enrollment.certificate_issued) {
-      throw new Error('Certificate already issued for this enrollment')
-    }
-
-    // Get the first active student template from database
-    let templateId: string | null = null
-
-    try {
-      const { data: templates } = await supabaseAdmin
-        .from('certificate_templates')
-        .select('id')
-        .eq('type', 'student')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-
-      if (templates && templates.length > 0) {
-        templateId = templates[0].id
-      }
-    } catch {
-      console.warn('Could not fetch certificate template from database')
-    }
-
-    if (!templateId) {
-      throw new Error('No active student certificate template found in database')
-    }
-
-    // Generate certificate details
-    const certificateNumber = `CERT-${Date.now()}-${enrollmentId.slice(-4)}`
-    const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
-    const now = new Date().toISOString()
-
-    // Create a relative certificate URL
-    const certificateUrl = `/ssh-app/certificates/${certificateNumber}.pdf`
-
-    const { error: updateError } = await supabaseAdmin
-      .from('enrollments')
-      .update({
-        certificate_issued: true,
-        certificate_issued_at: now,
-        certificate_url: certificateUrl, // Store simple certificate data URL
-        certificate_template_id: templateId,
-        updated_at: now,
-      })
-      .eq('id', enrollmentId)
-
-    if (updateError) {
-      throw new Error(`Failed to issue certificate: ${updateError.message}`)
-    }
-
-    // Return a certificate object for the UI
-    const certificate: Certificate = {
-      id: crypto.randomUUID(),
-      enrollment_id: enrollmentId,
-      student_id: enrollment.student_id,
-      course_id: enrollment.course_id,
-      certificate_number: certificateNumber,
-      template_id: templateId,
-      issued_at: new Date().toISOString(),
-      issued_by: 'system',
-      verification_code: verificationCode,
-      certificate_data: {
-        student_name: enrollment.profiles?.full_name,
-        course_title: enrollment.courses?.title,
-        completion_date: enrollment.completed_at || new Date().toISOString(),
-      },
-      file_url: certificateUrl,
-      created_at: new Date().toISOString(),
-    }
-
-    return certificate
-  } catch (error) {
-    throw error
+    )
+    .eq('id', enrollmentId)
+    .single()
+  if (enrollmentError || !enrollment) {
+    throw new Error('Enrollment not found')
   }
+  if (enrollment.status !== 'completed') {
+    throw new Error('Can only issue certificates for completed courses')
+  }
+  // Check if certificate already exists by looking at enrollment record
+  if (enrollment.certificate_issued) {
+    throw new Error('Certificate already issued for this enrollment')
+  }
+
+  // Get the first active student template from database
+  let templateId: string | null = null
+
+  try {
+    const { data: templates } = await supabaseAdmin
+      .from('certificate_templates')
+      .select('id')
+      .eq('type', 'student')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+
+    if (templates && templates.length > 0) {
+      templateId = templates[0].id
+    }
+  } catch {
+    console.warn('Could not fetch certificate template from database')
+  }
+
+  if (!templateId) {
+    throw new Error('No active student certificate template found in database')
+  }
+
+  // Generate certificate details
+  const certificateNumber = `CERT-${Date.now()}-${enrollmentId.slice(-4)}`
+  const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
+  const now = new Date().toISOString()
+
+  // Create a relative certificate URL
+  const certificateUrl = `/ssh-app/certificates/${certificateNumber}.pdf`
+
+  const { error: updateError } = await supabaseAdmin
+    .from('enrollments')
+    .update({
+      certificate_issued: true,
+      certificate_issued_at: now,
+      certificate_url: certificateUrl, // Store simple certificate data URL
+      certificate_template_id: templateId,
+      updated_at: now,
+    })
+    .eq('id', enrollmentId)
+
+  if (updateError) {
+    throw new Error(`Failed to issue certificate: ${updateError.message}`)
+  }
+
+  // Return a certificate object for the UI
+  const certificate: Certificate = {
+    id: crypto.randomUUID(),
+    enrollment_id: enrollmentId,
+    student_id: enrollment.student_id,
+    course_id: enrollment.course_id,
+    certificate_number: certificateNumber,
+    template_id: templateId,
+    issued_at: new Date().toISOString(),
+    issued_by: 'system',
+    verification_code: verificationCode,
+    certificate_data: {
+      student_name: enrollment.profiles?.full_name,
+      course_title: enrollment.courses?.title,
+      completion_date: enrollment.completed_at || new Date().toISOString(),
+    },
+    file_url: certificateUrl,
+    created_at: new Date().toISOString(),
+  }
+
+  return certificate
 }
 
 export async function issueCertificateWithTemplate(

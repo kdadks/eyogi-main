@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, Syllabus } from '@/types'
 import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
-import { getAllUsers } from '@/lib/api/users'
 import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
@@ -103,15 +102,11 @@ export default function CourseManagement() {
   }, [filterCourses])
   const loadData = async () => {
     try {
-      const [coursesData, gurukulData, usersData] = await Promise.all([
-        getCourses(),
-        getGurukuls(),
-        getAllUsers(),
-      ])
+      const [coursesData, gurukulData] = await Promise.all([getCourses(), getGurukuls()])
 
       setCourses(coursesData)
       setGurukuls(gurukulData)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load course data')
     } finally {
       setLoading(false)
@@ -124,7 +119,7 @@ export default function CourseManagement() {
       // Update local state
       setCourses((prev) => prev.map((c) => (c.id === course.id ? updatedCourse : c)))
       toast.success(`Course ${updatedCourse.featured ? 'featured' : 'unfeatured'} successfully`)
-    } catch (error: unknown) {
+    } catch {
       toast.error('Failed to update featured status')
     }
   }
@@ -134,7 +129,7 @@ export default function CourseManagement() {
         await deleteCourse(course.id)
         toast.success('Course deleted successfully')
         await loadData()
-      } catch (error) {
+      } catch {
         toast.error('Failed to delete course')
       }
     }
@@ -285,7 +280,7 @@ export default function CourseManagement() {
       setEditingCourse(null)
       setFormData(initialFormData)
       await loadData()
-    } catch (error) {
+    } catch {
       toast.error('Failed to update course')
     } finally {
       setSaving(false)

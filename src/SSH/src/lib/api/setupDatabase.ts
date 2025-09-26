@@ -19,6 +19,7 @@ export const setupDatabase = async () => {
       sql: createTemplatesTable,
     })
     if (templatesError && !templatesError.message.includes('already exists')) {
+      console.warn('Error creating templates table:', templatesError)
     }
     // Create certificate_assignments table
     const createAssignmentsTable = `
@@ -39,6 +40,7 @@ export const setupDatabase = async () => {
       sql: createAssignmentsTable,
     })
     if (assignmentsError && !assignmentsError.message.includes('already exists')) {
+      console.warn('Error creating assignments table:', assignmentsError)
     }
     // Create indexes
     const createIndexes = `
@@ -51,6 +53,7 @@ export const setupDatabase = async () => {
       sql: createIndexes,
     })
     if (indexError && !indexError.message.includes('already exists')) {
+      console.warn('Error creating indexes:', indexError)
     }
     // Create updated_at trigger function
     const createTriggerFunction = `
@@ -66,6 +69,7 @@ export const setupDatabase = async () => {
       sql: createTriggerFunction,
     })
     if (functionError) {
+      console.warn('Error creating trigger function:', functionError)
     }
     // Create triggers
     const createTriggers = `
@@ -80,6 +84,7 @@ export const setupDatabase = async () => {
       sql: createTriggers,
     })
     if (triggerError) {
+      console.warn('Error creating triggers:', triggerError)
     }
     return { success: true }
   } catch (error) {

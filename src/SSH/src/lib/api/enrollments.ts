@@ -98,7 +98,7 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -167,7 +167,7 @@ export async function getEnrollmentStats(): Promise<{
       { total: 0, pending: 0, approved: 0, completed: 0 },
     )
     return stats
-  } catch (error) {
+  } catch {
     return { total: 0, pending: 0, approved: 0, completed: 0 }
   }
 }
@@ -202,7 +202,7 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
         student: enrollment.profiles || null,
       })) || []
     return transformedData
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -256,7 +256,7 @@ export async function getEnrollmentsByParent(parentId: string): Promise<Enrollme
         student: enrollment.profiles || null,
       })) || []
     return transformedData
-  } catch (error) {
+  } catch {
     return []
   }
 }

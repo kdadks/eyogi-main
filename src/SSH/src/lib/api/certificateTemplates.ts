@@ -11,90 +11,71 @@ export async function getCertificateTemplates(): Promise<CertificateTemplate[]> 
       return getDefaultTemplates()
     }
     return data || getDefaultTemplates()
-  } catch (error) {
+  } catch {
     return getDefaultTemplates()
   }
 }
 export async function createCertificateTemplate(
-  template: Omit<CertificateTemplate, 'id' | 'created_at' | 'updated_at'>
+  template: Omit<CertificateTemplate, 'id' | 'created_at' | 'updated_at'>,
 ): Promise<CertificateTemplate> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('certificate_templates')
-      .insert({
-        ...template,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-    if (error) {
-      throw new Error(`Failed to create template: ${error.message}`)
-    }
-    return data
-  } catch (error) {
-    throw error
+  const { data, error } = await supabaseAdmin
+    .from('certificate_templates')
+    .insert({
+      ...template,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+  if (error) {
+    throw new Error(`Failed to create template: ${error.message}`)
   }
+  return data
 }
 export async function updateCertificateTemplate(
   id: string,
-  updates: Partial<CertificateTemplate>
+  updates: Partial<CertificateTemplate>,
 ): Promise<CertificateTemplate> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('certificate_templates')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) {
-      throw new Error(`Failed to update template: ${error.message}`)
-    }
-    return data
-  } catch (error) {
-    throw error
+  const { data, error } = await supabaseAdmin
+    .from('certificate_templates')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) {
+    throw new Error(`Failed to update template: ${error.message}`)
   }
+  return data
 }
 export async function deleteCertificateTemplate(id: string): Promise<void> {
-  try {
-    const { error } = await supabaseAdmin
-      .from('certificate_templates')
-      .delete()
-      .eq('id', id)
-    if (error) {
-      throw new Error(`Failed to delete template: ${error.message}`)
-    }
-  } catch (error) {
-    throw error
+  const { error } = await supabaseAdmin.from('certificate_templates').delete().eq('id', id)
+  if (error) {
+    throw new Error(`Failed to delete template: ${error.message}`)
   }
 }
 export async function duplicateCertificateTemplate(id: string): Promise<CertificateTemplate> {
-  try {
-    // Get the original template
-    const { data: original, error: fetchError } = await supabaseAdmin
-      .from('certificate_templates')
-      .select('*')
-      .eq('id', id)
-      .single()
-    if (fetchError || !original) {
-      throw new Error('Template not found')
-    }
-    // Create a duplicate with a new name
-    const duplicate = {
-      ...original,
-      name: `${original.name} (Copy)`,
-      created_by: original.created_by,
-      id: undefined, // Let the database generate a new ID
-      created_at: undefined,
-      updated_at: undefined
-    }
-    return await createCertificateTemplate(duplicate)
-  } catch (error) {
-    throw error
+  // Get the original template
+  const { data: original, error: fetchError } = await supabaseAdmin
+    .from('certificate_templates')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (fetchError || !original) {
+    throw new Error('Template not found')
   }
+  // Create a duplicate with a new name
+  const duplicate = {
+    ...original,
+    name: `${original.name} (Copy)`,
+    created_by: original.created_by,
+    id: undefined, // Let the database generate a new ID
+    created_at: undefined,
+    updated_at: undefined,
+  }
+  return await createCertificateTemplate(duplicate)
 }
 // Default templates to use when database is not available
 function getDefaultTemplates(): CertificateTemplate[] {
@@ -108,20 +89,20 @@ function getDefaultTemplates(): CertificateTemplate[] {
           colors: {
             primary: '#FF6B35',
             secondary: '#2563EB',
-            text: '#1F2937'
+            text: '#1F2937',
           },
           layout: {
             orientation: 'landscape',
-            size: 'a4'
-          }
+            size: 'a4',
+          },
         },
         logos: {
           eyogi_logo_url: '/eyogiLogo.png',
-          ssh_logo_url: '/ssh-app/Images/Logo.png'
+          ssh_logo_url: '/ssh-app/Images/Logo.png',
         },
         signatures: {
           vice_chancellor_signature_url: '',
-          president_signature_url: ''
+          president_signature_url: '',
         },
         placeholders: {
           student_name: true,
@@ -131,19 +112,19 @@ function getDefaultTemplates(): CertificateTemplate[] {
           gurukul_name: true,
           completion_date: true,
           certificate_number: true,
-          verification_code: true
+          verification_code: true,
         },
         custom_text: {
           title: 'CERTIFICATE OF COMPLETION',
           subtitle: 'This is to certify that',
           header_text: 'eYogi Gurukul',
-          footer_text: 'This certificate verifies successful completion of the course.'
-        }
+          footer_text: 'This certificate verifies successful completion of the course.',
+        },
       },
       is_active: true,
       created_by: 'system',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     },
     {
       id: 'modern-student-template',
@@ -154,20 +135,20 @@ function getDefaultTemplates(): CertificateTemplate[] {
           colors: {
             primary: '#10B981',
             secondary: '#3B82F6',
-            text: '#111827'
+            text: '#111827',
           },
           layout: {
             orientation: 'landscape',
-            size: 'a4'
-          }
+            size: 'a4',
+          },
         },
         logos: {
           eyogi_logo_url: '/eyogiLogo.png',
-          ssh_logo_url: '/eyogiTextLess.png'
+          ssh_logo_url: '/eyogiTextLess.png',
         },
         signatures: {
           vice_chancellor_signature_url: '',
-          president_signature_url: ''
+          president_signature_url: '',
         },
         placeholders: {
           student_name: true,
@@ -177,25 +158,27 @@ function getDefaultTemplates(): CertificateTemplate[] {
           gurukul_name: true,
           completion_date: true,
           certificate_number: true,
-          verification_code: true
+          verification_code: true,
         },
         custom_text: {
           title: 'CERTIFICATE OF ACHIEVEMENT',
           subtitle: 'We hereby certify that',
           header_text: 'eYogi Gurukul - Excellence in Learning',
-          footer_text: 'Awarded in recognition of successful course completion.'
-        }
+          footer_text: 'Awarded in recognition of successful course completion.',
+        },
       },
       is_active: true,
       created_by: 'system',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+      updated_at: new Date().toISOString(),
+    },
   ]
 }
-export async function getActiveCertificateTemplates(type?: 'student' | 'teacher'): Promise<CertificateTemplate[]> {
+export async function getActiveCertificateTemplates(
+  type?: 'student' | 'teacher',
+): Promise<CertificateTemplate[]> {
   const templates = await getCertificateTemplates()
-  return templates.filter(template => {
+  return templates.filter((template) => {
     const isActive = template.is_active
     const typeMatches = !type || template.type === type
     return isActive && typeMatches

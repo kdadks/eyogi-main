@@ -50,7 +50,7 @@ export async function generateNextId(
     // Format as 4-digit number with leading zeros
     const formattedNumber = nextNumber.toString().padStart(4, '0')
     return `${prefix}${formattedNumber}`
-  } catch (error) {
+  } catch {
     // Fallback to 0001 if there's any error
     const currentYear = new Date().getFullYear()
     return `EYG-${currentYear}-0001`

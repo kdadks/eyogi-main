@@ -39,7 +39,7 @@ const AdminUserManagement: React.FC = () => {
         (user) => user.full_name && user.email && user.role && user.id !== currentUser?.id, // Don't show current admin user
       )
       setUsers(validUsers)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load users')
     } finally {
       setLoading(false)
@@ -78,7 +78,7 @@ const AdminUserManagement: React.FC = () => {
       }
       toast.success('User deleted successfully')
       loadUsers() // Refresh the list
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete user')
     }
   }

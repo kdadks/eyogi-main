@@ -11,7 +11,7 @@ export async function getGurukuls(): Promise<Gurukul[]> {
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -25,7 +25,7 @@ export async function getAllGurukuls(): Promise<Gurukul[]> {
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -41,7 +41,7 @@ export async function getGurukul(slug: string): Promise<Gurukul | null> {
       return null
     }
     return data
-  } catch (error) {
+  } catch {
     return null
   }
 }

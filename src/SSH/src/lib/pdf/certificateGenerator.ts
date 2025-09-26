@@ -209,7 +209,8 @@ export class CertificateGenerator {
         this.pdf.setDrawColor(107, 114, 128)
         this.pdf.line(vcX - 35, yPosition, vcX + 35, yPosition)
       }
-    } catch (error) {
+    } catch {
+      // Image loading failed, fallback handled above
     }
     this.pdf.setFont('helvetica', 'bold')
     this.pdf.text('Dr. Vice Chancellor', vcX - 25, yPosition + 8)
@@ -234,7 +235,8 @@ export class CertificateGenerator {
         this.pdf.setDrawColor(107, 114, 128)
         this.pdf.line(presX - 35, yPosition, presX + 35, yPosition)
       }
-    } catch (error) {
+    } catch {
+      // Image loading failed, fallback handled above
     }
     this.pdf.setFontSize(11)
     this.pdf.setFont('helvetica', 'bold')
@@ -349,7 +351,7 @@ export class CertificateGenerator {
         this.pdf.setTextColor(37, 99, 235)
         this.pdf.text('SSH', width - 47, 33)
       }
-    } catch (error) {
+    } catch {
       // Fall back to placeholders if image loading fails
     }
   }
@@ -377,7 +379,8 @@ export class CertificateGenerator {
         this.pdf.text('OFFICIAL', x - 8, y - 2)
         this.pdf.text('SEAL', x - 5, y + 3)
       }
-    } catch (error) {
+    } catch {
+      // Image loading failed, fallback handled above
     }
   }
 }

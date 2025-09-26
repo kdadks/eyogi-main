@@ -23,7 +23,7 @@ export async function getCourses(filters?: {
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -34,7 +34,7 @@ export async function getCourse(id: string): Promise<Course | null> {
       return null
     }
     return data
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -64,7 +64,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     }
     const matchingCourse = matchingCourses[0] || null
     return matchingCourse || null
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -89,7 +89,7 @@ export async function getEnrolledCount(courseIdOrSlug: string): Promise<number> 
       return 0
     }
     return count || 0
-  } catch (error) {
+  } catch {
     return 0
   }
 }
@@ -188,7 +188,7 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
       return []
     }
     return uniqueCourses
-  } catch (error) {
+  } catch {
     return []
   }
 }

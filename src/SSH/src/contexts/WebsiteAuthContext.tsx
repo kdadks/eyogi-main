@@ -71,7 +71,8 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       } else {
         setUser(userData)
       }
-    } catch (error) {
+    } catch {
+      // Clear invalid session data on any error
       localStorage.removeItem('website-user-id')
       setUser(null)
     } finally {

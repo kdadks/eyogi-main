@@ -109,7 +109,7 @@ export default function ContentManagement() {
       // For now, use empty arrays until content API is implemented
       setPages([])
       setMenuItems([])
-    } catch (error) {
+    } catch {
       toast.error('Failed to load content data')
     } finally {
       setLoading(false)
@@ -186,7 +186,7 @@ export default function ContentManagement() {
         toast.success('Page created successfully')
       }
       resetPageForm()
-    } catch (error) {
+    } catch {
       toast.error('Failed to save page')
     } finally {
       setPageFormLoading(false)
@@ -217,7 +217,7 @@ export default function ContentManagement() {
       const updatedPages = pages.filter((page) => page.id !== pageId)
       setPages(updatedPages)
       toast.success('Page deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete page')
     }
   }
@@ -263,7 +263,7 @@ export default function ContentManagement() {
         toast.success('Menu item created successfully')
       }
       resetMenuForm()
-    } catch (error) {
+    } catch {
       toast.error('Failed to save menu item')
     } finally {
       setMenuFormLoading(false)
@@ -290,7 +290,7 @@ export default function ContentManagement() {
       const updatedMenuItems = menuItems.filter((item) => item.id !== menuItemId)
       setMenuItems(updatedMenuItems)
       toast.success('Menu item deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete menu item')
     }
   }
@@ -303,7 +303,7 @@ export default function ContentManagement() {
       )
       setMenuItems(updatedMenuItems)
       toast.success(`Menu item ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to update menu item status')
     }
   }

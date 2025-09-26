@@ -78,7 +78,7 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
       return data as Profile
     }
     return data
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -123,7 +123,7 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
       return []
     }
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }

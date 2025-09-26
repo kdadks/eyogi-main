@@ -28,7 +28,7 @@ export default function CertificatePreviewModal({
     try {
       const preview = await generateCertificatePreview(certificateData)
       setPreviewUrl(preview)
-    } catch (error) {
+    } catch {
       toast.error('Failed to generate certificate preview')
     } finally {
       setLoading(false)
@@ -52,7 +52,7 @@ export default function CertificatePreviewModal({
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
       toast.success('Certificate downloaded successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to download certificate')
     } finally {
       setDownloading(false)

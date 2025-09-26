@@ -135,7 +135,7 @@ export default function AdminPermissionManagement() {
         }
       })
       setRolePermissions(rolePermissionMap)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load permissions from database')
     } finally {
       setIsLoadingData(false)
@@ -168,7 +168,7 @@ export default function AdminPermissionManagement() {
       }
       setHasChanges(false)
       toast.success(`Permissions saved for ${selectedRole} role`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to save permissions to database')
     } finally {
       setLoading(false)

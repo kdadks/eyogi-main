@@ -4,6 +4,7 @@
 // API functions for managing parent dashboard data and operations
 // =========================================================================
 import { supabaseAdmin } from '../supabase'
+import type { Course } from '../../types'
 // Local interface definitions for parent dashboard
 interface ParentChildRelationship {
   parent_id: string
@@ -32,7 +33,7 @@ interface ChildLearningActivity {
   activity_description?: string
   points_earned: number
   duration_minutes?: number
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   created_at: string
 }
 interface ChildAssignment {
@@ -48,6 +49,7 @@ interface ChildAssignment {
   estimated_duration_minutes?: number
   difficulty_level: 'easy' | 'medium' | 'hard'
   tags: string[]
+  submission_url?: string
   created_at: string
   updated_at: string
 }
@@ -67,7 +69,7 @@ interface ChildAchievement {
   icon_url?: string
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
   criteria_met?: Record<string, string | number | boolean | null>
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   created_at: string
 }
 interface ChildStudySession {
@@ -77,7 +79,7 @@ interface ChildStudySession {
   session_start: string
   session_end?: string
   duration_minutes?: number
-  activities: any[]
+  activities: ChildLearningActivity[]
   focus_score?: number
   notes?: string
   created_at: string
@@ -96,22 +98,23 @@ interface ParentDashboardStats {
   active_learning_days: number
   last_activity_date?: string
   average_grade?: number
+  total_achievements?: number
+  total_study_minutes?: number
 }
 interface ChildProfile {
-  child_id: string
-  course_id?: string
-  achievement_type: string
-  achievement_title: string
-  achievement_description?: string
-  icon_url?: string
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
-  criteria_met?: Record<string, any>
-  metadata: Record<string, any>
-  created_at: string
+  id: string
+  full_name: string
+  email: string
+  date_of_birth?: string
+  grade?: string
+  stats?: ParentDashboardStats
+  relationship?: ParentChildRelationship
 }
 interface ParentDashboardData {
-  children: any[]
-  stats: ParentDashboardStats
+  children: ChildProfile[]
+  stats?: ParentDashboardStats
+  parent?: unknown
+  summary?: unknown
 }
 interface AddChildRequest {
   parent_id: string
@@ -128,9 +131,17 @@ interface AddChildRequest {
   is_active: boolean
 }
 interface CreateChildAssignmentRequest {
-  title: string
-  description: string
-  due_date: string
+  child_id: string
+  course_id: string
+  assignment_title: string
+  assignment_description?: string
+  assignment_type?: 'quiz' | 'homework' | 'project' | 'exam' | 'reading'
+  estimated_duration_minutes?: number
+  difficulty_level?: 'easy' | 'medium' | 'hard'
+  tags?: string[]
+  title?: string
+  description?: string
+  due_date?: string
 }
 interface CreateChildAchievementRequest {
   child_id: string
@@ -140,9 +151,10 @@ interface CreateChildAchievementRequest {
   achievement_description?: string
   icon_url?: string
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
-  criteria_met?: Record<string, any>
+  criteria_met?: Record<string, unknown>
   points_earned: number
-  metadata: Record<string, any>
+  points_value?: number
+  metadata: Record<string, unknown>
 }
 interface LogChildActivityRequest {
   child_id: string
@@ -153,10 +165,11 @@ interface LogChildActivityRequest {
     | 'assignment_submission'
     | 'quiz_completion'
     | 'achievement_earned'
+  activity_title?: string
   activity_description?: string
   points_earned: number
   duration_minutes?: number
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 interface ParentDashboardFilters {
   child_id?: string
@@ -166,9 +179,11 @@ interface ParentDashboardFilters {
     end: string
   }
   status?: string[]
+  assignment_status?: string[]
+  achievement_types?: string[]
 }
 interface ChildAssignmentWithCourse extends ChildAssignment {
-  course: any
+  course: Course
 }
 // -------------------------------------------------------------------------
 // PARENT-CHILD RELATIONSHIP MANAGEMENT
@@ -221,7 +236,7 @@ export async function addChildToParent(
     // Update child's parent_id in profiles table
     await supabaseAdmin.from('profiles').update({ parent_id: parentId }).eq('id', childProfile.id)
     return { data: relationship, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -269,7 +284,7 @@ export async function getParentChildren(
       }) || [],
     )
     return { data: childrenWithStats, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -290,7 +305,7 @@ export async function removeChildFromParent(
     // Remove parent_id from child's profile
     await supabaseAdmin.from('profiles').update({ parent_id: null }).eq('id', childId)
     return { error: null }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred' }
   }
 }
@@ -310,7 +325,7 @@ export async function getChildDashboardStats(
       return { data: null, error: 'Failed to fetch dashboard stats' }
     }
     return { data: stats, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -356,7 +371,7 @@ export async function getParentDashboardData(
       },
       error: null,
     }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -387,7 +402,7 @@ export async function getChildRecentActivities(
       return { data: null, error: 'Failed to fetch activities' }
     }
     return { data: activities, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -413,7 +428,7 @@ export async function logChildActivity(
       return { data: null, error: 'Failed to log activity' }
     }
     return { data: activity, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -460,7 +475,7 @@ export async function getChildAssignments(
       return { data: null, error: 'Failed to fetch assignments' }
     }
     return { data: assignments, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -487,7 +502,7 @@ export async function createChildAssignment(
       return { data: null, error: 'Failed to create assignment' }
     }
     return { data: assignment, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -515,7 +530,7 @@ export async function updateAssignmentStatus(
       return { error: 'Failed to update assignment status' }
     }
     return { error: null }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred' }
   }
 }
@@ -557,7 +572,7 @@ export async function getChildAchievements(
       return { data: null, error: 'Failed to fetch achievements' }
     }
     return { data: achievements, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -584,7 +599,7 @@ export async function awardChildAchievement(
       return { data: null, error: 'Failed to award achievement' }
     }
     return { data: achievement, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }
@@ -599,7 +614,7 @@ export async function refreshDashboardStats(): Promise<{ error: string | null }>
       return { error: 'Failed to refresh dashboard statistics' }
     }
     return { error: null }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred' }
   }
 }
@@ -618,7 +633,7 @@ export async function getChildStudySessions(
       return { data: null, error: 'Failed to fetch study sessions' }
     }
     return { data: sessions, error: null }
-  } catch (error) {
+  } catch {
     return { data: null, error: 'An unexpected error occurred' }
   }
 }

@@ -164,7 +164,7 @@ export default function StudentManagement() {
         }
       })
       setStudents(enrichedStudents as StudentWithEnrollments[])
-    } catch (error) {
+    } catch {
       toast.error('Failed to load student data')
     } finally {
       setLoading(false)
@@ -203,7 +203,7 @@ export default function StudentManagement() {
       await deleteUser(studentId)
       await loadData()
       toast.success('Student deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete student')
     }
   }
@@ -291,7 +291,7 @@ export default function StudentManagement() {
         await loadData()
       }
       resetStudentForm()
-    } catch (error) {
+    } catch {
       toast.error('Failed to save student')
     } finally {
       setFormLoading(false)

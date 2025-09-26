@@ -6,6 +6,7 @@ import { generateCourseSchema, generateBreadcrumbSchema } from '../components/se
 import { Course, PrerequisiteCheckResult } from '../types'
 import { getEnrolledCount, getCourseBySlug } from '../lib/api/courses'
 import { enrollInCourse } from '../lib/api/enrollments'
+import { getChildrenByParentId } from '../lib/api/children'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -28,6 +29,8 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
   const [prerequisiteResult, setPrerequisiteResult] = useState<PrerequisiteCheckResult | null>(null)
+  const [children, setChildren] = useState<any[]>([])
+  const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
   const loadCourseData = useCallback(async () => {
     if (!id) {
       setLoading(false)
@@ -56,16 +59,47 @@ export default function CourseDetailPage() {
       toast.error('Please sign in to enroll in courses')
       return
     }
-    if (user.role !== 'student') {
-      toast.error('Only students can enroll in courses')
-      return
+
+    if (user.role === 'student') {
+      // Direct enrollment for students
+      setEnrolling(true)
+      try {
+        await enrollInCourse(course!.id, user.id)
+        toast.success('Enrollment request submitted! You will receive confirmation once approved.')
+      } catch {
+        toast.error('Failed to enroll in course')
+      } finally {
+        setEnrolling(false)
+      }
+    } else if (user.role === 'parent') {
+      // For parents, load children and show selection modal
+      try {
+        const parentChildren = await getChildrenByParentId(user.id)
+        if (parentChildren.length === 0) {
+          toast.error('You need to add children to your account before enrolling them in courses')
+          return
+        }
+        setChildren(parentChildren)
+        setShowChildSelectionModal(true)
+      } catch {
+        toast.error('Failed to load your children. Please try again.')
+      }
+    } else {
+      toast.error('Only students and parents can enroll in courses')
     }
+  }
+
+  const handleChildSelection = async (childId: string) => {
+    const selectedChild = children.find((child) => child.id === childId)
+    if (!selectedChild) return
+
     setEnrolling(true)
+    setShowChildSelectionModal(false)
     try {
-      await enrollInCourse(course!.id, user.id)
-      toast.success('Enrollment request submitted! You will receive confirmation once approved.')
+      await enrollInCourse(course!.id, selectedChild.id)
+      toast.success(`${selectedChild.full_name} has been enrolled in ${course!.title}!`)
     } catch {
-      toast.error('Failed to enroll in course')
+      toast.error('Failed to enroll child in course')
     } finally {
       setEnrolling(false)
     }
@@ -223,15 +257,17 @@ export default function CourseDetailPage() {
                       </div>
                     </div>
                     {user ? (
-                      user.role === 'student' ? (
+                      user.role === 'student' || user.role === 'parent' ? (
                         <div className="space-y-4">
-                          {/* Prerequisites Checker */}
-                          <PrerequisiteChecker
-                            courseId={course.id}
-                            studentId={user.id}
-                            onPrerequisiteCheck={setPrerequisiteResult}
-                            showFullDetails={false}
-                          />
+                          {/* Prerequisites Checker - only for students */}
+                          {user.role === 'student' && (
+                            <PrerequisiteChecker
+                              courseId={course.id}
+                              studentId={user.id}
+                              onPrerequisiteCheck={setPrerequisiteResult}
+                              showFullDetails={false}
+                            />
+                          )}
                           <Button
                             className="w-full"
                             onClick={handleEnroll}
@@ -245,12 +281,14 @@ export default function CourseDetailPage() {
                               ? 'Course Full'
                               : prerequisiteResult && !prerequisiteResult.canEnroll
                                 ? 'Prerequisites Not Met'
-                                : 'Enroll Now'}
+                                : user.role === 'parent'
+                                  ? 'Enroll Child'
+                                  : 'Enroll Now'}
                           </Button>
                         </div>
                       ) : (
                         <div className="text-center text-sm text-gray-600">
-                          Only students can enroll in courses
+                          Only students and parents can enroll in courses
                         </div>
                       )
                     ) : (
@@ -408,6 +446,42 @@ export default function CourseDetailPage() {
           initialMessage={course ? `Tell me more about ${course.title}` : undefined}
         />
       </div>
+
+      {/* Child Selection Modal for Parents */}
+      {showChildSelectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Child to Enroll</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Choose which child you want to enroll in {course?.title}:
+              </p>
+              <div className="space-y-3">
+                {children.map((child) => (
+                  <button
+                    key={child.id}
+                    onClick={() => handleChildSelection(child.id)}
+                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
+                  >
+                    <div className="font-medium text-gray-900">{child.full_name}</div>
+                    <div className="text-sm text-gray-600">
+                      Age: {child.age || 'N/A'} | Grade: {child.grade || 'N/A'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowChildSelectionModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

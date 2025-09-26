@@ -29,7 +29,7 @@ async function generateNextStudentId(): Promise<string> {
       .like('student_id', `EYG-${year}%`)
     const nextNumber = (existingStudents?.length || 0) + 1
     return `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
-  } catch (error) {
+  } catch {
     // Fallback to a random number if there's an error
     const randomNum = Math.floor(Math.random() * 9999) + 1
     return `EYG-${new Date().getFullYear()}-${randomNum.toString().padStart(4, '0')}`

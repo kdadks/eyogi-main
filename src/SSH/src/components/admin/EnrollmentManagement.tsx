@@ -55,7 +55,7 @@ export default function EnrollmentManagement() {
     try {
       const data = await getAllEnrollments()
       setEnrollments(data)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load enrollments')
     } finally {
       setLoading(false)
@@ -83,7 +83,7 @@ export default function EnrollmentManagement() {
       await updateEnrollmentStatus(enrollmentId, status)
       await loadEnrollments()
       toast.success(`Enrollment ${status} successfully`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to update enrollment')
     } finally {
       setActionLoading((prev) => {
@@ -104,7 +104,7 @@ export default function EnrollmentManagement() {
       await loadEnrollments()
       setSelectedEnrollments(new Set())
       toast.success(`${selectedEnrollments.size} enrollments ${status} successfully`)
-    } catch (error) {
+    } catch {
       toast.error('Failed to update enrollments')
     } finally {
       setBulkLoading(false)

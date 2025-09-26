@@ -1,6 +1,16 @@
 import { supabase, supabaseAdmin } from '../supabase'
 import { getGurukuls } from './gurukuls'
 import { getCourses } from './courses'
+import type { CertificateTemplate, Gurukul, Course, User } from '../../types'
+
+interface CourseAssignmentWithCourse {
+  course_id: string
+  courses: {
+    id: string
+    gurukul_id: string
+  }[]
+}
+
 export interface CertificateAssignment {
   id: string
   template_id: string
@@ -10,10 +20,10 @@ export interface CertificateAssignment {
   created_at: string
   updated_at: string
   // Relations
-  template?: any
-  gurukul?: any
-  course?: any
-  creator?: any
+  template?: CertificateTemplate
+  gurukul?: Gurukul
+  course?: Course
+  creator?: User
 }
 export interface CreateCertificateAssignmentData {
   template_id: string
@@ -29,13 +39,15 @@ export const getCertificateAssignments = async (filters?: {
   try {
     let query = supabaseAdmin
       .from('certificate_assignments')
-      .select(`
+      .select(
+        `
         *,
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
         creator:profiles(*)
-      `)
+      `,
+      )
       .order('created_at', { ascending: false })
     // Apply filters
     if (filters?.template_id) {
@@ -56,7 +68,7 @@ export const getCertificateAssignments = async (filters?: {
       throw error
     }
     return data as CertificateAssignment[]
-  } catch (error) {
+  } catch {
     // Return empty array if there's any database issue
     return []
   }
@@ -74,16 +86,18 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
     if (coursesError || !teacherCourses || teacherCourses.length === 0) {
       const { data: assignments, error: assignmentError } = await supabaseAdmin
         .from('course_assignments')
-        .select(`
+        .select(
+          `
           course_id,
           courses!inner(id, gurukul_id)
-        `)
+        `,
+        )
         .eq('teacher_id', teacherId)
         .eq('is_active', true)
       if (!assignmentError && assignments) {
-        teacherCourses = assignments.map(a => ({
-          id: a.courses.id,
-          gurukul_id: a.courses.gurukul_id
+        teacherCourses = assignments.map((a: CourseAssignmentWithCourse) => ({
+          id: a.courses?.[0]?.id || a.course_id,
+          gurukul_id: a.courses?.[0]?.gurukul_id,
         }))
         coursesError = null
       }
@@ -91,21 +105,23 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
     if (coursesError) {
       return []
     }
-    if (teacherCourses.length === 0) {
+    if (!teacherCourses || teacherCourses.length === 0) {
       return []
     }
-    const courseIds = teacherCourses.map(tc => tc.id)
-    const gurukulIds = [...new Set(teacherCourses.map(tc => tc.gurukul_id))]
+    const courseIds = teacherCourses.map((tc) => tc.id)
+    const gurukulIds = [...new Set(teacherCourses.map((tc) => tc.gurukul_id))]
     // Get assignments for teacher's courses or gurukuls
     const { data: assignments, error: assignmentsError } = await supabaseAdmin
       .from('certificate_assignments')
-      .select(`
+      .select(
+        `
         *,
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
         creator:profiles(*)
-      `)
+      `,
+      )
       .or(`course_id.in.(${courseIds.join(',')}),gurukul_id.in.(${gurukulIds.join(',')})`)
     if (assignmentsError) {
       // If table doesn't exist, return empty array instead of throwing
@@ -114,16 +130,20 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
       }
       return []
     }
-    return assignments as CertificateAssignment[] || []
-  } catch (error) {
+    return (assignments as CertificateAssignment[]) || []
+  } catch {
     return []
   }
 }
 // Create assignment
-export const createCertificateAssignment = async (assignmentData: CreateCertificateAssignmentData) => {
+export const createCertificateAssignment = async (
+  assignmentData: CreateCertificateAssignmentData,
+) => {
   try {
     // Get the current user
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       throw new Error('User not authenticated')
     }
@@ -140,18 +160,22 @@ export const createCertificateAssignment = async (assignmentData: CreateCertific
     const { data, error } = await supabaseAdmin
       .from('certificate_assignments')
       .insert(insertData)
-      .select(`
+      .select(
+        `
         *,
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
         creator:profiles(*)
-      `)
+      `,
+      )
       .single()
     if (error) {
       // Provide helpful error messages
       if (error.message.includes('relation "certificate_assignments" does not exist')) {
-        throw new Error('Certificate assignments table does not exist. Please contact administrator to set up the database.')
+        throw new Error(
+          'Certificate assignments table does not exist. Please contact administrator to set up the database.',
+        )
       }
       if (error.message.includes('check constraint "check_assignment_target"')) {
         throw new Error('Either gurukul or course must be selected for assignment.')
@@ -159,12 +183,15 @@ export const createCertificateAssignment = async (assignmentData: CreateCertific
       throw error
     }
     return data as CertificateAssignment
-  } catch (error) {
-    throw error
+  } catch (_error) {
+    throw _error
   }
 }
 // Update assignment
-export const updateCertificateAssignment = async (id: string, updates: Partial<CreateCertificateAssignmentData>) => {
+export const updateCertificateAssignment = async (
+  id: string,
+  updates: Partial<CreateCertificateAssignmentData>,
+) => {
   try {
     // Validate that either gurukul_id or course_id is provided (but not both)
     if (updates.gurukul_id && updates.course_id) {
@@ -179,48 +206,47 @@ export const updateCertificateAssignment = async (id: string, updates: Partial<C
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select(`
+      .select(
+        `
         *,
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
         creator:profiles(*)
-      `)
+      `,
+      )
       .single()
     if (error) {
       throw error
     }
     return data as CertificateAssignment
-  } catch (error) {
-    throw error
+  } catch (_error) {
+    throw _error
   }
 }
 // Delete assignment
 export const deleteCertificateAssignment = async (id: string) => {
   try {
-    const { error } = await supabaseAdmin
-      .from('certificate_assignments')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabaseAdmin.from('certificate_assignments').delete().eq('id', id)
     if (error) {
       throw error
     }
     return true
-  } catch (error) {
-    throw error
+  } catch (_error) {
+    throw _error
   }
 }
 // Get available gurukuls for assignment
 export const getAvailableGurukuls = async () => {
   try {
     const gurukuls = await getGurukuls()
-    return gurukuls.map(g => ({
+    return gurukuls.map((g) => ({
       id: g.id,
       name: g.name,
-      status: g.is_active ? 'active' : 'inactive'
+      status: g.is_active ? 'active' : 'inactive',
     }))
-  } catch (error) {
-    throw error
+  } catch (_error) {
+    throw _error
   }
 }
 // Get available courses for assignment
@@ -228,13 +254,13 @@ export const getAvailableCourses = async (gurukulId?: string) => {
   try {
     const filters = gurukulId ? { gurukul_id: gurukulId } : undefined
     const courses = await getCourses(filters)
-    return courses.map(c => ({
+    return courses.map((c) => ({
       id: c.id,
       title: c.title,
       gurukul_id: c.gurukul_id,
-      status: 'active' // Assuming all returned courses are active
+      status: 'active', // Assuming all returned courses are active
     }))
-  } catch (error) {
-    throw error
+  } catch (_error) {
+    throw _error
   }
 }
