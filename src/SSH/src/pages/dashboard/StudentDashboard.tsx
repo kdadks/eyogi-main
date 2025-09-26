@@ -127,7 +127,7 @@ export default function StudentDashboard() {
       // Calculate average grade from completed enrollments with final_grade
       const gradesFromEnrollments = enrollmentsData
         .filter((e) => e.status === 'completed' && e.final_grade)
-        .map((e) => parseFloat(e.final_grade))
+        .map((e) => parseFloat(e.final_grade!))
         .filter((grade) => !isNaN(grade))
       const averageGrade =
         gradesFromEnrollments.length > 0

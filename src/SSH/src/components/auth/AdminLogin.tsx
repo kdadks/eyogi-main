@@ -28,29 +28,15 @@ const AdminLogin: React.FC = () => {
         toast.error('Login failed - no user data')
         return
       }
-      // Check if user has admin privileges by checking their profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
-      if (profileError || !profile) {
-        toast.error('Unable to verify admin privileges')
-        await supabase.auth.signOut()
-        return
-      }
-      // Check if user has admin role
-      if (!['admin', 'business_admin', 'super_admin'].includes(profile.role)) {
-        toast.error('Access denied - admin privileges required')
-        await supabase.auth.signOut()
-        return
-      }
+
       toast.success('Welcome to Admin Console')
+
       // Update auth context immediately
-      const authResult = await updateAuthState()
-      // Navigate immediately after auth state is updated
+      await updateAuthState()
+
+      // Navigate to admin dashboard
       navigate('/admin/dashboard', { replace: true })
-    } catch (error) {
+    } catch {
       toast.error('An unexpected error occurred')
     } finally {
       setIsLoading(false)

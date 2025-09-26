@@ -21,11 +21,6 @@ export function useCourseAssignments(teacherId?: string) {
         query = query.eq('teacher_id', teacherId)
       }
       const { data, error } = await query
-      console.log('Assignment query result:', {
-        data: data,
-        error: error,
-        count: data?.length || 0,
-      })
       if (error) {
         setError('Failed to load course assignments')
         toast.error('Failed to load course assignments')
@@ -46,12 +41,7 @@ export function useCourseAssignments(teacherId?: string) {
           .select('*')
           .eq('teacher_id', assignment.teacher_id)
           .single()
-        console.log('Assignment relations:', {
-          assignment_id: assignment.id,
-          course: course?.title,
-          teacher: teacher?.full_name,
-          teacher_id: assignment.teacher_id,
-        })
+        // Assignment relations loaded
         assignmentsWithRelations.push({
           ...assignment,
           course,
@@ -59,7 +49,7 @@ export function useCourseAssignments(teacherId?: string) {
         })
       }
       setAssignments(assignmentsWithRelations)
-    } catch (err) {
+    } catch {
       setError('Failed to load course assignments')
     } finally {
       setLoading(false)
@@ -72,12 +62,7 @@ export function useCourseAssignments(teacherId?: string) {
     notes?: string,
   ): Promise<boolean> => {
     try {
-      console.log('assignTeacherToCourse called with:', {
-        teacherId,
-        courseId,
-        assignedBy,
-        notes,
-      })
+      // Assigning teacher to course
       // Check if we need to update the teacher profile with teacher_id
       let actualTeacherId = teacherId
       // Check if this is a profile ID (UUID format) and the teacher doesn't have a teacher_id yet
@@ -85,7 +70,7 @@ export function useCourseAssignments(teacherId?: string) {
 
       if (uuidRegex.test(teacherId)) {
         // This is a profile ID, check if the teacher needs a teacher_id
-        const { data: profile, error: selectError } = await supabaseAdmin
+        const { data: profile } = await supabaseAdmin
           .from('profiles')
           .select('id, teacher_id, role')
           .eq('id', teacherId)
@@ -192,7 +177,7 @@ export function useCourseAssignments(teacherId?: string) {
       toast.success('Assignment removed successfully')
       await loadAssignments()
       return true
-    } catch (err) {
+    } catch {
       toast.error('Failed to remove assignment')
       return false
     }
@@ -212,7 +197,7 @@ export function useCourseAssignments(teacherId?: string) {
         return []
       }
       return (data || []).map((item) => item.course as unknown as Course).filter(Boolean)
-    } catch (err) {
+    } catch {
       return []
     }
   }
@@ -239,7 +224,7 @@ export function useCourseAssignments(teacherId?: string) {
         }
       }
       return teachers
-    } catch (err) {
+    } catch {
       return []
     }
   }

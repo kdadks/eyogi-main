@@ -46,7 +46,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
       ])
       setTeachers(teachersData.data || [])
       setCourses(coursesData.data || [])
-    } catch (error) {
+    } catch {
       toast.error('Failed to load teachers and courses')
     }
   }
@@ -87,13 +87,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
               {teachers.map((teacher) => {
                 // Use teacher_id if available, otherwise use the profile id (will be converted to proper teacher_id later)
                 const teacherId = teacher.teacher_id || teacher.id
-                console.log('Teacher option:', {
-                  id: teacher.id,
-                  teacher_id: teacher.teacher_id,
-                  using: teacherId,
-                  full_name: teacher.full_name,
-                  note: teacher.teacher_id ? 'has teacher_id' : 'will generate teacher_id',
-                })
+                // Teacher option prepared
                 return (
                   <option key={teacher.id} value={teacherId}>
                     {teacher.full_name} ({teacher.email})

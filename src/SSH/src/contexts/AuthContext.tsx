@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
 import { useLocation } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseAdmin } from '../lib/supabase'
 import { AuthContext, type AuthContextType } from './AuthContextTypes'
 import type { Profile } from '../types'
 interface AuthProviderProps {
@@ -13,19 +13,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
   const initializationRef = React.useRef(false)
+  const profileFetchingRef = React.useRef(false)
   const location = useLocation()
-  // Fetch user profile from database
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-      if (error) {
+  // Fetch user profile from database using admin client for admin context
+  const fetchProfile = useCallback(
+    async (userId: string, retryCount = 0): Promise<Profile | null> => {
+      try {
+        // Add a small delay for retries to avoid overwhelming the server
+        if (retryCount > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount))
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()
+
+        if (error) {
+          // Retry on network errors up to 2 times
+          if (
+            retryCount < 2 &&
+            (error.message.includes('network') || error.message.includes('INSUFFICIENT_RESOURCES'))
+          ) {
+            return fetchProfile(userId, retryCount + 1)
+          }
+
+          return null
+        }
+
+        return data
+      } catch {
+        // Retry on network exceptions
+        if (retryCount < 2) {
+          return fetchProfile(userId, retryCount + 1)
+        }
+
         return null
       }
-      return data
-    } catch (error) {
-      return null
-    }
-  }
+    },
+    [],
+  )
   useEffect(() => {
     let isMounted = true
     // Skip full initialization if on public pages (not admin pages)
@@ -33,18 +61,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const isAdminPage =
       (location.pathname.startsWith('/admin') || location.pathname.includes('/admin')) &&
       !location.pathname.includes('/admin/login')
-    // Debug logging (set to false to reduce console noise)
-    const DEBUG_AUTH = true
-    if (DEBUG_AUTH && import.meta.env.DEV) {
-      console.log('AuthContext:', {
-        path: location.pathname,
-        isAdminPage: isAdminPage,
-        action: isAdminPage ? 'initializing' : 'skipping (public page)',
-      })
-    }
+    // Debug logging disabled for production
     if (!isAdminPage) {
-      setUser(null)
-      setProfile(null)
+      // Don't clear user state on login page - just mark as initialized
+      // This prevents losing auth state during navigation
       setLoading(false)
       setInitialized(true)
       return
@@ -60,44 +80,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return
     }
     if (initializationRef.current && !initialized) {
+      // Already initializing, skip
     } else if (shouldReinitialize) {
       initializationRef.current = false
     } else {
+      // Normal initialization path
     }
     initializationRef.current = true
     // Fast initialization
     const initAuth = async () => {
       try {
         let session = null
-        let sessionError = null
+
         try {
           // Simple session check without timeouts
           const result = await supabase.auth.getSession()
           session = result.data.session
-          sessionError = result.error
-          console.log('AuthContext: Session check completed successfully', {
-            hasSession: !!session,
-            error: sessionError,
-          })
-        } catch (error) {
+          if (result.error) {
+            console.error('Session error:', result.error)
+            session = null
+          }
+        } catch {
           session = null
         }
         if (!isMounted) return
         const currentUser = session?.user ?? null
-        console.log(
-          'AuthContext: Setting user:',
-          currentUser ? `logged in user ${currentUser.id}` : 'no user',
-        )
         setUser(currentUser)
         // Only fetch profile if user exists and not on login page
         const shouldFetchProfile = currentUser && !location.pathname.includes('/admin/login')
-        console.log('AuthContext: Profile fetch decision:', {
-          hasUser: !!currentUser,
-          currentPath: location.pathname,
-          includesLogin: location.pathname.includes('/admin/login'),
-          shouldFetchProfile,
-        })
-        if (shouldFetchProfile) {
+        if (shouldFetchProfile && !profileFetchingRef.current) {
+          // Prevent concurrent profile fetches
+          profileFetchingRef.current = true
           // Keep loading true during profile fetch
           setLoading(true)
           try {
@@ -105,39 +118,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (isMounted) {
               setProfile(userProfile)
             }
-          } catch (error) {
+          } catch {
             if (isMounted) setProfile(null)
           } finally {
+            profileFetchingRef.current = false
             if (isMounted) {
               setLoading(false)
             }
           }
         } else {
-          console.log(
-            'AuthContext: No user or on login page, clearing profile. User:',
-            !!currentUser,
-            'Path:',
-            location.pathname,
-          )
           setProfile(null)
         }
         if (isMounted) {
           // Only set initialized true and loading false if we're not fetching profile
           if (!shouldFetchProfile) {
-            console.log(
-              'AuthContext: Setting loading false and initialized true (no profile fetch needed)',
-            )
             setLoading(false)
             setInitialized(true)
           } else {
-            console.log(
-              'AuthContext: Profile fetch in progress, will complete in profile fetch block',
-            )
             setInitialized(true)
           }
         } else {
+          // No session found, already set to null
         }
-      } catch (error) {
+      } catch {
         if (isMounted) {
           setUser(null)
           setProfile(null)
@@ -154,6 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false)
         setInitialized(true)
       } else {
+        // Component unmounted, no action needed
       }
     }, 6000) // Increased to 6 seconds to give more time
     initAuth().finally(() => {
@@ -167,21 +171,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Skip auth state processing on public pages unless it's a SIGNED_IN event
       const isAdminPage = location.pathname.includes('/admin')
       if (!isAdminPage && event !== 'SIGNED_IN') {
-        console.log(
-          'AuthContext: On public page, skipping auth state change:',
-          event,
-          'Current path:',
-          location.pathname,
-        )
         return
       }
-      console.log(
-        'Auth state changed:',
-        event,
-        session ? 'with session' : 'no session',
-        'Current path:',
-        location.pathname,
-      )
       // Set loading true during auth change processing
       setLoading(true)
       const currentUser = session?.user ?? null
@@ -193,7 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (isMounted) {
             setProfile(userProfile)
           }
-        } catch (error) {
+        } catch {
           if (isMounted) setProfile(null)
         }
       } else {
@@ -209,7 +200,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [initialized, location, user]) // Re-run when pathname changes or user state changes
+  }, [initialized, location, user, fetchProfile]) // Re-run when pathname changes or user state changes
   // Sign in for super admin only (Supabase Auth)
   const signIn = async (email: string, password: string) => {
     try {
@@ -234,7 +225,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear storage
       localStorage.clear()
       sessionStorage.clear()
-    } catch (error) {
+    } catch {
       // Still clear local state
       setUser(null)
       setProfile(null)
