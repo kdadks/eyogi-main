@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { supabase, supabaseAdmin } from '../lib/supabase'
 import { AuthContext, type AuthContextType } from './AuthContextTypes'
 import type { Profile } from '../types'
+import { debugAuth } from '../lib/authDebug'
 interface AuthProviderProps {
   children: React.ReactNode
 }
@@ -69,23 +70,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setInitialized(true)
       return
     }
-    // Reset initialization when moving to admin pages from non-admin pages, or when no user but we might have a session
-    const shouldReinitialize =
-      isAdminPage && (!user || (!initialized && !initializationRef.current))
-    if (isAdminPage && !initialized) {
-      initializationRef.current = false
-    }
-    // Prevent double initialization in React StrictMode, but allow re-initialization if needed
-    if (initializationRef.current && initialized && !shouldReinitialize) {
+    // For production reliability on hard refresh, we need simpler logic
+    // Skip if already properly initialized with user/profile data
+    if (initialized && (user || location.pathname.includes('/admin/login'))) {
       return
     }
-    if (initializationRef.current && !initialized) {
-      // Already initializing, skip
-    } else if (shouldReinitialize) {
-      initializationRef.current = false
-    } else {
-      // Normal initialization path
+
+    // Prevent concurrent initialization
+    if (initializationRef.current) {
+      return
     }
+
     initializationRef.current = true
     // Fast initialization
     const initAuth = async () => {
@@ -93,14 +88,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         let session = null
 
         try {
-          // Simple session check without timeouts
-          const result = await supabase.auth.getSession()
+          // For production, add a race condition timeout to prevent hanging
+          const sessionPromise = supabase.auth.getSession()
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Session check timeout')), 2000),
+          )
+
+          const result = await Promise.race([sessionPromise, timeoutPromise])
           session = result.data.session
           if (result.error) {
             console.error('Session error:', result.error)
             session = null
           }
-        } catch {
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          debugAuth.warn('Session check failed or timed out', {
+            error: errorMessage,
+            pathname: location.pathname,
+          })
           session = null
         }
         if (!isMounted) return
@@ -149,9 +154,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     }
-    // Backup timeout
+    // Backup timeout - shorter for better UX in production
     const timeoutId = setTimeout(() => {
       if (isMounted) {
+        // In production, we want to fail fast rather than show infinite spinner
+        debugAuth.warn('Auth initialization timeout - setting initialized state', {
+          pathname: location.pathname,
+          hadUser: !!user,
+          hadProfile: !!profile,
+        })
         setUser(null)
         setProfile(null)
         setLoading(false)
@@ -159,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         // Component unmounted, no action needed
       }
-    }, 6000) // Increased to 6 seconds to give more time
+    }, 3000) // Reduced to 3 seconds for better production UX
     initAuth().finally(() => {
       clearTimeout(timeoutId)
     })
@@ -200,7 +211,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [initialized, location, user, fetchProfile]) // Re-run when pathname changes or user state changes
+  }, [initialized, location, user, profile, fetchProfile]) // Re-run when pathname changes or user state changes
+
+  // Recovery mechanism for stuck loading states in production
+  useEffect(() => {
+    const isAdminPage =
+      location.pathname.includes('/admin') && !location.pathname.includes('/admin/login')
+
+    if (isAdminPage && loading && initialized) {
+      // If we're in an inconsistent state (loading=true but initialized=true), fix it
+      debugAuth.warn('Fixing inconsistent auth state: loading=true but initialized=true', {
+        pathname: location.pathname,
+        userExists: !!user,
+        profileExists: !!profile,
+      })
+      setLoading(false)
+    }
+
+    // Additional timeout for hard refresh scenarios
+    if (isAdminPage && !initialized) {
+      const recoveryTimeout = setTimeout(() => {
+        debugAuth.warn('Force initializing auth state after extended delay', {
+          pathname: location.pathname,
+          timeElapsed: '5000ms',
+        })
+        setInitialized(true)
+        setLoading(false)
+      }, 5000) // 5 second recovery timeout
+
+      return () => clearTimeout(recoveryTimeout)
+    }
+  }, [location.pathname, loading, initialized, user, profile])
   // Sign in for super admin only (Supabase Auth)
   const signIn = async (email: string, password: string) => {
     try {
