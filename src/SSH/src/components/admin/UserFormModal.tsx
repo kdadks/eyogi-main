@@ -4,6 +4,16 @@ import { supabaseAdmin } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import AddressForm from '../forms/AddressForm'
 import { AddressFormData } from '../../lib/address-utils'
+
+// Simple password hashing function (for development - use bcrypt in production)
+const hashPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password + 'eyogi-salt-2024')
+  const hash = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
 interface UserFormModalProps {
   isOpen: boolean
   onClose: () => void
@@ -150,6 +160,8 @@ export default function UserFormModal({
           address_line_1: addressData.address_line_1 || null,
           address_line_2: addressData.address_line_2 || null,
           zip_code: addressData.zip_code || null,
+          password_hash: await hashPassword(formData.password),
+          status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
