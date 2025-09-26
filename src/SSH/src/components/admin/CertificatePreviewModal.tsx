@@ -61,7 +61,7 @@ export default function CertificatePreviewModal({
   if (!isOpen) return null
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-bold text-gray-900">Certificate Preview</h2>
@@ -79,74 +79,78 @@ export default function CertificatePreviewModal({
             </button>
           </div>
         </div>
-        {/* Preview Content */}
-        <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="spinner w-8 h-8"></div>
-              <span className="ml-3 text-gray-600">Generating preview...</span>
-            </div>
-          ) : previewUrl ? (
-            <div className="flex justify-center">
-              <iframe
-                src={previewUrl}
-                className="w-full h-[600px] border rounded-lg shadow-lg"
-                title="Certificate Preview"
-              />
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Failed to generate preview</p>
-              <Button onClick={loadPreview} className="mt-4">
-                Try Again
-              </Button>
-            </div>
-          )}
-        </div>
-        {/* Certificate Details */}
-        <div className="px-6 pb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Certificate Details</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">Student:</span>
-                <span className="ml-2 font-medium">{certificateData.studentName}</span>
+        {/* Scrollable Content Container */}
+        <div className="flex-1 overflow-auto">
+          {/* Preview Content */}
+          <div className="p-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="spinner w-8 h-8"></div>
+                <span className="ml-3 text-gray-600">Generating preview...</span>
               </div>
-              <div>
-                <span className="text-gray-600">Student ID:</span>
-                <span className="ml-2 font-medium">{certificateData.studentId}</span>
+            ) : previewUrl ? (
+              <div className="flex justify-center mb-6">
+                <iframe
+                  src={previewUrl}
+                  className="w-full min-h-[700px] border rounded-lg shadow-lg"
+                  title="Certificate Preview"
+                />
               </div>
-              <div>
-                <span className="text-gray-600">Course:</span>
-                <span className="ml-2 font-medium">{certificateData.courseName}</span>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Failed to generate preview</p>
+                <Button onClick={loadPreview} className="mt-4">
+                  Try Again
+                </Button>
               </div>
-              <div>
-                <span className="text-gray-600">Course ID:</span>
-                <span className="ml-2 font-medium">{certificateData.courseId}</span>
+            )}
+
+            {/* Certificate Details */}
+            {(previewUrl || !loading) && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-4">Certificate Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Student:</span>
+                    <span className="font-medium text-gray-900">{certificateData.studentName}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Student ID:</span>
+                    <span className="font-medium text-gray-900">{certificateData.studentId}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Course:</span>
+                    <span className="font-medium text-gray-900">{certificateData.courseName}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Course ID:</span>
+                    <span className="font-medium text-gray-900">{certificateData.courseId}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Gurukul:</span>
+                    <span className="font-medium text-gray-900">{certificateData.gurukulName}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Completion Date:</span>
+                    <span className="font-medium text-gray-900">
+                      {new Date(certificateData.completionDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Certificate Number:</span>
+                    <span className="font-medium font-mono text-gray-900">
+                      {certificateData.certificateNumber}
+                    </span>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-gray-600 block text-xs font-medium">Verification Code:</span>
+                    <span className="font-medium font-mono text-gray-900">
+                      {certificateData.verificationCode}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="text-gray-600">Gurukul:</span>
-                <span className="ml-2 font-medium">{certificateData.gurukulName}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">Completion Date:</span>
-                <span className="ml-2 font-medium">
-                  {new Date(certificateData.completionDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Certificate Number:</span>
-                <span className="ml-2 font-medium font-mono">
-                  {certificateData.certificateNumber}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Verification Code:</span>
-                <span className="ml-2 font-medium font-mono">
-                  {certificateData.verificationCode}
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
