@@ -33,9 +33,6 @@ export default function UserFormModal({
     role: 'student',
     age: '',
     phone: '',
-    parent_guardian_name: '',
-    parent_guardian_email: '',
-    parent_guardian_phone: '',
     student_id: '',
   })
   const [addressData, setAddressData] = useState<AddressFormData>({
@@ -55,9 +52,6 @@ export default function UserFormModal({
         role: user.role || 'student',
         age: user.age?.toString() || '',
         phone: user.phone || '',
-        parent_guardian_name: user.parent_guardian_name || '',
-        parent_guardian_email: user.parent_guardian_email || '',
-        parent_guardian_phone: user.parent_guardian_phone || '',
         student_id: user.student_id || '',
       })
       setAddressData({
@@ -77,9 +71,6 @@ export default function UserFormModal({
         role: 'student',
         age: '',
         phone: '',
-        parent_guardian_name: '',
-        parent_guardian_email: '',
-        parent_guardian_phone: '',
         student_id: '',
       })
       setAddressData({
@@ -163,16 +154,9 @@ export default function UserFormModal({
           updated_at: new Date().toISOString(),
         }
 
-        // Only include parent guardian and student fields for relevant roles
+        // Only include student fields for student role
         const profileData = {
           ...baseProfileData,
-          // Only include parent guardian fields for student and parent roles
-          ...(formData.role === 'student' || formData.role === 'parent'
-            ? {
-                parent_guardian_name: formData.parent_guardian_name || null,
-                parent_guardian_phone: formData.parent_guardian_phone || null,
-              }
-            : {}),
           // Only include student_id for student role
           ...(formData.role === 'student'
             ? {
@@ -203,16 +187,9 @@ export default function UserFormModal({
           updated_at: new Date().toISOString(),
         }
 
-        // Only include parent guardian and student fields for relevant roles
+        // Only include student fields for student role
         const updateData = {
           ...baseUpdateData,
-          // Only include parent guardian fields for student and parent roles
-          ...(formData.role === 'student' || formData.role === 'parent'
-            ? {
-                parent_guardian_name: formData.parent_guardian_name || null,
-                parent_guardian_phone: formData.parent_guardian_phone || null,
-              }
-            : {}),
           // Only include student_id for student role
           ...(formData.role === 'student'
             ? {
@@ -389,49 +366,6 @@ export default function UserFormModal({
                 onChange={handleInputChange}
                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="STU123456"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Parent Guardian Name
-              </label>
-              <input
-                type="text"
-                name="parent_guardian_name"
-                value={formData.parent_guardian_name}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Parent or guardian name"
-              />
-            </div>
-          </div>
-          {/* Parent Guardian Contact Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                <Mail className="h-3 w-3 inline mr-1" />
-                Parent Guardian Email
-              </label>
-              <input
-                type="email"
-                name="parent_guardian_email"
-                value={formData.parent_guardian_email}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="parent@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Parent Guardian Phone
-              </label>
-              <input
-                type="tel"
-                name="parent_guardian_phone"
-                value={formData.parent_guardian_phone}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="+1 (555) 123-4567"
               />
             </div>
           </div>
