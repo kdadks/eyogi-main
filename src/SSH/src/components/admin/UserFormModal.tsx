@@ -146,7 +146,7 @@ export default function UserFormModal({
           throw new Error('Failed to create user account')
         }
         // Create profile in database
-        const profileData = {
+        const baseProfileData = {
           id: authData.user.id,
           email: formData.email,
           full_name: formData.full_name,
@@ -159,12 +159,26 @@ export default function UserFormModal({
           address_line_1: addressData.address_line_1 || null,
           address_line_2: addressData.address_line_2 || null,
           zip_code: addressData.zip_code || null,
-          parent_guardian_name: formData.parent_guardian_name || null,
-          parent_guardian_email: formData.parent_guardian_email || null,
-          parent_guardian_phone: formData.parent_guardian_phone || null,
-          student_id: formData.student_id || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+        }
+
+        // Only include parent guardian and student fields for relevant roles
+        const profileData = {
+          ...baseProfileData,
+          // Only include parent guardian fields for student and parent roles
+          ...(formData.role === 'student' || formData.role === 'parent'
+            ? {
+                parent_guardian_name: formData.parent_guardian_name || null,
+                parent_guardian_phone: formData.parent_guardian_phone || null,
+              }
+            : {}),
+          // Only include student_id for student role
+          ...(formData.role === 'student'
+            ? {
+                student_id: formData.student_id || null,
+              }
+            : {}),
         }
         const { error: profileError } = await supabaseAdmin.from('profiles').insert([profileData])
         if (profileError) {
@@ -175,7 +189,7 @@ export default function UserFormModal({
         toast.success('User created successfully!')
       } else {
         // Update existing user profile
-        const updateData = {
+        const baseUpdateData = {
           full_name: formData.full_name,
           role: formData.role,
           age: formData.age ? parseInt(formData.age) : null,
@@ -186,11 +200,25 @@ export default function UserFormModal({
           address_line_1: addressData.address_line_1 || null,
           address_line_2: addressData.address_line_2 || null,
           zip_code: addressData.zip_code || null,
-          parent_guardian_name: formData.parent_guardian_name || null,
-          parent_guardian_email: formData.parent_guardian_email || null,
-          parent_guardian_phone: formData.parent_guardian_phone || null,
-          student_id: formData.student_id || null,
           updated_at: new Date().toISOString(),
+        }
+
+        // Only include parent guardian and student fields for relevant roles
+        const updateData = {
+          ...baseUpdateData,
+          // Only include parent guardian fields for student and parent roles
+          ...(formData.role === 'student' || formData.role === 'parent'
+            ? {
+                parent_guardian_name: formData.parent_guardian_name || null,
+                parent_guardian_phone: formData.parent_guardian_phone || null,
+              }
+            : {}),
+          // Only include student_id for student role
+          ...(formData.role === 'student'
+            ? {
+                student_id: formData.student_id || null,
+              }
+            : {}),
         }
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
