@@ -18,7 +18,7 @@ ADD COLUMN IF NOT EXISTS certificate_url TEXT;
 ALTER TABLE enrollments 
 ADD COLUMN IF NOT EXISTS certificate_issued_at TIMESTAMP WITH TIME ZONE;
 
--- Add certificate_template_id column (tracks which template was used)
+-- Add certificate_template_id column (tracks which template was used, nullable for default certificates)
 ALTER TABLE enrollments 
 ADD COLUMN IF NOT EXISTS certificate_template_id UUID;
 
@@ -40,6 +40,7 @@ COMMENT ON COLUMN enrollments.certificate_issued IS 'Boolean flag indicating if 
 COMMENT ON COLUMN enrollments.certificate_url IS 'URL to the generated certificate PDF file';
 COMMENT ON COLUMN enrollments.certificate_issued_at IS 'Timestamp when the certificate was issued';
 COMMENT ON COLUMN enrollments.certificate_template_id IS 'ID of the certificate template used for this enrollment';
+COMMENT ON COLUMN enrollments.certificate_template_id IS 'ID of the certificate template used for this enrollment';
 
 -- ========================================
 -- Verification Query
@@ -53,7 +54,7 @@ SELECT
     column_default
 FROM information_schema.columns 
 WHERE table_name = 'enrollments' 
-    AND column_name IN ('certificate_issued', 'certificate_url', 'certificate_issued_at')
+    AND column_name IN ('certificate_issued', 'certificate_url', 'certificate_issued_at', 'certificate_template_id')
 ORDER BY column_name;
 
 -- Count enrollments by certificate status

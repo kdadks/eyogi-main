@@ -1,38 +1,59 @@
 import { supabaseAdmin } from '../supabase'
 import { Certificate } from '@/types'
+
 export async function getStudentCertificates(studentId: string): Promise<Certificate[]> {
   try {
-    // Get certificates from enrollments table where certificate_issued = true
-    const { data, error } = await supabaseAdmin
+    console.log('Fetching certificates for student ID:', studentId)
+
+    // Read from enrollments table instead of separate certificates table
+    const { data: enrollments, error } = await supabaseAdmin
       .from('enrollments')
       .select(
         `
-        id,
-        student_id,
-        course_id,
-        certificate_url,
-        certificate_issued_at,
-        updated_at,
-        courses (*),
-        profiles!enrollments_student_id_fkey (*)
+        *,
+        courses(*),
+        profiles!enrollments_student_id_fkey(*)
       `,
       )
       .eq('student_id', studentId)
       .eq('certificate_issued', true)
-      .not('certificate_url', 'is', null)
+      .order('certificate_issued_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching student certificates:', error)
       return []
     }
 
-    // Transform enrollment data to certificate format
-    const certificates: Certificate[] = (data || []).map((enrollment) => {
-      // Extract certificate number from URL
-      const urlMatch = enrollment.certificate_url?.match(/CERT-[\d]+-[\w]+/)
-      const certificateNumber = urlMatch
-        ? urlMatch[0]
-        : `CERT-${Date.now()}-${enrollment.id.slice(-4)}`
+    console.log(
+      `Found ${enrollments?.length || 0} enrollments with certificates for student ${studentId}`,
+    )
+    console.log('Enrollments data:', enrollments)
+
+    if (!enrollments || enrollments.length === 0) {
+      console.log('No certificate enrollments found')
+      return []
+    }
+
+    // Transform enrollment data to Certificate objects
+    return enrollments.map((enrollment) => {
+      // Extract certificate number from URL if available, or generate a consistent one
+      let certificateNumber = `CERT-${enrollment.id.slice(-8)}`
+      if (enrollment.certificate_url) {
+        const urlMatch = enrollment.certificate_url.match(/CERT-[\d]+-[\w]+/)
+        if (urlMatch) {
+          certificateNumber = urlMatch[0]
+        }
+      }
+
+      // Convert old external URLs to relative URLs for compatibility
+      let fileUrl = enrollment.certificate_url || ''
+      if (
+        fileUrl.startsWith('https://certificates.eyogigurukul.com/') ||
+        fileUrl.startsWith('data:')
+      ) {
+        // Convert old URL to relative path
+        fileUrl = `/ssh-app/certificates/${certificateNumber}.pdf`
+      }
 
       return {
         id: enrollment.id, // Use enrollment ID as certificate ID
@@ -40,10 +61,14 @@ export async function getStudentCertificates(studentId: string): Promise<Certifi
         student_id: enrollment.student_id,
         course_id: enrollment.course_id,
         certificate_number: certificateNumber,
-        template_id: 'default-template',
+        template_id:
+          (enrollment as unknown as { certificate_template_id?: string }).certificate_template_id ||
+          'default-template',
         issued_at: enrollment.certificate_issued_at || enrollment.updated_at,
         issued_by: 'admin',
         verification_code: certificateNumber.split('-').pop() || 'N/A',
+        // Add course object for backwards compatibility with StudentDashboard
+        course: (enrollment as unknown as { courses?: unknown }).courses,
         certificate_data: {
           student_name:
             (enrollment as unknown as { profiles?: { full_name?: string } }).profiles?.full_name ||
@@ -52,32 +77,24 @@ export async function getStudentCertificates(studentId: string): Promise<Certifi
             (enrollment as unknown as { courses?: { title?: string } }).courses?.title || 'Course',
           completion_date: enrollment.certificate_issued_at || enrollment.updated_at,
         },
-        file_url: enrollment.certificate_url || '',
+        file_url: fileUrl, // Use converted URL
         created_at: enrollment.updated_at,
-      }
+      } as Certificate
     })
-
-    return certificates
   } catch (error) {
     console.error('Error in getStudentCertificates:', error)
     return []
   }
 }
-export async function downloadCertificate(certificateId: string): Promise<void> {
-  // Get certificate URL from enrollments table (certificateId is actually enrollment ID)
-  const { data, error } = await supabaseAdmin
-    .from('enrollments')
-    .select('certificate_url')
-    .eq('id', certificateId)
-    .eq('certificate_issued', true)
-    .single()
 
-  if (error || !data?.certificate_url) {
-    throw new Error('Certificate not found')
+// Function to download certificate PDF
+export async function downloadCertificatePDF(certificateUrl: string): Promise<void> {
+  if (!certificateUrl) {
+    throw new Error('Certificate URL is required')
   }
 
   // Open certificate URL in new tab
-  window.open(data.certificate_url, '_blank')
+  window.open(certificateUrl, '_blank')
 }
 
 export async function getChildrenCertificates(
@@ -106,7 +123,7 @@ export async function getChildrenCertificates(
         const certificates = await getStudentCertificates(child.id)
         return {
           childId: child.id,
-          childName: child.full_name || 'Child',
+          childName: child.full_name || 'Unknown',
           certificates,
         }
       }),
@@ -118,6 +135,7 @@ export async function getChildrenCertificates(
     return []
   }
 }
+
 export async function issueCertificate(enrollmentId: string): Promise<Certificate> {
   try {
     // Get enrollment details
@@ -142,22 +160,53 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
     if (enrollment.certificate_issued) {
       throw new Error('Certificate already issued for this enrollment')
     }
+
+    // Get the first active student template from database
+    let templateId: string | null = null
+
+    try {
+      const { data: templates } = await supabaseAdmin
+        .from('certificate_templates')
+        .select('id')
+        .eq('type', 'student')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+
+      if (templates && templates.length > 0) {
+        templateId = templates[0].id
+      }
+    } catch {
+      console.warn('Could not fetch certificate template from database')
+    }
+
+    if (!templateId) {
+      throw new Error('No active student certificate template found in database')
+    }
+
+    // Generate certificate details
     const certificateNumber = `CERT-${Date.now()}-${enrollmentId.slice(-4)}`
     const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
-    // Update the enrollment record to mark certificate as issued
     const now = new Date().toISOString()
+
+    // Create a relative certificate URL
+    const certificateUrl = `/ssh-app/certificates/${certificateNumber}.pdf`
+
     const { error: updateError } = await supabaseAdmin
       .from('enrollments')
       .update({
         certificate_issued: true,
         certificate_issued_at: now,
-        certificate_url: `https://certificates.eyogigurukul.com/${certificateNumber}.pdf`,
+        certificate_url: certificateUrl, // Store simple certificate data URL
+        certificate_template_id: templateId,
         updated_at: now,
       })
       .eq('id', enrollmentId)
+
     if (updateError) {
       throw new Error(`Failed to issue certificate: ${updateError.message}`)
     }
+
     // Return a certificate object for the UI
     const certificate: Certificate = {
       id: crypto.randomUUID(),
@@ -165,7 +214,7 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
       student_id: enrollment.student_id,
       course_id: enrollment.course_id,
       certificate_number: certificateNumber,
-      template_id: 'default-template',
+      template_id: templateId,
       issued_at: new Date().toISOString(),
       issued_by: 'system',
       verification_code: verificationCode,
@@ -174,14 +223,16 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
         course_title: enrollment.courses?.title,
         completion_date: enrollment.completed_at || new Date().toISOString(),
       },
-      file_url: `https://certificates.eyogigurukul.com/${certificateNumber}.pdf`,
+      file_url: certificateUrl,
       created_at: new Date().toISOString(),
     }
+
     return certificate
   } catch (error) {
     throw error
   }
 }
+
 export async function issueCertificateWithTemplate(
   enrollmentId: string,
   templateId: string,
@@ -199,42 +250,54 @@ export async function issueCertificateWithTemplate(
       )
       .eq('id', enrollmentId)
       .single()
+
     if (enrollmentError || !enrollment) {
       throw new Error('Enrollment not found')
     }
+
     if (enrollment.status !== 'completed') {
       throw new Error('Can only issue certificates for completed courses')
     }
+
     // Check if certificate already exists by looking at enrollment record
     if (enrollment.certificate_issued) {
       throw new Error('Certificate already issued for this enrollment')
     }
+
     // Get the certificate template
     const { data: template, error: templateError } = await supabaseAdmin
       .from('certificate_templates')
       .select('*')
       .eq('id', templateId)
       .single()
+
     if (templateError || !template) {
       throw new Error('Certificate template not found')
     }
+
+    // Generate certificate details
     const certificateNumber = `CERT-${Date.now()}-${enrollmentId.slice(-4)}`
     const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
-    // Update the enrollment record to mark certificate as issued
     const now = new Date().toISOString()
+
+    // Create a relative certificate URL
+    const certificateUrl = `/ssh-app/certificates/${certificateNumber}.pdf`
+
     const { error: updateError } = await supabaseAdmin
       .from('enrollments')
       .update({
         certificate_issued: true,
         certificate_issued_at: now,
-        certificate_url: `https://certificates.eyogigurukul.com/${certificateNumber}.pdf`,
+        certificate_url: certificateUrl,
         certificate_template_id: templateId,
         updated_at: now,
       })
       .eq('id', enrollmentId)
+
     if (updateError) {
       throw new Error(`Failed to issue certificate: ${updateError.message}`)
     }
+
     // Return a certificate object for the UI
     const certificate: Certificate = {
       id: crypto.randomUUID(),
@@ -250,23 +313,37 @@ export async function issueCertificateWithTemplate(
         student_name: enrollment.profiles?.full_name,
         course_title: enrollment.courses?.title,
         completion_date: enrollment.completed_at || new Date().toISOString(),
-        template_name: template.name,
       },
-      file_url: `https://certificates.eyogigurukul.com/${certificateNumber}.pdf`,
+      file_url: certificateUrl,
       created_at: new Date().toISOString(),
     }
+
     return certificate
   } catch (error) {
     throw error
   }
 }
+
 export async function bulkIssueCertificates(enrollmentIds: string[]): Promise<Certificate[]> {
   const certificates: Certificate[] = []
+  const errors: string[] = []
+
   for (const enrollmentId of enrollmentIds) {
     try {
       const certificate = await issueCertificate(enrollmentId)
       certificates.push(certificate)
-    } catch (error) {}
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      errors.push(`Failed to issue certificate for enrollment ${enrollmentId}: ${errorMessage}`)
+      console.error(`Failed to issue certificate for enrollment ${enrollmentId}:`, error)
+      // Continue with other certificates even if one fails
+    }
   }
+
+  // If there were errors but some certificates were issued, log the errors but return the successful ones
+  if (errors.length > 0) {
+    console.warn('Some certificates failed to issue:', errors)
+  }
+
   return certificates
 }
