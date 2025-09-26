@@ -204,7 +204,11 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                 Duplicate
               </Button>
             )}
-            <button type="button" className="text-gray-400 hover:text-gray-600" onClick={onClose}>
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              onClick={onClose}
+            >
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
@@ -648,7 +652,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         </div>
         {/* Footer - Fixed */}
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 flex-shrink-0">
-          <Button onClick={onClose} variant="outline" disabled={loading}>
+          <Button onClick={onClose} variant="danger" disabled={loading}>
             Cancel
           </Button>
           <Button

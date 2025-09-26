@@ -268,7 +268,7 @@ export default function AdminDashboard() {
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+              className="p-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
             >
               {sidebarOpen ? (
                 <XMarkIcon className="h-5 w-5 text-gray-500" />
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
                     | 'content',
                 )
               }
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group ${
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-orange-50 text-orange-700 border-r-2 border-orange-500'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -335,7 +335,7 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-gray-900">{user?.email || 'Admin'}</p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
-              <button className="p-1 rounded-md hover:bg-gray-100">
+              <button className="p-1 rounded-md hover:bg-gray-100 cursor-pointer">
                 <Cog6ToothIcon className="h-4 w-4 text-gray-400" />
               </button>
             </div>
@@ -367,7 +367,7 @@ export default function AdminDashboard() {
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-lg"
+                  className="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-lg cursor-pointer"
                 >
                   <BellIcon className="h-6 w-6" />
                   {unreadCount > 0 && (
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
                       })}
                     </div>
                     <div className="p-4 border-t border-gray-200">
-                      <button className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+                      <button className="text-sm text-orange-600 hover:text-orange-700 font-medium cursor-pointer">
                         View all notifications
                       </button>
                     </div>
@@ -451,7 +451,7 @@ export default function AdminDashboard() {
                 <button
                   key={action.id}
                   onClick={action.action}
-                  className={`${action.color} text-white p-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg`}
+                  className={`${action.color} text-white p-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg cursor-pointer`}
                 >
                   <div className="flex items-center space-x-3">
                     <action.icon className="h-6 w-6" />

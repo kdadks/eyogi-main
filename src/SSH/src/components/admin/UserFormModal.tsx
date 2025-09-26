@@ -260,7 +260,7 @@ export default function UserFormModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
             disabled={loading}
           >
             <X className="h-4 w-4 text-gray-500" />
@@ -391,7 +391,7 @@ export default function UserFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-red-600 rounded hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer"
               disabled={loading}
             >
               Cancel

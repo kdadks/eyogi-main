@@ -200,22 +200,22 @@ const AdminDashboard: React.FC = () => {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <UsersIcon className="h-8 w-8 text-blue-600 mb-2" />
               <h3 className="font-medium text-gray-900">Add New User</h3>
               <p className="text-sm text-gray-500">Create student or teacher account</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <BookOpenIcon className="h-8 w-8 text-green-600 mb-2" />
               <h3 className="font-medium text-gray-900">Create Course</h3>
               <p className="text-sm text-gray-500">Set up a new course</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <ClipboardDocumentListIcon className="h-8 w-8 text-yellow-600 mb-2" />
               <h3 className="font-medium text-gray-900">Manage Enrollments</h3>
               <p className="text-sm text-gray-500">Review pending enrollments</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <ChartBarIcon className="h-8 w-8 text-purple-600 mb-2" />
               <h3 className="font-medium text-gray-900">View Reports</h3>
               <p className="text-sm text-gray-500">Analytics and insights</p>

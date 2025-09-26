@@ -389,7 +389,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white text-white hover:bg-white hover:text-orange-600 w-full sm:w-auto min-h-[50px] font-semibold text-base px-6 py-3"
+                  className="border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-orange-600 w-full sm:w-auto min-h-[50px] font-semibold text-base px-6 py-3"
                 >
                   Browse Hindu Courses
                 </Button>

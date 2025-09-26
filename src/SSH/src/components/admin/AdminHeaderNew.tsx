@@ -11,7 +11,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
         <div className="flex items-center">
           <button
             type="button"
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
             onClick={onMenuClick}
           >
             <Bars3Icon className="h-6 w-6" />

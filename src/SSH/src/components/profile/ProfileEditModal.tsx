@@ -374,7 +374,7 @@ export default function ProfileEditModal({
             </Card>
           </div>
           <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
-            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+            <Button type="button" variant="danger" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" loading={loading}>

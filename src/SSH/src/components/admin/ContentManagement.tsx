@@ -391,7 +391,7 @@ export default function ContentManagement() {
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('pages')}
-            className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
               activeTab === 'pages'
                 ? 'border-orange-500 text-orange-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -402,7 +402,7 @@ export default function ContentManagement() {
           </button>
           <button
             onClick={() => setActiveTab('menu')}
-            className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
               activeTab === 'menu'
                 ? 'border-orange-500 text-orange-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -574,7 +574,7 @@ export default function ContentManagement() {
                       <CheckIcon className="h-4 w-4 mr-2" />
                       {editingPage ? 'Update Page' : 'Create Page'}
                     </Button>
-                    <Button type="button" variant="outline" onClick={resetPageForm}>
+                    <Button type="button" variant="danger" onClick={resetPageForm}>
                       Cancel
                     </Button>
                   </div>
@@ -805,7 +805,7 @@ export default function ContentManagement() {
                       <CheckIcon className="h-4 w-4 mr-2" />
                       {editingMenuItem ? 'Update Menu Item' : 'Create Menu Item'}
                     </Button>
-                    <Button type="button" variant="outline" onClick={resetMenuForm}>
+                    <Button type="button" variant="danger" onClick={resetMenuForm}>
                       Cancel
                     </Button>
                   </div>

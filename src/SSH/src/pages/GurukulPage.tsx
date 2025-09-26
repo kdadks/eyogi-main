@@ -260,7 +260,7 @@ export default function GurukulPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="border-white text-white hover:bg-white hover:text-orange-600"
+                    className="border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-orange-600"
                   >
                     Create Account
                   </Button>

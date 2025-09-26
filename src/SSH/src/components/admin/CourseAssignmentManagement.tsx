@@ -71,7 +71,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Assign Teacher to Course</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -123,7 +123,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
             <Button onClick={handleSubmit} disabled={loading} className="flex-1">
               {loading ? 'Assigning...' : 'Assign'}
             </Button>
-            <Button variant="outline" onClick={onClose} className="flex-1">
+            <Button variant="danger" onClick={onClose} className="flex-1">
               Cancel
             </Button>
           </div>

@@ -544,7 +544,7 @@ export default function TeacherDashboard() {
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowCreateCourse(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-semibold"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-semibold cursor-pointer"
                 >
                   <PlusIcon className="h-5 w-5" />
                   <SparklesIcon className="h-5 w-5" />
@@ -603,7 +603,7 @@ export default function TeacherDashboard() {
                   // Scroll to top of page
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                   activeView === tab.id
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'

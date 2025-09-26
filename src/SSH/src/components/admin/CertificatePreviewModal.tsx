@@ -74,7 +74,7 @@ export default function CertificatePreviewModal({
               <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
               {downloading ? 'Downloading...' : 'Download PDF'}
             </Button>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>

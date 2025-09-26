@@ -250,7 +250,7 @@ export default function GurukulManagement() {
                   <CheckIcon className="h-4 w-4 mr-2" />
                   {editingGurukul ? 'Update Gurukul' : 'Create Gurukul'}
                 </Button>
-                <Button type="button" variant="outline" onClick={resetForm}>
+                <Button type="button" variant="danger" onClick={resetForm}>
                   Cancel
                 </Button>
               </div>

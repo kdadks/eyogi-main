@@ -52,16 +52,16 @@ const Header: React.FC = () => {
           </nav>
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors">
+            <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors cursor-pointer">
               Sign In
             </button>
-            <button className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium transition-colors">
+            <button className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium transition-colors cursor-pointer">
               Sign Up
             </button>
           </div>
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <button className="text-gray-700 hover:text-orange-600">
+            <button className="text-gray-700 hover:text-orange-600 cursor-pointer">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"

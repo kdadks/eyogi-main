@@ -430,7 +430,7 @@ export default function StudentManagement() {
               onClick={() =>
                 setActiveTab(tab.id as 'overview' | 'by-course' | 'details' | 'communication')
               }
-              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -829,7 +829,7 @@ export default function StudentManagement() {
                   <Button type="submit" loading={formLoading}>
                     {editingStudent ? 'Update Student' : 'Create Student'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={resetStudentForm}>
+                  <Button type="button" variant="danger" onClick={resetStudentForm}>
                     Cancel
                   </Button>
                 </div>
@@ -914,7 +914,7 @@ export default function StudentManagement() {
                   <Button onClick={handleSendCommunication}>
                     Send {communicationData.type === 'email' ? 'Email' : 'SMS'}
                   </Button>
-                  <Button variant="outline" onClick={() => setShowCommunicationPanel(false)}>
+                  <Button variant="danger" onClick={() => setShowCommunicationPanel(false)}>
                     Cancel
                   </Button>
                 </div>

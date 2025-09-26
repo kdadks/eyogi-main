@@ -165,7 +165,7 @@ export default function SiteAnalytics() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content')}
-              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

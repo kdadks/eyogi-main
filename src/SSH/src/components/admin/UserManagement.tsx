@@ -228,7 +228,7 @@ export default function UserManagement() {
                             >
                               Save
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingUser(null)}>
+                            <Button size="sm" variant="danger" onClick={() => setEditingUser(null)}>
                               Cancel
                             </Button>
                           </div>

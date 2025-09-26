@@ -417,21 +417,21 @@ export default function CourseManagement() {
               <div className="col-span-2 flex items-center justify-end gap-2">
                 <button
                   onClick={() => setViewingCourse(course)}
-                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
                   title="View"
                 >
                   <EyeIcon className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleEditCourse(course)}
-                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                  className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
                   title="Edit"
                 >
                   <PencilIcon className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(course)}
-                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
                   title="Delete"
                 >
                   <TrashIcon className="h-4 w-4" />
@@ -841,7 +841,7 @@ export default function CourseManagement() {
               </div>
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button variant="outline" onClick={closeModal}>
+                <Button variant="danger" onClick={closeModal}>
                   Cancel
                 </Button>
                 <Button onClick={handleCreateCourse} disabled={saving}>
@@ -1098,7 +1098,7 @@ export default function CourseManagement() {
               </div>
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button variant="outline" onClick={closeModal}>
+                <Button variant="danger" onClick={closeModal}>
                   Cancel
                 </Button>
                 <Button onClick={handleUpdateCourse} disabled={saving}>
