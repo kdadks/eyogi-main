@@ -131,19 +131,25 @@ export default function CertificatePreviewModal({
                     <span className="font-medium text-gray-900">{certificateData.gurukulName}</span>
                   </div>
                   <div className="bg-white p-3 rounded border">
-                    <span className="text-gray-600 block text-xs font-medium">Completion Date:</span>
+                    <span className="text-gray-600 block text-xs font-medium">
+                      Completion Date:
+                    </span>
                     <span className="font-medium text-gray-900">
                       {new Date(certificateData.completionDate).toLocaleDateString()}
                     </span>
                   </div>
                   <div className="bg-white p-3 rounded border">
-                    <span className="text-gray-600 block text-xs font-medium">Certificate Number:</span>
+                    <span className="text-gray-600 block text-xs font-medium">
+                      Certificate Number:
+                    </span>
                     <span className="font-medium font-mono text-gray-900">
                       {certificateData.certificateNumber}
                     </span>
                   </div>
                   <div className="bg-white p-3 rounded border">
-                    <span className="text-gray-600 block text-xs font-medium">Verification Code:</span>
+                    <span className="text-gray-600 block text-xs font-medium">
+                      Verification Code:
+                    </span>
                     <span className="font-medium font-mono text-gray-900">
                       {certificateData.verificationCode}
                     </span>
