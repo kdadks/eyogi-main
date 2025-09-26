@@ -3,11 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Certificate, Enrollment, CertificateTemplate, Course, Gurukul } from '@/types'
-import {
-  // getStudentCertificates, // Available for future use
-  issueCertificate,
-  bulkIssueCertificates,
-} from '@/lib/api/certificates'
+import { getAllCertificates, issueCertificate, bulkIssueCertificates } from '@/lib/api/certificates'
 import {
   getCertificateTemplates,
   deleteCertificateTemplate,
@@ -48,7 +44,9 @@ export default function CertificateManagement() {
   const [courses, setCourses] = useState<Course[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'certificates' | 'templates' | 'issue' | 'assignments'>('certificates')
+  const [activeTab, setActiveTab] = useState<
+    'certificates' | 'templates' | 'issue' | 'assignments'
+  >('certificates')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedEnrollments, setSelectedEnrollments] = useState<Set<string>>(new Set())
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
@@ -66,7 +64,9 @@ export default function CertificateManagement() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to access certificate management.</p>
+          <p className="text-gray-600">
+            You don't have permission to access certificate management.
+          </p>
           <p className="text-sm text-gray-500 mt-2">Current role: {profile?.role}</p>
         </div>
       </div>
@@ -75,13 +75,14 @@ export default function CertificateManagement() {
   const loadData = useCallback(async () => {
     try {
       // Load all data in parallel
-      const [allEnrollments, templatesData, coursesData, gurukulData, assignmentsData] = await Promise.all([
-        getAllEnrollments(),
-        getCertificateTemplates(),
-        getCourses(),
-        getGurukuls(),
-        getCertificateAssignments(),
-      ])
+      const [allEnrollments, templatesData, coursesData, gurukulData, assignmentsData] =
+        await Promise.all([
+          getAllEnrollments(),
+          getCertificateTemplates(),
+          getCourses(),
+          getGurukuls(),
+          getCertificateAssignments(),
+        ])
       const completedWithoutCerts = allEnrollments.filter(
         (e) => e.status === 'completed' && !e.certificate_issued,
       )
@@ -94,9 +95,11 @@ export default function CertificateManagement() {
       if (templatesData.length > 0 && !selectedTemplate) {
         setSelectedTemplate(templatesData[0].id)
       }
+
       // Load actual certificates from database
-      // For now, use empty array until certificates API is implemented
-      setCertificates([])
+      const certificatesData = await getAllCertificates()
+      setCertificates(certificatesData)
+      console.log(`Loaded ${certificatesData.length} certificates for admin view`)
     } catch (error) {
       toast.error('Failed to load certificate data')
     } finally {
@@ -291,11 +294,15 @@ export default function CertificateManagement() {
             { id: 'certificates', name: 'Recent Certificates', icon: DocumentTextIcon },
             { id: 'templates', name: 'Templates', icon: DocumentTextIcon },
             { id: 'issue', name: 'Issue Certificates', icon: PlusIcon },
-            ...(canAssignTemplates ? [{ id: 'assignments', name: 'Template Assignments', icon: FunnelIcon }] : []),
+            ...(canAssignTemplates
+              ? [{ id: 'assignments', name: 'Template Assignments', icon: FunnelIcon }]
+              : []),
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'certificates' | 'templates' | 'issue' | 'assignments')}
+              onClick={() =>
+                setActiveTab(tab.id as 'certificates' | 'templates' | 'issue' | 'assignments')
+              }
               className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
@@ -745,8 +752,8 @@ export default function CertificateManagement() {
                 <FunnelIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No Template Assignments</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Assign certificate templates to specific gurukuls and courses.
-                  Teachers will then have access to issue certificates using assigned templates.
+                  Assign certificate templates to specific gurukuls and courses. Teachers will then
+                  have access to issue certificates using assigned templates.
                 </p>
                 <div className="mt-6">
                   <Button onClick={() => setAssignmentModalOpen(true)}>
@@ -779,8 +786,8 @@ export default function CertificateManagement() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {assignments.map((assignment) => {
-                      const gurukul = gurukuls.find(g => g.id === assignment.gurukul_id)
-                      const course = courses.find(c => c.id === assignment.course_id)
+                      const gurukul = gurukuls.find((g) => g.id === assignment.gurukul_id)
+                      const course = courses.find((c) => c.id === assignment.course_id)
                       return (
                         <tr key={assignment.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -801,9 +808,7 @@ export default function CertificateManagement() {
                               {gurukul?.name || 'Unknown Gurukul'}
                             </div>
                             {course && (
-                              <div className="text-sm text-gray-500">
-                                Course: {course.title}
-                              </div>
+                              <div className="text-sm text-gray-500">Course: {course.title}</div>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

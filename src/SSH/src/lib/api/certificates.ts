@@ -347,3 +347,88 @@ export async function bulkIssueCertificates(enrollmentIds: string[]): Promise<Ce
 
   return certificates
 }
+
+export async function getAllCertificates(): Promise<Certificate[]> {
+  try {
+    console.log('Fetching all certificates from enrollments table')
+
+    // Get all enrollments with certificates issued
+    const { data: enrollments, error } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        *,
+        courses(*),
+        profiles!enrollments_student_id_fkey(*)
+      `,
+      )
+      .eq('certificate_issued', true)
+      .order('certificate_issued_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching all certificates:', error)
+      return []
+    }
+
+    console.log(`Found ${enrollments?.length || 0} enrollments with certificates`)
+
+    if (!enrollments || enrollments.length === 0) {
+      console.log('No certificate enrollments found')
+      return []
+    }
+
+    // Transform enrollment data to Certificate objects
+    return enrollments.map((enrollment) => {
+      // Extract certificate number from URL if available, or generate a consistent one
+      let certificateNumber = `CERT-${enrollment.id.slice(-8)}`
+      if (enrollment.certificate_url) {
+        const urlMatch = enrollment.certificate_url.match(/CERT-[\d]+-[\w]+/)
+        if (urlMatch) {
+          certificateNumber = urlMatch[0]
+        }
+      }
+
+      // Convert old external URLs to relative URLs for compatibility
+      let fileUrl = enrollment.certificate_url || ''
+      if (
+        fileUrl.startsWith('https://certificates.eyogigurukul.com/') ||
+        fileUrl.startsWith('data:')
+      ) {
+        // Convert old URL to relative path
+        fileUrl = `/ssh-app/certificates/${certificateNumber}.pdf`
+      }
+
+      return {
+        id: enrollment.id, // Use enrollment ID as certificate ID
+        enrollment_id: enrollment.id,
+        student_id: enrollment.student_id,
+        course_id: enrollment.course_id,
+        certificate_number: certificateNumber,
+        template_id:
+          (enrollment as unknown as { certificate_template_id?: string }).certificate_template_id ||
+          'default-template',
+        issued_at: enrollment.certificate_issued_at || enrollment.updated_at,
+        issued_by: 'admin',
+        verification_code: certificateNumber.split('-').pop() || 'N/A',
+        // Add student and course objects for admin display
+        student: (
+          enrollment as unknown as { profiles?: { full_name?: string; student_id?: string } }
+        ).profiles,
+        course: (enrollment as unknown as { courses?: unknown }).courses,
+        certificate_data: {
+          student_name:
+            (enrollment as unknown as { profiles?: { full_name?: string } }).profiles?.full_name ||
+            'Student',
+          course_title:
+            (enrollment as unknown as { courses?: { title?: string } }).courses?.title || 'Course',
+          completion_date: enrollment.certificate_issued_at || enrollment.updated_at,
+        },
+        file_url: fileUrl, // Use converted URL
+        created_at: enrollment.updated_at,
+      } as Certificate
+    })
+  } catch (error) {
+    console.error('Error in getAllCertificates:', error)
+    return []
+  }
+}
