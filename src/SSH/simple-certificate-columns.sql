@@ -18,6 +18,10 @@ ADD COLUMN IF NOT EXISTS certificate_url TEXT;
 ALTER TABLE enrollments 
 ADD COLUMN IF NOT EXISTS certificate_issued_at TIMESTAMP WITH TIME ZONE;
 
+-- Add certificate_template_id column (tracks which template was used)
+ALTER TABLE enrollments 
+ADD COLUMN IF NOT EXISTS certificate_template_id UUID;
+
 -- ========================================
 -- Set Default Values for Existing Records
 -- ========================================
@@ -35,6 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_enrollments_certificate_issued ON enrollments(cer
 COMMENT ON COLUMN enrollments.certificate_issued IS 'Boolean flag indicating if a certificate has been issued for this enrollment';
 COMMENT ON COLUMN enrollments.certificate_url IS 'URL to the generated certificate PDF file';
 COMMENT ON COLUMN enrollments.certificate_issued_at IS 'Timestamp when the certificate was issued';
+COMMENT ON COLUMN enrollments.certificate_template_id IS 'ID of the certificate template used for this enrollment';
 
 -- ========================================
 -- Verification Query
