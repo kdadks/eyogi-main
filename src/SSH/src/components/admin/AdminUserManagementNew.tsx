@@ -92,8 +92,10 @@ const AdminUserManagement: React.FC = () => {
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.student_id && user.student_id.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesRole = roleFilter === 'all' ||
-      (roleFilter === 'admin' && (user.role === 'admin' || user.role === 'business_admin' || user.role === 'super_admin')) ||
+    const matchesRole =
+      roleFilter === 'all' ||
+      (roleFilter === 'admin' &&
+        (user.role === 'admin' || user.role === 'business_admin' || user.role === 'super_admin')) ||
       user.role === roleFilter
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter
     return matchesSearch && matchesRole && matchesStatus

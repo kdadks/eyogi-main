@@ -6,6 +6,10 @@ import {
   AcademicCapIcon,
   ChartBarIcon,
   ArrowTrendingUpIcon,
+  ClockIcon,
+  UserPlusIcon,
+  BookOpenIcon as BookIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
 interface DashboardStats {
@@ -16,6 +20,15 @@ interface DashboardStats {
   recentEnrollments: number
   activeUsers: number
 }
+interface ActivityItem {
+  id: string
+  type: 'user_registration' | 'course_creation' | 'enrollment' | 'certificate_issued'
+  title: string
+  description: string
+  timestamp: string
+  icon: React.ComponentType<{ className?: string }>
+  iconColor: string
+}
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -25,9 +38,11 @@ const AdminDashboard: React.FC = () => {
     recentEnrollments: 0,
     activeUsers: 0,
   })
+  const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     loadDashboardStats()
+    loadRecentActivities()
   }, [])
   const loadDashboardStats = async () => {
     try {
@@ -77,6 +92,152 @@ const AdminDashboard: React.FC = () => {
       setLoading(false)
     }
   }
+
+  const loadRecentActivities = async () => {
+    try {
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+      // Fetch recent activities from different tables
+      const [recentUsers, recentCourses, recentEnrollments, recentCertificates] = await Promise.all(
+        [
+          // Recent user registrations
+          supabaseAdmin
+            .from('profiles')
+            .select('id, full_name, email, role, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(5),
+
+          // Recent course creations
+          supabaseAdmin
+            .from('courses')
+            .select('id, title, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(5),
+
+          // Recent enrollments
+          supabaseAdmin
+            .from('enrollments')
+            .select(
+              `
+            id,
+            enrolled_at,
+            profiles!enrollments_user_id_fkey (
+              full_name,
+              email
+            ),
+            courses!enrollments_course_id_fkey (
+              title
+            )
+          `,
+            )
+            .gte('enrolled_at', sevenDaysAgo.toISOString())
+            .order('enrolled_at', { ascending: false })
+            .limit(5),
+
+          // Recent certificates
+          supabaseAdmin
+            .from('certificates')
+            .select(
+              `
+            id,
+            issued_at,
+            profiles!certificates_user_id_fkey (
+              full_name,
+              email
+            ),
+            courses!certificates_course_id_fkey (
+              title
+            )
+          `,
+            )
+            .gte('issued_at', sevenDaysAgo.toISOString())
+            .order('issued_at', { ascending: false })
+            .limit(5),
+        ],
+      )
+
+      const activities: ActivityItem[] = []
+
+      // Add user registrations
+      if (recentUsers.data) {
+        recentUsers.data.forEach((user) => {
+          activities.push({
+            id: `user-${user.id}`,
+            type: 'user_registration',
+            title: 'New User Registration',
+            description: `${user.full_name} (${user.role}) joined the platform`,
+            timestamp: user.created_at,
+            icon: UserPlusIcon,
+            iconColor: 'text-blue-600',
+          })
+        })
+      }
+
+      // Add course creations
+      if (recentCourses.data) {
+        recentCourses.data.forEach((course) => {
+          activities.push({
+            id: `course-${course.id}`,
+            type: 'course_creation',
+            title: 'New Course Created',
+            description: `Course "${course.title}" was added`,
+            timestamp: course.created_at,
+            icon: BookIcon,
+            iconColor: 'text-green-600',
+          })
+        })
+      }
+
+      // Add enrollments
+      if (recentEnrollments.data) {
+        recentEnrollments.data.forEach((enrollment) => {
+          const user = enrollment.profiles as any
+          const course = enrollment.courses as any
+          if (user && course) {
+            activities.push({
+              id: `enrollment-${enrollment.id}`,
+              type: 'enrollment',
+              title: 'New Enrollment',
+              description: `${user.full_name} enrolled in "${course.title}"`,
+              timestamp: enrollment.enrolled_at,
+              icon: ClipboardDocumentListIcon,
+              iconColor: 'text-yellow-600',
+            })
+          }
+        })
+      }
+
+      // Add certificates
+      if (recentCertificates.data) {
+        recentCertificates.data.forEach((cert) => {
+          const user = cert.profiles as any
+          const course = cert.courses as any
+          if (user && course) {
+            activities.push({
+              id: `certificate-${cert.id}`,
+              type: 'certificate_issued',
+              title: 'Certificate Issued',
+              description: `${user.full_name} completed "${course.title}"`,
+              timestamp: cert.issued_at,
+              icon: CheckCircleIcon,
+              iconColor: 'text-purple-600',
+            })
+          }
+        })
+      }
+
+      // Sort all activities by timestamp (most recent first) and take top 10
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      setActivities(activities.slice(0, 10))
+    } catch (error) {
+      console.error('Error loading recent activities:', error)
+      setActivities([])
+    }
+  }
+
   const statCards = [
     {
       title: 'Total Users',
@@ -229,12 +390,30 @@ const AdminDashboard: React.FC = () => {
           <h2 className="text-lg font-medium text-gray-900">Recent Activity</h2>
         </div>
         <div className="p-6">
-          <div className="text-center py-8 text-gray-500">
-            <p>Activity feed will be implemented in Phase 2</p>
-            <p className="text-sm">
-              Coming soon: Real-time enrollment updates, user registrations, and system events
-            </p>
-          </div>
+          {activities.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <ClockIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <p>No recent activity</p>
+              <p className="text-sm">Activity from the last 7 days will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {activities.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3">
+                  <div className={`flex-shrink-0 p-2 rounded-lg bg-gray-50`}>
+                    <activity.icon className={`h-4 w-4 ${activity.iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                    <p className="text-sm text-gray-600">{activity.description}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(activity.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
