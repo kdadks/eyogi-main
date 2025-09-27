@@ -877,6 +877,7 @@ export default function CertificateManagement() {
           setAssignmentModalOpen(false)
         }}
         templates={templates}
+        userId={profile?.id || ''}
       />
     </div>
   )

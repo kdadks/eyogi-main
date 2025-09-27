@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../supabase'
+import { supabase, supabaseAdmin } from '../supabase'
 import type { Database } from '../../types/database'
 type Profile = Database['public']['Tables']['profiles']['Row']
 export interface CreateChildData {
@@ -19,16 +19,38 @@ export interface CreateChildData {
  */
 async function generateNextStudentId(): Promise<string> {
   try {
+    let client = supabaseAdmin
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      client = supabase
+    }
+
     const year = new Date().getFullYear()
-    // Get existing student IDs for this year
-    const { data: existingStudents } = await supabaseAdmin
+    // Get existing student IDs for this year and find the highest number
+    // Note: We search ALL profiles with student_id, not just those with role='student'
+    // because some profiles might have student_id but different roles
+    const { data: existingStudents } = await client
       .from('profiles')
       .select('student_id')
-      .eq('role', 'student')
       .not('student_id', 'is', null)
       .like('student_id', `EYG-${year}%`)
-    const nextNumber = (existingStudents?.length || 0) + 1
-    return `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
+
+    let nextNumber = 1
+    if (existingStudents && existingStudents.length > 0) {
+      // Extract the numeric part from student IDs and find the maximum
+      const numbers = existingStudents
+        .map((student) => {
+          const match = student.student_id?.match(/EYG-\d{4}-(\d{4})/)
+          return match ? parseInt(match[1], 10) : 0
+        })
+        .filter((num) => !isNaN(num))
+
+      if (numbers.length > 0) {
+        nextNumber = Math.max(...numbers) + 1
+      }
+    }
+
+    const result = `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
+    return result
   } catch {
     // Fallback to a random number if there's an error
     const randomNum = Math.floor(Math.random() * 9999) + 1
@@ -97,11 +119,12 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
       parent_id: childData.parent_id, // Link child to parent
     }
     // Insert into database
-    const { data, error } = await supabaseAdmin
-      .from('profiles')
-      .insert(profileData)
-      .select()
-      .single()
+    let client = supabaseAdmin
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      client = supabase
+    }
+
+    const { data, error } = await client.from('profiles').insert(profileData).select().single()
     if (error) {
       throw new Error(`Failed to create child profile: ${error.message}`)
     }
@@ -120,7 +143,12 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
 export async function getChildrenByParentId(parentId: string): Promise<Profile[]> {
   try {
     // Get children using parent_id field (current approach)
-    const { data: directChildren, error: directError } = await supabaseAdmin
+    let client = supabaseAdmin
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      client = supabase
+    }
+
+    const { data: directChildren, error: directError } = await client
       .from('profiles')
       .select('*')
       .eq('parent_id', parentId)
@@ -168,7 +196,12 @@ export async function updateChild(
       zip_code: updates.zip_code || null,
       country: updates.country || null,
     }
-    const { data, error } = await supabaseAdmin
+    let client = supabaseAdmin
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      client = supabase
+    }
+
+    const { data, error } = await client
       .from('profiles')
       .update(updateData)
       .eq('id', childId)
@@ -188,11 +221,12 @@ export async function updateChild(
  */
 export async function deleteChild(childId: string): Promise<void> {
   try {
-    const { error } = await supabaseAdmin
-      .from('profiles')
-      .delete()
-      .eq('id', childId)
-      .eq('role', 'student')
+    let client = supabaseAdmin
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      client = supabase
+    }
+
+    const { error } = await client.from('profiles').delete().eq('id', childId).eq('role', 'student')
     if (error) {
       throw new Error(`Failed to delete child profile: ${error.message}`)
     }

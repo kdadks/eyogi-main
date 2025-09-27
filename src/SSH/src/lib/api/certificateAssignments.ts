@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from '../supabase'
+import { supabaseAdmin } from '../supabase'
 import { getGurukuls } from './gurukuls'
 import { getCourses } from './courses'
 import type { CertificateTemplate, Gurukul, Course, User } from '../../types'
@@ -138,15 +138,9 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
 // Create assignment
 export const createCertificateAssignment = async (
   assignmentData: CreateCertificateAssignmentData,
+  createdByUserId: string,
 ) => {
   try {
-    // Get the current user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      throw new Error('User not authenticated')
-    }
     // Validate that at least one of gurukul_id or course_id is provided
     if (!assignmentData.gurukul_id && !assignmentData.course_id) {
       throw new Error('Either gurukul_id or course_id must be provided')
@@ -155,7 +149,7 @@ export const createCertificateAssignment = async (
       template_id: assignmentData.template_id,
       gurukul_id: assignmentData.gurukul_id || null,
       course_id: assignmentData.course_id || null,
-      created_by: user.id,
+      created_by: createdByUserId,
     }
     const { data, error } = await supabaseAdmin
       .from('certificate_assignments')

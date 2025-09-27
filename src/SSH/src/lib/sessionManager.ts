@@ -6,17 +6,14 @@ const LAST_CLEAR_KEY = 'eyogi_last_clear'
 export class SessionManager {
   static async clearAllSessions() {
     try {
-      // Sign out from Supabase globally
-      await supabase.auth.signOut({ scope: 'global' })
-      // Clear specific auth-related storage only, preserve app state
+      // Since we use custom auth, we don't sign out from Supabase
+      // Just clear any leftover auth-related storage
       const keysToRemove = ['supabase.auth.token']
-      // Clear localStorage items that match our patterns
       Object.keys(localStorage).forEach((key) => {
         if (keysToRemove.some((pattern) => key.includes(pattern)) || key.startsWith('sb-')) {
           localStorage.removeItem(key)
         }
       })
-      // Clear session storage completely
       sessionStorage.clear()
       // Mark when we last cleared
       localStorage.setItem(LAST_CLEAR_KEY, Date.now().toString())
@@ -43,19 +40,17 @@ export class SessionManager {
   }
   static async clearExpiredSessions() {
     try {
-      // Get current session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session) {
-        // Check if token is expired
-        const now = Math.floor(Date.now() / 1000)
-        if (session.expires_at && session.expires_at < now) {
-          await this.clearAllSessions()
+      // Since we use custom auth, we don't need to check Supabase sessions
+      // Just clear any leftover Supabase auth storage
+      const keysToRemove = ['supabase.auth.token']
+      Object.keys(localStorage).forEach((key) => {
+        if (keysToRemove.some((pattern) => key.includes(pattern)) || key.startsWith('sb-')) {
+          localStorage.removeItem(key)
         }
-      }
+      })
+      sessionStorage.clear()
     } catch {
-      // Error checking session expiry - silent fail
+      // Error clearing sessions - silent fail
     }
   }
   static async initializeSessionManagement() {

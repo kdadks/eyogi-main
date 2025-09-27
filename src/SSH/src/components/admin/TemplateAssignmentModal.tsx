@@ -15,6 +15,7 @@ interface TemplateAssignmentModalProps {
   onClose: () => void
   onSave: () => void
   templates: CertificateTemplate[]
+  userId: string
 }
 interface Gurukul {
   id: string
@@ -32,6 +33,7 @@ export default function TemplateAssignmentModal({
   onClose,
   onSave,
   templates,
+  userId,
 }: TemplateAssignmentModalProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [assignmentType, setAssignmentType] = useState<'gurukul' | 'course'>('course')
@@ -103,7 +105,7 @@ export default function TemplateAssignmentModal({
         delete assignmentData.gurukul_id
       }
       // Assignment data prepared for creation
-      await createCertificateAssignment(assignmentData)
+      await createCertificateAssignment(assignmentData, userId)
       toast.success('Template assigned successfully')
       onSave()
       handleClose()

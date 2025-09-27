@@ -71,8 +71,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Client for regular user operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
+    autoRefreshToken: false, // Disable token refresh since we use custom auth
+    persistSession: false, // Disable session persistence
     detectSessionInUrl: false, // Disable URL detection to prevent conflicts
     storageKey: 'eyogi-ssh-app-auth-v2', // Updated unique storage key
   },

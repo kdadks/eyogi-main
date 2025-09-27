@@ -64,8 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       !location.pathname.includes('/admin/login')
     // Debug logging disabled for production
     if (!isAdminPage) {
-      // Don't clear user state on login page - just mark as initialized
-      // This prevents losing auth state during navigation
+      // Don't initialize Supabase auth on non-admin pages
       setLoading(false)
       setInitialized(true)
       return
@@ -174,42 +173,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth().finally(() => {
       clearTimeout(timeoutId)
     })
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-      if (!isMounted) return
-      // Skip auth state processing on public pages unless it's a SIGNED_IN event
-      const isAdminPage = location.pathname.includes('/admin')
-      if (!isAdminPage && event !== 'SIGNED_IN') {
-        return
-      }
-      // Set loading true during auth change processing
-      setLoading(true)
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      // Fetch profile if user exists
-      if (currentUser) {
-        try {
-          const userProfile = await fetchProfile(currentUser.id)
-          if (isMounted) {
-            setProfile(userProfile)
+
+    // Only set up auth listener on admin pages
+    let subscription: { unsubscribe: () => void } | null = null
+    if (isAdminPage) {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange(
+        async (event: AuthChangeEvent, session: Session | null) => {
+          if (!isMounted) return
+          // Skip auth state processing on public pages unless it's a SIGNED_IN event
+          const isAdminPage = location.pathname.includes('/admin')
+          if (!isAdminPage && event !== 'SIGNED_IN') {
+            return
           }
-        } catch {
-          if (isMounted) setProfile(null)
-        }
-      } else {
-        setProfile(null)
-      }
-      if (isMounted) {
-        setLoading(false)
-        setInitialized(true)
-      }
-    })
+          // Set loading true during auth change processing
+          setLoading(true)
+          const currentUser = session?.user ?? null
+          setUser(currentUser)
+          // Fetch profile if user exists
+          if (currentUser) {
+            try {
+              const userProfile = await fetchProfile(currentUser.id)
+              if (isMounted) {
+                setProfile(userProfile)
+              }
+            } catch {
+              if (isMounted) setProfile(null)
+            }
+          } else {
+            setProfile(null)
+          }
+          if (isMounted) {
+            setLoading(false)
+            setInitialized(true)
+          }
+        },
+      )
+      subscription = authSubscription
+    }
+
     return () => {
       isMounted = false
       clearTimeout(timeoutId)
-      subscription.unsubscribe()
+      if (subscription) {
+        subscription.unsubscribe()
+      }
     }
   }, [initialized, location, user, profile, fetchProfile]) // Re-run when pathname changes or user state changes
 
