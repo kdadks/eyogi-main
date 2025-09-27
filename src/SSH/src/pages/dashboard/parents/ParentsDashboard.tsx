@@ -55,6 +55,7 @@ interface Child {
   full_name: string
   age: number
   grade: string
+  email?: string
   avatar?: string
   overall_progress: number
   streak_days: number
@@ -273,6 +274,7 @@ export default function ParentsDashboard() {
             full_name: profile.full_name || 'Unknown',
             age: age,
             grade: profile.grade || 'Not Set', // Use grade from database
+            email: profile.email || '',
             avatar: age < 10 ? '👶' : age < 15 ? '🧒' : '👤',
             overall_progress: 0,
             streak_days: 0,
@@ -446,6 +448,7 @@ export default function ParentsDashboard() {
     fullName: string
     date_of_birth: string
     grade: string
+    email?: string
     phone?: string
     address: AddressFormData
   }) => {
@@ -455,6 +458,7 @@ export default function ParentsDashboard() {
         full_name: childData.fullName,
         date_of_birth: childData.date_of_birth,
         grade: childData.grade,
+        email: childData.email,
         phone: childData.phone,
         address_line_1: childData.address.address_line_1,
         city: childData.address.city,
@@ -470,6 +474,7 @@ export default function ParentsDashboard() {
                 ...child,
                 full_name: childData.fullName,
                 grade: childData.grade,
+                email: childData.email,
               }
             : child,
         ),
@@ -807,6 +812,7 @@ export default function ParentsDashboard() {
             fullName: childToEdit.full_name,
             date_of_birth: childToEdit.date_of_birth || '',
             grade: childToEdit.grade,
+            email: childToEdit.email || '',
             phone: childToEdit.phone || '',
             address: {
               address_line_1: childToEdit.address_line_1 || '',

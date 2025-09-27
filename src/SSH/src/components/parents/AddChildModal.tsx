@@ -3,11 +3,13 @@ import { X, UserPlus, AlertCircle } from 'lucide-react'
 import CountrySelect from '../forms/CountrySelect'
 import StateSelect from '../forms/StateSelect'
 import { countries, normalizeToCountryCode } from '../../lib/address-utils'
+import { supabase } from '../../lib/supabase'
 
 interface ChildFormData {
   fullName: string
   date_of_birth: string
   grade: string
+  email?: string
   phone?: string
   address: {
     address_line_1: string
@@ -114,6 +116,7 @@ export default function AddChildModal({
     fullName: '',
     date_of_birth: '',
     grade: '',
+    email: '',
     phone: '',
     address: {
       address_line_1: '',
@@ -139,6 +142,7 @@ export default function AddChildModal({
         fullName: initialData.fullName,
         date_of_birth: formattedDate,
         grade: initialData.grade,
+        email: initialData.email || '',
         phone: initialData.phone || '',
         address: {
           address_line_1: initialData.address.address_line_1,
@@ -155,6 +159,7 @@ export default function AddChildModal({
         fullName: '',
         date_of_birth: '',
         grade: '',
+        email: '',
         phone: '',
         address: {
           address_line_1: '',
@@ -209,14 +214,65 @@ export default function AddChildModal({
       newErrors.zip_code = 'ZIP code is required'
     }
 
+    // Email validation
+    if (isEditMode) {
+      // In edit mode, email is optional but if provided must be valid format
+      if (formData.email && formData.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(formData.email)) {
+          newErrors.email = 'Please enter a valid email address'
+        }
+      }
+    } else {
+      // In add mode, email is required (will be auto-generated if empty, but validate if provided)
+      if (formData.email && formData.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(formData.email)) {
+          newErrors.email = 'Please enter a valid email address'
+        }
+      }
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  // Check if email already exists in database
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.toLowerCase())
+        .limit(1)
+
+      if (error) {
+        console.error('Error checking email existence:', error)
+        return false
+      }
+
+      return data && data.length > 0
+    } catch (error) {
+      console.error('Error checking email existence:', error)
+      return false
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) {
       return
+    }
+
+    // Check email uniqueness if email is provided
+    if (formData.email && formData.email.trim()) {
+      const emailExists = await checkEmailExists(formData.email.trim())
+      if (emailExists) {
+        setErrors({
+          email: 'This email address is already in use. Please choose a different email.',
+        })
+        return
+      }
     }
 
     try {
@@ -231,6 +287,7 @@ export default function AddChildModal({
         fullName: '',
         date_of_birth: '',
         grade: '',
+        email: '',
         phone: '',
         address: {
           address_line_1: parentInfo?.address?.street || '',
@@ -407,6 +464,32 @@ export default function AddChildModal({
                   placeholder="Enter phone number"
                   disabled={loading}
                 />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email {isEditMode ? '(Optional)' : '*(will be auto-generated if empty)'}
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.email ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder={
+                    isEditMode ? "Enter child's email" : 'Leave empty for auto-generation'
+                  }
+                  disabled={loading}
+                  required={!isEditMode && !formData.email}
+                />
+                {errors.email && (
+                  <p className="text-red-600 text-sm mt-1 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {errors.email}
+                  </p>
+                )}
               </div>
             </div>
 
