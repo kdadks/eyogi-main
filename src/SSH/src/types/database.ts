@@ -290,6 +290,184 @@ export interface Database {
           updated_at?: string
         }
       }
+      batches: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          gurukul_id: string
+          teacher_id: string | null
+          start_date: string | null
+          end_date: string | null
+          max_students: number | null
+          status: 'active' | 'inactive' | 'completed' | 'archived'
+          created_by: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          gurukul_id: string
+          teacher_id?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          max_students?: number | null
+          status?: 'active' | 'inactive' | 'completed' | 'archived'
+          created_by: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          gurukul_id?: string
+          teacher_id?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          max_students?: number | null
+          status?: 'active' | 'inactive' | 'completed' | 'archived'
+          created_by?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      batch_students: {
+        Row: {
+          id: string
+          batch_id: string
+          student_id: string
+          assigned_by: string
+          assigned_at: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          batch_id: string
+          student_id: string
+          assigned_by: string
+          assigned_at?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          batch_id?: string
+          student_id?: string
+          assigned_by?: string
+          assigned_at?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      batch_courses: {
+        Row: {
+          id: string
+          batch_id: string
+          course_id: string
+          assigned_by: string
+          assigned_at: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          batch_id: string
+          course_id: string
+          assigned_by: string
+          assigned_at?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          batch_id?: string
+          course_id?: string
+          assigned_by?: string
+          assigned_at?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      permissions: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          resource: string
+          action: string
+          is_active: boolean
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          resource: string
+          action: string
+          is_active?: boolean
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          resource?: string
+          action?: string
+          is_active?: boolean
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_permissions: {
+        Row: {
+          id: string
+          user_id: string
+          permission_id: string
+          granted_by: string
+          granted_at: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          permission_id: string
+          granted_by: string
+          granted_at?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          permission_id?: string
+          granted_by?: string
+          granted_at?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

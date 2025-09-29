@@ -11,6 +11,7 @@ const COMPONENT_PERMISSIONS = {
   StudentManagement: ['admin', 'business_admin', 'teacher', 'super_admin'],
   GurukulManagement: ['admin', 'business_admin', 'super_admin'],
   ContentManagement: ['admin', 'business_admin', 'super_admin'],
+  BatchManagement: ['admin', 'business_admin', 'super_admin'],
   SiteAnalytics: ['admin', 'super_admin'],
   AdminPermissionManagement: ['admin', 'super_admin'],
   AdminUserManagementNew: ['admin', 'super_admin'],
@@ -54,6 +55,10 @@ export function usePermissions() {
           'content',
           'certificates',
           'assignments',
+          'batches',
+          'batch_students',
+          'batch_courses',
+          'permissions',
         ]
         return businessAdminResources.includes(resource.toLowerCase())
       }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   UsersIcon,
   BookOpenIcon,
@@ -10,8 +11,10 @@ import {
   UserPlusIcon,
   BookOpenIcon as BookIcon,
   CheckCircleIcon,
+  QueueListIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
+import { getBatchStats } from '../../lib/api/batches'
 interface DashboardStats {
   totalUsers: number
   totalCourses: number
@@ -19,6 +22,8 @@ interface DashboardStats {
   totalCertificates: number
   recentEnrollments: number
   activeUsers: number
+  totalBatches: number
+  activeBatches: number
 }
 interface ActivityItem {
   id: string
@@ -30,6 +35,7 @@ interface ActivityItem {
   iconColor: string
 }
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate()
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalCourses: 0,
@@ -37,6 +43,8 @@ const AdminDashboard: React.FC = () => {
     totalCertificates: 0,
     recentEnrollments: 0,
     activeUsers: 0,
+    totalBatches: 0,
+    activeBatches: 0,
   })
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,6 +64,7 @@ const AdminDashboard: React.FC = () => {
         totalCertificatesResult,
         recentEnrollmentsResult,
         activeUsersResult,
+        batchStatsResult,
       ] = await Promise.all([
         supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
         supabaseAdmin.from('courses').select('*', { count: 'exact', head: true }),
@@ -67,8 +76,8 @@ const AdminDashboard: React.FC = () => {
           .gte('created_at', thirtyDaysAgo.toISOString()),
         supabaseAdmin
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active'),
+          .select('*', { count: 'exact', head: true }),
+        getBatchStats().catch(() => ({ total: 0, active: 0, inactive: 0, completed: 0, archived: 0 })),
       ])
       setStats({
         totalUsers: totalUsersResult.count || 0,
@@ -77,6 +86,8 @@ const AdminDashboard: React.FC = () => {
         totalCertificates: totalCertificatesResult.count || 0,
         recentEnrollments: recentEnrollmentsResult.count || 0,
         activeUsers: activeUsersResult.count || 0,
+        totalBatches: batchStatsResult.total || 0,
+        activeBatches: batchStatsResult.active || 0,
       })
     } catch {
       // Show zero values on error instead of mock data
@@ -87,6 +98,8 @@ const AdminDashboard: React.FC = () => {
         totalCertificates: 0,
         recentEnrollments: 0,
         activeUsers: 0,
+        totalBatches: 0,
+        activeBatches: 0,
       })
     } finally {
       setLoading(false)
@@ -124,11 +137,11 @@ const AdminDashboard: React.FC = () => {
               `
             id,
             enrolled_at,
-            profiles!enrollments_user_id_fkey (
+            profiles!student_id (
               full_name,
               email
             ),
-            courses!enrollments_course_id_fkey (
+            courses!course_id (
               title
             )
           `,
@@ -144,11 +157,11 @@ const AdminDashboard: React.FC = () => {
               `
             id,
             issued_at,
-            profiles!certificates_user_id_fkey (
+            profiles!student_id (
               full_name,
               email
             ),
-            courses!certificates_course_id_fkey (
+            courses!course_id (
               title
             )
           `,
@@ -281,6 +294,20 @@ const AdminDashboard: React.FC = () => {
       color: 'bg-pink-500',
       change: 'Last 30 days',
     },
+    {
+      title: 'Total Batches',
+      value: stats.totalBatches,
+      icon: QueueListIcon,
+      color: 'bg-orange-500',
+      change: 'All time',
+    },
+    {
+      title: 'Active Batches',
+      value: stats.activeBatches,
+      icon: QueueListIcon,
+      color: 'bg-emerald-500',
+      change: 'Currently running',
+    },
   ]
   if (loading) {
     return (
@@ -291,8 +318,8 @@ const AdminDashboard: React.FC = () => {
           <p className="text-gray-600">Loading analytics...</p>
         </div>
         {/* Skeleton Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, index) => (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(8)].map((_, index) => (
             <div
               key={index}
               className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200"
@@ -325,7 +352,7 @@ const AdminDashboard: React.FC = () => {
         <p className="text-gray-600">Welcome to the eYogi Gurukul Admin Console</p>
       </div>
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card, index) => (
           <div
             key={index}
@@ -360,7 +387,7 @@ const AdminDashboard: React.FC = () => {
           <h2 className="text-lg font-medium text-gray-900">Quick Actions</h2>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <UsersIcon className="h-8 w-8 text-blue-600 mb-2" />
               <h3 className="font-medium text-gray-900">Add New User</h3>
@@ -370,6 +397,14 @@ const AdminDashboard: React.FC = () => {
               <BookOpenIcon className="h-8 w-8 text-green-600 mb-2" />
               <h3 className="font-medium text-gray-900">Create Course</h3>
               <p className="text-sm text-gray-500">Set up a new course</p>
+            </button>
+            <button
+              onClick={() => navigate('/admin/batches')}
+              className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <QueueListIcon className="h-8 w-8 text-orange-600 mb-2" />
+              <h3 className="font-medium text-gray-900">Manage Batches</h3>
+              <p className="text-sm text-gray-500">Create and organize student batches</p>
             </button>
             <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
               <ClipboardDocumentListIcon className="h-8 w-8 text-yellow-600 mb-2" />

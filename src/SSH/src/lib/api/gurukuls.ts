@@ -96,3 +96,74 @@ export async function deleteGurukul(id: string): Promise<void> {
     throw error
   }
 }
+
+export async function getGurukulsWithStats(): Promise<Array<Gurukul & { courses: number; students: number; image: string }>> {
+  try {
+    // First get all active gurukuls
+    const { data: gurukuls, error: gurukulError } = await supabaseAdmin
+      .from('gurukuls')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+
+    if (gurukulError) {
+      return []
+    }
+
+    if (!gurukuls || gurukuls.length === 0) {
+      return []
+    }
+
+    // Get course counts for each gurukul
+    const { data: courseStats, error: courseError } = await supabaseAdmin
+      .from('courses')
+      .select('gurukul_id')
+      .eq('is_active', true)
+
+    // Get enrollment counts (students) for each gurukul
+    const { data: enrollmentStats, error: enrollmentError } = await supabaseAdmin
+      .from('enrollments')
+      .select(`
+        course_id,
+        courses!inner (
+          gurukul_id
+        )
+      `)
+      .eq('status', 'approved')
+
+    if (courseError || enrollmentError) {
+      // If we can't get stats, return gurukuls with zero counts
+      return gurukuls.map(gurukul => ({
+        ...gurukul,
+        courses: 0,
+        students: 0,
+        image: gurukul.image_url || 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=400&h=300&fit=crop'
+      }))
+    }
+
+    // Count courses per gurukul
+    const courseCounts = (courseStats || []).reduce((acc, course) => {
+      acc[course.gurukul_id] = (acc[course.gurukul_id] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    // Count students per gurukul
+    const studentCounts = (enrollmentStats || []).reduce((acc, enrollment: any) => {
+      const gurukulId = enrollment.courses?.gurukul_id
+      if (gurukulId) {
+        acc[gurukulId] = (acc[gurukulId] || 0) + 1
+      }
+      return acc
+    }, {} as Record<string, number>)
+
+    // Combine data
+    return gurukuls.map(gurukul => ({
+      ...gurukul,
+      courses: courseCounts[gurukul.id] || 0,
+      students: studentCounts[gurukul.id] || 0,
+      image: gurukul.image_url || 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=400&h=300&fit=crop'
+    }))
+  } catch {
+    return []
+  }
+}

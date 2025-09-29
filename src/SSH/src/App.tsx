@@ -34,6 +34,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 import GurukulDetailPage from './pages/GurukulDetailPage'
 import CourseDetailPage from './pages/CourseDetailPage'
 import CertificateViewer from './components/certificates/CertificateViewer'
+import BatchManagement from './components/admin/BatchManagement'
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -129,6 +130,7 @@ function App() {
               <Route path="certificates" element={<CertificateManagement />} />
               <Route path="content" element={<ContentManagement />} />
               <Route path="analytics" element={<SiteAnalytics />} />
+              <Route path="batches" element={<BatchManagement />} />
             </Route>
             {/* Detail pages */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />

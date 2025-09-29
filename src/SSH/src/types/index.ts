@@ -274,3 +274,86 @@ export interface Syllabus {
     duration: string
   }>
 }
+
+// Batch Management Interfaces
+export interface Batch {
+  id: string
+  name: string
+  description?: string | null
+  gurukul_id: string
+  teacher_id?: string | null
+  start_date?: string | null
+  end_date?: string | null
+  max_students?: number | null
+  status: 'active' | 'inactive' | 'completed' | 'archived'
+  created_by: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  gurukul?: Gurukul
+  teacher?: User
+  students?: User[]
+  courses?: Course[]
+  student_count?: number
+  course_count?: number
+}
+
+export interface BatchStudent {
+  id: string
+  batch_id: string
+  student_id: string
+  assigned_by: string
+  assigned_at: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  student?: User
+  batch?: Batch
+  assigned_by_user?: User
+}
+
+export interface BatchCourse {
+  id: string
+  batch_id: string
+  course_id: string
+  assigned_by: string
+  assigned_at: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  course?: Course
+  batch?: Batch
+  assigned_by_user?: User
+}
+
+export interface Permission {
+  id: string
+  name: string
+  description?: string | null
+  resource: string
+  action: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  created_by_user?: User
+}
+
+export interface UserPermission {
+  id: string
+  user_id: string
+  permission_id: string
+  granted_by: string
+  granted_at: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  user?: User
+  permission?: Permission
+  granted_by_user?: User
+}

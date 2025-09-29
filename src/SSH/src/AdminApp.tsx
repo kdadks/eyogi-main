@@ -11,6 +11,7 @@ import AdminDashboard from './components/admin/AdminDashboard'
 import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
 import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
 import CertificateManagement from './components/admin/CertificateManagement'
+import BatchManagement from './components/admin/BatchManagement'
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -92,6 +93,15 @@ function AdminApp() {
                     </AdminProtectedRoute>
                   }
                 />
+                {/* Batch Management Routes */}
+                <Route
+                  path="batches"
+                  element={
+                    <AdminProtectedRoute>
+                      <BatchManagement />
+                    </AdminProtectedRoute>
+                  }
+                />
                 {/* Analytics Routes */}
                 <Route
                   path="analytics"
@@ -143,6 +153,17 @@ function AdminApp() {
                         Go Back
                       </button>
                     </div>
+                  </div>
+                }
+              />
+              {/* TEST ROUTE - outside admin layout */}
+              <Route
+                path="/admin/test-batches"
+                element={
+                  <div className="min-h-screen bg-gray-100 p-8">
+                    <h1 className="text-4xl font-bold text-green-600">TEST ROUTE WORKING!</h1>
+                    <p>This route is completely outside the admin layout structure.</p>
+                    <p>URL: /admin/test-batches</p>
                   </div>
                 }
               />

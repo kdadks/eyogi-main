@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import ScrollLink from '../components/ui/ScrollLink'
 import SEOHead from '../components/seo/SEOHead'
 import { generateOrganizationSchema, generateWebsiteSchema } from '../components/seo/StructuredData'
@@ -15,7 +15,27 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import Footer from '../components/layout/Footer'
+import { getGurukulsWithStats } from '../lib/api/gurukuls'
+import { Gurukul } from '../types'
 export default function HomePage() {
+  const [gurukuls, setGurukuls] = useState<Array<Gurukul & { courses: number; students: number; image: string }>>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchGurukuls = async () => {
+      try {
+        const data = await getGurukulsWithStats()
+        setGurukuls(data)
+      } catch (error) {
+        console.error('Error fetching gurukuls:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchGurukuls()
+  }, [])
+
   const structuredData = [
     generateOrganizationSchema(),
     generateWebsiteSchema(),
@@ -61,48 +81,6 @@ export default function HomePage() {
       icon: StarIcon,
       title: 'Certified Programs',
       description: 'Earn certificates upon completion of courses and showcase your achievements',
-    },
-  ]
-  const gurukuls = [
-    {
-      name: 'Hinduism Gurukul',
-      description: 'Explore Hindu traditions, philosophy, and practices',
-      image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=400&h=300&fit=crop',
-      courses: 12,
-      students: 450,
-      slug: 'hinduism',
-    },
-    {
-      name: 'Mantra Gurukul',
-      description: 'Learn sacred mantras and their transformative power',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-      courses: 8,
-      students: 320,
-      slug: 'mantra',
-    },
-    {
-      name: 'Philosophy Gurukul',
-      description: 'Dive deep into ancient philosophical traditions',
-      image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
-      courses: 15,
-      students: 280,
-      slug: 'philosophy',
-    },
-    {
-      name: 'Sanskrit Gurukul',
-      description: 'Master the sacred language of Sanskrit',
-      image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop',
-      courses: 10,
-      students: 380,
-      slug: 'sanskrit',
-    },
-    {
-      name: 'Yoga & Wellness',
-      description: 'Integrate physical, mental, and spiritual wellness',
-      image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&h=300&fit=crop',
-      courses: 18,
-      students: 520,
-      slug: 'yoga-wellness',
     },
   ]
   const testimonials = [
@@ -225,15 +203,21 @@ export default function HomePage() {
                 <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row sm:items-center sm:space-x-6 lg:space-x-8 text-sm text-gray-600 justify-center lg:justify-start px-2 sm:px-0">
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm sm:text-sm font-medium">1,950+ Students</span>
+                    <span className="text-sm sm:text-sm font-medium">
+                      {loading ? '...' : `${gurukuls.reduce((total, g) => total + g.students, 0)}+ Students`}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm sm:text-sm font-medium">63+ Courses</span>
+                    <span className="text-sm sm:text-sm font-medium">
+                      {loading ? '...' : `${gurukuls.reduce((total, g) => total + g.courses, 0)}+ Courses`}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm sm:text-sm font-medium">5 Gurukuls</span>
+                    <span className="text-sm sm:text-sm font-medium">
+                      {loading ? '...' : `${gurukuls.length} Gurukuls`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -306,32 +290,51 @@ export default function HomePage() {
                 Dharma, offering comprehensive Hindu education paths for students of all ages.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-              {gurukuls.map((gurukul, index) => (
-                <Card key={index} className="card-hover overflow-hidden">
-                  <div className="aspect-video overflow-hidden">
-                    <img
-                      src={gurukul.image}
-                      alt={`${gurukul.name} - Traditional Hindu education and Vedic learning center`}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                  <CardContent className="p-4 lg:p-6">
-                    <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
-                    <p className="text-gray-600 mb-4 text-sm lg:text-base">{gurukul.description}</p>
-                    <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
-                      <span>{gurukul.courses} Hindu Courses</span>
-                      <span>{gurukul.students} Vedic Students</span>
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                {[...Array(5)].map((_, index) => (
+                  <Card key={index} className="card-hover overflow-hidden animate-pulse flex flex-col min-h-[400px]">
+                    <div className="aspect-video overflow-hidden bg-gray-200"></div>
+                    <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
+                      <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-4 flex-grow"></div>
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                      </div>
+                      <div className="h-10 bg-gray-200 rounded"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                {gurukuls.map((gurukul) => (
+                  <Card key={gurukul.id} className="card-hover overflow-hidden flex flex-col min-h-[400px]">
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={gurukul.image}
+                        alt={`${gurukul.name} - Traditional Hindu education and Vedic learning center`}
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
                     </div>
-                    <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
-                      <Button variant="primary" className="w-full min-h-[44px]">
-                        Explore Hindu Gurukul
-                      </Button>
-                    </ScrollLink>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
+                      <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
+                      <p className="text-gray-600 mb-4 text-sm lg:text-base flex-grow">{gurukul.description}</p>
+                      <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
+                        <span>{gurukul.courses} Hindu Courses</span>
+                        <span>{gurukul.students} Vedic Students</span>
+                      </div>
+                      <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
+                        <Button variant="primary" className="w-full min-h-[44px]">
+                          Explore Hindu Gurukul
+                        </Button>
+                      </ScrollLink>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </section>
         {/* Testimonials Section */}
