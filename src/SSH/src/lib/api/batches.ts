@@ -55,7 +55,45 @@ export async function getBatches(filters?: {
       return []
     }
 
-    return data || []
+    if (!data || data.length === 0) {
+      return []
+    }
+
+    // Fetch counts for each batch
+    const batchesWithCounts = await Promise.all(
+      data.map(async (batch) => {
+        try {
+          // Get student count
+          const { count: studentCount } = await supabaseAdmin
+            .from('batch_students')
+            .select('*', { count: 'exact', head: true })
+            .eq('batch_id', batch.id)
+            .eq('is_active', true)
+
+          // Get course count
+          const { count: courseCount } = await supabaseAdmin
+            .from('batch_courses')
+            .select('*', { count: 'exact', head: true })
+            .eq('batch_id', batch.id)
+            .eq('is_active', true)
+
+          return {
+            ...batch,
+            student_count: studentCount || 0,
+            course_count: courseCount || 0,
+          }
+        } catch (countError) {
+          console.error(`Error fetching counts for batch ${batch.id}:`, countError)
+          return {
+            ...batch,
+            student_count: 0,
+            course_count: 0,
+          }
+        }
+      })
+    )
+
+    return batchesWithCounts
   } catch (error) {
     console.error('Error in getBatches:', error)
     return []
@@ -344,7 +382,7 @@ export async function getBatchCourses(batchId: string): Promise<BatchCourse[]> {
       .from('batch_courses')
       .select(`
         *,
-        courses (
+        course:courses (
           id,
           title,
           description,
@@ -353,7 +391,7 @@ export async function getBatchCourses(batchId: string): Promise<BatchCourse[]> {
           price,
           max_students
         ),
-        batches (
+        batch:batches (
           id,
           name,
           description
@@ -387,6 +425,64 @@ export async function assignCourseToBatch(
   assignedBy: string
 ): Promise<BatchCourse> {
   try {
+    // Check if course is already assigned to this batch
+    const { data: existing } = await supabaseAdmin
+      .from('batch_courses')
+      .select('id, is_active')
+      .eq('batch_id', batchId)
+      .eq('course_id', courseId)
+      .single()
+
+    // If already exists and is active, return error
+    if (existing && existing.is_active) {
+      throw new Error('Course is already assigned to this batch')
+    }
+
+    // If exists but inactive, reactivate it
+    if (existing && !existing.is_active) {
+      const { data, error } = await supabaseAdmin
+        .from('batch_courses')
+        .update({
+          is_active: true,
+          assigned_by: assignedBy,
+          assigned_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select(`
+          *,
+          course:courses (
+            id,
+            title,
+            description,
+            level,
+            duration_weeks,
+            price,
+            max_students
+          ),
+          batch:batches (
+            id,
+            name,
+            description
+          ),
+          assigner:profiles!batch_courses_assigned_by_fkey (
+            id,
+            full_name,
+            email,
+            role
+          )
+        `)
+        .single()
+
+      if (error) {
+        console.error('Error reactivating course assignment:', error)
+        throw new Error('Failed to reactivate course assignment')
+      }
+
+      return data
+    }
+
+    // Otherwise, create new assignment
     const { data, error } = await supabaseAdmin
       .from('batch_courses')
       .insert({

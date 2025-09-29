@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { createBatch, updateBatch } from '../../lib/api/batches'
+import { createBatch, updateBatch, assignCourseToBatch } from '../../lib/api/batches'
 import { getAllUsers } from '../../lib/api/users'
-import { Batch, Gurukul, User } from '../../types'
+import { getCourses } from '../../lib/api/courses'
+import { Batch, Gurukul, User, Course } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 
 interface BatchModalProps {
@@ -24,7 +25,10 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
     max_students: '',
     status: 'active' as const,
   })
+  const [assignmentType, setAssignmentType] = useState<'gurukul' | 'course'>('gurukul')
+  const [selectedCourseId, setSelectedCourseId] = useState('')
   const [teachers, setTeachers] = useState<User[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -32,6 +36,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
 
   useEffect(() => {
     fetchTeachers()
+    fetchCourses()
     if (batch) {
       setFormData({
         name: batch.name,
@@ -56,6 +61,15 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
     }
   }
 
+  const fetchCourses = async () => {
+    try {
+      const courseList = await getCourses()
+      setCourses(courseList)
+    } catch (error) {
+      console.error('Error fetching courses:', error)
+    }
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -72,8 +86,12 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
       newErrors.name = 'Batch name is required'
     }
 
-    if (!formData.gurukul_id) {
+    if (assignmentType === 'gurukul' && !formData.gurukul_id) {
       newErrors.gurukul_id = 'Gurukul is required'
+    }
+
+    if (assignmentType === 'course' && !selectedCourseId) {
+      newErrors.course_id = 'Course is required'
     }
 
     if (formData.start_date && formData.end_date) {
@@ -99,10 +117,17 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
 
     setLoading(true)
     try {
+      // For course-based batches, we need the gurukul_id from the selected course
+      let gurukulId = formData.gurukul_id
+      if (assignmentType === 'course' && selectedCourseId) {
+        const selectedCourse = courses.find(course => course.id === selectedCourseId)
+        gurukulId = selectedCourse?.gurukul_id || ''
+      }
+
       const batchData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
-        gurukul_id: formData.gurukul_id,
+        gurukul_id: gurukulId,
         teacher_id: formData.teacher_id || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
@@ -112,10 +137,16 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
         is_active: true,
       }
 
+      let savedBatch
       if (batch) {
-        await updateBatch(batch.id, batchData)
+        savedBatch = await updateBatch(batch.id, batchData)
       } else {
-        await createBatch(batchData)
+        savedBatch = await createBatch(batchData)
+      }
+
+      // If this is a course-based batch, automatically assign the course
+      if (assignmentType === 'course' && selectedCourseId && savedBatch) {
+        await assignCourseToBatch(savedBatch.id, selectedCourseId, profile.id)
       }
 
       onSuccess()
@@ -143,6 +174,35 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Assignment Type Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Batch Assignment Type *
+            </label>
+            <div className="flex gap-6">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="gurukul"
+                  checked={assignmentType === 'gurukul'}
+                  onChange={(e) => setAssignmentType(e.target.value as 'gurukul' | 'course')}
+                  className="mr-2"
+                />
+                <span>Gurukul-based (Traditional)</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="course"
+                  checked={assignmentType === 'course'}
+                  onChange={(e) => setAssignmentType(e.target.value as 'gurukul' | 'course')}
+                  className="mr-2"
+                />
+                <span>Course-based (Specific Course)</span>
+              </label>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -163,29 +223,54 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gurukul *
-              </label>
-              <select
-                name="gurukul_id"
-                value={formData.gurukul_id}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                  errors.gurukul_id ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select a gurukul</option>
-                {gurukuls.map((gurukul) => (
-                  <option key={gurukul.id} value={gurukul.id}>
-                    {gurukul.name}
-                  </option>
-                ))}
-              </select>
-              {errors.gurukul_id && (
-                <p className="text-red-500 text-sm mt-1">{errors.gurukul_id}</p>
-              )}
-            </div>
+            {assignmentType === 'gurukul' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gurukul *
+                </label>
+                <select
+                  name="gurukul_id"
+                  value={formData.gurukul_id}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                    errors.gurukul_id ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select a gurukul</option>
+                  {gurukuls.map((gurukul) => (
+                    <option key={gurukul.id} value={gurukul.id}>
+                      {gurukul.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.gurukul_id && (
+                  <p className="text-red-500 text-sm mt-1">{errors.gurukul_id}</p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course *
+                </label>
+                <select
+                  value={selectedCourseId}
+                  onChange={(e) => setSelectedCourseId(e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                    errors.course_id ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select a course</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.title} ({course.gurukul?.name})
+                    </option>
+                  ))}
+                </select>
+                {errors.course_id && (
+                  <p className="text-red-500 text-sm mt-1">{errors.course_id}</p>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
