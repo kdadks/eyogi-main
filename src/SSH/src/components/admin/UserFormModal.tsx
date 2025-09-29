@@ -239,30 +239,28 @@ export default function UserFormModal({
         }
         toast.success('User created successfully!')
       } else {
-        // Update existing user profile
-        const baseUpdateData = {
+        // Update existing user profile (include all DB fields)
+        const updateData = {
           full_name: formData.full_name,
           role: formData.role,
+          status: formData.status,
           date_of_birth: getDateOfBirthFromAge(formData.age),
           phone: formData.phone || null,
+          emergency_contact: formData.emergency_contact,
+          preferences: formData.preferences,
+          avatar_url: formData.avatar_url,
+          student_id: formData.student_id || null,
+          parent_id: formData.parent_id || null,
+          teacher_id: formData.teacher_id || null,
           address_line_1: formData.address_line_1,
           address_line_2: formData.address_line_2,
           city: formData.city,
           state: formData.state,
           zip_code: formData.zip_code,
           country: formData.country,
+          age: formData.age ? Number(formData.age) : null,
+          grade: formData.grade,
           updated_at: new Date().toISOString(),
-        }
-
-        // Only include student fields for student role
-        const updateData = {
-          ...baseUpdateData,
-          // Only include student_id for student role
-          ...(formData.role === 'student'
-            ? {
-                student_id: formData.student_id || null,
-              }
-            : {}),
         }
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
