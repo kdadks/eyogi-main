@@ -192,7 +192,10 @@ export default function CourseDetailPage() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">{course.title}</h1>
-                  <p className="text-xl text-gray-600 leading-relaxed">{course.description}</p>
+                  <div
+                    className="text-xl text-gray-600 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: course.description }}
+                  />
                 </div>
                 <div className="flex items-center space-x-6 text-sm text-gray-600">
                   <div className="flex items-center">
@@ -216,7 +219,10 @@ export default function CourseDetailPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{course.gurukul.name}</h3>
-                        <p className="text-sm text-gray-600">{course.gurukul.description}</p>
+                        <div
+                          className="text-sm text-gray-600"
+                          dangerouslySetInnerHTML={{ __html: course.gurukul.description }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -320,11 +326,14 @@ export default function CourseDetailPage() {
                   <h2 className="text-2xl font-bold">What You'll Learn</h2>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {course.learning_outcomes.map((outcome, index) => (
                       <div key={index} className="flex items-start space-x-3">
                         <CheckCircleIcon className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{outcome}</span>
+                        <span
+                          className="text-gray-700"
+                          dangerouslySetInnerHTML={{ __html: outcome }}
+                        />
                       </div>
                     ))}
                   </div>

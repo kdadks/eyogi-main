@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, Syllabus } from '@/types'
@@ -693,13 +695,11 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description *
                   </label>
-                  <textarea
+                  <ReactQuill
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, description: value })}
                     placeholder="Course description"
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                    required
+                    className="bg-white"
                   />
                 </div>
                 <div>
@@ -844,19 +844,16 @@ export default function CourseManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Learning Outcomes
                 </label>
-                <textarea
+                <ReactQuill
                   value={formData.learning_outcomes.join('\n')}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setFormData({
                       ...formData,
-                      learning_outcomes: e.target.value
-                        .split('\n')
-                        .filter((line) => line.trim() !== ''),
+                      learning_outcomes: value.split('\n').filter((line) => line.trim() !== ''),
                     })
                   }
                   placeholder="Enter each outcome on a new line"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
+                  className="bg-white"
                 />
               </div>
               {/* Action Buttons */}
@@ -930,13 +927,11 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description *
                   </label>
-                  <textarea
+                  <ReactQuill
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, description: value })}
                     placeholder="Course description"
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                    required
+                    className="bg-white"
                   />
                 </div>
                 <div>
@@ -1101,19 +1096,16 @@ export default function CourseManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Learning Outcomes
                 </label>
-                <textarea
+                <ReactQuill
                   value={formData.learning_outcomes.join('\n')}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setFormData({
                       ...formData,
-                      learning_outcomes: e.target.value
-                        .split('\n')
-                        .filter((line) => line.trim() !== ''),
+                      learning_outcomes: value.split('\n').filter((line) => line.trim() !== ''),
                     })
                   }
                   placeholder="Enter each outcome on a new line"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
+                  className="bg-white"
                 />
               </div>
               {/* Action Buttons */}

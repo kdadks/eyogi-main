@@ -224,7 +224,10 @@ export default function CoursesPage() {
                         <span className="text-sm text-gray-500">{course.course_number}</span>
                       </div>
                       <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
-                      <p className="text-gray-600 mb-4 line-clamp-3">{course.description}</p>
+                      <div
+                        className="text-gray-600 mb-4 line-clamp-3"
+                        dangerouslySetInnerHTML={{ __html: course.description }}
+                      />
                       <div className="space-y-2 mb-4 text-sm text-gray-500">
                         <div className="flex items-center">
                           <UserGroupIcon className="h-4 w-4 mr-2" />
