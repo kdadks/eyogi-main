@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../../contexts/WebsiteAuthContext'
 import { Badge } from '../../../components/ui/Badge'
@@ -27,6 +28,7 @@ import AddressForm from '../../../components/forms/AddressForm'
 import { AddressFormData, getCountryName, getStateName } from '../../../lib/address-utils'
 import { enrollInCourse } from '../../../lib/api/enrollments'
 import { getCourses } from '../../../lib/api/courses'
+import { formatCurrency } from '../../../lib/utils'
 import { getStudentEnrollments } from '../../../lib/api/enrollments'
 import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
 import {
@@ -139,6 +141,7 @@ interface ParentStats {
   totalLearningHours: number
 }
 export default function ParentsDashboard() {
+  const { show: showConfirmDialog, Dialog: ConfirmDialogModal } = useConfirmDialog()
   const { user } = useWebsiteAuth()
   const [activeTab, setActiveTab] = useState<
     'home' | 'children' | 'enrollments' | 'progress' | 'settings' | 'analytics'
@@ -489,22 +492,23 @@ export default function ParentsDashboard() {
   const handleDeleteChild = async (childId: string) => {
     const childToDelete = children.find((child) => child.student_id === childId)
     if (!childToDelete) return
-    if (
-      !window.confirm(
-        `Are you sure you want to remove ${childToDelete.full_name}? This action cannot be undone.`,
-      )
-    ) {
-      return
-    }
-    try {
-      await deleteChild(childId)
-      // Remove from local state
-      setChildren((prev) => prev.filter((child) => child.student_id !== childId))
-      toast.success(`${childToDelete.full_name} has been removed`)
-      loadParentData() // Refresh stats
-    } catch {
-      toast.error('Failed to delete child')
-    }
+    showConfirmDialog({
+      title: 'Delete Child',
+      message: `Are you sure you want to remove ${childToDelete.full_name}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteChild(childId)
+          setChildren((prev) => prev.filter((child) => child.student_id !== childId))
+          toast.success(`${childToDelete.full_name} has been removed`)
+          loadParentData()
+        } catch {
+          toast.error('Failed to delete child')
+        }
+      },
+    })
   }
   const getTimeOfDay = () => {
     const hour = new Date().getHours()
@@ -888,7 +892,7 @@ export default function ParentsDashboard() {
                 {selectedCourse.subject} • {selectedCourse.difficulty}
               </p>
               <p className="text-sm text-blue-600 mt-1">
-                ₹{selectedCourse.price} • {selectedCourse.duration}
+                {formatCurrency(selectedCourse.price)} • {selectedCourse.duration}
               </p>
             </div>
             <div className="space-y-3">
@@ -942,6 +946,7 @@ export default function ParentsDashboard() {
       )}
       {/* Chat Bot */}
       <ChatBotTrigger />
+      {ConfirmDialogModal}
     </div>
   )
 }
@@ -1210,7 +1215,9 @@ function HomeTab({
                       </span>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-gray-900">₹{course.price}</div>
+                      <div className="text-sm font-bold text-gray-900">
+                        {formatCurrency(course.price)}
+                      </div>
                       <div className="text-xs text-gray-600">{course.duration}</div>
                     </div>
                   </div>

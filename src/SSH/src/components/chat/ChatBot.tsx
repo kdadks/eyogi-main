@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { ChatService } from '@/lib/ai/ChatService'
 import { formatDateTime } from '@/lib/utils'
+import toast from 'react-hot-toast'
 import {
   XMarkIcon,
   PaperAirplaneIcon,
@@ -215,7 +216,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         recognition.start()
       }
     } else {
-      alert('Speech recognition is not supported in your browser.')
+      toast.error('Speech recognition is not supported in your browser.')
     }
   }
   const clearChat = () => {

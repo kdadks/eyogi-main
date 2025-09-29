@@ -21,6 +21,7 @@ import { generateCertificatePDF, CertificateData } from '@/lib/pdf/certificateGe
 import { formatDate } from '@/lib/utils'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import CertificateTemplateEditor from './CertificateTemplateEditor'
 import CertificatePreviewModal from './CertificatePreviewModal'
 import TemplateAssignmentModal from './TemplateAssignmentModal'
@@ -59,6 +60,17 @@ export default function CertificateManagement() {
   const [previewData, setPreviewData] = useState<CertificateData | null>(null)
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
   const [assignments, setAssignments] = useState<CertificateAssignment[]>([])
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   // All hooks must be called before any early returns
   const loadData = useCallback(async () => {
     try {
@@ -144,16 +156,24 @@ export default function CertificateManagement() {
     }
   }
   const handleDeleteTemplate = async (templateId: string) => {
-    if (!confirm('Are you sure you want to delete this template?')) {
-      return
-    }
-    try {
-      await deleteCertificateTemplate(templateId)
-      await loadData()
-      toast.success('Template deleted successfully')
-    } catch {
-      toast.error('Failed to delete template')
-    }
+    const templateToDelete = templates.find((t) => t.id === templateId)
+    if (!templateToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Template',
+      message: `Are you sure you want to delete "${templateToDelete.name}"?`,
+      onConfirm: async () => {
+        try {
+          await deleteCertificateTemplate(templateId)
+          await loadData()
+          toast.success('Template deleted successfully')
+        } catch {
+          toast.error('Failed to delete template')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const handleDuplicateTemplate = async (templateId: string) => {
     try {
@@ -219,28 +239,22 @@ export default function CertificateManagement() {
       toast.error('Failed to download certificate')
     }
   }
-  const handleReissueCertificate = async (certificate: Certificate) => {
-    if (
-      !confirm(
-        'Are you sure you want to reissue this certificate? This will create a new version with updated data.',
-      )
-    ) {
-      return
-    }
-    try {
-      // Find the corresponding enrollment to reissue the certificate
-      const enrollment = completedEnrollments.find((e) => e.id === certificate.enrollment_id)
-      if (!enrollment) {
-        toast.error('Cannot find enrollment record for this certificate')
-        return
-      }
-      // Reset the certificate_issued flag and reissue
-      await issueCertificate(enrollment.id)
-      await loadData()
-      toast.success('Certificate has been reissued successfully')
-    } catch {
-      toast.error('Failed to reissue certificate')
-    }
+  const handleRemoveAssignment = async (assignmentId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Assignment',
+      message: 'Are you sure you want to remove this assignment?',
+      onConfirm: async () => {
+        try {
+          await deleteCertificateAssignment(assignmentId)
+          toast.success('Assignment removed successfully')
+          await loadData() // Reload data after deletion
+        } catch {
+          toast.error('Failed to remove assignment')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const handleSelectEnrollment = (enrollmentId: string) => {
     const newSelected = new Set(selectedEnrollments)
@@ -820,17 +834,7 @@ export default function CertificateManagement() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={async () => {
-                                if (confirm('Are you sure you want to remove this assignment?')) {
-                                  try {
-                                    await deleteCertificateAssignment(assignment.id)
-                                    toast.success('Assignment removed successfully')
-                                    await loadData() // Reload data after deletion
-                                  } catch {
-                                    toast.error('Failed to remove assignment')
-                                  }
-                                }
-                              }}
+                              onClick={() => handleRemoveAssignment(assignment.id)}
                               className="text-red-600 hover:text-red-900"
                             >
                               <TrashIcon className="h-4 w-4" />
@@ -878,6 +882,15 @@ export default function CertificateManagement() {
         }}
         templates={templates}
         userId={profile?.id || ''}
+      />
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
       />
     </div>
   )

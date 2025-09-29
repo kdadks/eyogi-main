@@ -301,7 +301,7 @@ export default function EnrollmentManagement() {
                               {enrollment.course?.course_number} • Level: {enrollment.course?.level}
                             </div>
                             <div className="text-xs text-gray-400">
-                              {enrollment.course?.gurukul?.name || 'Unknown Gurukul'} • ₹
+                              {enrollment.course?.gurukul?.name || 'Unknown Gurukul'} • €
                               {enrollment.course?.price || 0}
                             </div>
                           </div>
@@ -316,7 +316,7 @@ export default function EnrollmentManagement() {
                         <div className="text-sm">
                           <div className="flex items-center mb-1">
                             <CurrencyEuroIcon className="h-4 w-4 text-gray-400 mr-1" />
-                            <span className="font-medium">₹{enrollment.course?.price || 0}</span>
+                            <span className="font-medium">€{enrollment.course?.price || 0}</span>
                           </div>
                           <Badge
                             className={getStatusColor(enrollment.payment_status || 'pending')}

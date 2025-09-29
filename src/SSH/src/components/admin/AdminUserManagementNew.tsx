@@ -9,10 +9,14 @@ import {
   ShieldExclamationIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
+import { getStudentEnrollments } from '../../lib/api/enrollments'
+import { getChildrenByParentId, deleteChild } from '../../lib/api/children'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import type { Database } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import UserFormModal from './UserFormModal'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { getUserProfile } from '../../lib/api/users'
 type Profile = Database['public']['Tables']['profiles']['Row']
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<Profile[]>([])
@@ -22,6 +26,18 @@ const AdminUserManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Profile | null>(null)
+  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   const { user: currentUser } = useAuth()
   const loadUsers = useCallback(async () => {
     try {
@@ -50,15 +66,26 @@ const AdminUserManagement: React.FC = () => {
   }, [loadUsers])
   const handleCreateUser = () => {
     setEditingUser(null)
+    setModalMode('create')
     setIsModalOpen(true)
   }
-  const handleEditUser = (user: Profile) => {
+  const handleViewUser = async (user: Profile) => {
+    // Fetch full user profile (with address)
+    const fullUser = await getUserProfile(user.id)
+    setEditingUser(fullUser || user)
+    setModalMode('view')
+    setIsModalOpen(true)
+  }
+  const handleEditUser = async (user: Profile) => {
     // Prevent editing super admin users
     if (user.role === 'super_admin' && currentUser?.id !== user.id) {
       toast.error('Cannot edit super admin users')
       return
     }
-    setEditingUser(user)
+    // Fetch full user profile (with address)
+    const fullUser = await getUserProfile(user.id)
+    setEditingUser(fullUser || user)
+    setModalMode('edit')
     setIsModalOpen(true)
   }
   const handleDeleteUser = async (userId: string, userRole: string) => {
@@ -67,20 +94,52 @@ const AdminUserManagement: React.FC = () => {
       toast.error('Cannot delete super admin users')
       return
     }
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return
-    }
-    try {
-      const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
-      if (error) {
-        toast.error('Failed to delete user')
-        return
-      }
-      toast.success('User deleted successfully')
-      loadUsers() // Refresh the list
-    } catch {
-      toast.error('Failed to delete user')
-    }
+
+    const userToDelete = users.find((u) => u.id === userId)
+    if (!userToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Are you sure you want to delete "${userToDelete.full_name}"?\n\nThis will also delete all their enrollments${userToDelete.role === 'parent' ? ' and all their children' : ''}. This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          // 1. Delete enrollments if user is a student
+          if (userToDelete.role === 'student') {
+            const enrollments = await getStudentEnrollments(userId)
+            if (enrollments.length > 0) {
+              const enrollmentIds = enrollments.map((e) => e.id)
+              await supabaseAdmin.from('enrollments').delete().in('id', enrollmentIds)
+            }
+          }
+          // 2. If user is a parent, delete all their children (and their enrollments)
+          if (userToDelete.role === 'parent') {
+            const children = await getChildrenByParentId(userId)
+            for (const child of children) {
+              // Delete child enrollments
+              const enrollments = await getStudentEnrollments(child.id)
+              if (enrollments.length > 0) {
+                const enrollmentIds = enrollments.map((e) => e.id)
+                await supabaseAdmin.from('enrollments').delete().in('id', enrollmentIds)
+              }
+              // Delete child profile
+              await deleteChild(child.id)
+            }
+          }
+          // 3. Delete user profile
+          const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
+          if (error) {
+            toast.error('Failed to delete user')
+            return
+          }
+          toast.success('User and related data deleted successfully')
+          loadUsers() // Refresh the list
+        } catch {
+          toast.error('Failed to delete user')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const handleUserSaved = () => {
     setIsModalOpen(false)
@@ -150,7 +209,8 @@ const AdminUserManagement: React.FC = () => {
         </div>
         <button
           onClick={handleCreateUser}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
+          style={{ cursor: 'pointer' }}
         >
           <UserPlusIcon className="h-5 w-5 mr-2" />
           Add User
@@ -282,11 +342,10 @@ const AdminUserManagement: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button
-                        onClick={() => {
-                          /* View user details */
-                        }}
-                        className="text-gray-600 hover:text-gray-900 p-1"
+                        onClick={() => handleViewUser(user)}
+                        className="text-gray-600 hover:text-gray-900 p-1 cursor-pointer"
                         title="View user"
+                        style={{ cursor: 'pointer' }}
                       >
                         <EyeIcon className="h-4 w-4" />
                       </button>
@@ -296,9 +355,15 @@ const AdminUserManagement: React.FC = () => {
                         className={`p-1 ${
                           isProtectedUser(user) && currentUser?.id !== user.id
                             ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-blue-600 hover:text-blue-900'
+                            : 'text-blue-600 hover:text-blue-900 cursor-pointer'
                         }`}
                         title={isProtectedUser(user) ? 'Protected user' : 'Edit user'}
+                        style={{
+                          cursor:
+                            isProtectedUser(user) && currentUser?.id !== user.id
+                              ? 'not-allowed'
+                              : 'pointer',
+                        }}
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>
@@ -308,9 +373,10 @@ const AdminUserManagement: React.FC = () => {
                         className={`p-1 ${
                           isProtectedUser(user)
                             ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-red-600 hover:text-red-900'
+                            : 'text-red-600 hover:text-red-900 cursor-pointer'
                         }`}
                         title={isProtectedUser(user) ? 'Protected user' : 'Delete user'}
+                        style={{ cursor: isProtectedUser(user) ? 'not-allowed' : 'pointer' }}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
@@ -339,7 +405,16 @@ const AdminUserManagement: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleUserSaved}
         user={editingUser || undefined}
-        mode={editingUser ? 'edit' : 'create'}
+        mode={modalMode}
+      />
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
       />
     </div>
   )

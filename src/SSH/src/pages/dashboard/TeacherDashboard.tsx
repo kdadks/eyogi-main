@@ -73,7 +73,7 @@ const courseSchema = z.object({
   duration_weeks: z.number().min(1, 'Duration must be at least 1 week'),
   fee: z.number().min(0, 'Fee must be non-negative'),
   price: z.number().min(0, 'Price must be non-negative'),
-  currency: z.string().default('USD'),
+  currency: z.string().default('EUR'),
   max_students: z.number().min(1, 'Must allow at least 1 student'),
   delivery_method: z.enum(['physical', 'remote', 'hybrid']),
   entry_requirements: z.string().optional(),
@@ -202,7 +202,7 @@ export default function TeacherDashboard() {
         learning_outcomes: learningOutcomes.filter((outcome) => outcome.trim() !== ''),
         syllabus: null, // or {} or "" depending on your requirements
         price: data.price || 0,
-        currency: data.currency || 'USD',
+        currency: data.currency || 'EUR',
       }
       await createCourse(courseData)
       await loadDashboardData()

@@ -8,6 +8,7 @@ import { useCourseAssignments } from '../../hooks/useCourseAssignments'
 import { usePermissions } from '../../hooks/usePermissions'
 import { Course, User } from '../../types'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import {
   PlusIcon,
   XMarkIcon,
@@ -135,6 +136,17 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
 const CourseAssignmentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   const { assignments, loading, assignTeacherToCourse, removeAssignment } = useCourseAssignments()
   const { currentUser } = usePermissions()
   const filteredAssignments = assignments.filter(
@@ -151,9 +163,15 @@ const CourseAssignmentManagement: React.FC = () => {
     return await assignTeacherToCourse(teacherId, courseId, currentUser.id, notes)
   }
   const handleRemoveAssignment = async (assignmentId: string) => {
-    if (window.confirm('Are you sure you want to remove this assignment?')) {
-      await removeAssignment(assignmentId)
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Assignment',
+      message: 'Are you sure you want to remove this assignment?',
+      onConfirm: async () => {
+        await removeAssignment(assignmentId)
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   if (loading) {
     return (
@@ -251,6 +269,15 @@ const CourseAssignmentManagement: React.FC = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAssign={handleAssign}
+      />
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
       />
     </div>
   )

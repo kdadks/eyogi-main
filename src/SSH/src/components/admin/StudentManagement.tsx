@@ -11,6 +11,7 @@ import { getGurukuls } from '@/lib/api/gurukuls'
 import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import {
   UserIcon,
   AcademicCapIcon,
@@ -90,6 +91,17 @@ export default function StudentManagement() {
     subject: '',
     message: '',
     type: 'email' as 'email' | 'sms',
+  })
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
   })
   useEffect(() => {
     loadData()
@@ -192,20 +204,24 @@ export default function StudentManagement() {
     setShowStudentForm(true)
   }
   const handleDeleteStudent = async (studentId: string) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this student? This will also remove all their enrollments and cannot be undone.',
-      )
-    ) {
-      return
-    }
-    try {
-      await deleteUser(studentId)
-      await loadData()
-      toast.success('Student deleted successfully')
-    } catch {
-      toast.error('Failed to delete student')
-    }
+    const studentToDelete = students.find((s) => s.id === studentId)
+    if (!studentToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Student',
+      message: `Are you sure you want to delete "${studentToDelete.full_name || studentToDelete.email}"? This will also remove all their enrollments and cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteUser(studentId)
+          await loadData()
+          toast.success('Student deleted successfully')
+        } catch {
+          toast.error('Failed to delete student')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   // Removed unused handleUpdateRole function
   const handleSelectStudent = (studentId: string) => {
@@ -1301,6 +1317,15 @@ export default function StudentManagement() {
           </CardContent>
         </Card>
       )}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
+      />
     </div>
   )
 }

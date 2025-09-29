@@ -8,6 +8,7 @@ import { getAllGurukuls, createGurukul, updateGurukul, deleteGurukul } from '@/l
 import { getCourses } from '@/lib/api/courses'
 import { formatDate, generateSlug } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import {
   GlobeAltIcon,
   PlusIcon,
@@ -42,6 +43,17 @@ export default function GurukulManagement() {
     image_url: '',
   })
   const [formLoading, setFormLoading] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   useEffect(() => {
     loadData()
   }, [])
@@ -135,16 +147,24 @@ export default function GurukulManagement() {
     setShowCreateForm(true)
   }
   const handleDelete = async (gurukulId: string) => {
-    if (!confirm('Are you sure you want to delete this gurukul? This action cannot be undone.')) {
-      return
-    }
-    try {
-      await deleteGurukul(gurukulId)
-      await loadData()
-      toast.success('Gurukul deleted successfully')
-    } catch {
-      toast.error('Failed to delete gurukul')
-    }
+    const gurukulToDelete = gurukuls.find((g) => g.id === gurukulId)
+    if (!gurukulToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Gurukul',
+      message: `Are you sure you want to delete "${gurukulToDelete.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteGurukul(gurukulId)
+          await loadData()
+          toast.success('Gurukul deleted successfully')
+        } catch {
+          toast.error('Failed to delete gurukul')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const handleToggleStatus = async (gurukulId: string, currentStatus: boolean) => {
     try {
@@ -589,6 +609,15 @@ export default function GurukulManagement() {
           </div>
         </div>
       )}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
+      />
     </div>
   )
 }

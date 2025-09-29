@@ -6,6 +6,7 @@ import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api/
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
 interface CourseFormData {
   gurukul_id: string
@@ -75,6 +76,17 @@ export default function CourseManagement() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [formData, setFormData] = useState<CourseFormData>(initialFormData)
   const [saving, setSaving] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   useEffect(() => {
     loadData()
   }, [])
@@ -124,15 +136,21 @@ export default function CourseManagement() {
     }
   }
   const handleDelete = async (course: Course) => {
-    if (window.confirm(`Are you sure you want to delete "${course.title}"?`)) {
-      try {
-        await deleteCourse(course.id)
-        toast.success('Course deleted successfully')
-        await loadData()
-      } catch {
-        toast.error('Failed to delete course')
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Course',
+      message: `Are you sure you want to delete "${course.title}"?`,
+      onConfirm: async () => {
+        try {
+          await deleteCourse(course.id)
+          toast.success('Course deleted successfully')
+          await loadData()
+        } catch {
+          toast.error('Failed to delete course')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const handleCreateCourse = async () => {
     if (!formData.title || !formData.gurukul_id || !formData.course_number) {
@@ -381,7 +399,9 @@ export default function CourseManagement() {
                 {course.age_group_min}-{course.age_group_max}
               </div>
               {/* Price */}
-              <div className="col-span-1 text-xs text-gray-600 font-medium">${course.price}</div>
+              <div className="col-span-1 text-xs text-gray-600 font-medium">
+                {formatCurrency(course.price)}
+              </div>
               {/* Level */}
               <div className="col-span-1">
                 <span
@@ -1109,6 +1129,15 @@ export default function CourseManagement() {
           </div>
         </div>
       )}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
+      />
     </div>
   )
 }

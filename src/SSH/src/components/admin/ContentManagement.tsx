@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { formatDate, generateSlug, toSentenceCase } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -90,6 +91,17 @@ export default function ContentManagement() {
     is_active: true,
   })
   const [menuFormLoading, setMenuFormLoading] = useState(false)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   useEffect(() => {
     loadData()
   }, [])
@@ -208,18 +220,26 @@ export default function ContentManagement() {
     setViewingPage(page)
   }
   const handleDeletePage = async (pageId: string) => {
-    if (!confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-      return
-    }
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      const updatedPages = pages.filter((page) => page.id !== pageId)
-      setPages(updatedPages)
-      toast.success('Page deleted successfully')
-    } catch {
-      toast.error('Failed to delete page')
-    }
+    const pageToDelete = pages.find((p) => p.id === pageId)
+    if (!pageToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Page',
+      message: `Are you sure you want to delete "${pageToDelete.title}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          // Simulate API delay
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          const updatedPages = pages.filter((page) => page.id !== pageId)
+          setPages(updatedPages)
+          toast.success('Page deleted successfully')
+        } catch {
+          toast.error('Failed to delete page')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   // Menu Management Functions
   const resetMenuForm = () => {
@@ -281,18 +301,26 @@ export default function ContentManagement() {
     setShowMenuForm(true)
   }
   const handleDeleteMenuItem = async (menuItemId: string) => {
-    if (!confirm('Are you sure you want to delete this menu item? This action cannot be undone.')) {
-      return
-    }
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      const updatedMenuItems = menuItems.filter((item) => item.id !== menuItemId)
-      setMenuItems(updatedMenuItems)
-      toast.success('Menu item deleted successfully')
-    } catch {
-      toast.error('Failed to delete menu item')
-    }
+    const menuItemToDelete = menuItems.find((m) => m.id === menuItemId)
+    if (!menuItemToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Menu Item',
+      message: `Are you sure you want to delete "${menuItemToDelete.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          // Simulate API delay
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          const updatedMenuItems = menuItems.filter((item) => item.id !== menuItemId)
+          setMenuItems(updatedMenuItems)
+          toast.success('Menu item deleted successfully')
+        } catch {
+          toast.error('Failed to delete menu item')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const handleToggleMenuStatus = async (menuItemId: string, currentStatus: boolean) => {
     try {
@@ -904,6 +932,15 @@ export default function ContentManagement() {
           </Card>
         </div>
       )}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
+      />
     </div>
   )
 }

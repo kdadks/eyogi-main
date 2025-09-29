@@ -7,6 +7,7 @@ import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api/users'
 import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import {
   UserIcon,
   PencilIcon,
@@ -25,6 +26,17 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [viewingUser, setViewingUser] = useState<User | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
   useEffect(() => {
     loadUsers()
   }, [])
@@ -69,16 +81,24 @@ export default function UserManagement() {
     }
   }
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return
-    }
-    try {
-      await deleteUser(userId)
-      await loadUsers()
-      toast.success('User deleted successfully')
-    } catch (error) {
-      toast.error('Failed to delete user')
-    }
+    const userToDelete = users.find((u) => u.id === userId)
+    if (!userToDelete) return
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Are you sure you want to delete "${userToDelete.full_name || userToDelete.email}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteUser(userId)
+          await loadUsers()
+          toast.success('User deleted successfully')
+        } catch {
+          toast.error('Failed to delete user')
+        }
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+      },
+    })
   }
   const stats = {
     total: users.length,
@@ -441,6 +461,15 @@ export default function UserManagement() {
             </div>
           </div>
         )}
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
+      />
     </div>
   )
 }
