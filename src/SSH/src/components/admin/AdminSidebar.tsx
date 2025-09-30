@@ -49,6 +49,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       adminOnly: true, // Only admin and super_admin can manage users
     },
     {
+      name: 'Students',
+      href: '/admin/students',
+      icon: AcademicCapIcon,
+      permission: { resource: 'users', action: 'read' },
+    },
+    {
       name: 'Courses',
       href: '/admin/courses',
       icon: BookOpenIcon,
@@ -75,7 +81,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     {
       name: 'Certificates',
       href: '/admin/certificates',
-      icon: AcademicCapIcon,
+      icon: DocumentDuplicateIcon,
       permission: { resource: 'certificates', action: 'read' },
     },
     {

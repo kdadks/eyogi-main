@@ -83,22 +83,58 @@ export async function getStudentEnrollments(studentId: string): Promise<Enrollme
 }
 export async function getTeacherEnrollments(teacherId: string): Promise<Enrollment[]> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('enrollments')
-      .select(
-        `
-        *,
-        courses!inner (*),
-        profiles!enrollments_student_id_fkey (*)
-      `,
-      )
-      .eq('courses.teacher_id', teacherId)
-      .order('enrolled_at', { ascending: false })
-    if (error) {
+    // First get the teacher's profile to find their teacher_id
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('teacher_id')
+      .eq('id', teacherId)
+      .single()
+
+    if (!profile?.teacher_id) {
+      console.log('No teacher_id found for profile:', teacherId)
       return []
     }
-    return data || []
-  } catch {
+
+    // Get courses assigned to this teacher
+    const { data: assignments } = await supabaseAdmin
+      .from('course_assignments')
+      .select('course_id')
+      .eq('teacher_id', profile.teacher_id)
+      .eq('is_active', true)
+
+    if (!assignments || assignments.length === 0) {
+      console.log('No course assignments found for teacher')
+      return []
+    }
+
+    const courseIds = assignments.map(a => a.course_id)
+
+    // Get enrollments for those courses
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .select(`
+        *,
+        course:courses!inner (*),
+        student:profiles!enrollments_student_id_fkey (*)
+      `)
+      .in('course_id', courseIds)
+      .order('enrolled_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching enrollments:', error)
+      return []
+    }
+
+    // Map the data to match the Enrollment interface
+    const mappedData = (data || []).map((enrollment: any) => ({
+      ...enrollment,
+      course: enrollment.course,
+      student: enrollment.student
+    }))
+
+    return mappedData || []
+  } catch (error) {
+    console.error('Error in getTeacherEnrollments:', error)
     return []
   }
 }

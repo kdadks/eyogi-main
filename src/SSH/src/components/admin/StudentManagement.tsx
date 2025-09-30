@@ -12,6 +12,8 @@ import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import StudentBatchAssignmentModal from './StudentBatchAssignmentModal'
+import BulkBatchAssignmentModal from './BulkBatchAssignmentModal'
 import {
   UserIcon,
   AcademicCapIcon,
@@ -30,6 +32,7 @@ import {
   XMarkIcon,
   PlusIcon,
   ArrowDownTrayIcon,
+  QueueListIcon,
 } from '@heroicons/react/24/outline'
 interface StudentWithEnrollments extends User {
   enrollments: Array<Enrollment & { course?: Course & { gurukul?: Gurukul } }>
@@ -66,12 +69,16 @@ export default function StudentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [courseFilter, setCourseFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [userStatusFilter, setUserStatusFilter] = useState<string>('all')
   const [ageGroupFilter, setAgeGroupFilter] = useState<string>('all')
   const [gurukulFilter, setGurukulFilter] = useState<string>('all')
   // Student Details
   const [viewingStudent, setViewingStudent] = useState<StudentWithEnrollments | null>(null)
   const [editingStudent, setEditingStudent] = useState<StudentWithEnrollments | null>(null)
   const [showStudentForm, setShowStudentForm] = useState(false)
+  const [showBatchModal, setShowBatchModal] = useState(false)
+  const [selectedStudentForBatch, setSelectedStudentForBatch] = useState<StudentWithEnrollments | null>(null)
+  const [showBulkBatchModal, setShowBulkBatchModal] = useState(false)
   const [studentFormData, setStudentFormData] = useState<StudentFormData>({
     full_name: '',
     email: '',
@@ -131,6 +138,10 @@ export default function StudentManagement() {
           student.enrollments.some((e) => e.status === statusFilter),
         )
       }
+      // User status filter (active/inactive/suspended/pending_verification)
+      if (userStatusFilter !== 'all') {
+        filtered = filtered.filter((student) => student.status === userStatusFilter)
+      }
       // Age group filter
       if (ageGroupFilter !== 'all') {
         const [minAge, maxAge] = ageGroupFilter.split('-').map(Number)
@@ -147,7 +158,7 @@ export default function StudentManagement() {
       setFilteredStudents(filtered)
     }
     filterStudents()
-  }, [students, searchTerm, courseFilter, statusFilter, ageGroupFilter, gurukulFilter])
+  }, [students, searchTerm, courseFilter, statusFilter, userStatusFilter, ageGroupFilter, gurukulFilter])
   // Removed duplicate filterStudents function
   const loadData = async () => {
     try {
@@ -222,6 +233,11 @@ export default function StudentManagement() {
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
       },
     })
+  }
+
+  const handleAssignBatch = (student: StudentWithEnrollments) => {
+    setSelectedStudentForBatch(student)
+    setShowBatchModal(true)
   }
   // Removed unused handleUpdateRole function
   const handleSelectStudent = (studentId: string) => {
@@ -339,8 +355,7 @@ export default function StudentManagement() {
   }
   const stats = {
     totalStudents: students.length,
-    activeStudents: students.filter((s) => s.enrollments.some((e) => e.status === 'approved'))
-      .length,
+    activeStudents: students.filter((s) => s.status === 'active').length,
     newStudents: students.filter((s) => {
       const weekAgo = new Date()
       weekAgo.setDate(weekAgo.getDate() - 7)
@@ -349,10 +364,15 @@ export default function StudentManagement() {
     studentsWithCertificates: students.filter((s) =>
       s.enrollments.some((e) => e.certificate_issued),
     ).length,
-    averageAge: Math.round(students.reduce((sum, s) => sum + (s.age || 0), 0) / students.length),
-    totalRevenue: students.reduce((sum, s) => sum + s.total_spent, 0),
+    averageAge:
+      students.length > 0 && students.some((s) => s.age)
+        ? Math.round(
+            students.reduce((sum, s) => sum + (s.age || 0), 0) /
+              students.filter((s) => s.age).length,
+          )
+        : 0,
     completionRate:
-      students.length > 0
+      students.length > 0 && students.reduce((sum, s) => sum + s.total_enrollments, 0) > 0
         ? Math.round(
             (students.reduce((sum, s) => sum + s.completed_courses, 0) /
               students.reduce((sum, s) => sum + s.total_enrollments, 0)) *
@@ -378,9 +398,9 @@ export default function StudentManagement() {
     )
   }
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Student Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="card-hover">
           <CardContent className="p-4 text-center">
             <UserGroupIcon className="h-6 w-6 text-blue-600 mx-auto mb-2" />
@@ -425,16 +445,10 @@ export default function StudentManagement() {
             <div className="text-xs text-gray-600">Completion Rate</div>
           </CardContent>
         </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4 text-center">
-            <div className="text-lg font-bold text-red-600">€{stats.totalRevenue}</div>
-            <div className="text-xs text-gray-600">Total Revenue</div>
-          </CardContent>
-        </Card>
       </div>
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex gap-8">
           {[
             { id: 'overview', name: 'Student Overview', icon: UserGroupIcon },
             { id: 'by-course', name: 'Students by Course', icon: BookOpenIcon },
@@ -446,7 +460,7 @@ export default function StudentManagement() {
               onClick={() =>
                 setActiveTab(tab.id as 'overview' | 'by-course' | 'details' | 'communication')
               }
-              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
+              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -461,7 +475,7 @@ export default function StudentManagement() {
       {/* Filters Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div className="lg:col-span-2">
               <div className="relative">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -515,18 +529,29 @@ export default function StudentManagement() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
             >
-              <option value="all">All Status</option>
+              <option value="all">All Enrollment Status</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="completed">Completed</option>
               <option value="rejected">Rejected</option>
+            </select>
+            <select
+              value={userStatusFilter}
+              onChange={(e) => setUserStatusFilter(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+            >
+              <option value="all">All Student Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+              <option value="pending_verification">Pending Verification</option>
             </select>
           </div>
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-gray-600">
               Showing {filteredStudents.length} of {students.length} students
             </p>
-            <div className="flex space-x-2">
+            <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={exportStudentData}>
                 <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
                 Export CSV
@@ -537,6 +562,7 @@ export default function StudentManagement() {
                   setSearchTerm('')
                   setCourseFilter('all')
                   setStatusFilter('all')
+                  setUserStatusFilter('all')
                   setAgeGroupFilter('all')
                   setGurukulFilter('all')
                 }}
@@ -565,8 +591,8 @@ export default function StudentManagement() {
                     <UserIcon className="h-5 w-5 mr-2" />
                     Personal Information
                   </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex flex-col gap-3 text-sm">
+                    <div className="flex items-center gap-3">
                       <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                         <UserIcon className="h-6 w-6 text-white" />
                       </div>
@@ -621,7 +647,7 @@ export default function StudentManagement() {
                     <AcademicCapIcon className="h-5 w-5 mr-2" />
                     Enrollment Summary
                   </h3>
-                  <div className="space-y-4">
+                  <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg text-center">
                         <div className="text-xl font-bold text-blue-600">
@@ -650,7 +676,7 @@ export default function StudentManagement() {
                     </div>
                     <div>
                       <h4 className="font-medium mb-2">Course Enrollments</h4>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                      <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
                         {viewingStudent.enrollments.map((enrollment) => (
                           <div
                             key={enrollment.id}
@@ -732,7 +758,7 @@ export default function StudentManagement() {
                   <XMarkIcon className="h-5 w-5" />
                 </Button>
               </div>
-              <form onSubmit={handleStudentSubmit} className="space-y-6">
+              <form onSubmit={handleStudentSubmit} className="flex flex-col gap-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
                     label="Full Name"
@@ -841,7 +867,7 @@ export default function StudentManagement() {
                     </div>
                   </div>
                 )}
-                <div className="flex space-x-4">
+                <div className="flex gap-4">
                   <Button type="submit" loading={formLoading}>
                     {editingStudent ? 'Update Student' : 'Create Student'}
                   </Button>
@@ -871,8 +897,8 @@ export default function StudentManagement() {
                   {selectedStudents.size !== 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="space-y-4">
-                <div className="flex space-x-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-4">
                   <label className="flex items-center">
                     <input
                       type="radio"
@@ -926,7 +952,7 @@ export default function StudentManagement() {
                     required
                   />
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex gap-4">
                   <Button onClick={handleSendCommunication}>
                     Send {communicationData.type === 'email' ? 'Email' : 'SMS'}
                   </Button>
@@ -974,7 +1000,7 @@ export default function StudentManagement() {
                     <div className="text-xs text-gray-600">Spent</div>
                   </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => handleViewStudent(student)}>
                     <EyeIcon className="h-4 w-4 mr-1" />
                     View
@@ -983,6 +1009,10 @@ export default function StudentManagement() {
                     <PencilIcon className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleAssignBatch(student)}>
+                    <QueueListIcon className="h-4 w-4 mr-1" />
+                    Batches
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -990,12 +1020,12 @@ export default function StudentManagement() {
         </div>
       )}
       {activeTab === 'by-course' && (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           {Object.entries(getStudentsByCourse()).map(([courseId, { course, students }]) => (
             <Card key={courseId}>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-3">
                     <BookOpenIcon className="h-6 w-6 text-orange-600" />
                     <div>
                       <h3 className="text-lg font-semibold">{course.title}</h3>
@@ -1029,7 +1059,7 @@ export default function StudentManagement() {
                         key={student.id}
                         className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-3">
                           <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                             <UserIcon className="h-4 w-4 text-white" />
                           </div>
@@ -1038,7 +1068,7 @@ export default function StudentManagement() {
                             <p className="text-xs text-gray-600">{student.student_id}</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2">
                           <Badge
                             className={`${
                               enrollment?.status === 'completed'
@@ -1073,14 +1103,23 @@ export default function StudentManagement() {
       {activeTab === 'details' && (
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <h2 className="text-xl font-bold">Detailed Student Management</h2>
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 {selectedStudents.size > 0 && (
-                  <Button onClick={handleBulkCommunication}>
-                    <EnvelopeIcon className="h-4 w-4 mr-2" />
-                    Message Selected ({selectedStudents.size})
-                  </Button>
+                  <>
+                    <Button onClick={handleBulkCommunication}>
+                      <EnvelopeIcon className="h-4 w-4 mr-2" />
+                      Message Selected ({selectedStudents.size})
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowBulkBatchModal(true)}
+                    >
+                      <QueueListIcon className="h-4 w-4 mr-2" />
+                      Assign to Batches ({selectedStudents.size})
+                    </Button>
+                  </>
                 )}
                 <Button onClick={() => setShowStudentForm(true)}>
                   <PlusIcon className="h-4 w-4 mr-2" />
@@ -1210,11 +1249,12 @@ export default function StudentManagement() {
                           {formatDate(student.created_at)}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex space-x-2">
+                          <div className="flex gap-2">
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleViewStudent(student)}
+                              title="View Details"
                             >
                               <EyeIcon className="h-4 w-4" />
                             </Button>
@@ -1222,13 +1262,23 @@ export default function StudentManagement() {
                               size="sm"
                               variant="ghost"
                               onClick={() => handleEditStudent(student)}
+                              title="Edit Student"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
+                              variant="ghost"
+                              onClick={() => handleAssignBatch(student)}
+                              title="Manage Batches"
+                            >
+                              <QueueListIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
                               variant="danger"
                               onClick={() => handleDeleteStudent(student.id)}
+                              title="Delete Student"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </Button>
@@ -1248,7 +1298,7 @@ export default function StudentManagement() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Student Communication</h2>
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <Button
                   onClick={() => setSelectedStudents(new Set(filteredStudents.map((s) => s.id)))}
                 >
@@ -1279,7 +1329,7 @@ export default function StudentManagement() {
                   className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         checked={selectedStudents.has(student.id)}
@@ -1295,7 +1345,7 @@ export default function StudentManagement() {
                       </div>
                     </div>
                   </div>
-                  <div className="space-y-1 text-xs text-gray-600">
+                  <div className="flex flex-col gap-1 text-xs text-gray-600">
                     <div className="flex items-center">
                       <EnvelopeIcon className="h-3 w-3 mr-1" />
                       {student.email}
@@ -1317,6 +1367,34 @@ export default function StudentManagement() {
           </CardContent>
         </Card>
       )}
+      {/* Batch Assignment Modal */}
+      {showBatchModal && selectedStudentForBatch && (
+        <StudentBatchAssignmentModal
+          student={selectedStudentForBatch}
+          onClose={() => {
+            setShowBatchModal(false)
+            setSelectedStudentForBatch(null)
+          }}
+          onSuccess={() => {
+            loadData()
+          }}
+        />
+      )}
+
+      {/* Bulk Batch Assignment Modal */}
+      {showBulkBatchModal && selectedStudents.size > 0 && (
+        <BulkBatchAssignmentModal
+          students={filteredStudents.filter((s) => selectedStudents.has(s.id))}
+          onClose={() => {
+            setShowBulkBatchModal(false)
+          }}
+          onSuccess={() => {
+            setSelectedStudents(new Set())
+            loadData()
+          }}
+        />
+      )}
+
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}

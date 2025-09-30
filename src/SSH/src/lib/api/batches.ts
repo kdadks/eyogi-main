@@ -14,7 +14,7 @@ export async function getBatches(filters?: {
       .from('batches')
       .select(`
         *,
-        gurukuls (
+        gurukul:gurukuls (
           id,
           name,
           slug,
@@ -106,7 +106,7 @@ export async function getBatch(id: string): Promise<Batch | null> {
       .from('batches')
       .select(`
         *,
-        gurukuls (
+        gurukul:gurukuls (
           id,
           name,
           slug,
@@ -155,7 +155,7 @@ export async function createBatch(
       })
       .select(`
         *,
-        gurukuls (
+        gurukul:gurukuls (
           id,
           name,
           slug,
@@ -203,7 +203,7 @@ export async function updateBatch(
       .eq('id', id)
       .select(`
         *,
-        gurukuls (
+        gurukul:gurukuls (
           id,
           name,
           slug,

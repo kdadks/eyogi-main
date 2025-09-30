@@ -991,15 +991,23 @@ export default function TeacherDashboard() {
                   <h2 className="text-2xl font-bold text-gray-900">Student Management</h2>
                   <p className="text-gray-600">Review enrollments and manage student progress</p>
                 </div>
-                {selectedEnrollments.length > 0 && (
-                  <Button
-                    onClick={handleBulkApprove}
-                    className="bg-gradient-to-r from-green-500 to-green-600"
-                  >
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    Approve Selected ({selectedEnrollments.length})
-                  </Button>
-                )}
+                <div className="flex gap-3">
+                  <Link to="/dashboard/teacher/students">
+                    <Button variant="outline">
+                      <UserGroupIcon className="h-5 w-5 mr-2" />
+                      Manage Students
+                    </Button>
+                  </Link>
+                  {selectedEnrollments.length > 0 && (
+                    <Button
+                      onClick={handleBulkApprove}
+                      className="bg-gradient-to-r from-green-500 to-green-600"
+                    >
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      Approve Selected ({selectedEnrollments.length})
+                    </Button>
+                  )}
+                </div>
               </div>
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

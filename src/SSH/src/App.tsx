@@ -35,6 +35,8 @@ import GurukulDetailPage from './pages/GurukulDetailPage'
 import CourseDetailPage from './pages/CourseDetailPage'
 import CertificateViewer from './components/certificates/CertificateViewer'
 import BatchManagement from './components/admin/BatchManagement'
+import StudentManagement from './components/admin/StudentManagement'
+import TeacherStudentManagement from './components/teacher/TeacherStudentManagement'
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -92,6 +94,14 @@ function App() {
               }
             />
             <Route
+              path="/dashboard/teacher/students"
+              element={
+                <ProtectedRoute requiredRole="teacher">
+                  <TeacherStudentManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard/parent"
               element={
                 <ProtectedRoute requiredRole="parent">
@@ -131,6 +141,7 @@ function App() {
               <Route path="content" element={<ContentManagement />} />
               <Route path="analytics" element={<SiteAnalytics />} />
               <Route path="batches" element={<BatchManagement />} />
+              <Route path="students" element={<StudentManagement />} />
             </Route>
             {/* Detail pages */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />

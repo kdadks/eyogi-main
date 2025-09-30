@@ -2,21 +2,24 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { XMarkIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
-import { getBatchCourses, assignCourseToBatch, removeCourseFromBatch } from '../../lib/api/batches'
-import { getCourses } from '../../lib/api/courses'
-import { Batch, BatchCourse, Course } from '../../types'
+import { getBatches, assignStudentToBatch, removeStudentFromBatch, getStudentBatches } from '../../lib/api/batches'
+import { Batch, BatchStudent, User } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 
-interface CourseAssignmentModalProps {
-  batch: Batch
+interface StudentBatchAssignmentModalProps {
+  student: User
   onClose: () => void
   onSuccess: () => void
 }
 
-const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, onClose, onSuccess }) => {
-  const [assignedCourses, setAssignedCourses] = useState<BatchCourse[]>([])
-  const [availableCourses, setAvailableCourses] = useState<Course[]>([])
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([])
+const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = ({
+  student,
+  onClose,
+  onSuccess
+}) => {
+  const [assignedBatches, setAssignedBatches] = useState<BatchStudent[]>([])
+  const [availableBatches, setAvailableBatches] = useState<Batch[]>([])
+  const [selectedBatches, setSelectedBatches] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
@@ -25,24 +28,24 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
 
   useEffect(() => {
     fetchData()
-  }, [batch.id])
+  }, [student.id])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [batchCourses, allCourses] = await Promise.all([
-        getBatchCourses(batch.id),
-        getCourses({ gurukul_id: batch.gurukul_id })
+      const [studentBatches, allBatches] = await Promise.all([
+        getStudentBatches(student.id),
+        getBatches({ is_active: true })
       ])
 
-      setAssignedCourses(batchCourses)
+      setAssignedBatches(studentBatches)
 
-      // Filter out already assigned courses
-      const assignedCourseIds = new Set(batchCourses.map(bc => bc.course_id))
-      const courses = allCourses.filter(course =>
-        course.is_active && !assignedCourseIds.has(course.id)
+      // Filter out already assigned batches
+      const assignedBatchIds = new Set(studentBatches.map(sb => sb.batch_id))
+      const batches = allBatches.filter(batch =>
+        batch.status === 'active' && !assignedBatchIds.has(batch.id)
       )
-      setAvailableCourses(courses)
+      setAvailableBatches(batches)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -50,65 +53,65 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
     }
   }
 
-  const handleCourseSelect = (courseId: string) => {
-    setSelectedCourses(prev =>
-      prev.includes(courseId)
-        ? prev.filter(id => id !== courseId)
-        : [...prev, courseId]
+  const handleBatchSelect = (batchId: string) => {
+    setSelectedBatches(prev =>
+      prev.includes(batchId)
+        ? prev.filter(id => id !== batchId)
+        : [...prev, batchId]
     )
   }
 
-  const handleAssignCourses = async () => {
-    if (!profile || selectedCourses.length === 0) return
+  const handleAssignBatches = async () => {
+    if (!profile || selectedBatches.length === 0) return
 
     setAssigning(true)
     try {
-      // Assign each selected course
+      // Assign each selected batch
       await Promise.all(
-        selectedCourses.map(courseId =>
-          assignCourseToBatch(batch.id, courseId, profile.id)
+        selectedBatches.map(batchId =>
+          assignStudentToBatch(batchId, student.id, profile.id)
         )
       )
 
       // Refresh data and clear selection
       await fetchData()
-      setSelectedCourses([])
+      setSelectedBatches([])
       onSuccess()
     } catch (error) {
-      console.error('Error assigning courses:', error)
-      alert('Failed to assign courses. Please try again.')
+      console.error('Error assigning batches:', error)
+      alert('Failed to assign batches. Please try again.')
     } finally {
       setAssigning(false)
     }
   }
 
-  const handleRemoveCourse = async (courseId: string) => {
+  const handleRemoveBatch = async (batchId: string) => {
     if (!profile) return
 
-    if (window.confirm('Are you sure you want to remove this course from the batch?')) {
+    if (window.confirm('Are you sure you want to remove this student from the batch?')) {
       try {
-        await removeCourseFromBatch(batch.id, courseId)
+        await removeStudentFromBatch(batchId, student.id)
         await fetchData()
         onSuccess()
       } catch (error) {
-        console.error('Error removing course:', error)
-        alert('Failed to remove course. Please try again.')
+        console.error('Error removing batch:', error)
+        alert('Failed to remove batch. Please try again.')
       }
     }
   }
 
-  const filteredAvailableCourses = availableCourses.filter(course =>
-    course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.course_number.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAvailableBatches = availableBatches.filter(batch =>
+    batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (batch.description && batch.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    batch.gurukul?.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'elementary': return 'bg-green-100 text-green-800'
-      case 'basic': return 'bg-blue-100 text-blue-800'
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800'
-      case 'advanced': return 'bg-red-100 text-red-800'
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800'
+      case 'inactive': return 'bg-gray-100 text-gray-800'
+      case 'completed': return 'bg-blue-100 text-blue-800'
+      case 'archived': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -138,8 +141,8 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b">
           <div>
-            <h2 className="text-xl font-semibold">Manage Courses</h2>
-            <p className="text-gray-600">Batch: {batch.name}</p>
+            <h2 className="text-xl font-semibold">Manage Student Batches</h2>
+            <p className="text-gray-600">Student: {student.full_name || student.email}</p>
           </div>
           <button
             onClick={onClose}
@@ -151,49 +154,49 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
 
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Currently Assigned Courses */}
+            {/* Currently Assigned Batches */}
             <div>
               <h3 className="text-lg font-medium mb-4">
-                Assigned Courses ({assignedCourses.length})
+                Assigned Batches ({assignedBatches.length})
               </h3>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {assignedCourses.length === 0 ? (
+                {assignedBatches.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No courses assigned to this batch yet.
+                    No batches assigned to this student yet.
                   </div>
                 ) : (
-                  assignedCourses.map((batchCourse) => (
+                  assignedBatches.map((studentBatch) => (
                     <div
-                      key={batchCourse.id}
+                      key={studentBatch.id}
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                     >
                       <div className="flex-1">
                         <div className="font-medium">
-                          {batchCourse.course?.title || 'Unknown Course'}
+                          {studentBatch.batches?.name || 'Unknown Batch'}
                         </div>
-                        <div
-                          className="text-sm text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: batchCourse.course?.description || '' }}
-                        />
+                        {studentBatch.batches?.description && (
+                          <div className="text-sm text-gray-600">
+                            {studentBatch.batches.description}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getLevelColor(batchCourse.course?.level || '')}>
-                            {batchCourse.course?.level}
+                          <Badge className={getStatusColor(studentBatch.batches?.status || '')}>
+                            {studentBatch.batches?.status}
                           </Badge>
-                          <span className="text-xs text-gray-500">
-                            {batchCourse.course?.duration_weeks} weeks
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            €{batchCourse.course?.price}
-                          </span>
+                          {studentBatch.batches?.gurukul && (
+                            <span className="text-xs text-gray-500">
+                              {studentBatch.batches.gurukul.name}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Assigned: {new Date(batchCourse.assigned_at).toLocaleDateString()}
+                          Assigned: {new Date(studentBatch.assigned_at).toLocaleDateString()}
                         </div>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveCourse(batchCourse.course_id)}
+                        onClick={() => handleRemoveBatch(studentBatch.batch_id)}
                         className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -204,21 +207,21 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
               </div>
             </div>
 
-            {/* Available Courses */}
+            {/* Available Batches */}
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium">
-                  Available Courses ({filteredAvailableCourses.length})
+                  Available Batches ({filteredAvailableBatches.length})
                 </h3>
-                {selectedCourses.length > 0 && (
+                {selectedBatches.length > 0 && (
                   <Button
-                    onClick={handleAssignCourses}
+                    onClick={handleAssignBatches}
                     disabled={assigning}
                     className="flex items-center space-x-2"
                   >
                     <PlusIcon className="h-4 w-4" />
                     <span>
-                      {assigning ? 'Assigning...' : `Assign ${selectedCourses.length}`}
+                      {assigning ? 'Assigning...' : `Assign ${selectedBatches.length}`}
                     </span>
                   </Button>
                 )}
@@ -231,57 +234,59 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search courses..."
+                  placeholder="Search batches..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredAvailableCourses.length === 0 ? (
+                {filteredAvailableBatches.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'No courses found matching your search.' : 'No available courses to assign.'}
+                    {searchTerm ? 'No batches found matching your search.' : 'No available batches to assign.'}
                   </div>
                 ) : (
-                  filteredAvailableCourses.map((course) => (
+                  filteredAvailableBatches.map((batch) => (
                     <div
-                      key={course.id}
+                      key={batch.id}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedCourses.includes(course.id)
+                        selectedBatches.includes(batch.id)
                           ? 'border-orange-500 bg-orange-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
-                      onClick={() => handleCourseSelect(course.id)}
+                      onClick={() => handleBatchSelect(batch.id)}
                     >
                       <input
                         type="checkbox"
-                        checked={selectedCourses.includes(course.id)}
-                        onChange={() => handleCourseSelect(course.id)}
+                        checked={selectedBatches.includes(batch.id)}
+                        onChange={() => handleBatchSelect(batch.id)}
                         className="mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <div className="flex-1">
                         <div className="font-medium">
-                          {course.title}
+                          {batch.name}
                         </div>
-                        <div
-                          className="text-sm text-gray-600 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: course.description }}
-                        />
+                        {batch.description && (
+                          <div className="text-sm text-gray-600 line-clamp-2">
+                            {batch.description}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getLevelColor(course.level)}>
-                            {course.level}
+                          <Badge className={getStatusColor(batch.status)}>
+                            {batch.status}
                           </Badge>
-                          <span className="text-xs text-gray-500">
-                            {course.course_number}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {course.duration_weeks} weeks
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            €{course.price}
-                          </span>
+                          {batch.gurukul && (
+                            <span className="text-xs text-gray-500">
+                              {batch.gurukul.name}
+                            </span>
+                          )}
+                          {batch.start_date && (
+                            <span className="text-xs text-gray-500">
+                              Starts: {new Date(batch.start_date).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Max students: {course.max_students}
+                          Max students: {batch.max_students || 'Unlimited'}
                         </div>
                       </div>
                     </div>
@@ -305,4 +310,4 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
   )
 }
 
-export default CourseAssignmentModal
+export default StudentBatchAssignmentModal
