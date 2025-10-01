@@ -4,7 +4,7 @@ import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { Input } from '../ui/Input'
 import { User, Enrollment, Course, Batch, BatchStudent } from '../../types'
-import { getAllUsers, updateUser } from '../../lib/api/users'
+import { getAllUsers, updateUserProfile } from '../../lib/api/users'
 import { getTeacherEnrollments, updateEnrollmentStatus } from '../../lib/api/enrollments'
 import { getTeacherCourses } from '../../lib/api/courses'
 import { getBatches, assignStudentToBatch, getStudentBatches } from '../../lib/api/batches'
@@ -661,7 +661,7 @@ export default function TeacherStudentManagement() {
           onSuccess={() => {
             loadData()
           }}
-          user={viewingStudent || editingStudent || undefined}
+          user={(viewingStudent || editingStudent) as any}
           mode={userModalMode}
         />
       )}
