@@ -169,7 +169,10 @@ export default function GurukulPage() {
                     </div>
                     <CardContent className="p-6">
                       <h3 className="text-2xl font-bold text-gray-900 mb-3">{gurukul.name}</h3>
-                      <p className="text-gray-600 mb-4 line-clamp-3">{gurukul.description}</p>
+                      <div
+                        className="text-gray-600 mb-4 line-clamp-3"
+                        dangerouslySetInnerHTML={{ __html: gurukul.description }}
+                      />
                       <div className="flex items-center justify-between mb-6 text-sm text-gray-500">
                         <div className="flex items-center space-x-2">
                           <BookOpenIcon className="h-4 w-4" />

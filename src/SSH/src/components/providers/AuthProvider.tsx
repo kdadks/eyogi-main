@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react'
+import React, { createContext, useEffect } from 'react'
 import { useAuth as useAuthHook } from '@/hooks/useAuth'
 import { User } from '@/types'
 interface AuthContextType {
@@ -10,13 +10,8 @@ interface AuthContextType {
   updateUser: (user: User) => void
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+
+export { AuthContext }
 interface AuthProviderProps {
   children: React.ReactNode
 }
@@ -32,9 +27,5 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [auth])
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>
 }

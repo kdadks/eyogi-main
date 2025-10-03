@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { XMarkIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
-import { getBatches, assignStudentToBatch, removeStudentFromBatch, getStudentBatches } from '../../lib/api/batches'
+import {
+  getBatches,
+  assignStudentToBatch,
+  removeStudentFromBatch,
+  getStudentBatches,
+} from '../../lib/api/batches'
 import { Batch, BatchStudent, User } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 
@@ -15,7 +20,7 @@ interface StudentBatchAssignmentModalProps {
 const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = ({
   student,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const [assignedBatches, setAssignedBatches] = useState<BatchStudent[]>([])
   const [availableBatches, setAvailableBatches] = useState<Batch[]>([])
@@ -26,24 +31,20 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
 
   const { profile } = useSupabaseAuth()
 
-  useEffect(() => {
-    fetchData()
-  }, [student.id])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [studentBatches, allBatches] = await Promise.all([
         getStudentBatches(student.id),
-        getBatches({ is_active: true })
+        getBatches({ is_active: true }),
       ])
 
       setAssignedBatches(studentBatches)
 
       // Filter out already assigned batches
-      const assignedBatchIds = new Set(studentBatches.map(sb => sb.batch_id))
-      const batches = allBatches.filter(batch =>
-        batch.status === 'active' && !assignedBatchIds.has(batch.id)
+      const assignedBatchIds = new Set(studentBatches.map((sb) => sb.batch_id))
+      const batches = allBatches.filter(
+        (batch) => batch.status === 'active' && !assignedBatchIds.has(batch.id),
       )
       setAvailableBatches(batches)
     } catch (error) {
@@ -51,13 +52,15 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
     } finally {
       setLoading(false)
     }
-  }
+  }, [student.id])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleBatchSelect = (batchId: string) => {
-    setSelectedBatches(prev =>
-      prev.includes(batchId)
-        ? prev.filter(id => id !== batchId)
-        : [...prev, batchId]
+    setSelectedBatches((prev) =>
+      prev.includes(batchId) ? prev.filter((id) => id !== batchId) : [...prev, batchId],
     )
   }
 
@@ -68,9 +71,7 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
     try {
       // Assign each selected batch
       await Promise.all(
-        selectedBatches.map(batchId =>
-          assignStudentToBatch(batchId, student.id, profile.id)
-        )
+        selectedBatches.map((batchId) => assignStudentToBatch(batchId, student.id, profile.id)),
       )
 
       // Refresh data and clear selection
@@ -100,19 +101,25 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
     }
   }
 
-  const filteredAvailableBatches = availableBatches.filter(batch =>
-    batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (batch.description && batch.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    batch.gurukul?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAvailableBatches = availableBatches.filter(
+    (batch) =>
+      batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (batch.description && batch.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      batch.gurukul?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-gray-100 text-gray-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      case 'archived': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'active':
+        return 'bg-green-100 text-green-800'
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
+      case 'archived':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -144,10 +151,7 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
             <h2 className="text-xl font-semibold">Manage Student Batches</h2>
             <p className="text-gray-600">Student: {student.full_name || student.email}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -172,20 +176,21 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                     >
                       <div className="flex-1">
                         <div className="font-medium">
-                          {studentBatch.batches?.name || 'Unknown Batch'}
+                          {studentBatch.batch?.name || 'Unknown Batch'}
                         </div>
-                        {studentBatch.batches?.description && (
-                          <div className="text-sm text-gray-600">
-                            {studentBatch.batches.description}
-                          </div>
+                        {studentBatch.batch?.description && (
+                          <div
+                            className="text-sm text-gray-600"
+                            dangerouslySetInnerHTML={{ __html: studentBatch.batch.description }}
+                          />
                         )}
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getStatusColor(studentBatch.batches?.status || '')}>
-                            {studentBatch.batches?.status}
+                          <Badge className={getStatusColor(studentBatch.batch?.status || '')}>
+                            {studentBatch.batch?.status}
                           </Badge>
-                          {studentBatch.batches?.gurukul && (
+                          {studentBatch.batch?.gurukul && (
                             <span className="text-xs text-gray-500">
-                              {studentBatch.batches.gurukul.name}
+                              {studentBatch.batch.gurukul.name}
                             </span>
                           )}
                         </div>
@@ -220,9 +225,7 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                     className="flex items-center space-x-2"
                   >
                     <PlusIcon className="h-4 w-4" />
-                    <span>
-                      {assigning ? 'Assigning...' : `Assign ${selectedBatches.length}`}
-                    </span>
+                    <span>{assigning ? 'Assigning...' : `Assign ${selectedBatches.length}`}</span>
                   </Button>
                 )}
               </div>
@@ -242,7 +245,9 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredAvailableBatches.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'No batches found matching your search.' : 'No available batches to assign.'}
+                    {searchTerm
+                      ? 'No batches found matching your search.'
+                      : 'No available batches to assign.'}
                   </div>
                 ) : (
                   filteredAvailableBatches.map((batch) => (
@@ -262,22 +267,17 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                         className="mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <div className="flex-1">
-                        <div className="font-medium">
-                          {batch.name}
-                        </div>
+                        <div className="font-medium">{batch.name}</div>
                         {batch.description && (
-                          <div className="text-sm text-gray-600 line-clamp-2">
-                            {batch.description}
-                          </div>
+                          <div
+                            className="text-sm text-gray-600 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: batch.description }}
+                          />
                         )}
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getStatusColor(batch.status)}>
-                            {batch.status}
-                          </Badge>
+                          <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
                           {batch.gurukul && (
-                            <span className="text-xs text-gray-500">
-                              {batch.gurukul.name}
-                            </span>
+                            <span className="text-xs text-gray-500">{batch.gurukul.name}</span>
                           )}
                           {batch.start_date && (
                             <span className="text-xs text-gray-500">
@@ -297,10 +297,7 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t mt-6">
-            <Button
-              variant="outline"
-              onClick={onClose}
-            >
+            <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           </div>

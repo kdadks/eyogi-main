@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { XMarkIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
-import { getBatchStudents, assignStudentToBatch, removeStudentFromBatch } from '../../lib/api/batches'
+import {
+  getBatchStudents,
+  assignStudentToBatch,
+  removeStudentFromBatch,
+} from '../../lib/api/batches'
 import { getAllUsers } from '../../lib/api/users'
 import { Batch, BatchStudent, User } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
@@ -13,7 +17,11 @@ interface StudentAssignmentModalProps {
   onSuccess: () => void
 }
 
-const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, onClose, onSuccess }) => {
+const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({
+  batch,
+  onClose,
+  onSuccess,
+}) => {
   const [assignedStudents, setAssignedStudents] = useState<BatchStudent[]>([])
   const [availableStudents, setAvailableStudents] = useState<User[]>([])
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
@@ -23,24 +31,20 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
 
   const { profile } = useSupabaseAuth()
 
-  useEffect(() => {
-    fetchData()
-  }, [batch.id])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [batchStudents, allUsers] = await Promise.all([
         getBatchStudents(batch.id),
-        getAllUsers()
+        getAllUsers(),
       ])
 
       setAssignedStudents(batchStudents)
 
       // Filter out already assigned students
-      const assignedStudentIds = new Set(batchStudents.map(bs => bs.student_id))
-      const students = allUsers.filter(user =>
-        user.role === 'student' && !assignedStudentIds.has(user.id)
+      const assignedStudentIds = new Set(batchStudents.map((bs) => bs.student_id))
+      const students = allUsers.filter(
+        (user) => user.role === 'student' && !assignedStudentIds.has(user.id),
       )
       setAvailableStudents(students)
     } catch (error) {
@@ -48,13 +52,15 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
     } finally {
       setLoading(false)
     }
-  }
+  }, [batch.id])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleStudentSelect = (studentId: string) => {
-    setSelectedStudents(prev =>
-      prev.includes(studentId)
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId]
+    setSelectedStudents((prev) =>
+      prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId],
     )
   }
 
@@ -65,9 +71,7 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
     try {
       // Assign each selected student
       await Promise.all(
-        selectedStudents.map(studentId =>
-          assignStudentToBatch(batch.id, studentId, profile.id)
-        )
+        selectedStudents.map((studentId) => assignStudentToBatch(batch.id, studentId, profile.id)),
       )
 
       // Refresh data and clear selection
@@ -97,10 +101,11 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
     }
   }
 
-  const filteredAvailableStudents = availableStudents.filter(student =>
-    student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAvailableStudents = availableStudents.filter(
+    (student) =>
+      student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.student_id?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   if (loading) {
@@ -131,10 +136,7 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
             <h2 className="text-xl font-semibold">Manage Students</h2>
             <p className="text-gray-600">Batch: {batch.name}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -161,9 +163,7 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
                         <div className="font-medium">
                           {batchStudent.student?.full_name || 'Unknown Student'}
                         </div>
-                        <div className="text-sm text-gray-600">
-                          {batchStudent.student?.email}
-                        </div>
+                        <div className="text-sm text-gray-600">{batchStudent.student?.email}</div>
                         {batchStudent.student?.student_id && (
                           <div className="text-sm text-gray-500">
                             ID: {batchStudent.student.student_id}
@@ -200,9 +200,7 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
                     className="flex items-center space-x-2"
                   >
                     <PlusIcon className="h-4 w-4" />
-                    <span>
-                      {assigning ? 'Assigning...' : `Assign ${selectedStudents.length}`}
-                    </span>
+                    <span>{assigning ? 'Assigning...' : `Assign ${selectedStudents.length}`}</span>
                   </Button>
                 )}
               </div>
@@ -222,7 +220,9 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredAvailableStudents.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'No students found matching your search.' : 'No available students to assign.'}
+                    {searchTerm
+                      ? 'No students found matching your search.'
+                      : 'No available students to assign.'}
                   </div>
                 ) : (
                   filteredAvailableStudents.map((student) => (
@@ -242,16 +242,10 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
                         className="mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <div className="flex-1">
-                        <div className="font-medium">
-                          {student.full_name || 'Unnamed Student'}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {student.email}
-                        </div>
+                        <div className="font-medium">{student.full_name || 'Unnamed Student'}</div>
+                        <div className="text-sm text-gray-600">{student.email}</div>
                         {student.student_id && (
-                          <div className="text-sm text-gray-500">
-                            ID: {student.student_id}
-                          </div>
+                          <div className="text-sm text-gray-500">ID: {student.student_id}</div>
                         )}
                         <Badge variant="outline" className="text-xs mt-1">
                           {student.role}
@@ -265,10 +259,7 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({ batch, 
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t mt-6">
-            <Button
-              variant="outline"
-              onClick={onClose}
-            >
+            <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           </div>

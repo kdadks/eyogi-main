@@ -113,7 +113,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       setUser(fullUserProfile)
       localStorage.setItem('website-user-id', userData.id)
       return { error: null }
-    } catch (error) {
+    } catch {
       return { error: 'Failed to sign in. Please try again.' }
     }
   }

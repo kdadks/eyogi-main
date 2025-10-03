@@ -16,7 +16,7 @@ interface BulkBatchAssignmentModalProps {
 const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
   students,
   onClose,
-  onSuccess
+  onSuccess,
 }) => {
   const [availableBatches, setAvailableBatches] = useState<Batch[]>([])
   const [selectedBatches, setSelectedBatches] = useState<string[]>([])
@@ -38,7 +38,7 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
     setLoading(true)
     try {
       const allBatches = await getBatches({ is_active: true })
-      const activeBatches = allBatches.filter(batch => batch.status === 'active')
+      const activeBatches = allBatches.filter((batch) => batch.status === 'active')
       setAvailableBatches(activeBatches)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -48,10 +48,8 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
   }
 
   const handleBatchSelect = (batchId: string) => {
-    setSelectedBatches(prev =>
-      prev.includes(batchId)
-        ? prev.filter(id => id !== batchId)
-        : [...prev, batchId]
+    setSelectedBatches((prev) =>
+      prev.includes(batchId) ? prev.filter((id) => id !== batchId) : [...prev, batchId],
     )
   }
 
@@ -62,11 +60,11 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
     try {
       // Assign each student to each selected batch
       await Promise.all(
-        students.flatMap(student =>
-          selectedBatches.map(batchId =>
-            assignStudentToBatch(batchId, student.id, currentUserId)
-          )
-        )
+        students.flatMap((student) =>
+          selectedBatches.map((batchId) =>
+            assignStudentToBatch(batchId, student.id, currentUserId),
+          ),
+        ),
       )
 
       setSelectedBatches([])
@@ -80,19 +78,25 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
     }
   }
 
-  const filteredAvailableBatches = availableBatches.filter(batch =>
-    batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (batch.description && batch.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    batch.gurukul?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAvailableBatches = availableBatches.filter(
+    (batch) =>
+      batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (batch.description && batch.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      batch.gurukul?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-gray-100 text-gray-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      case 'archived': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'active':
+        return 'bg-green-100 text-green-800'
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
+      case 'archived':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -123,13 +127,11 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
           <div>
             <h2 className="text-xl font-semibold">Assign Students to Batches</h2>
             <p className="text-gray-600">
-              Assigning {students.length} student{students.length !== 1 ? 's' : ''} to selected batches
+              Assigning {students.length} student{students.length !== 1 ? 's' : ''} to selected
+              batches
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -184,7 +186,9 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
             <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
               {filteredAvailableBatches.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {searchTerm ? 'No batches found matching your search.' : 'No active batches available to assign.'}
+                  {searchTerm
+                    ? 'No batches found matching your search.'
+                    : 'No active batches available to assign.'}
                 </div>
               ) : (
                 filteredAvailableBatches.map((batch) => (
@@ -204,22 +208,17 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
                       className="mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                     />
                     <div className="flex-1">
-                      <div className="font-medium">
-                        {batch.name}
-                      </div>
+                      <div className="font-medium">{batch.name}</div>
                       {batch.description && (
-                        <div className="text-sm text-gray-600 line-clamp-2">
-                          {batch.description}
-                        </div>
+                        <div
+                          className="text-sm text-gray-600 line-clamp-2"
+                          dangerouslySetInnerHTML={{ __html: batch.description }}
+                        />
                       )}
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge className={getStatusColor(batch.status)}>
-                          {batch.status}
-                        </Badge>
+                        <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
                         {batch.gurukul && (
-                          <span className="text-xs text-gray-500">
-                            {batch.gurukul.name}
-                          </span>
+                          <span className="text-xs text-gray-500">{batch.gurukul.name}</span>
                         )}
                         {batch.start_date && (
                           <span className="text-xs text-gray-500">
@@ -238,10 +237,7 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t mt-6">
-            <Button
-              variant="outline"
-              onClick={onClose}
-            >
+            <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
           </div>

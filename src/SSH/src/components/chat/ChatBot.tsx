@@ -168,7 +168,7 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
         didYouKnow: response.didYouKnow,
       }
       setMessages((prev) => [...prev, botMessage])
-    } catch (error) {
+    } catch {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         type: 'bot',

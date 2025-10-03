@@ -353,7 +353,7 @@ export default function GurukulManagement() {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{gurukul.name}</div>
                             <div className="text-sm text-gray-500 line-clamp-2">
-                              {gurukul.description}
+                              <div dangerouslySetInnerHTML={{ __html: gurukul.description }} />
                             </div>
                           </div>
                         </div>
@@ -503,9 +503,13 @@ export default function GurukulManagement() {
                 {/* Description */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
-                  <p className="text-sm text-gray-900 leading-relaxed">
-                    {viewingGurukul.description || 'No description provided'}
-                  </p>
+                  <div className="text-sm text-gray-900 leading-relaxed">
+                    {viewingGurukul.description ? (
+                      <div dangerouslySetInnerHTML={{ __html: viewingGurukul.description }} />
+                    ) : (
+                      'No description provided'
+                    )}
+                  </div>
                 </div>
                 {/* Statistics & Performance */}
                 <div>

@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+// Session management utilities
 // Version tracking for session invalidation
 const APP_VERSION = '1.0.1' // Updated version
 const VERSION_KEY = 'eyogi_app_version'

@@ -64,7 +64,7 @@ export default function UserManagement() {
     try {
       const data = await getAllUsers()
       setUsers(data)
-    } catch (error) {
+    } catch {
       toast.error('Failed to load users')
     } finally {
       setLoading(false)
@@ -76,7 +76,7 @@ export default function UserManagement() {
       await loadUsers()
       setEditingUser(null)
       toast.success('User role updated successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update user role')
     }
   }

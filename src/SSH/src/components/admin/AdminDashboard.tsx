@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
 import { getBatchStats } from '../../lib/api/batches'
+import { User, Course } from '../../types'
 interface DashboardStats {
   totalUsers: number
   totalCourses: number
@@ -74,10 +75,14 @@ const AdminDashboard: React.FC = () => {
           .from('enrollments')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', thirtyDaysAgo.toISOString()),
-        supabaseAdmin
-          .from('profiles')
-          .select('*', { count: 'exact', head: true }),
-        getBatchStats().catch(() => ({ total: 0, active: 0, inactive: 0, completed: 0, archived: 0 })),
+        supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
+        getBatchStats().catch(() => ({
+          total: 0,
+          active: 0,
+          inactive: 0,
+          completed: 0,
+          archived: 0,
+        })),
       ])
       setStats({
         totalUsers: totalUsersResult.count || 0,
@@ -207,8 +212,8 @@ const AdminDashboard: React.FC = () => {
       // Add enrollments
       if (recentEnrollments.data) {
         recentEnrollments.data.forEach((enrollment) => {
-          const user = enrollment.profiles as any
-          const course = enrollment.courses as any
+          const user = enrollment.profiles?.[0] as User | undefined
+          const course = enrollment.courses?.[0] as Course | undefined
           if (user && course) {
             activities.push({
               id: `enrollment-${enrollment.id}`,
@@ -226,8 +231,8 @@ const AdminDashboard: React.FC = () => {
       // Add certificates
       if (recentCertificates.data) {
         recentCertificates.data.forEach((cert) => {
-          const user = cert.profiles as any
-          const course = cert.courses as any
+          const user = cert.profiles?.[0] as User | undefined
+          const course = cert.courses?.[0] as Course | undefined
           if (user && course) {
             activities.push({
               id: `certificate-${cert.id}`,

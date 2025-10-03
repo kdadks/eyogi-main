@@ -19,7 +19,7 @@ export const ourFileRouter = {
       const user = await auth(req)
       return { userId: user.id, uploadType: 'avatar' }
     })
-    .onUploadComplete(async ({ metadata, file }) => {
+    .onUploadComplete(async ({ metadata }) => {
       // Save to Supabase media table
       // Update user profile with avatar_url
       return { uploadedBy: metadata.userId }

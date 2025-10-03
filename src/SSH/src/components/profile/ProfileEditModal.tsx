@@ -81,12 +81,9 @@ export default function ProfileEditModal({
         try {
           const freshUserData = await getUserProfile(user.id)
           if (freshUserData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const userData = freshUserData as any
-
             setCurrentUser(freshUserData as Profile)
           }
-        } catch (error) {
+        } catch {
           // Fall back to the passed user data if there's an error
           setCurrentUser(user)
         }
@@ -138,9 +135,6 @@ export default function ProfileEditModal({
   })
   // Reset form when currentUser changes (after fresh data is loaded)
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userData = currentUser as any
-
     // Initialize address form data
     setAddressData({
       address_line_1: (currentUser['address_line_1' as keyof typeof currentUser] as string) || '',
@@ -201,7 +195,7 @@ export default function ProfileEditModal({
       // Cast the result back to Profile type since the database returns the correct format
       onUpdate(updatedUser as Profile)
       onClose()
-    } catch (error) {
+    } catch {
       toast.error('Failed to update profile')
     } finally {
       setLoading(false)

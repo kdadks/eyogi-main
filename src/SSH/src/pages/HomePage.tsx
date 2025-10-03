@@ -18,7 +18,9 @@ import Footer from '../components/layout/Footer'
 import { getGurukulsWithStats } from '../lib/api/gurukuls'
 import { Gurukul } from '../types'
 export default function HomePage() {
-  const [gurukuls, setGurukuls] = useState<Array<Gurukul & { courses: number; students: number; image: string }>>([])
+  const [gurukuls, setGurukuls] = useState<
+    Array<Gurukul & { courses: number; students: number; image: string }>
+  >([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -204,13 +206,17 @@ export default function HomePage() {
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm sm:text-sm font-medium">
-                      {loading ? '...' : `${gurukuls.reduce((total, g) => total + g.students, 0)}+ Students`}
+                      {loading
+                        ? '...'
+                        : `${gurukuls.reduce((total, g) => total + g.students, 0)}+ Students`}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm sm:text-sm font-medium">
-                      {loading ? '...' : `${gurukuls.reduce((total, g) => total + g.courses, 0)}+ Courses`}
+                      {loading
+                        ? '...'
+                        : `${gurukuls.reduce((total, g) => total + g.courses, 0)}+ Courses`}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
@@ -293,7 +299,10 @@ export default function HomePage() {
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                 {[...Array(5)].map((_, index) => (
-                  <Card key={index} className="card-hover overflow-hidden animate-pulse flex flex-col min-h-[400px]">
+                  <Card
+                    key={index}
+                    className="card-hover overflow-hidden animate-pulse flex flex-col min-h-[400px]"
+                  >
                     <div className="aspect-video overflow-hidden bg-gray-200"></div>
                     <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
                       <div className="h-6 bg-gray-200 rounded mb-2"></div>
@@ -310,7 +319,10 @@ export default function HomePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                 {gurukuls.map((gurukul) => (
-                  <Card key={gurukul.id} className="card-hover overflow-hidden flex flex-col min-h-[400px]">
+                  <Card
+                    key={gurukul.id}
+                    className="card-hover overflow-hidden flex flex-col min-h-[400px]"
+                  >
                     <div className="aspect-video overflow-hidden">
                       <img
                         src={gurukul.image}
@@ -320,7 +332,10 @@ export default function HomePage() {
                     </div>
                     <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
                       <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
-                      <p className="text-gray-600 mb-4 text-sm lg:text-base flex-grow">{gurukul.description}</p>
+                      <div
+                        className="text-gray-600 mb-4 text-sm lg:text-base flex-grow"
+                        dangerouslySetInnerHTML={{ __html: gurukul.description }}
+                      />
                       <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
                         <span>{gurukul.courses} Hindu Courses</span>
                         <span>{gurukul.students} Vedic Students</span>
@@ -357,7 +372,10 @@ export default function HomePage() {
                         <StarIcon key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                       ))}
                     </div>
-                    <p className="text-gray-600 mb-4 italic">"{testimonial.content}"</p>
+                    <div
+                      className="text-gray-600 mb-4 italic"
+                      dangerouslySetInnerHTML={{ __html: `"${testimonial.content}"` }}
+                    />
                     <div>
                       <p className="font-semibold">{testimonial.name}</p>
                       <p className="text-sm text-gray-500">Hindu Education {testimonial.role}</p>

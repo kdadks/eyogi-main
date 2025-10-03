@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { XMarkIcon, PlusIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
@@ -13,7 +13,11 @@ interface CourseAssignmentModalProps {
   onSuccess: () => void
 }
 
-const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, onClose, onSuccess }) => {
+const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
+  batch,
+  onClose,
+  onSuccess,
+}) => {
   const [assignedCourses, setAssignedCourses] = useState<BatchCourse[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
   const [selectedCourses, setSelectedCourses] = useState<string[]>([])
@@ -23,24 +27,20 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
 
   const { profile } = useSupabaseAuth()
 
-  useEffect(() => {
-    fetchData()
-  }, [batch.id])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [batchCourses, allCourses] = await Promise.all([
         getBatchCourses(batch.id),
-        getCourses({ gurukul_id: batch.gurukul_id })
+        getCourses({ gurukul_id: batch.gurukul_id }),
       ])
 
       setAssignedCourses(batchCourses)
 
       // Filter out already assigned courses
-      const assignedCourseIds = new Set(batchCourses.map(bc => bc.course_id))
-      const courses = allCourses.filter(course =>
-        course.is_active && !assignedCourseIds.has(course.id)
+      const assignedCourseIds = new Set(batchCourses.map((bc) => bc.course_id))
+      const courses = allCourses.filter(
+        (course) => course.is_active && !assignedCourseIds.has(course.id),
       )
       setAvailableCourses(courses)
     } catch (error) {
@@ -48,13 +48,15 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
     } finally {
       setLoading(false)
     }
-  }
+  }, [batch.id, batch.gurukul_id])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleCourseSelect = (courseId: string) => {
-    setSelectedCourses(prev =>
-      prev.includes(courseId)
-        ? prev.filter(id => id !== courseId)
-        : [...prev, courseId]
+    setSelectedCourses((prev) =>
+      prev.includes(courseId) ? prev.filter((id) => id !== courseId) : [...prev, courseId],
     )
   }
 
@@ -65,9 +67,7 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
     try {
       // Assign each selected course
       await Promise.all(
-        selectedCourses.map(courseId =>
-          assignCourseToBatch(batch.id, courseId, profile.id)
-        )
+        selectedCourses.map((courseId) => assignCourseToBatch(batch.id, courseId, profile.id)),
       )
 
       // Refresh data and clear selection
@@ -97,19 +97,25 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
     }
   }
 
-  const filteredAvailableCourses = availableCourses.filter(course =>
-    course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.course_number.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAvailableCourses = availableCourses.filter(
+    (course) =>
+      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.course_number.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case 'elementary': return 'bg-green-100 text-green-800'
-      case 'basic': return 'bg-blue-100 text-blue-800'
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800'
-      case 'advanced': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'elementary':
+        return 'bg-green-100 text-green-800'
+      case 'basic':
+        return 'bg-blue-100 text-blue-800'
+      case 'intermediate':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'advanced':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -141,10 +147,7 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
             <h2 className="text-xl font-semibold">Manage Courses</h2>
             <p className="text-gray-600">Batch: {batch.name}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -173,7 +176,9 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
                         </div>
                         <div
                           className="text-sm text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: batchCourse.course?.description || '' }}
+                          dangerouslySetInnerHTML={{
+                            __html: batchCourse.course?.description || '',
+                          }}
                         />
                         <div className="flex items-center gap-2 mt-2">
                           <Badge className={getLevelColor(batchCourse.course?.level || '')}>
@@ -217,9 +222,7 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
                     className="flex items-center space-x-2"
                   >
                     <PlusIcon className="h-4 w-4" />
-                    <span>
-                      {assigning ? 'Assigning...' : `Assign ${selectedCourses.length}`}
-                    </span>
+                    <span>{assigning ? 'Assigning...' : `Assign ${selectedCourses.length}`}</span>
                   </Button>
                 )}
               </div>
@@ -239,7 +242,9 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {filteredAvailableCourses.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'No courses found matching your search.' : 'No available courses to assign.'}
+                    {searchTerm
+                      ? 'No courses found matching your search.'
+                      : 'No available courses to assign.'}
                   </div>
                 ) : (
                   filteredAvailableCourses.map((course) => (
@@ -259,26 +264,18 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
                         className="mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <div className="flex-1">
-                        <div className="font-medium">
-                          {course.title}
-                        </div>
+                        <div className="font-medium">{course.title}</div>
                         <div
                           className="text-sm text-gray-600 line-clamp-2"
                           dangerouslySetInnerHTML={{ __html: course.description }}
                         />
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getLevelColor(course.level)}>
-                            {course.level}
-                          </Badge>
-                          <span className="text-xs text-gray-500">
-                            {course.course_number}
-                          </span>
+                          <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
+                          <span className="text-xs text-gray-500">{course.course_number}</span>
                           <span className="text-xs text-gray-500">
                             {course.duration_weeks} weeks
                           </span>
-                          <span className="text-xs text-gray-500">
-                            €{course.price}
-                          </span>
+                          <span className="text-xs text-gray-500">€{course.price}</span>
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Max students: {course.max_students}
@@ -292,10 +289,7 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({ batch, on
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t mt-6">
-            <Button
-              variant="outline"
-              onClick={onClose}
-            >
+            <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           </div>

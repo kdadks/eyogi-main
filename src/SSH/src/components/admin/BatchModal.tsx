@@ -46,7 +46,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
         start_date: batch.start_date ? batch.start_date.split('T')[0] : '',
         end_date: batch.end_date ? batch.end_date.split('T')[0] : '',
         max_students: batch.max_students?.toString() || '',
-        status: batch.status,
+        status: 'active' as const,
       })
     }
   }, [batch])
@@ -54,7 +54,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
   const fetchTeachers = async () => {
     try {
       const users = await getAllUsers()
-      const teacherList = users.filter(user => user.role === 'teacher')
+      const teacherList = users.filter((user) => user.role === 'teacher')
       setTeachers(teacherList)
     } catch (error) {
       console.error('Error fetching teachers:', error)
@@ -70,12 +70,14 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
+      setErrors((prev) => ({ ...prev, [name]: '' }))
     }
   }
 
@@ -120,7 +122,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
       // For course-based batches, we need the gurukul_id from the selected course
       let gurukulId = formData.gurukul_id
       if (assignmentType === 'course' && selectedCourseId) {
-        const selectedCourse = courses.find(course => course.id === selectedCourseId)
+        const selectedCourse = courses.find((course) => course.id === selectedCourseId)
         gurukulId = selectedCourse?.gurukul_id || ''
       }
 
@@ -162,13 +164,8 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold">
-            {batch ? 'Edit Batch' : 'Create New Batch'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <h2 className="text-xl font-semibold">{batch ? 'Edit Batch' : 'Create New Batch'}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
@@ -205,9 +202,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Batch Name *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Batch Name *</label>
               <input
                 type="text"
                 name="name"
@@ -218,16 +213,12 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
                 }`}
                 placeholder="Enter batch name"
               />
-              {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
             {assignmentType === 'gurukul' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gurukul *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gurukul *</label>
                 <select
                   name="gurukul_id"
                   value={formData.gurukul_id}
@@ -249,9 +240,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course *</label>
                 <select
                   value={selectedCourseId}
                   onChange={(e) => setSelectedCourseId(e.target.value)}
@@ -273,9 +262,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Teacher
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher</label>
               <select
                 name="teacher_id"
                 value={formData.teacher_id}
@@ -292,9 +279,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
                 name="status"
                 value={formData.status}
@@ -309,9 +294,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
               <input
                 type="date"
                 name="start_date"
@@ -322,9 +305,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
               <input
                 type="date"
                 name="end_date"
@@ -334,15 +315,11 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
                   errors.end_date ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.end_date && (
-                <p className="text-red-500 text-sm mt-1">{errors.end_date}</p>
-              )}
+              {errors.end_date && <p className="text-red-500 text-sm mt-1">{errors.end_date}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Students
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Max Students</label>
               <input
                 type="number"
                 name="max_students"
@@ -361,9 +338,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
             <textarea
               name="description"
               value={formData.description}
@@ -375,19 +350,10 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="min-w-[100px]"
-            >
+            <Button type="submit" disabled={loading} className="min-w-[100px]">
               {loading ? 'Saving...' : batch ? 'Update' : 'Create'}
             </Button>
           </div>

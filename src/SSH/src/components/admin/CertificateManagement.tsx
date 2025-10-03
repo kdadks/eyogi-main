@@ -419,7 +419,7 @@ export default function CertificateManagement() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleReissueCertificate(certificate)}
+                              onClick={() => handleIssueCertificate(certificate.enrollment_id)}
                               className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                               title="Reissue Certificate"
                             >

@@ -32,7 +32,7 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
         if (onPrerequisiteCheck) {
           onPrerequisiteCheck(result)
         }
-      } catch (err) {
+      } catch {
         setError('Failed to check prerequisites')
       } finally {
         setLoading(false)

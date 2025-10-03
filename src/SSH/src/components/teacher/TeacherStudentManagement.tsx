@@ -2,21 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
-import { Input } from '../ui/Input'
 import { User, Enrollment, Course, Batch, BatchStudent } from '../../types'
-import { getAllUsers, updateUserProfile } from '../../lib/api/users'
+import type { Database } from '../../lib/supabase'
+type Profile = Database['public']['Tables']['profiles']['Row']
+import { getAllUsers } from '../../lib/api/users'
 import { getTeacherEnrollments, updateEnrollmentStatus } from '../../lib/api/enrollments'
 import { getTeacherCourses } from '../../lib/api/courses'
-import { getBatches, assignStudentToBatch, getStudentBatches } from '../../lib/api/batches'
+import { getBatches } from '../../lib/api/batches'
 import { supabaseAdmin } from '../../lib/supabase'
-import { formatDate } from '../../lib/utils'
-import { getRoleColor } from '../../lib/auth/authUtils'
 import toast from 'react-hot-toast'
 import UserFormModal from '../admin/UserFormModal'
 import BulkBatchAssignmentModal from '../admin/BulkBatchAssignmentModal'
 import {
   UserIcon,
-  AcademicCapIcon,
   MagnifyingGlassIcon,
   EyeIcon,
   PencilIcon,
@@ -25,8 +23,6 @@ import {
   UserGroupIcon,
   BookOpenIcon,
   QueueListIcon,
-  EnvelopeIcon,
-  PhoneIcon,
 } from '@heroicons/react/24/outline'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
@@ -42,7 +38,6 @@ export default function TeacherStudentManagement() {
   const [filteredStudents, setFilteredStudents] = useState<EnrichedStudent[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -83,7 +78,7 @@ export default function TeacherStudentManagement() {
         getTeacherCourses(user.id),
         getTeacherEnrollments(user.id),
         getAllUsers(),
-        getBatches({ teacher_id: user.id })
+        getBatches({ teacher_id: user.id }),
       ])
 
       console.log('Teacher courses:', teacherCourses.length)
@@ -92,7 +87,6 @@ export default function TeacherStudentManagement() {
       console.log('Teacher batches:', teacherBatches.length)
 
       setCourses(teacherCourses)
-      setEnrollments(teacherEnrollments)
       setBatches(teacherBatches)
 
       // If teacher has no courses, we need to get enrollments based on course_assignments
@@ -101,40 +95,41 @@ export default function TeacherStudentManagement() {
       if (teacherEnrollments.length === 0 && teacherCourses.length > 0) {
         console.log('Fetching enrollments based on course IDs')
         // Get enrollments for teacher's courses
-        const courseIds = teacherCourses.map(c => c.id)
+        const courseIds = teacherCourses.map((c) => c.id)
         const { data: courseEnrollments } = await supabaseAdmin
           .from('enrollments')
-          .select(`
+          .select(
+            `
             *,
             courses (*),
             profiles!enrollments_student_id_fkey (*)
-          `)
+          `,
+          )
           .in('course_id', courseIds)
           .order('enrolled_at', { ascending: false })
 
         relevantEnrollments = courseEnrollments || []
         console.log('Course enrollments found:', relevantEnrollments.length)
-        setEnrollments(relevantEnrollments)
       }
 
       // Get unique student IDs from enrollments
-      const studentIds = new Set(relevantEnrollments.map(e => e.student_id))
+      const studentIds = new Set(relevantEnrollments.map((e) => e.student_id))
 
       // Filter only students who are enrolled in teacher's courses
-      const enrolledStudents = allUsers.filter(user =>
-        user.role === 'student' && studentIds.has(user.id)
+      const enrolledStudents = allUsers.filter(
+        (user) => user.role === 'student' && studentIds.has(user.id),
       )
 
       console.log('Enrolled students found:', enrolledStudents.length)
 
       // Enrich students with their enrollments (batches loaded separately)
       const enrichedStudents = enrolledStudents.map((student) => {
-        const studentEnrollments = relevantEnrollments.filter(e => e.student_id === student.id)
+        const studentEnrollments = relevantEnrollments.filter((e) => e.student_id === student.id)
 
         return {
           ...student,
           enrollments: studentEnrollments,
-          batches: [] // Initialize as empty, will be loaded when needed
+          batches: [], // Initialize as empty, will be loaded when needed
         }
       })
 
@@ -152,10 +147,13 @@ export default function TeacherStudentManagement() {
     }
   }
 
-  const loadStudentBatches = async (studentsToUpdate: EnrichedStudent[], availableBatches: Batch[]) => {
+  const loadStudentBatches = async (
+    studentsToUpdate: EnrichedStudent[],
+    availableBatches: Batch[],
+  ) => {
     try {
       // Get batch students for teacher's batches only
-      const batchIds = availableBatches.map(b => b.id)
+      const batchIds = availableBatches.map((b) => b.id)
 
       if (batchIds.length === 0) return
 
@@ -170,14 +168,14 @@ export default function TeacherStudentManagement() {
       }
 
       // Map batch students to students
-      const updatedStudents = studentsToUpdate.map(student => {
+      const updatedStudents = studentsToUpdate.map((student) => {
         const studentBatchAssignments = (batchStudents || []).filter(
-          bs => bs.student_id === student.id
+          (bs) => bs.student_id === student.id,
         )
 
         return {
           ...student,
-          batches: studentBatchAssignments as BatchStudent[]
+          batches: studentBatchAssignments as BatchStudent[],
         }
       })
 
@@ -196,35 +194,35 @@ export default function TeacherStudentManagement() {
         (student) =>
           student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          student.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+          student.student_id?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     // Course filter
     if (courseFilter !== 'all') {
       filtered = filtered.filter((student) =>
-        student.enrollments.some((e) => e.course_id === courseFilter)
+        student.enrollments.some((e) => e.course_id === courseFilter),
       )
     }
 
     // Batch filter
     if (batchFilter !== 'all') {
       filtered = filtered.filter((student) =>
-        student.batches.some((b) => b.batch_id === batchFilter)
+        student.batches.some((b) => b.batch_id === batchFilter),
       )
     }
 
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter((student) =>
-        student.enrollments.some((e) => e.status === statusFilter)
+        student.enrollments.some((e) => e.status === statusFilter),
       )
     }
 
     // Tab-specific filtering
     if (activeTab === 'pending') {
       filtered = filtered.filter((student) =>
-        student.enrollments.some((e) => e.status === 'pending')
+        student.enrollments.some((e) => e.status === 'pending'),
       )
     }
 
@@ -277,31 +275,33 @@ export default function TeacherStudentManagement() {
 
   const handleSelectAllStudents = (checked: boolean) => {
     if (checked) {
-      setSelectedStudents(new Set(filteredStudents.map(s => s.id)))
+      setSelectedStudents(new Set(filteredStudents.map((s) => s.id)))
     } else {
       setSelectedStudents(new Set())
     }
   }
 
-  const getEnrollmentStatus = (student: EnrichedStudent, courseId: string) => {
-    const enrollment = student.enrollments.find(e => e.course_id === courseId)
-    return enrollment?.status || 'not_enrolled'
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'rejected': return 'bg-red-100 text-red-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
   const stats = {
     totalStudents: students.length,
-    approvedStudents: students.filter(s => s.enrollments.some(e => e.status === 'approved')).length,
-    pendingApprovals: students.filter(s => s.enrollments.some(e => e.status === 'pending')).length,
+    approvedStudents: students.filter((s) => s.enrollments.some((e) => e.status === 'approved'))
+      .length,
+    pendingApprovals: students.filter((s) => s.enrollments.some((e) => e.status === 'pending'))
+      .length,
     totalBatches: batches.length,
   }
 
@@ -457,10 +457,7 @@ export default function TeacherStudentManagement() {
               <h2 className="text-xl font-bold">All Students</h2>
               <div className="flex gap-2">
                 {selectedStudents.size > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowBulkBatchModal(true)}
-                  >
+                  <Button variant="outline" onClick={() => setShowBulkBatchModal(true)}>
                     <QueueListIcon className="h-4 w-4 mr-2" />
                     Assign to Batches ({selectedStudents.size})
                   </Button>
@@ -468,9 +465,13 @@ export default function TeacherStudentManagement() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleSelectAllStudents(selectedStudents.size !== filteredStudents.length)}
+                  onClick={() =>
+                    handleSelectAllStudents(selectedStudents.size !== filteredStudents.length)
+                  }
                 >
-                  {selectedStudents.size === filteredStudents.length ? 'Deselect All' : 'Select All'}
+                  {selectedStudents.size === filteredStudents.length
+                    ? 'Deselect All'
+                    : 'Select All'}
                 </Button>
               </div>
             </div>
@@ -520,7 +521,11 @@ export default function TeacherStudentManagement() {
                           <EyeIcon className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEditStudent(student)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditStudent(student)}
+                        >
                           <PencilIcon className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
@@ -539,7 +544,7 @@ export default function TeacherStudentManagement() {
         <div className="flex flex-col gap-6">
           {batches.map((batch) => {
             const batchStudents = filteredStudents.filter((student) =>
-              student.batches.some((b) => b.batch_id === batch.id)
+              student.batches.some((b) => b.batch_id === batch.id),
             )
 
             if (batchStudents.length === 0) return null
@@ -576,7 +581,11 @@ export default function TeacherStudentManagement() {
                             <p className="text-xs text-gray-600">{student.student_id}</p>
                           </div>
                         </div>
-                        <Button size="sm" variant="ghost" onClick={() => handleViewStudent(student)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewStudent(student)}
+                        >
                           <EyeIcon className="h-4 w-4" />
                         </Button>
                       </div>
@@ -600,10 +609,12 @@ export default function TeacherStudentManagement() {
             ) : (
               <div className="flex flex-col gap-4">
                 {filteredStudents.map((student) => {
-                  const pendingEnrollments = student.enrollments.filter(e => e.status === 'pending')
+                  const pendingEnrollments = student.enrollments.filter(
+                    (e) => e.status === 'pending',
+                  )
 
                   return pendingEnrollments.map((enrollment) => {
-                    const course = courses.find(c => c.id === enrollment.course_id)
+                    const course = courses.find((c) => c.id === enrollment.course_id)
 
                     return (
                       <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4">
@@ -661,7 +672,7 @@ export default function TeacherStudentManagement() {
           onSuccess={() => {
             loadData()
           }}
-          user={(viewingStudent || editingStudent) as any}
+          user={(viewingStudent || editingStudent) as unknown as Profile | undefined}
           mode={userModalMode}
         />
       )}

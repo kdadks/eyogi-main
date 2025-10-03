@@ -412,7 +412,7 @@ export default function TeacherDashboard() {
   ]
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-16 lg:pt-20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-6 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -444,13 +444,13 @@ export default function TeacherDashboard() {
   }
   const { greeting, icon: TimeIcon } = getTimeOfDay()
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-16 lg:pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-6 lg:pt-8">
       {/* Enhanced Modern Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-16 lg:top-20 z-40 shadow-lg"
+        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-6 lg:top-8 z-40 shadow-lg"
       >
         <div className="container-max py-8">
           <div className="flex items-center justify-between">
@@ -915,9 +915,10 @@ export default function TeacherDashboard() {
                           <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors">
                             {course.title}
                           </h3>
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                            {course.description}
-                          </p>
+                          <div
+                            className="text-gray-600 text-sm mb-4 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: course.description }}
+                          />
                           <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                             <div className="flex items-center space-x-2">
                               <UsersIcon className="h-4 w-4 text-gray-400" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'
 import { Badge } from '../ui/Badge'
@@ -25,7 +25,13 @@ const BatchManagement: React.FC = () => {
   const [batches, setBatches] = useState<Batch[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, completed: 0, archived: 0 })
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    completed: 0,
+    archived: 0,
+  })
 
   // Modal states
   const [showBatchModal, setShowBatchModal] = useState(false)
@@ -47,21 +53,17 @@ const BatchManagement: React.FC = () => {
   const canAssignStudents = canAccessResource('batch_students', 'create')
   const canAssignCourses = canAccessResource('batch_courses', 'create')
 
-  useEffect(() => {
-    fetchData()
-  }, [filterGurukul, filterStatus])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const [batchData, gurukulData, statsData] = await Promise.all([
         getBatches({
           gurukul_id: filterGurukul || undefined,
           status: filterStatus || undefined,
-          is_active: true
+          is_active: true,
         }),
         getGurukuls(),
-        getBatchStats()
+        getBatchStats(),
       ])
 
       setBatches(batchData)
@@ -72,7 +74,11 @@ const BatchManagement: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterGurukul, filterStatus])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleCreateBatch = () => {
     setEditingBatch(null)
@@ -110,11 +116,16 @@ const BatchManagement: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'inactive': return 'bg-gray-100 text-gray-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      case 'archived': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'active':
+        return 'bg-green-100 text-green-800'
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
+      case 'archived':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -282,9 +293,7 @@ const BatchManagement: React.FC = () => {
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">{batch.name}</CardTitle>
-                <Badge className={getStatusColor(batch.status)}>
-                  {batch.status}
-                </Badge>
+                <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
               </div>
             </CardHeader>
 
@@ -296,13 +305,17 @@ const BatchManagement: React.FC = () => {
                 </div>
 
                 {batch.description && (
-                  <p className="text-sm text-gray-600">{batch.description}</p>
+                  <div
+                    className="text-sm text-gray-600"
+                    dangerouslySetInnerHTML={{ __html: batch.description }}
+                  />
                 )}
 
                 <div className="flex items-center text-sm text-gray-600">
                   <CalendarIcon className="h-4 w-4 mr-2" />
                   <span>
-                    {formatDate(batch.start_date)} - {formatDate(batch.end_date)}
+                    {batch.start_date ? formatDate(batch.start_date) : 'TBD'} -{' '}
+                    {batch.end_date ? formatDate(batch.end_date) : 'TBD'}
                   </span>
                 </div>
 
@@ -386,8 +399,7 @@ const BatchManagement: React.FC = () => {
             <p className="text-gray-600 mb-4">
               {filterGurukul || filterStatus
                 ? 'No batches match your current filters.'
-                : 'Get started by creating your first batch.'
-              }
+                : 'Get started by creating your first batch.'}
             </p>
             {canCreate && !filterGurukul && !filterStatus && (
               <Button onClick={handleCreateBatch}>Create First Batch</Button>
