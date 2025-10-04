@@ -114,11 +114,13 @@ const AdminDashboard: React.FC = () => {
   const loadRecentActivities = async () => {
     try {
       const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 30) // Extended to 30 days for more activity data
+
+      console.log('Loading recent activities since:', sevenDaysAgo.toISOString())
 
       // Fetch recent activities from different tables
-      const [recentUsers, recentCourses, recentEnrollments, recentCertificates] = await Promise.all(
-        [
+      const [recentUsers, recentCourses, recentEnrollments, recentCertificates, recentBatches] =
+        await Promise.all([
           // Recent user registrations
           supabaseAdmin
             .from('profiles')
@@ -174,8 +176,23 @@ const AdminDashboard: React.FC = () => {
             .gte('issued_at', sevenDaysAgo.toISOString())
             .order('issued_at', { ascending: false })
             .limit(5),
-        ],
-      )
+
+          // Recent batch creations
+          supabaseAdmin
+            .from('batches')
+            .select('id, name, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(5),
+        ])
+
+      console.log('Recent data fetched:', {
+        users: recentUsers.data?.length || 0,
+        courses: recentCourses.data?.length || 0,
+        enrollments: recentEnrollments.data?.length || 0,
+        certificates: recentCertificates.data?.length || 0,
+        batches: recentBatches.data?.length || 0,
+      })
 
       const activities: ActivityItem[] = []
 
@@ -212,8 +229,10 @@ const AdminDashboard: React.FC = () => {
       // Add enrollments
       if (recentEnrollments.data) {
         recentEnrollments.data.forEach((enrollment) => {
-          const user = enrollment.profiles?.[0] as User | undefined
-          const course = enrollment.courses?.[0] as Course | undefined
+          const userProfiles = enrollment.profiles as unknown as User[]
+          const courseProfiles = enrollment.courses as unknown as Course[]
+          const user = userProfiles?.[0]
+          const course = courseProfiles?.[0]
           if (user && course) {
             activities.push({
               id: `enrollment-${enrollment.id}`,
@@ -224,6 +243,8 @@ const AdminDashboard: React.FC = () => {
               icon: ClipboardDocumentListIcon,
               iconColor: 'text-yellow-600',
             })
+          } else {
+            console.log('Enrollment missing user or course data:', { user, course, enrollment })
           }
         })
       }
@@ -231,8 +252,10 @@ const AdminDashboard: React.FC = () => {
       // Add certificates
       if (recentCertificates.data) {
         recentCertificates.data.forEach((cert) => {
-          const user = cert.profiles?.[0] as User | undefined
-          const course = cert.courses?.[0] as Course | undefined
+          const userProfiles = cert.profiles as unknown as User[]
+          const courseProfiles = cert.courses as unknown as Course[]
+          const user = userProfiles?.[0]
+          const course = courseProfiles?.[0]
           if (user && course) {
             activities.push({
               id: `certificate-${cert.id}`,
@@ -243,12 +266,31 @@ const AdminDashboard: React.FC = () => {
               icon: CheckCircleIcon,
               iconColor: 'text-purple-600',
             })
+          } else {
+            console.log('Certificate missing user or course data:', { user, course, cert })
           }
+        })
+      }
+
+      // Add batch creations
+      if (recentBatches.data) {
+        recentBatches.data.forEach((batch) => {
+          activities.push({
+            id: `batch-${batch.id}`,
+            type: 'course_creation', // Reusing type for consistency
+            title: 'New Batch Created',
+            description: `Batch "${batch.name}" was created`,
+            timestamp: batch.created_at,
+            icon: QueueListIcon,
+            iconColor: 'text-indigo-600',
+          })
         })
       }
 
       // Sort all activities by timestamp (most recent first) and take top 10
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+      console.log('Final activities:', activities.length, activities)
       setActivities(activities.slice(0, 10))
     } catch (error) {
       console.error('Error loading recent activities:', error)
@@ -317,11 +359,6 @@ const AdminDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Loading analytics...</p>
-        </div>
         {/* Skeleton Stats Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(8)].map((_, index) => (
@@ -351,11 +388,6 @@ const AdminDashboard: React.FC = () => {
   }
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome to the eYogi Gurukul Admin Console</p>
-      </div>
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card, index) => (
@@ -434,7 +466,7 @@ const AdminDashboard: React.FC = () => {
             <div className="text-center py-8 text-gray-500">
               <ClockIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p>No recent activity</p>
-              <p className="text-sm">Activity from the last 7 days will appear here</p>
+              <p className="text-sm">Activity from the last 30 days will appear here</p>
             </div>
           ) : (
             <div className="space-y-4">

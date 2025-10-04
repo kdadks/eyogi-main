@@ -22,21 +22,7 @@ import {
 import toast from 'react-hot-toast'
 import { usePermissions } from '../../contexts/PermissionContext'
 import { supabaseAdmin } from '../../lib/supabase'
-interface DatabasePermission {
-  id: string
-  name: string
-  description: string | null
-  resource: string
-  action: string
-  created_at: string
-}
-interface RolePermissionData {
-  id: string
-  role: string
-  permission_id: string
-  created_at: string
-  permission: DatabasePermission[]
-}
+
 interface Permission {
   id: string
   name: string
@@ -79,9 +65,9 @@ const getIconForResource = (resource: string): React.ReactNode => {
 const ROLE_DEFAULTS = {
   admin: [],
   business_admin: [],
-  super_admin: [],
   teacher: [],
   student: [],
+  parent: [],
 }
 export default function AdminPermissionManagement() {
   const [permissions, setPermissions] = useState<Permission[]>([])
@@ -95,48 +81,74 @@ export default function AdminPermissionManagement() {
   const loadPermissions = async () => {
     try {
       setIsLoadingData(true)
-      // Load all permissions
+      console.log('Loading permissions from database...')
+
+      // Load all permissions from database
       const { data: permissionsData, error: permError } = await supabaseAdmin
         .from('permissions')
-        .select('*')
+        .select('id, name, description, resource, action, created_at')
         .order('resource, action')
-      if (permError) throw permError
-      // Load all role permissions with permission details
-      const { data: rolePermData, error: roleError } = await supabaseAdmin.from('role_permissions')
-        .select(`
-          id,
-          role,
-          permission_id,
-          created_at,
-          permission:permissions(*)
-        `)
-      if (roleError) throw roleError
-      // Convert database permissions to UI format
+
+      if (permError) {
+        console.error('Error loading permissions:', permError)
+        throw permError
+      }
+
+      console.log(
+        `Loaded ${permissionsData?.length || 0} permissions from database:`,
+        permissionsData,
+      )
+
+      // Load all role permissions
+      const { data: rolePermData, error: roleError } = await supabaseAdmin
+        .from('role_permissions')
+        .select('id, role, permission_id, created_at')
+
+      if (roleError) {
+        console.error('Error loading role permissions:', roleError)
+        throw roleError
+      }
+
+      console.log(`Loaded ${rolePermData?.length || 0} role permissions:`, rolePermData)
+
+      // Convert ALL database permissions to UI format
       const uiPermissions: Permission[] = (permissionsData || []).map((perm) => ({
         id: perm.id,
         name: perm.name,
-        description: perm.description || '',
+        description: perm.description || `${perm.resource} ${perm.action} permission`,
         icon: getIconForResource(perm.resource),
         resource: perm.resource,
         action: perm.action,
       }))
+
+      console.log(`Converted ${uiPermissions.length} UI permissions:`, uiPermissions)
       setPermissions(uiPermissions)
+
       // Group role permissions by role
       const rolePermissionMap: Record<string, string[]> = {
         admin: [],
         business_admin: [],
-        super_admin: [],
         teacher: [],
         student: [],
+        parent: [],
       }
-      ;(rolePermData || []).forEach((rp: RolePermissionData) => {
+
+      // Map role permissions
+      ;(rolePermData || []).forEach((rp: { role: string; permission_id: string }) => {
         if (rolePermissionMap[rp.role]) {
           rolePermissionMap[rp.role].push(rp.permission_id)
         }
       })
+
+      console.log('Role permissions map:', rolePermissionMap)
       setRolePermissions(rolePermissionMap)
-    } catch {
-      toast.error('Failed to load permissions from database')
+
+      toast.success(`Loaded ${uiPermissions.length} permissions successfully`)
+    } catch (error) {
+      console.error('Failed to load permissions:', error)
+      toast.error(
+        'Failed to load permissions from database. Please check your connection and permissions.',
+      )
     } finally {
       setIsLoadingData(false)
     }
@@ -230,32 +242,6 @@ export default function AdminPermissionManagement() {
   )
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Permission Management</h1>
-          <p className="text-gray-600">Manage role-based permissions for your application</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={loadPermissions}
-            disabled={isLoadingData}
-            className="flex items-center gap-2"
-            style={{ backgroundColor: '#6b7280', color: 'white' }}
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button
-            onClick={savePermissions}
-            disabled={loading || !hasChanges}
-            className="flex items-center gap-2"
-            style={{ backgroundColor: hasChanges ? '#3b82f6' : '#6b7280', color: 'white' }}
-          >
-            <Save className="h-4 w-4" />
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-      </div>
       {hasChanges && (
         <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -264,10 +250,34 @@ export default function AdminPermissionManagement() {
       )}
       <Card>
         <CardHeader>
-          <CardTitle>Role Selection</CardTitle>
-          <CardDescription>
-            Select a role to manage its permissions. Changes are saved to the database.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Role Selection</CardTitle>
+              <CardDescription>
+                Select a role to manage its permissions. Changes are saved to the database.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={loadPermissions}
+                disabled={isLoadingData}
+                className="flex items-center gap-2"
+                style={{ backgroundColor: '#6b7280', color: 'white' }}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                onClick={savePermissions}
+                disabled={loading || !hasChanges}
+                className="flex items-center gap-2"
+                style={{ backgroundColor: hasChanges ? '#3b82f6' : '#6b7280', color: 'white' }}
+              >
+                <Save className="h-4 w-4" />
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -355,49 +365,91 @@ export default function AdminPermissionManagement() {
         </Card>
       )}
       <div className="space-y-6">
-        {Object.entries(groupedPermissions).map(([resource, resourcePermissions]) => (
-          <Card key={resource}>
-            <CardHeader>
-              <CardTitle className="capitalize flex items-center gap-2">
-                {resourcePermissions[0].icon}
-                {resource} Permissions
-              </CardTitle>
-              <CardDescription>
-                Manage {resource}-related permissions for the {selectedRole} role
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {resourcePermissions.map((permission) => {
-                  const isChecked = currentPermissions.includes(permission.id)
-                  return (
-                    <div
-                      key={permission.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-md">{permission.icon}</div>
-                        <div>
-                          <div className="font-medium text-gray-900">{permission.name}</div>
-                          <div className="text-sm text-gray-500">{permission.description}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isChecked && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        <Switch
-                          checked={isChecked}
-                          onCheckedChange={(checked: boolean) =>
-                            handlePermissionChange(permission.id, checked)
-                          }
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
+        {permissions.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Permissions Found</h3>
+              <p className="text-gray-600 mb-4">
+                No permissions are currently loaded from the database. This could mean:
+              </p>
+              <div className="text-left bg-gray-50 p-4 rounded-lg mb-4 text-sm">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600">•</span>
+                    <span>The permissions haven't been populated in your database yet</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600">•</span>
+                    <span>There's a database connection issue</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600">•</span>
+                    <span>The permissions table doesn't exist</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-left">
+                <h4 className="font-medium text-blue-900 mb-2">💡 To populate permissions:</h4>
+                <ol className="space-y-1 text-blue-800">
+                  <li>1. Open your Supabase SQL Editor</li>
+                  <li>2. Run one of these SQL scripts from the SSH project:</li>
+                  <li className="ml-4 font-mono text-xs bg-blue-100 p-2 rounded">
+                    • add-missing-permissions-safe.sql (recommended)
+                    <br />
+                    • add-missing-permissions-with-created-by.sql
+                    <br />• add-missing-permissions.sql
+                  </li>
+                  <li>3. Click the "Refresh" button above</li>
+                </ol>
               </div>
             </CardContent>
           </Card>
-        ))}
+        ) : (
+          Object.entries(groupedPermissions).map(([resource, resourcePermissions]) => (
+            <Card key={resource}>
+              <CardHeader>
+                <CardTitle className="capitalize flex items-center gap-2">
+                  {resourcePermissions[0].icon}
+                  {resource} Permissions
+                </CardTitle>
+                <CardDescription>
+                  Manage {resource}-related permissions for the {selectedRole} role
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {resourcePermissions.map((permission) => {
+                    const isChecked = currentPermissions.includes(permission.id)
+                    return (
+                      <div
+                        key={permission.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gray-100 rounded-md">{permission.icon}</div>
+                          <div>
+                            <div className="font-medium text-gray-900">{permission.name}</div>
+                            <div className="text-sm text-gray-500">{permission.description}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isChecked && <CheckCircle className="h-4 w-4 text-green-500" />}
+                          <Switch
+                            checked={isChecked}
+                            onCheckedChange={(checked: boolean) =>
+                              handlePermissionChange(permission.id, checked)
+                            }
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   )

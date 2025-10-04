@@ -3,6 +3,7 @@ dist / media
 node_modules
 .DS_Store
 .env
+.env.local
 .next
 
 # Next.js build cache
@@ -26,3 +27,17 @@ public/sitemap*.xml
 # SSH app built assets (generated during build)
 public/ssh-app/assets/
 public/ssh-app/index.html
+
+# Development files
+*.sql
+*.backup
+*.log
+*.tmp
+tsconfig.tsbuildinfo
+.bolt/
+setup-*.js
+update-*.js
+check-*.js
+add-*.js
+*debug*
+*-debug.*

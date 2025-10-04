@@ -8,6 +8,7 @@ import {
   EyeIcon,
   ShieldExclamationIcon,
 } from '@heroicons/react/24/outline'
+import Pagination from '../common/Pagination'
 import { supabaseAdmin } from '../../lib/supabase'
 import { getStudentEnrollments } from '../../lib/api/enrollments'
 import { getChildrenByParentId, deleteChild } from '../../lib/api/children'
@@ -27,6 +28,9 @@ const AdminUserManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Profile | null>(null)
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create')
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -159,6 +163,27 @@ const AdminUserManagement: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter
     return matchesSearch && matchesRole && matchesStatus
   })
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, roleFilter, statusFilter])
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Reset to first page
+  }
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'super_admin':
@@ -201,26 +226,16 @@ const AdminUserManagement: React.FC = () => {
   }
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage students, teachers, and administrators</p>
-        </div>
-        <button
-          onClick={handleCreateUser}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
-          style={{ cursor: 'pointer' }}
-        >
-          <UserPlusIcon className="h-5 w-5 mr-2" />
-          Add User
-        </button>
-      </div>
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* User Count */}
+          <div className="flex items-center text-sm text-gray-500 min-w-fit">
+            <FunnelIcon className="h-4 w-4 mr-1" />
+            {filteredUsers.length} of {users.length} users
+          </div>
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-1 min-w-64">
             <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -231,11 +246,11 @@ const AdminUserManagement: React.FC = () => {
             />
           </div>
           {/* Role Filter */}
-          <div>
+          <div className="min-w-fit">
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Roles</option>
               <option value="student">Students</option>
@@ -245,11 +260,11 @@ const AdminUserManagement: React.FC = () => {
             </select>
           </div>
           {/* Status Filter */}
-          <div>
+          <div className="min-w-fit">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Statuses</option>
               <option value="active">Active</option>
@@ -258,11 +273,15 @@ const AdminUserManagement: React.FC = () => {
               <option value="pending_verification">Pending</option>
             </select>
           </div>
-          {/* Results count */}
-          <div className="flex items-center text-sm text-gray-500">
-            <FunnelIcon className="h-4 w-4 mr-1" />
-            {filteredUsers.length} of {users.length} users
-          </div>
+          {/* Add User Button */}
+          <button
+            onClick={handleCreateUser}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 cursor-pointer min-w-fit"
+            style={{ cursor: 'pointer' }}
+          >
+            <UserPlusIcon className="h-5 w-5 mr-2" />
+            Add User
+          </button>
         </div>
       </div>
       {/* Users Table */}
@@ -292,7 +311,7 @@ const AdminUserManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -399,6 +418,21 @@ const AdminUserManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredUsers.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          showItemsPerPage={true}
+          itemsPerPageOptions={[10, 25, 50, 100]}
+        />
+      )}
+
       {/* User Form Modal */}
       <UserFormModal
         isOpen={isModalOpen}

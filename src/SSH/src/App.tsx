@@ -1,5 +1,5 @@
 import React, { Suspense, useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 // Layout Components
 import { GlossyHeader } from './components/layout/GlossyHeader'
@@ -47,17 +47,23 @@ const LoadingFallback = () => (
   </div>
 )
 function App() {
+  const location = useLocation()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin')
+
+  // Check if current path is admin route
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
   const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
     setAuthModalMode(mode)
     setIsAuthModalOpen(true)
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
-      <GlossyHeader onOpenAuthModal={openAuthModal} />
-      {/* Main content with top padding to account for fixed header */}
-      <main className="pt-16 lg:pt-20">
+      {/* Only show GlossyHeader for non-admin routes */}
+      {!isAdminRoute && <GlossyHeader onOpenAuthModal={openAuthModal} />}
+      {/* Main content with top padding only for non-admin routes */}
+      <main className={isAdminRoute ? '' : 'pt-16 lg:pt-20'}>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* SSH Website Pages */}

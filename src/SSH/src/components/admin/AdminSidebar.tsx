@@ -141,8 +141,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       `}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-gray-900">eYogi Admin</h2>
+          <div className="flex items-center space-x-3">
+            {/* Logo */}
+            <div className="relative">
+              <img
+                src="/ssh-app/eyogiTextLess.png"
+                alt="eYogi Gurukul"
+                className="h-10 w-10 lg:h-12 lg:w-12 rounded-full border-2 border-white/20"
+              />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400/20 to-red-500/20"></div>
+            </div>
+            {/* Title */}
+            <div className="hidden sm:block">
+              <h1 className="text-lg lg:text-xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                SSH University
+              </h1>
+              <h2 className="text-sm lg:text-base font-medium text-gray-600">eYogi Gurukul</h2>
+            </div>
           </div>
           <button
             type="button"

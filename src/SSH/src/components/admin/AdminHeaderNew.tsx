@@ -1,9 +1,13 @@
 import React from 'react'
 import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
+import { usePageTitle } from '../../hooks/usePageTitle'
+
 interface AdminHeaderProps {
   onMenuClick: () => void
 }
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
+  const { fullTitle } = usePageTitle()
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="flex items-center justify-between px-6 py-4">
@@ -17,7 +21,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
             <Bars3Icon className="h-6 w-6" />
           </button>
           <div className="ml-4 lg:ml-0">
-            <h1 className="text-2xl font-semibold text-gray-900">eYogi Gurukul Admin</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{fullTitle}</h1>
           </div>
         </div>
         {/* Right side */}

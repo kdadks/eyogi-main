@@ -4,6 +4,9 @@ import { useWebsiteAuth } from '../contexts/WebsiteAuthContext'
 import SEOHead from '../components/seo/SEOHead'
 import { generateCourseSchema, generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Course, PrerequisiteCheckResult } from '../types'
+import type { Database } from '../types/database'
+
+type Profile = Database['public']['Tables']['profiles']['Row']
 import { getEnrolledCount, getCourseBySlug } from '../lib/api/courses'
 import { enrollInCourse } from '../lib/api/enrollments'
 import { getChildrenByParentId } from '../lib/api/children'
@@ -29,7 +32,7 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
   const [prerequisiteResult, setPrerequisiteResult] = useState<PrerequisiteCheckResult | null>(null)
-  const [children, setChildren] = useState<any[]>([])
+  const [children, setChildren] = useState<Profile[]>([])
   const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
   const loadCourseData = useCallback(async () => {
     if (!id) {

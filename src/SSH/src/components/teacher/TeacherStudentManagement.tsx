@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -56,15 +56,7 @@ export default function TeacherStudentManagement() {
   const [userModalMode, setUserModalMode] = useState<'view' | 'edit'>('view')
   const [showBulkBatchModal, setShowBulkBatchModal] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [user])
-
-  useEffect(() => {
-    filterStudents()
-  }, [students, searchTerm, courseFilter, batchFilter, statusFilter, activeTab])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) {
       console.log('No user found')
       return
@@ -145,7 +137,7 @@ export default function TeacherStudentManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   const loadStudentBatches = async (
     studentsToUpdate: EnrichedStudent[],
@@ -185,7 +177,7 @@ export default function TeacherStudentManagement() {
     }
   }
 
-  const filterStudents = () => {
+  const filterStudents = useCallback(() => {
     let filtered = students
 
     // Search filter
@@ -227,7 +219,15 @@ export default function TeacherStudentManagement() {
     }
 
     setFilteredStudents(filtered)
-  }
+  }, [students, searchTerm, courseFilter, batchFilter, statusFilter, activeTab])
+
+  useEffect(() => {
+    loadData()
+  }, [user, loadData])
+
+  useEffect(() => {
+    filterStudents()
+  }, [students, searchTerm, courseFilter, batchFilter, statusFilter, activeTab, filterStudents])
 
   const handleApproveEnrollment = async (enrollmentId: string) => {
     try {

@@ -451,7 +451,7 @@ export interface Database {
           id: string
           name: string
           type: 'student' | 'teacher' | 'participation' | 'completion'
-          template_data: any
+          template_data: Record<string, unknown>
           is_active: boolean
           created_by: string
           created_at: string
@@ -460,14 +460,14 @@ export interface Database {
         Insert: {
           name: string
           type: 'student' | 'teacher' | 'participation' | 'completion'
-          template_data: any
+          template_data: Record<string, unknown>
           is_active?: boolean
           created_by: string
         }
         Update: {
           name?: string
           type?: 'student' | 'teacher' | 'participation' | 'completion'
-          template_data?: any
+          template_data?: Record<string, unknown>
           is_active?: boolean
         }
       }

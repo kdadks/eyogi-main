@@ -322,14 +322,6 @@ export default function CourseManagement() {
   }
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Course Management</h1>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Add Course
-        </Button>
-      </div>
       {/* Search and Filters */}
       <div className="flex gap-4 items-center">
         <div className="flex-1">
@@ -363,6 +355,10 @@ export default function CourseManagement() {
           <option value="intermediate">Intermediate</option>
           <option value="advanced">Advanced</option>
         </select>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <PlusIcon className="h-4 w-4 mr-2" />
+          Add Course
+        </Button>
       </div>
       {/* Course Grid */}
       <div className="bg-white border border-gray-200 rounded-lg">

@@ -107,16 +107,18 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
       return []
     }
 
-    const courseIds = assignments.map(a => a.course_id)
+    const courseIds = assignments.map((a) => a.course_id)
 
     // Get enrollments for those courses
     const { data, error } = await supabaseAdmin
       .from('enrollments')
-      .select(`
+      .select(
+        `
         *,
         course:courses!inner (*),
         student:profiles!enrollments_student_id_fkey (*)
-      `)
+      `,
+      )
       .in('course_id', courseIds)
       .order('enrolled_at', { ascending: false })
 
@@ -126,13 +128,7 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
     }
 
     // Map the data to match the Enrollment interface
-    const mappedData = (data || []).map((enrollment: any) => ({
-      ...enrollment,
-      course: enrollment.course,
-      student: enrollment.student
-    }))
-
-    return mappedData || []
+    return (data || []) as Enrollment[]
   } catch (error) {
     console.error('Error in getTeacherEnrollments:', error)
     return []

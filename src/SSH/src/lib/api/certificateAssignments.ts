@@ -140,46 +140,42 @@ export const createCertificateAssignment = async (
   assignmentData: CreateCertificateAssignmentData,
   createdByUserId: string,
 ) => {
-  try {
-    // Validate that at least one of gurukul_id or course_id is provided
-    if (!assignmentData.gurukul_id && !assignmentData.course_id) {
-      throw new Error('Either gurukul_id or course_id must be provided')
-    }
-    const insertData = {
-      template_id: assignmentData.template_id,
-      gurukul_id: assignmentData.gurukul_id || null,
-      course_id: assignmentData.course_id || null,
-      created_by: createdByUserId,
-    }
-    const { data, error } = await supabaseAdmin
-      .from('certificate_assignments')
-      .insert(insertData)
-      .select(
-        `
+  // Validate that at least one of gurukul_id or course_id is provided
+  if (!assignmentData.gurukul_id && !assignmentData.course_id) {
+    throw new Error('Either gurukul_id or course_id must be provided')
+  }
+  const insertData = {
+    template_id: assignmentData.template_id,
+    gurukul_id: assignmentData.gurukul_id || null,
+    course_id: assignmentData.course_id || null,
+    created_by: createdByUserId,
+  }
+  const { data, error } = await supabaseAdmin
+    .from('certificate_assignments')
+    .insert(insertData)
+    .select(
+      `
         *,
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
         creator:profiles(*)
       `,
+    )
+    .single()
+  if (error) {
+    // Provide helpful error messages
+    if (error.message.includes('relation "certificate_assignments" does not exist')) {
+      throw new Error(
+        'Certificate assignments table does not exist. Please contact administrator to set up the database.',
       )
-      .single()
-    if (error) {
-      // Provide helpful error messages
-      if (error.message.includes('relation "certificate_assignments" does not exist')) {
-        throw new Error(
-          'Certificate assignments table does not exist. Please contact administrator to set up the database.',
-        )
-      }
-      if (error.message.includes('check constraint "check_assignment_target"')) {
-        throw new Error('Either gurukul or course must be selected for assignment.')
-      }
-      throw error
     }
-    return data as CertificateAssignment
-  } catch (_error) {
-    throw _error
+    if (error.message.includes('check constraint "check_assignment_target"')) {
+      throw new Error('Either gurukul or course must be selected for assignment.')
+    }
+    throw error
   }
+  return data as CertificateAssignment
 }
 // Update assignment
 export const updateCertificateAssignment = async (

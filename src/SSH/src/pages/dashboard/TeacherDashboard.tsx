@@ -18,7 +18,10 @@ import {
   bulkIssueCertificates,
   issueCertificateWithTemplate,
 } from '@/lib/api/certificates'
-import { getTeacherCertificateAssignments } from '@/lib/api/certificateAssignments'
+import {
+  getTeacherCertificateAssignments,
+  CertificateAssignment,
+} from '@/lib/api/certificateAssignments'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getUserProfile } from '@/lib/api/users'
 import { getCountryName, getStateName } from '@/lib/address-utils'
@@ -99,7 +102,7 @@ export default function TeacherDashboard() {
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
-  const [certificateAssignments, setCertificateAssignments] = useState<any[]>([])
+  const [certificateAssignments, setCertificateAssignments] = useState<CertificateAssignment[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)

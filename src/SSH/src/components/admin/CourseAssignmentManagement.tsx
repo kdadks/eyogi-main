@@ -182,16 +182,6 @@ const CourseAssignmentManagement: React.FC = () => {
   }
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Course Assignments</h1>
-          <p className="text-gray-600">Manage teacher assignments to courses</p>
-        </div>
-        <Button onClick={() => setShowModal(true)} className="flex items-center space-x-2">
-          <PlusIcon className="h-4 w-4" />
-          <span>New Assignment</span>
-        </Button>
-      </div>
       <div className="flex items-center space-x-4">
         <div className="flex-1 relative">
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -203,68 +193,103 @@ const CourseAssignmentManagement: React.FC = () => {
             className="pl-10"
           />
         </div>
+        <Button onClick={() => setShowModal(true)} className="flex items-center space-x-2">
+          <PlusIcon className="h-4 w-4" />
+          <span>New Assignment</span>
+        </Button>
       </div>
-      <div className="grid gap-4">
-        {filteredAssignments.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
-              <p className="text-gray-600">
-                {searchTerm
-                  ? 'No assignments match your search.'
-                  : 'Start by creating your first course assignment.'}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredAssignments.map((assignment) => (
-            <Card key={assignment.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <BookOpenIcon className="h-5 w-5 text-blue-600" />
+      {filteredAssignments.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
+            <p className="text-gray-600">
+              {searchTerm
+                ? 'No assignments match your search.'
+                : 'Start by creating your first course assignment.'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Course
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Course Number
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Teacher
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Assigned Date
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Notes
+                </th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAssignments.map((assignment) => (
+                <tr key={assignment.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                        <BookOpenIcon className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {assignment.course?.title}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {assignment.course?.title}
-                        </h3>
-                        <Badge variant="outline">{assignment.course?.course_number}</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        Teacher: {assignment.teacher?.full_name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Assigned: {new Date(assignment.assigned_at).toLocaleDateString()}
-                      </p>
-                      {assignment.notes && (
-                        <p className="text-sm text-gray-600 mt-1">Notes: {assignment.notes}</p>
-                      )}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-md">
+                      {assignment.course?.course_number}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{assignment.teacher?.full_name}</div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {new Date(assignment.assigned_at).toLocaleDateString()}
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-gray-900 max-w-xs truncate">
+                      {assignment.notes || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <Badge className="bg-green-100 text-green-800" size="sm">
                       Active
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveAssignment(assignment.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-0"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <AssignmentModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
