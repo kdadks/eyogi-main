@@ -170,17 +170,6 @@ const BatchManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Batch Management</h1>
-        {canCreate && (
-          <Button onClick={handleCreateBatch} className="flex items-center space-x-2">
-            <PlusIcon className="h-4 w-4" />
-            <span>Create Batch</span>
-          </Button>
-        )}
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
@@ -247,41 +236,54 @@ const BatchManagement: React.FC = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Gurukul
-              </label>
-              <select
-                value={filterGurukul}
-                onChange={(e) => setFilterGurukul(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">All Gurukuls</option>
-                {gurukuls.map((gurukul) => (
-                  <option key={gurukul.id} value={gurukul.id}>
-                    {gurukul.name}
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-wrap gap-4 items-end justify-between">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Gurukul
+                </label>
+                <select
+                  value={filterGurukul}
+                  onChange={(e) => setFilterGurukul(e.target.value)}
+                  className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">All Gurukuls</option>
+                  {gurukuls.map((gurukul) => (
+                    <option key={gurukul.id} value={gurukul.id}>
+                      {gurukul.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Status
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
-              </label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            {/* Create Batch Button */}
+            {canCreate && (
+              <Button
+                onClick={() => setShowBatchModal(true)}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
               >
-                <option value="">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="completed">Completed</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Create New Batch
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

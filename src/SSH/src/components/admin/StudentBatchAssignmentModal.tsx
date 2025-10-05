@@ -263,7 +263,11 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                       <input
                         type="checkbox"
                         checked={selectedBatches.includes(batch.id)}
-                        onChange={() => handleBatchSelect(batch.id)}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          handleBatchSelect(batch.id)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                         className="mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <div className="flex-1">

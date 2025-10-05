@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabaseAdmin } from '../lib/supabase'
 import { generateNextId } from '../lib/idGenerator'
 import { getUserProfile } from '../lib/api/users'
+import { getUserPermissions } from '../lib/api/permissions'
 import type { Database } from '../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 // Simple password hashing function (for development - use bcrypt in production)
@@ -50,6 +51,9 @@ interface WebsiteAuthProviderProps {
 }
 export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(null)
+  const [userPermissions, setUserPermissions] = useState<
+    Array<{ resource: string; action: string }>
+  >([])
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
   useEffect(() => {
@@ -68,13 +72,31 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       if (!userData) {
         localStorage.removeItem('website-user-id')
         setUser(null)
+        setUserPermissions([])
       } else {
         setUser(userData)
+        // Load user permissions from database
+        try {
+          const permissions = await getUserPermissions(userId)
+          console.log('Raw permissions from database:', permissions)
+          const permissionMap = permissions
+            .map((perm) => ({
+              resource: perm.permission?.resource || '',
+              action: perm.permission?.action || '',
+            }))
+            .filter((perm) => perm.resource && perm.action)
+          console.log('Processed permission map:', permissionMap)
+          setUserPermissions(permissionMap)
+        } catch (error) {
+          console.warn('Failed to load user permissions:', error)
+          setUserPermissions([])
+        }
       }
     } catch {
       // Clear invalid session data on any error
       localStorage.removeItem('website-user-id')
       setUser(null)
+      setUserPermissions([])
     } finally {
       setLoading(false)
       setInitialized(true)
@@ -112,6 +134,43 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       // Set user session
       setUser(fullUserProfile)
       localStorage.setItem('website-user-id', userData.id)
+
+      // Load user permissions from database
+      try {
+        console.log('Loading permissions for user ID (signIn):', userData.id)
+        console.log('User profile loaded:', {
+          id: userData.id,
+          email: userData.email,
+          role: userData.role,
+        })
+
+        const permissions = await getUserPermissions(userData.id)
+        console.log('Raw permissions from database (signIn):', permissions)
+
+        if (permissions.length === 0) {
+          console.warn('No permissions found for user:', userData.id)
+          console.warn('This means either:')
+          console.warn('1. No permissions were granted to this user in the database')
+          console.warn('2. The user_id in user_permissions table does not match this user ID')
+          console.warn('3. The permissions are inactive (is_active = false)')
+        }
+
+        const permissionMap = permissions
+          .map((perm) => ({
+            resource: perm.permission?.resource || '',
+            action: perm.permission?.action || '',
+          }))
+          .filter((perm) => perm.resource && perm.action)
+        console.log('Processed permission map (signIn):', permissionMap)
+        console.log(`Available permissions for ${fullUserProfile.role}:`)
+        permissionMap.forEach((perm, index) => {
+          console.log(`  ${index + 1}. ${perm.resource}.${perm.action}`)
+        })
+        setUserPermissions(permissionMap)
+      } catch (error) {
+        console.error('Failed to load user permissions during sign in:', error)
+        setUserPermissions([])
+      }
       return { error: null }
     } catch {
       return { error: 'Failed to sign in. Please try again.' }
@@ -179,42 +238,33 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
   }
   const signOut = async () => {
     setUser(null)
+    setUserPermissions([])
     localStorage.removeItem('website-user-id')
   }
   const canAccess = (resource: string, action: string): boolean => {
     if (!user) return false
-    // Role-based permissions with component-level access control
-    switch (user.role) {
-      case 'admin':
-        return true // Admin can access everything
-      case 'business_admin': {
-        // Business Admin has access to specific components only
-        const businessAdminResources = [
-          'dashboard',
-          'certificates',
-          'courses',
-          'assignments',
-          'enrollments',
-          'students',
-          'gurukuls',
-          'content',
-        ]
-        return businessAdminResources.includes(resource)
-      }
-      case 'teacher': {
-        // Teachers can access courses they're assigned to, their students, and enrollments
-        const teacherResources = ['courses', 'students', 'enrollments', 'dashboard']
-        return teacherResources.includes(resource) || (resource === 'users' && action === 'read')
-      }
-      case 'student':
-        return (
-          (resource === 'courses' && (action === 'read' || action === 'enroll')) ||
-          resource === 'dashboard' ||
-          resource === 'profile'
-        )
-      default:
-        return false
+
+    // Admins and Super Admins have unrestricted access to everything
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      return true // Full access to all resources and actions
     }
+
+    // All other roles (parent, student, teacher, business_admin) ONLY use database permissions
+    // No hardcoded fallbacks - everything must be granted through admin interface
+    const hasDbPermission = userPermissions.some(
+      (perm) => perm.resource === resource && perm.action === action,
+    )
+
+    // Debug logging for parent, student, and teacher roles
+    if (user.role === 'parent' || user.role === 'student' || user.role === 'teacher') {
+      console.log(`Permission check for ${resource}.${action}:`, {
+        userPermissions,
+        hasDbPermission,
+        userRole: user.role,
+      })
+    }
+
+    return hasDbPermission
   }
   const value: WebsiteAuthContextType = {
     user,

@@ -276,10 +276,10 @@ const AdminUserManagement: React.FC = () => {
           {/* Add User Button */}
           <button
             onClick={handleCreateUser}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 cursor-pointer min-w-fit"
+            className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 cursor-pointer min-w-fit"
             style={{ cursor: 'pointer' }}
           >
-            <UserPlusIcon className="h-5 w-5 mr-2" />
+            <UserPlusIcon className="h-4 w-4 mr-1.5" />
             Add User
           </button>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
@@ -24,6 +24,8 @@ import {
 } from '@/lib/api/certificateAssignments'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getUserProfile } from '@/lib/api/users'
+import { getBatches, getBatchStats, deleteBatch } from '@/lib/api/batches'
+import { Batch } from '@/types'
 import { getCountryName, getStateName } from '@/lib/address-utils'
 import type { Database } from '@/lib/supabase'
 import {
@@ -64,6 +66,8 @@ import {
   MoonIcon,
   UserIcon,
   Cog6ToothIcon,
+  QueueListIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
@@ -98,22 +102,50 @@ interface ProfileWithAddress {
   country?: string
 }
 export default function TeacherDashboard() {
-  const { user } = useWebsiteAuth()
+  const { user, canAccess } = useWebsiteAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [certificateAssignments, setCertificateAssignments] = useState<CertificateAssignment[]>([])
+  const [batches, setBatches] = useState<Batch[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)
   const [activeView, setActiveView] = useState<
-    'overview' | 'courses' | 'students' | 'certificates' | 'analytics' | 'settings'
+    'overview' | 'courses' | 'students' | 'certificates' | 'batches' | 'analytics' | 'settings'
   >('overview')
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [showIssuanceModal, setShowIssuanceModal] = useState(false)
   const [selectedEnrollmentForCert, setSelectedEnrollmentForCert] = useState<string | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notificationRef = useRef<HTMLDivElement>(null)
+
+  // Close notifications when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowNotifications(false)
+      }
+    }
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+  }, [showNotifications])
+
   // Teacher Profile State
   interface TeacherProfile {
     id: string
@@ -150,16 +182,19 @@ export default function TeacherDashboard() {
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
   const loadDashboardData = async () => {
     try {
-      const [coursesData, enrollmentsData, gurukulData, assignmentsData] = await Promise.all([
-        getTeacherCourses(user!.id),
-        getTeacherEnrollments(user!.id),
-        getGurukuls(),
-        getTeacherCertificateAssignments(user!.id),
-      ])
+      const [coursesData, enrollmentsData, gurukulData, assignmentsData, batchesData] =
+        await Promise.all([
+          getTeacherCourses(user!.id),
+          getTeacherEnrollments(user!.id),
+          getGurukuls(),
+          getTeacherCertificateAssignments(user!.id),
+          getBatches({ teacher_id: user!.id, is_active: true }),
+        ])
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setGurukuls(gurukulData)
       setCertificateAssignments(assignmentsData)
+      setBatches(batchesData)
     } catch {
       toast.error('Failed to load dashboard data')
     } finally {
@@ -333,7 +368,54 @@ export default function TeacherDashboard() {
           )
         : 0,
     averageRating: 0, // No rating system implemented yet
+    totalBatches: batches.length, // Real batch count for this teacher
   }
+
+  // Notification data aggregation
+  const notifications = [
+    // Pending enrollment approvals
+    ...enrollments
+      .filter((e) => e.status === 'pending')
+      .map((enrollment) => ({
+        id: enrollment.id,
+        type: 'enrollment' as const,
+        title: 'New enrollment pending approval',
+        message: `${enrollment.student?.full_name || 'Student'} enrolled in ${enrollment.course?.title || 'course'}`,
+        timestamp: new Date(enrollment.created_at),
+        action: () => setActiveView('students'),
+        actionText: 'Review',
+      })),
+    // Pending certificates to issue
+    ...enrollments
+      .filter((e) => e.status === 'completed' && !e.certificate_issued)
+      .map((enrollment) => ({
+        id: `cert-${enrollment.id}`,
+        type: 'certificate' as const,
+        title: 'Certificate ready to issue',
+        message: `Issue certificate for ${enrollment.student?.full_name || 'student'} in ${enrollment.course?.title || 'course'}`,
+        timestamp: new Date(enrollment.completed_at || enrollment.updated_at),
+        action: () => setActiveView('certificates'),
+        actionText: 'Issue',
+      })),
+    // Recent certificate assignments
+    ...certificateAssignments
+      .filter((cert) => {
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000
+        return new Date(cert.created_at).getTime() > dayAgo
+      })
+      .map((cert) => ({
+        id: `assign-${cert.id}`,
+        type: 'assignment' as const,
+        title: 'New certificate assignment',
+        message: `New certificate template "${cert.template?.name || 'template'}" assigned`,
+        timestamp: new Date(cert.created_at),
+        action: () => setActiveView('certificates'),
+        actionText: 'View',
+      })),
+  ]
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, 10) // Show only latest 10 notifications
+
   // Generate recent activity from real enrollment data
   const recentActivity = enrollments
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -494,23 +576,133 @@ export default function TeacherDashboard() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 }}
                 className="relative"
+                ref={notificationRef}
               >
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   className="p-3 bg-white/50 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  onClick={() => setShowNotifications(!showNotifications)}
                 >
                   <BellIcon className="h-6 w-6 text-gray-600" />
-                  {stats.pendingApprovals > 0 && (
+                  {notifications.length > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse shadow-lg"
                     >
-                      {stats.pendingApprovals}
+                      {notifications.length}
                     </motion.span>
                   )}
                 </motion.div>
+
+                {/* Notification Dropdown */}
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-16 right-0 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-orange-100 text-orange-800">
+                              {notifications.length}
+                            </Badge>
+                            {notifications.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowNotifications(false)}
+                              >
+                                <XCircleIcon className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-6 text-center">
+                            <BellIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No new notifications</p>
+                          </div>
+                        ) : (
+                          notifications.map((notification) => (
+                            <motion.div
+                              key={notification.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                              onClick={() => {
+                                notification.action()
+                                setShowNotifications(false)
+                              }}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {notification.type === 'enrollment' && (
+                                      <UserGroupIcon className="h-4 w-4 text-blue-500" />
+                                    )}
+                                    {notification.type === 'certificate' && (
+                                      <DocumentTextIcon className="h-4 w-4 text-green-500" />
+                                    )}
+                                    {notification.type === 'assignment' && (
+                                      <AcademicCapIcon className="h-4 w-4 text-purple-500" />
+                                    )}
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {notification.title}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-gray-600 mb-2">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {notification.timestamp.toLocaleDateString()}{' '}
+                                    {notification.timestamp.toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="ml-3 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    notification.action()
+                                    setShowNotifications(false)
+                                  }}
+                                >
+                                  {notification.actionText}
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+                      {notifications.length > 0 && (
+                        <div className="p-3 border-t border-gray-100 bg-gray-50">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs text-gray-600 hover:text-gray-900"
+                            onClick={() => setShowNotifications(false)}
+                          >
+                            Close notifications
+                          </Button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -543,16 +735,7 @@ export default function TeacherDashboard() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCreateCourse(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-semibold cursor-pointer"
-                >
-                  <PlusIcon className="h-5 w-5" />
-                  <SparklesIcon className="h-5 w-5" />
-                  Create Course
-                </motion.button>
+                {/* Create Course button removed - functionality available in My Courses tab */}
               </motion.div>
             </div>
           </div>
@@ -564,67 +747,104 @@ export default function TeacherDashboard() {
             className="mt-8 flex gap-4 bg-white/50 backdrop-blur-sm p-3 rounded-2xl w-fit border border-white/20 shadow-lg"
           >
             {[
-              { id: 'overview', name: 'Overview', icon: ChartBarIcon, badge: null },
+              {
+                id: 'overview',
+                name: 'Dashboard',
+                icon: ChartBarIcon,
+                badge: null,
+                permission: { resource: 'dashboard', action: 'read' },
+              },
               {
                 id: 'courses',
                 name: 'My Courses',
                 icon: BookOpenIcon,
                 badge: stats.totalCourses > 0 ? stats.totalCourses : null,
+                permission: { resource: 'courses', action: 'view' },
               },
               {
                 id: 'students',
                 name: 'Students',
                 icon: UserGroupIcon,
                 badge: stats.pendingApprovals > 0 ? stats.pendingApprovals : null,
+                permission: { resource: 'users', action: 'view' },
               },
               {
                 id: 'certificates',
                 name: 'Certificates',
                 icon: DocumentTextIcon,
                 badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null,
+                permission: { resource: 'certificates', action: 'read' },
               },
-              { id: 'analytics', name: 'Analytics', icon: ArrowTrendingUpIcon, badge: null },
-              { id: 'settings', name: 'Settings', icon: Cog6ToothIcon, badge: null },
-            ].map((tab, index) => (
-              <motion.button
-                key={tab.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 + index * 0.1 }}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setActiveView(
-                    tab.id as
-                      | 'overview'
-                      | 'courses'
-                      | 'students'
-                      | 'certificates'
-                      | 'analytics'
-                      | 'settings',
-                  )
-                  // Scroll to top of page
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
-                  activeView === tab.id
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
-                }`}
-              >
-                <tab.icon className={`h-5 w-5 ${activeView === tab.id ? 'text-white' : ''}`} />
-                <span>{tab.name}</span>
-                {tab.badge && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
-                  >
-                    {tab.badge}
-                  </motion.span>
-                )}
-              </motion.button>
-            ))}
+              {
+                id: 'analytics',
+                name: 'Analytics',
+                icon: ArrowTrendingUpIcon,
+                badge: null,
+                permission: { resource: 'analytics', action: 'read' },
+              },
+              {
+                id: 'batches',
+                name: 'Batch Management',
+                icon: QueueListIcon,
+                badge: null,
+                permission: { resource: 'batches', action: 'read' },
+              },
+              {
+                id: 'settings',
+                name: 'Profile',
+                icon: Cog6ToothIcon,
+                badge: null,
+                permission: { resource: 'settings', action: 'view' },
+              },
+            ]
+              .filter((tab) => {
+                const hasPermission = canAccess(tab.permission.resource, tab.permission.action)
+                console.log(
+                  `Teacher tab "${tab.name}" - ${tab.permission.resource}.${tab.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+                )
+                return hasPermission
+              })
+              .map((tab, index) => (
+                <motion.button
+                  key={tab.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 + index * 0.1 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setActiveView(
+                      tab.id as
+                        | 'overview'
+                        | 'courses'
+                        | 'students'
+                        | 'certificates'
+                        | 'batches'
+                        | 'analytics'
+                        | 'settings',
+                    )
+                    // Scroll to top of page
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
+                    activeView === tab.id
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
+                  }`}
+                >
+                  <tab.icon className={`h-5 w-5 ${activeView === tab.id ? 'text-white' : ''}`} />
+                  <span>{tab.name}</span>
+                  {tab.badge && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                    >
+                      {tab.badge}
+                    </motion.span>
+                  )}
+                </motion.button>
+              ))}
           </motion.div>
         </div>
       </motion.div>
@@ -641,7 +861,7 @@ export default function TeacherDashboard() {
               className="flex flex-col gap-12"
             >
               {/* Enhanced Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {[
                   {
                     title: 'Total Courses',
@@ -650,6 +870,7 @@ export default function TeacherDashboard() {
                     gradient: 'from-blue-500 via-blue-600 to-indigo-600',
                     bgGradient: 'from-blue-50 via-blue-100 to-indigo-100',
                     delay: 0.1,
+                    permission: { resource: 'courses', action: 'view' },
                   },
                   {
                     title: 'Total Students',
@@ -658,6 +879,7 @@ export default function TeacherDashboard() {
                     gradient: 'from-green-500 via-emerald-600 to-teal-600',
                     bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
                     delay: 0.2,
+                    permission: { resource: 'users', action: 'view' },
                   },
                   {
                     title: 'Certificates',
@@ -666,72 +888,97 @@ export default function TeacherDashboard() {
                     gradient: 'from-purple-500 via-violet-600 to-purple-600',
                     bgGradient: 'from-purple-50 via-violet-100 to-purple-100',
                     delay: 0.3,
+                    permission: { resource: 'certificates', action: 'read' },
                   },
-                ].map((stat) => (
-                  <motion.div
-                    key={stat.title}
-                    initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{
-                      delay: stat.delay,
-                      duration: 0.6,
-                      type: 'spring',
-                      stiffness: 100,
-                    }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="group"
-                  >
-                    <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative">
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
-                      />
-                      <CardContent className="p-8 relative">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-3">
-                            <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
-                              {stat.title}
-                            </p>
-                            <motion.p
-                              initial={{ scale: 0.8 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: stat.delay + 0.2 }}
-                              className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                  {
+                    title: 'Active Batches',
+                    value: stats.totalBatches || 0,
+                    icon: QueueListIcon,
+                    gradient: 'from-orange-500 via-red-500 to-pink-600',
+                    bgGradient: 'from-orange-50 via-red-50 to-pink-50',
+                    delay: 0.4,
+                    permission: { resource: 'batches', action: 'read' },
+                  },
+                ]
+                  .filter((stat) => {
+                    const hasPermission = canAccess(
+                      stat.permission.resource,
+                      stat.permission.action,
+                    )
+                    console.log(
+                      `Teacher stat "${stat.title}" - ${stat.permission.resource}.${stat.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+                    )
+                    return hasPermission
+                  })
+                  .map((stat) => (
+                    <motion.div
+                      key={stat.title}
+                      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{
+                        delay: stat.delay,
+                        duration: 0.6,
+                        type: 'spring',
+                        stiffness: 100,
+                      }}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="group"
+                    >
+                      <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative">
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
+                        />
+                        <CardContent className="p-8 relative">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-3">
+                              <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                                {stat.title}
+                              </p>
+                              <motion.p
+                                initial={{ scale: 0.8 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: stat.delay + 0.2 }}
+                                className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                              >
+                                {typeof stat.value === 'string'
+                                  ? stat.value
+                                  : stat.value.toLocaleString()}
+                              </motion.p>
+                            </div>
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{
+                                delay: stat.delay + 0.3,
+                                type: 'spring',
+                                stiffness: 200,
+                              }}
+                              whileHover={{ scale: 1.2, rotate: 10 }}
+                              className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
                             >
-                              {typeof stat.value === 'string'
-                                ? stat.value
-                                : stat.value.toLocaleString()}
-                            </motion.p>
+                              <stat.icon className="h-8 w-8 text-white" />
+                            </motion.div>
                           </div>
                           <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ delay: stat.delay + 0.3, type: 'spring', stiffness: 200 }}
-                            whileHover={{ scale: 1.2, rotate: 10 }}
-                            className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                            initial={{ width: 0 }}
+                            animate={{ width: '100%' }}
+                            transition={{ delay: stat.delay + 0.5, duration: 1 }}
+                            className="mt-6"
                           >
-                            <stat.icon className="h-8 w-8 text-white" />
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: '75%' }}
+                                transition={{ delay: stat.delay + 0.7, duration: 1.5 }}
+                                className={`h-full bg-gradient-to-r ${stat.gradient} rounded-full`}
+                              />
+                            </div>
                           </motion.div>
-                        </div>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: '100%' }}
-                          transition={{ delay: stat.delay + 0.5, duration: 1 }}
-                          className="mt-6"
-                        >
-                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: '75%' }}
-                              transition={{ delay: stat.delay + 0.7, duration: 1.5 }}
-                              className={`h-full bg-gradient-to-r ${stat.gradient} rounded-full`}
-                            />
-                          </div>
-                        </motion.div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
               </div>
               {/* Enhanced Quick Actions */}
               <motion.div
@@ -1460,6 +1707,26 @@ export default function TeacherDashboard() {
               </Card>
             </motion.div>
           )}
+
+          {/* Batch Management View */}
+          {activeView === 'batches' && (
+            <motion.div
+              key="batches"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col gap-8"
+            >
+              <BatchManagementContent
+                teacherId={user?.id}
+                canAccess={canAccess}
+                initialBatches={batches}
+                onBatchUpdate={loadDashboardData}
+              />
+            </motion.div>
+          )}
+
           {/* Enhanced Analytics View */}
           {activeView === 'analytics' && (
             <motion.div
@@ -2216,6 +2483,272 @@ export default function TeacherDashboard() {
             window.location.reload()
           }}
         />
+      )}
+    </div>
+  )
+}
+
+// Batch Management Component for Teachers
+interface BatchManagementContentProps {
+  teacherId?: string
+  canAccess: (resource: string, action: string) => boolean
+  initialBatches?: Batch[]
+  onBatchUpdate?: () => void
+}
+
+const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
+  teacherId,
+  canAccess,
+  initialBatches = [],
+  onBatchUpdate,
+}) => {
+  const [batches, setBatches] = useState<Batch[]>(initialBatches)
+  const [loading, setLoading] = useState(false)
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    completed: 0,
+    archived: 0,
+  })
+
+  const loadBatches = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getBatches({ teacher_id: teacherId, is_active: true })
+      setBatches(data)
+    } catch (error) {
+      console.error('Error loading batches:', error)
+      toast.error('Failed to load batches')
+    } finally {
+      setLoading(false)
+    }
+  }, [teacherId])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const statsData = await getBatchStats()
+      setStats(statsData)
+    } catch (error) {
+      console.error('Error loading batch stats:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    setBatches(initialBatches)
+  }, [initialBatches])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
+
+  const handleDeleteBatch = async (batchId: string) => {
+    if (!canAccess('batches', 'delete')) {
+      toast.error('You do not have permission to delete batches')
+      return
+    }
+
+    if (window.confirm('Are you sure you want to delete this batch?')) {
+      try {
+        await deleteBatch(batchId)
+        toast.success('Batch deleted successfully')
+        if (onBatchUpdate) {
+          onBatchUpdate()
+        } else {
+          loadBatches()
+        }
+        loadStats()
+      } catch (error) {
+        console.error('Error deleting batch:', error)
+        toast.error('Failed to delete batch')
+      }
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800'
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
+      case 'archived':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not set'
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-3xl font-bold text-gray-900">Batch Management</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Batch Management</h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Manage your student batches, create groups, and organize learning sessions.
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Batches</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.total}</p>
+              </div>
+              <QueueListIcon className="h-8 w-8 text-orange-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active</p>
+                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+              </div>
+              <CheckCircleIcon className="h-8 w-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.completed}</p>
+              </div>
+              <TrophyIcon className="h-8 w-8 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">My Batches</p>
+                <p className="text-2xl font-bold text-purple-600">{batches.length}</p>
+              </div>
+              <UserGroupIcon className="h-8 w-8 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Batches Grid */}
+      {batches.length === 0 ? (
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+          <CardContent className="p-12">
+            <div className="text-center">
+              <QueueListIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Batches Found</h3>
+              <p className="text-gray-500 mb-6">
+                You don't have any batches assigned yet. Contact your administrator to get batches
+                assigned to you.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {batches.map((batch) => (
+            <Card
+              key={batch.id}
+              className="hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm border-white/20 shadow-xl"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{batch.name}</h3>
+                    <p className="text-sm text-gray-600">{batch.gurukul?.name}</p>
+                  </div>
+                  <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-700 line-clamp-2">{batch.description}</p>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center">
+                      <UserGroupIcon className="h-4 w-4 text-gray-400 mr-1" />
+                      <span className="text-gray-600">{batch.student_count || 0} students</span>
+                    </div>
+                    <div className="flex items-center">
+                      <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1" />
+                      <span className="text-gray-600">{batch.course_count || 0} courses</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Start: {formatDate(batch.start_date)}</span>
+                      <span>End: {formatDate(batch.end_date)}</span>
+                    </div>
+                  </div>
+
+                  {canAccess('batches', 'view') && (
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => {
+                          // TODO: Implement view batch details
+                          toast.success('Batch details view coming soon!')
+                        }}
+                      >
+                        <EyeIcon className="h-3 w-3 mr-1" />
+                        View Details
+                      </Button>
+                      {canAccess('batches', 'delete') && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="px-2"
+                          onClick={() => handleDeleteBatch(batch.id)}
+                        >
+                          <TrashIcon className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   )

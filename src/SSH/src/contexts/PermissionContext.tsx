@@ -96,12 +96,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     // No admin access
   ],
   parent: [
-    // Parent permissions - view child's data
-    'courses.read',
-    'enrollments.read', // Child's enrollments
-    'certificates.read', // Child's certificates
-    'content.read',
-    // No admin access
+    // Parent permissions - NO default permissions
+    // All permissions must be granted through admin console
   ],
 }
 export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children }) => {

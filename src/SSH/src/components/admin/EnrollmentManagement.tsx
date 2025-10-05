@@ -163,7 +163,6 @@ export default function EnrollmentManagement() {
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-            <h2 className="text-xl font-bold">Enrollment Management</h2>
             <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
               {/* Search */}
               <div className="relative">
@@ -180,7 +179,7 @@ export default function EnrollmentManagement() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+                className="px-2.5 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>

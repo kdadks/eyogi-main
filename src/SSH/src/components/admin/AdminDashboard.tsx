@@ -425,33 +425,45 @@ const AdminDashboard: React.FC = () => {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              <UsersIcon className="h-8 w-8 text-blue-600 mb-2" />
-              <h3 className="font-medium text-gray-900">Add New User</h3>
-              <p className="text-sm text-gray-500">Create student or teacher account</p>
+            <button
+              onClick={() => navigate('/admin/users')}
+              className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <UsersIcon className="h-6 w-6 text-blue-600 mb-2" />
+              <h3 className="text-sm font-medium text-gray-900">Add New User</h3>
+              <p className="text-xs text-gray-500">Create student or teacher account</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              <BookOpenIcon className="h-8 w-8 text-green-600 mb-2" />
-              <h3 className="font-medium text-gray-900">Create Course</h3>
-              <p className="text-sm text-gray-500">Set up a new course</p>
+            <button
+              onClick={() => navigate('/admin/courses')}
+              className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <BookOpenIcon className="h-6 w-6 text-green-600 mb-2" />
+              <h3 className="text-sm font-medium text-gray-900">Create Course</h3>
+              <p className="text-xs text-gray-500">Set up a new course</p>
             </button>
             <button
               onClick={() => navigate('/admin/batches')}
-              className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              <QueueListIcon className="h-8 w-8 text-orange-600 mb-2" />
-              <h3 className="font-medium text-gray-900">Manage Batches</h3>
-              <p className="text-sm text-gray-500">Create and organize student batches</p>
+              <QueueListIcon className="h-6 w-6 text-orange-600 mb-2" />
+              <h3 className="text-sm font-medium text-gray-900">Manage Batches</h3>
+              <p className="text-xs text-gray-500">Create and organize student batches</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              <ClipboardDocumentListIcon className="h-8 w-8 text-yellow-600 mb-2" />
-              <h3 className="font-medium text-gray-900">Manage Enrollments</h3>
-              <p className="text-sm text-gray-500">Review pending enrollments</p>
+            <button
+              onClick={() => navigate('/admin/enrollments')}
+              className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <ClipboardDocumentListIcon className="h-6 w-6 text-yellow-600 mb-2" />
+              <h3 className="text-sm font-medium text-gray-900">Manage Enrollments</h3>
+              <p className="text-xs text-gray-500">Review pending enrollments</p>
             </button>
-            <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              <ChartBarIcon className="h-8 w-8 text-purple-600 mb-2" />
-              <h3 className="font-medium text-gray-900">View Reports</h3>
-              <p className="text-sm text-gray-500">Analytics and insights</p>
+            <button
+              onClick={() => navigate('/admin/analytics')}
+              className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <ChartBarIcon className="h-6 w-6 text-purple-600 mb-2" />
+              <h3 className="text-sm font-medium text-gray-900">View Reports</h3>
+              <p className="text-xs text-gray-500">Analytics and insights</p>
             </button>
           </div>
         </div>

@@ -10,9 +10,7 @@ export async function getBatches(filters?: {
   is_active?: boolean
 }): Promise<Batch[]> {
   try {
-    let query = supabaseAdmin
-      .from('batches')
-      .select(`
+    let query = supabaseAdmin.from('batches').select(`
         *,
         gurukul:gurukuls (
           id,
@@ -90,7 +88,7 @@ export async function getBatches(filters?: {
             course_count: 0,
           }
         }
-      })
+      }),
     )
 
     return batchesWithCounts
@@ -104,7 +102,8 @@ export async function getBatch(id: string): Promise<Batch | null> {
   try {
     const { data, error } = await supabaseAdmin
       .from('batches')
-      .select(`
+      .select(
+        `
         *,
         gurukul:gurukuls (
           id,
@@ -125,7 +124,8 @@ export async function getBatch(id: string): Promise<Batch | null> {
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('id', id)
       .single()
 
@@ -142,7 +142,7 @@ export async function getBatch(id: string): Promise<Batch | null> {
 }
 
 export async function createBatch(
-  batch: Omit<Batch, 'id' | 'created_at' | 'updated_at'>
+  batch: Omit<Batch, 'id' | 'created_at' | 'updated_at'>,
 ): Promise<Batch> {
   try {
     const { data, error } = await supabaseAdmin
@@ -153,7 +153,8 @@ export async function createBatch(
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select(`
+      .select(
+        `
         *,
         gurukul:gurukuls (
           id,
@@ -174,7 +175,8 @@ export async function createBatch(
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -189,10 +191,7 @@ export async function createBatch(
   }
 }
 
-export async function updateBatch(
-  id: string,
-  updates: Partial<Batch>
-): Promise<Batch> {
+export async function updateBatch(id: string, updates: Partial<Batch>): Promise<Batch> {
   try {
     const { data, error } = await supabaseAdmin
       .from('batches')
@@ -201,7 +200,8 @@ export async function updateBatch(
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select(`
+      .select(
+        `
         *,
         gurukul:gurukuls (
           id,
@@ -222,7 +222,8 @@ export async function updateBatch(
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -260,7 +261,8 @@ export async function getBatchStudents(batchId: string): Promise<BatchStudent[]>
   try {
     const { data, error } = await supabaseAdmin
       .from('batch_students')
-      .select(`
+      .select(
+        `
         *,
         student:profiles!batch_students_student_id_fkey (
           id,
@@ -269,18 +271,25 @@ export async function getBatchStudents(batchId: string): Promise<BatchStudent[]>
           student_id,
           role
         ),
-        batches (
+        batch:batches (
           id,
           name,
-          description
+          description,
+          status,
+          gurukul:gurukuls (
+            id,
+            name,
+            slug
+          )
         ),
-        assigner:profiles!batch_students_assigned_by_fkey (
+        assigned_by_user:profiles!batch_students_assigned_by_fkey (
           id,
           full_name,
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('batch_id', batchId)
       .eq('is_active', true)
       .order('assigned_at', { ascending: false })
@@ -300,7 +309,7 @@ export async function getBatchStudents(batchId: string): Promise<BatchStudent[]>
 export async function assignStudentToBatch(
   batchId: string,
   studentId: string,
-  assignedBy: string
+  assignedBy: string,
 ): Promise<BatchStudent> {
   try {
     const { data, error } = await supabaseAdmin
@@ -315,7 +324,8 @@ export async function assignStudentToBatch(
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select(`
+      .select(
+        `
         *,
         student:profiles!batch_students_student_id_fkey (
           id,
@@ -324,18 +334,25 @@ export async function assignStudentToBatch(
           student_id,
           role
         ),
-        batches (
+        batch:batches (
           id,
           name,
-          description
+          description,
+          status,
+          gurukul:gurukuls (
+            id,
+            name,
+            slug
+          )
         ),
-        assigner:profiles!batch_students_assigned_by_fkey (
+        assigned_by_user:profiles!batch_students_assigned_by_fkey (
           id,
           full_name,
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -350,16 +367,13 @@ export async function assignStudentToBatch(
   }
 }
 
-export async function removeStudentFromBatch(
-  batchId: string,
-  studentId: string
-): Promise<void> {
+export async function removeStudentFromBatch(batchId: string, studentId: string): Promise<void> {
   try {
     const { error } = await supabaseAdmin
       .from('batch_students')
       .update({
         is_active: false,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('batch_id', batchId)
       .eq('student_id', studentId)
@@ -380,7 +394,8 @@ export async function getBatchCourses(batchId: string): Promise<BatchCourse[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('batch_courses')
-      .select(`
+      .select(
+        `
         *,
         course:courses (
           id,
@@ -402,7 +417,8 @@ export async function getBatchCourses(batchId: string): Promise<BatchCourse[]> {
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('batch_id', batchId)
       .eq('is_active', true)
       .order('assigned_at', { ascending: false })
@@ -422,7 +438,7 @@ export async function getBatchCourses(batchId: string): Promise<BatchCourse[]> {
 export async function assignCourseToBatch(
   batchId: string,
   courseId: string,
-  assignedBy: string
+  assignedBy: string,
 ): Promise<BatchCourse> {
   try {
     // Check if course is already assigned to this batch
@@ -449,7 +465,8 @@ export async function assignCourseToBatch(
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id)
-        .select(`
+        .select(
+          `
           *,
           course:courses (
             id,
@@ -471,7 +488,8 @@ export async function assignCourseToBatch(
             email,
             role
           )
-        `)
+        `,
+        )
         .single()
 
       if (error) {
@@ -495,7 +513,8 @@ export async function assignCourseToBatch(
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select(`
+      .select(
+        `
         *,
         courses (
           id,
@@ -517,7 +536,8 @@ export async function assignCourseToBatch(
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -532,16 +552,13 @@ export async function assignCourseToBatch(
   }
 }
 
-export async function removeCourseFromBatch(
-  batchId: string,
-  courseId: string
-): Promise<void> {
+export async function removeCourseFromBatch(batchId: string, courseId: string): Promise<void> {
   try {
     const { error } = await supabaseAdmin
       .from('batch_courses')
       .update({
         is_active: false,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('batch_id', batchId)
       .eq('course_id', courseId)
@@ -566,9 +583,7 @@ export async function getBatchStats(): Promise<{
   archived: number
 }> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('batches')
-      .select('status, is_active')
+    const { data, error } = await supabaseAdmin.from('batches').select('status, is_active')
 
     if (error) {
       // Check if error is due to table not existing
@@ -588,7 +603,7 @@ export async function getBatchStats(): Promise<{
         }
         return acc
       },
-      { total: 0, active: 0, inactive: 0, completed: 0, archived: 0 }
+      { total: 0, active: 0, inactive: 0, completed: 0, archived: 0 },
     )
 
     return stats
@@ -602,28 +617,30 @@ export async function getStudentBatches(studentId: string): Promise<BatchStudent
   try {
     const { data, error } = await supabaseAdmin
       .from('batch_students')
-      .select(`
+      .select(
+        `
         *,
-        batches (
+        batch:batches (
           id,
           name,
           description,
           status,
           start_date,
           end_date,
-          gurukuls (
+          gurukul:gurukuls (
             id,
             name,
             slug
           )
         ),
-        profiles!batch_students_assigned_by_fkey (
+        assigned_by_user:profiles!batch_students_assigned_by_fkey (
           id,
           full_name,
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('student_id', studentId)
       .eq('is_active', true)
       .order('assigned_at', { ascending: false })

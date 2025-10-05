@@ -1,14 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { useRoleBasedUI } from '../../contexts/PermissionContext'
 import { Badge } from '../../components/ui/Badge'
-import { Enrollment, Certificate, Course } from '../../types'
+import { Card, CardContent, CardHeader } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
+import { Enrollment, Certificate, Course, BatchStudent } from '../../types'
 import { getStudentEnrollments } from '../../lib/api/enrollments'
 import { getStudentCertificates } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
 import { enrollInCourse } from '../../lib/api/enrollments'
 import { getUserProfile } from '../../lib/api/users'
+import { getStudentBatches } from '../../lib/api/batches'
 import { getCountryName, getStateName } from '../../lib/address-utils'
 import toast from 'react-hot-toast'
 import type { Database } from '../../lib/supabase'
@@ -39,9 +42,11 @@ import {
   AcademicCapIcon,
   ChartBarIcon,
   CogIcon,
+  QueueListIcon,
   SunIcon,
   MoonIcon,
   PencilIcon,
+  XCircleIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
@@ -50,6 +55,7 @@ interface StudentStats {
   completedCourses: number
   activeCourses: number
   certificatesEarned: number
+  totalBatches: number
   totalSpent: number
   averageGrade: number
   learningStreak: number
@@ -58,29 +64,65 @@ interface StudentStats {
   completionRate: number
 }
 export default function StudentDashboard() {
-  const { user } = useWebsiteAuth()
-  const { isStudent, shouldShowAnalytics, canAccess, getUserRole } = useRoleBasedUI()
+  const { user, canAccess } = useWebsiteAuth()
+  const { isStudent, shouldShowAnalytics, getUserRole } = useRoleBasedUI()
   const [activeTab, setActiveTab] = useState<
-    'home' | 'courses' | 'enrollments' | 'certificates' | 'profile' | 'analytics' | 'settings'
+    | 'home'
+    | 'courses'
+    | 'enrollments'
+    | 'certificates'
+    | 'batches'
+    | 'profile'
+    | 'analytics'
+    | 'settings'
   >('home')
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
+  const [batches, setBatches] = useState<BatchStudent[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<StudentStats>({
     totalEnrollments: 0,
     completedCourses: 0,
     activeCourses: 0,
     certificatesEarned: 0,
+    totalBatches: 0,
     totalSpent: 0,
     averageGrade: 0,
-    learningStreak: 7,
-    xpPoints: 1250,
-    level: 'Intermediate',
+    learningStreak: 0,
+    xpPoints: 0,
+    level: 'Beginner',
     completionRate: 0,
   })
   // Profile Modal
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [showAchievements, setShowAchievements] = useState(false)
+  const achievementsRef = useRef<HTMLDivElement>(null)
+
+  // Close achievements panel when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (achievementsRef.current && !achievementsRef.current.contains(event.target as Node)) {
+        setShowAchievements(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowAchievements(false)
+      }
+    }
+
+    if (showAchievements) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+  }, [showAchievements])
+
   // Student Profile State
   interface StudentProfile {
     id: string
@@ -110,14 +152,16 @@ export default function StudentDashboard() {
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const loadStudentData = async () => {
     try {
-      const [enrollmentsData, certificatesData, coursesData] = await Promise.all([
+      const [enrollmentsData, certificatesData, coursesData, batchesData] = await Promise.all([
         getStudentEnrollments(user!.id),
         getStudentCertificates(user!.id),
         getCourses(),
+        getStudentBatches(user!.id),
       ])
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
       setAvailableCourses(coursesData)
+      setBatches(batchesData)
       // Calculate stats
       const completedCount = enrollmentsData.filter((e) => e.status === 'completed').length
       const activeCount = enrollmentsData.filter((e) => e.status === 'approved').length
@@ -168,6 +212,7 @@ export default function StudentDashboard() {
         completedCourses: completedCount,
         activeCourses: activeCount,
         certificatesEarned: certificatesData.length,
+        totalBatches: batchesData.length,
         totalSpent,
         averageGrade,
         learningStreak,
@@ -181,6 +226,78 @@ export default function StudentDashboard() {
       setLoading(false)
     }
   }
+
+  // Achievements and progress data
+  const achievements = [
+    // Earned certificates
+    ...certificates.map((cert) => ({
+      id: cert.id,
+      type: 'certificate' as const,
+      title: 'Certificate Earned',
+      description: `Certificate for ${cert.course?.title || 'course completion'}`,
+      icon: TrophyIcon,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-200',
+      date: new Date(cert.issued_at),
+      points: 50,
+      action: () => setActiveTab('certificates'),
+    })),
+    // Completed courses
+    ...enrollments
+      .filter((e) => e.status === 'completed')
+      .map((enrollment) => ({
+        id: `course-${enrollment.id}`,
+        type: 'completion' as const,
+        title: 'Course Completed',
+        description: `Successfully completed ${enrollment.course?.title || 'course'}`,
+        icon: CheckCircleIcon,
+        color: 'text-green-600',
+        bgColor: 'bg-green-50',
+        borderColor: 'border-green-200',
+        date: new Date(enrollment.completed_at || enrollment.updated_at),
+        points: 100,
+        action: () => setActiveTab('courses'),
+      })),
+    // Progress milestones
+    ...enrollments
+      .filter(
+        (e) => e.progress_percentage && e.progress_percentage >= 50 && e.status !== 'completed',
+      )
+      .map((enrollment) => ({
+        id: `progress-${enrollment.id}`,
+        type: 'progress' as const,
+        title: 'Great Progress!',
+        description: `${enrollment.progress_percentage}% completed in ${enrollment.course?.title || 'course'}`,
+        icon: ChartBarIcon,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        date: new Date(enrollment.updated_at),
+        points: Math.floor((enrollment.progress_percentage || 0) / 10) * 5, // 5 points per 10% progress
+        action: () => setActiveTab('courses'),
+      })),
+    // Level achievements
+    ...(stats.level !== 'Beginner'
+      ? [
+          {
+            id: 'level-achievement',
+            type: 'level' as const,
+            title: `${stats.level} Level Reached!`,
+            description: `You've advanced to ${stats.level} level with ${stats.completedCourses} completed courses`,
+            icon: StarIcon,
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-50',
+            borderColor: 'border-purple-200',
+            date: new Date(), // Current date for level achievement
+            points: stats.level === 'Intermediate' ? 200 : 500,
+            action: () => setActiveTab('home'),
+          },
+        ]
+      : []),
+  ]
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 8) // Show only latest 8 achievements
   // Load student profile from database
   const loadStudentProfile = useCallback(async () => {
     if (!user?.id) return
@@ -242,7 +359,7 @@ export default function StudentDashboard() {
   const tabs = [
     {
       id: 'home',
-      name: 'Home',
+      name: 'Dashboard',
       icon: HomeIcon,
       description: 'Your Learning Hub',
       gradient: 'from-blue-500 to-purple-600',
@@ -255,7 +372,7 @@ export default function StudentDashboard() {
       description: 'View enrolled courses and progress',
       gradient: 'from-green-500 to-teal-600',
       badge: stats.activeCourses > 0 ? stats.activeCourses : undefined,
-      available: canAccess('courses', 'read'),
+      available: canAccess('courses', 'view'),
     },
     {
       id: 'enrollments',
@@ -267,7 +384,7 @@ export default function StudentDashboard() {
         enrollments.filter((e) => e.status === 'pending').length > 0
           ? enrollments.filter((e) => e.status === 'pending').length
           : undefined,
-      available: canAccess('enrollments', 'read'),
+      available: canAccess('enrollments', 'view'),
     },
     {
       id: 'certificates',
@@ -279,12 +396,21 @@ export default function StudentDashboard() {
       available: canAccess('certificates', 'read'),
     },
     {
+      id: 'batches',
+      name: 'My Batches',
+      icon: QueueListIcon,
+      description: 'View assigned batches and groups',
+      gradient: 'from-orange-500 to-red-600',
+      badge: stats.totalBatches > 0 ? stats.totalBatches : undefined,
+      available: canAccess('batches', 'read'),
+    },
+    {
       id: 'profile',
       name: 'Profile',
       icon: UserIcon,
       description: 'Personal Settings',
       gradient: 'from-pink-500 to-rose-600',
-      available: true,
+      available: canAccess('settings', 'view'),
     },
     // Conditional admin tabs
     ...(shouldShowAnalytics()
@@ -299,19 +425,15 @@ export default function StudentDashboard() {
           },
         ]
       : []),
-    ...(canAccess('settings', 'read')
-      ? [
-          {
-            id: 'settings',
-            name: 'Settings',
-            icon: CogIcon,
-            description: 'Configure system settings',
-            gradient: 'from-gray-500 to-slate-600',
-            available: canAccess('settings', 'read'),
-          },
-        ]
-      : []),
-  ].filter((tab) => tab.available)
+    // Removed separate settings tab - Profile tab now serves as settings
+  ].filter((tab) => {
+    if (tab.id !== 'home') {
+      // Skip logging for dashboard tab since it's always available
+      console.log(`Student tab "${tab.name}" (${tab.id}): ${tab.available ? 'ALLOWED' : 'DENIED'}`)
+    }
+    return tab.available
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center pt-6 lg:pt-8">
@@ -387,23 +509,139 @@ export default function StudentDashboard() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.5 }}
                   className="relative"
+                  ref={achievementsRef}
                 >
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-3 bg-white/50 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+                    className="p-3 bg-white/50 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                    onClick={() => setShowAchievements(!showAchievements)}
+                    title="View your achievements and progress"
                   >
-                    <TrophyIcon className="h-6 w-6 text-amber-600" />
+                    <TrophyIcon className="h-6 w-6 text-amber-600 group-hover:text-amber-700 transition-colors" />
                   </motion.div>
-                  {stats.certificatesEarned > 0 && (
+                  {achievements.length > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse shadow-lg"
+                      className="absolute -top-1 -right-1 h-6 w-6 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-white"
                     >
-                      {stats.certificatesEarned}
+                      {achievements.length}
                     </motion.span>
                   )}
+
+                  {/* Achievements Dropdown */}
+                  <AnimatePresence>
+                    {showAchievements && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-16 right-0 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+                      >
+                        <div className="p-4 border-b border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <TrophyIcon className="h-6 w-6 text-amber-600" />
+                              <h3 className="text-lg font-semibold text-gray-900">Achievements</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-amber-100 text-amber-800">
+                                {achievements.length}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowAchievements(false)}
+                              >
+                                <XCircleIcon className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto">
+                          {achievements.length === 0 ? (
+                            <div className="p-6 text-center">
+                              <TrophyIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                              <p className="text-gray-500 font-medium mb-1">No achievements yet</p>
+                              <p className="text-sm text-gray-400">
+                                Complete courses and earn certificates to unlock achievements!
+                              </p>
+                            </div>
+                          ) : (
+                            achievements.map((achievement) => (
+                              <motion.div
+                                key={achievement.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                                onClick={() => {
+                                  achievement.action()
+                                  setShowAchievements(false)
+                                }}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className={`flex-shrink-0 p-2 rounded-lg ${achievement.bgColor} border ${achievement.borderColor}`}
+                                  >
+                                    <achievement.icon className={`h-5 w-5 ${achievement.color}`} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="text-sm font-semibold text-gray-900 truncate">
+                                        {achievement.title}
+                                      </p>
+                                      <div className="flex items-center gap-1">
+                                        <StarIcon className="h-3 w-3 text-amber-500" />
+                                        <span className="text-xs font-medium text-amber-600">
+                                          +{achievement.points} XP
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                      {achievement.description}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                      {achievement.date.toLocaleDateString()}{' '}
+                                      {achievement.date.toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))
+                          )}
+                        </div>
+                        {achievements.length > 0 && (
+                          <div className="p-3 border-t border-gray-100 bg-gradient-to-r from-amber-50 to-yellow-50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <StarIcon className="h-4 w-4 text-amber-500" />
+                                <span className="text-sm font-medium text-amber-700">
+                                  Total XP: {stats.xpPoints}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs text-amber-600 hover:text-amber-700"
+                                onClick={() => {
+                                  setActiveTab('home')
+                                  setShowAchievements(false)
+                                }}
+                              >
+                                View Dashboard
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -470,7 +708,7 @@ export default function StudentDashboard() {
         </motion.div>
         <div className="max-w-7xl mx-auto px-6 py-10">
           <AnimatePresence mode="wait">
-            {/* Home Tab */}
+            {/* Dashboard Tab */}
             {activeTab === 'home' && (
               <motion.div
                 key="home"
@@ -483,112 +721,240 @@ export default function StudentDashboard() {
                 {/* Enhanced Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                   {[
-                    {
-                      title: 'Active Courses',
-                      value: stats.activeCourses,
-                      icon: BookOpenIcon,
-                      gradient: 'from-blue-500 via-blue-600 to-indigo-600',
-                      bgGradient: 'from-blue-50 via-blue-100 to-indigo-100',
-                      message: 'Keep learning! 📚',
-                      delay: 0.1,
-                    },
-                    {
-                      title: 'Completed Courses',
-                      value: stats.completedCourses,
-                      icon: CheckCircleIcon,
-                      gradient: 'from-green-500 via-emerald-600 to-teal-600',
-                      bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
-                      message: 'Amazing progress! 🎉',
-                      delay: 0.2,
-                    },
-                    {
-                      title: 'Certificates',
-                      value: stats.certificatesEarned,
-                      icon: TrophyIcon,
-                      gradient: 'from-purple-500 via-violet-600 to-purple-600',
-                      bgGradient: 'from-purple-50 via-violet-100 to-purple-100',
-                      message: "You're a star! ⭐",
-                      delay: 0.3,
-                    },
-                    {
-                      title: 'Learning Streak',
-                      value: `${stats.learningStreak} days`,
-                      icon: FireIcon,
-                      gradient: 'from-orange-500 via-red-500 to-pink-600',
-                      bgGradient: 'from-orange-50 via-red-100 to-pink-100',
-                      message: 'On fire! 🔥',
-                      delay: 0.4,
-                    },
-                  ].map((stat) => (
-                    <motion.div
-                      key={stat.title}
-                      initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{
-                        delay: stat.delay,
-                        duration: 0.6,
-                        type: 'spring',
-                        stiffness: 100,
-                      }}
-                      whileHover={{ scale: 1.05, y: -5 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="group"
-                    >
-                      <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
-                        <div
-                          className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
-                        />
-                        <div className="relative">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-3">
-                              <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
-                                {stat.title}
-                              </p>
-                              <motion.p
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: stat.delay + 0.2 }}
-                                className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
-                              >
-                                {typeof stat.value === 'string'
-                                  ? stat.value
-                                  : stat.value.toLocaleString()}
-                              </motion.p>
-                              <p className="text-sm text-gray-500">{stat.message}</p>
-                            </div>
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{
-                                delay: stat.delay + 0.3,
-                                type: 'spring',
-                                stiffness: 200,
-                              }}
-                              whileHover={{ scale: 1.2, rotate: 10 }}
-                              className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
-                            >
-                              <stat.icon className="h-8 w-8 text-white" />
-                            </motion.div>
-                          </div>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: '100%' }}
-                            transition={{ delay: stat.delay + 0.5, duration: 1 }}
-                            className="mt-6"
-                          >
-                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    (() => {
+                      const active = stats.activeCourses
+                      let message
+
+                      if (active === 0) {
+                        message = 'Ready to start! 🚀'
+                      } else if (active === 1) {
+                        message = 'Good focus! 📚'
+                      } else if (active <= 3) {
+                        message = 'Great balance! ⚖️'
+                      } else {
+                        message = 'Ambitious learner! 💪'
+                      }
+
+                      return {
+                        title: 'Active Courses',
+                        value: active,
+                        icon: BookOpenIcon,
+                        gradient: 'from-blue-500 via-blue-600 to-indigo-600',
+                        bgGradient: 'from-blue-50 via-blue-100 to-indigo-100',
+                        message,
+                        delay: 0.1,
+                        requiresPermission: 'courses',
+                        permissionAction: 'view',
+                      }
+                    })(),
+                    (() => {
+                      const completed = stats.completedCourses
+                      let message
+
+                      if (completed === 0) {
+                        message = 'Your journey begins! 🌟'
+                      } else if (completed === 1) {
+                        message = 'First milestone! 🎯'
+                      } else if (completed < 5) {
+                        message = 'Building expertise! 📈'
+                      } else if (completed < 10) {
+                        message = 'Amazing progress! 🎉'
+                      } else {
+                        message = 'Course master! 🏆'
+                      }
+
+                      return {
+                        title: 'Completed Courses',
+                        value: completed,
+                        icon: CheckCircleIcon,
+                        gradient: 'from-green-500 via-emerald-600 to-teal-600',
+                        bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
+                        message,
+                        delay: 0.2,
+                        requiresPermission: 'courses',
+                        permissionAction: 'view',
+                      }
+                    })(),
+                    (() => {
+                      const certs = stats.certificatesEarned
+                      let message
+
+                      if (certs === 0) {
+                        message = 'Earn your first! 🎯'
+                      } else if (certs === 1) {
+                        message = 'First achievement! 🏅'
+                      } else if (certs < 3) {
+                        message = 'Building credentials! 📜'
+                      } else if (certs < 5) {
+                        message = "You're a star! ⭐"
+                      } else {
+                        message = 'Certification expert! 🏆'
+                      }
+
+                      return {
+                        title: 'Certificates',
+                        value: certs,
+                        icon: TrophyIcon,
+                        gradient: 'from-purple-500 via-violet-600 to-purple-600',
+                        bgGradient: 'from-purple-50 via-violet-100 to-purple-100',
+                        message,
+                        delay: 0.3,
+                        requiresPermission: 'certificates',
+                        permissionAction: 'read',
+                      }
+                    })(),
+                    (() => {
+                      const batches = stats.totalBatches
+                      let message
+
+                      if (batches === 0) {
+                        message = 'Join a group! 👋'
+                      } else if (batches === 1) {
+                        message = 'Team player! 👥'
+                      } else {
+                        message = 'Social learner! 🤝'
+                      }
+
+                      return {
+                        title: 'My Batches',
+                        value: batches,
+                        icon: QueueListIcon,
+                        gradient: 'from-orange-500 via-red-500 to-pink-600',
+                        bgGradient: 'from-orange-50 via-red-100 to-pink-100',
+                        message,
+                        delay: 0.4,
+                        requiresPermission: 'batches',
+                        permissionAction: 'read',
+                      }
+                    })(),
+                    (() => {
+                      const streak = stats.learningStreak
+                      let message, icon, gradient, bgGradient
+
+                      if (streak === 0) {
+                        message = 'Ready to start! 💪'
+                        icon = FireIcon
+                        gradient = 'from-gray-500 via-gray-600 to-gray-700'
+                        bgGradient = 'from-gray-50 via-gray-100 to-gray-200'
+                      } else if (streak === 1) {
+                        message = 'Good start! 🌱'
+                        icon = FireIcon
+                        gradient = 'from-green-500 via-green-600 to-emerald-600'
+                        bgGradient = 'from-green-50 via-green-100 to-emerald-100'
+                      } else if (streak < 7) {
+                        message = 'Building momentum! ⚡'
+                        icon = FireIcon
+                        gradient = 'from-orange-500 via-amber-500 to-yellow-600'
+                        bgGradient = 'from-orange-50 via-amber-100 to-yellow-100'
+                      } else if (streak < 30) {
+                        message = 'On fire! 🔥'
+                        icon = FireIcon
+                        gradient = 'from-red-500 via-pink-500 to-rose-600'
+                        bgGradient = 'from-red-50 via-pink-100 to-rose-100'
+                      } else {
+                        message = 'Legendary! 🏆'
+                        icon = TrophyIcon
+                        gradient = 'from-purple-500 via-violet-500 to-purple-600'
+                        bgGradient = 'from-purple-50 via-violet-100 to-purple-100'
+                      }
+
+                      return {
+                        title: 'Learning Streak',
+                        value: `${streak} ${streak === 1 ? 'day' : 'days'}`,
+                        icon,
+                        gradient,
+                        bgGradient,
+                        message,
+                        delay: 0.5,
+                        requiresPermission: null, // Always show learning streak
+                      }
+                    })(),
+                  ]
+                    .filter((stat) => {
+                      if (stat.requiresPermission === null) return true
+                      const hasPermission = canAccess(
+                        stat.requiresPermission,
+                        stat.permissionAction || 'read',
+                      )
+                      console.log(
+                        `Student stat "${stat.title}" - ${stat.requiresPermission}.${stat.permissionAction || 'read'}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+                      )
+                      return hasPermission
+                    })
+                    .map((stat, index) => {
+                      // Recalculate delays after filtering
+                      const adjustedStat = { ...stat, delay: (index + 1) * 0.1 }
+                      return (
+                        <motion.div
+                          key={adjustedStat.title}
+                          initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{
+                            delay: adjustedStat.delay,
+                            duration: 0.6,
+                            type: 'spring',
+                            stiffness: 100,
+                          }}
+                          whileHover={{ scale: 1.05, y: -5 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="group"
+                        >
+                          <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
+                            <div
+                              className={`absolute inset-0 bg-gradient-to-br ${adjustedStat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
+                            />
+                            <div className="relative">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-3">
+                                  <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                                    {adjustedStat.title}
+                                  </p>
+                                  <motion.p
+                                    initial={{ scale: 0.8 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: adjustedStat.delay + 0.2 }}
+                                    className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                                  >
+                                    {typeof adjustedStat.value === 'string'
+                                      ? adjustedStat.value
+                                      : adjustedStat.value.toLocaleString()}
+                                  </motion.p>
+                                  <p className="text-sm text-gray-500">{adjustedStat.message}</p>
+                                </div>
+                                <motion.div
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{
+                                    delay: adjustedStat.delay + 0.3,
+                                    type: 'spring',
+                                    stiffness: 200,
+                                  }}
+                                  whileHover={{ scale: 1.2, rotate: 10 }}
+                                  className={`h-16 w-16 bg-gradient-to-r ${adjustedStat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                                >
+                                  <adjustedStat.icon className="h-8 w-8 text-white" />
+                                </motion.div>
+                              </div>
                               <motion.div
                                 initial={{ width: 0 }}
-                                animate={{ width: '75%' }}
-                                transition={{ delay: stat.delay + 0.7, duration: 1.5 }}
-                                className={`h-full bg-gradient-to-r ${stat.gradient} rounded-full`}
-                              />
+                                animate={{ width: '100%' }}
+                                transition={{ delay: adjustedStat.delay + 0.5, duration: 1 }}
+                                className="mt-6"
+                              >
+                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '75%' }}
+                                    transition={{ delay: adjustedStat.delay + 0.7, duration: 1.5 }}
+                                    className={`h-full bg-gradient-to-r ${adjustedStat.gradient} rounded-full`}
+                                  />
+                                </div>
+                              </motion.div>
                             </div>
-                          </motion.div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                          </div>
+                        </motion.div>
+                      )
+                    })}
                 </div>
                 {/* Learning Progress Section */}
                 <motion.div
@@ -709,9 +1075,15 @@ export default function StudentDashboard() {
                         className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200"
                       >
                         <div className="text-2xl font-bold text-green-600 mb-1">
-                          {stats.learningStreak}/30
+                          {stats.learningStreak}/
+                          {(() => {
+                            // Dynamic streak goal based on level
+                            if (stats.level === 'Beginner') return 7
+                            if (stats.level === 'Intermediate') return 21
+                            return 30 // Advanced
+                          })()}
                         </div>
-                        <div className="text-sm text-gray-600">Days Streak Goal</div>
+                        <div className="text-sm text-gray-600">{stats.level} Streak Goal</div>
                       </motion.div>
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -741,13 +1113,13 @@ export default function StudentDashboard() {
                           name: 'My Courses',
                           icon: BookOpenIcon,
                           description: 'View enrolled courses and progress',
-                          available: canAccess('courses', 'read'),
+                          available: canAccess('courses', 'view'),
                         },
                         {
                           name: 'My Enrollments',
                           icon: ClipboardDocumentListIcon,
                           description: 'Track enrollment status and history',
-                          available: canAccess('enrollments', 'read'),
+                          available: canAccess('enrollments', 'view'),
                         },
                         {
                           name: 'My Certificates',
@@ -787,7 +1159,7 @@ export default function StudentDashboard() {
                             name: 'System Settings',
                             icon: CogIcon,
                             description: 'Configure system settings',
-                            available: canAccess('settings', 'read'),
+                            available: canAccess('settings', 'view'),
                           },
                         ]
                           .filter((item) => item.available)
@@ -1161,6 +1533,111 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
           )}
+          {/* My Batches Tab */}
+          {activeTab === 'batches' && (
+            <motion.div
+              key="batches"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-8"
+            >
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  My Batches 👥
+                </h2>
+                <p className="text-xl text-gray-600">Your assigned batches and learning groups</p>
+              </div>
+              {/* Batch Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {batches.map((batchStudent) => (
+                  <div
+                    key={batchStudent.id}
+                    className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl shadow-lg p-6 border border-orange-200 hover:shadow-xl transition-shadow duration-300"
+                  >
+                    <div className="mb-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <QueueListIcon className="h-8 w-8 text-orange-600 flex-shrink-0" />
+                        <Badge
+                          className={`text-xs ${
+                            batchStudent.batch?.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : batchStudent.batch?.status === 'completed'
+                                ? 'bg-blue-100 text-blue-800'
+                                : batchStudent.batch?.status === 'inactive'
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {batchStudent.batch?.status || 'Unknown'}
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {batchStudent.batch?.name || 'Unknown Batch'}
+                      </h3>
+                      {batchStudent.batch?.description && (
+                        <div
+                          className="text-sm text-gray-600 mb-3 line-clamp-2"
+                          dangerouslySetInnerHTML={{ __html: batchStudent.batch.description }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      {batchStudent.batch?.gurukul && (
+                        <div className="flex items-center text-gray-600">
+                          <div className="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
+                          <span className="font-medium">Gurukul:</span>
+                          <span className="ml-1">{batchStudent.batch.gurukul.name}</span>
+                        </div>
+                      )}
+
+                      {batchStudent.batch?.start_date && (
+                        <div className="flex items-center text-gray-600">
+                          <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                          <span className="font-medium">Start Date:</span>
+                          <span className="ml-1">
+                            {new Date(batchStudent.batch.start_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {batchStudent.batch?.end_date && (
+                        <div className="flex items-center text-gray-600">
+                          <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
+                          <span className="font-medium">End Date:</span>
+                          <span className="ml-1">
+                            {new Date(batchStudent.batch.end_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center text-gray-600">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                        <span className="font-medium">Joined:</span>
+                        <span className="ml-1">
+                          {new Date(batchStudent.assigned_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {batches.length === 0 && (
+                  <div className="col-span-full text-center py-12">
+                    <QueueListIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      No Batches Assigned
+                    </h3>
+                    <p className="text-gray-500">
+                      You haven't been assigned to any batches yet. Contact your instructor for more
+                      information.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
           {/* Profile Tab */}
           {activeTab === 'profile' && (
             <motion.div
@@ -1449,7 +1926,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
               {/* System Settings (Admin Only) */}
-              {canAccess('settings', 'read') && (
+              {canAccess('settings', 'view') && (
                 <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
                   <div className="flex items-center space-x-4 mb-6">
                     <CogIcon className="h-8 w-8 text-purple-600" />

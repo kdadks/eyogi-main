@@ -142,7 +142,7 @@ interface ParentStats {
 }
 export default function ParentsDashboard() {
   const { show: showConfirmDialog, Dialog: ConfirmDialogModal } = useConfirmDialog()
-  const { user } = useWebsiteAuth()
+  const { user, canAccess } = useWebsiteAuth()
   const [activeTab, setActiveTab] = useState<
     'home' | 'children' | 'enrollments' | 'progress' | 'settings' | 'analytics'
   >('home')
@@ -580,7 +580,7 @@ export default function ParentsDashboard() {
       icon: HomeIcon,
       description: 'Family Learning Hub',
       gradient: 'from-blue-500 to-purple-600',
-      available: true,
+      available: canAccess('dashboard', 'read'),
     },
     {
       id: 'children',
@@ -589,7 +589,7 @@ export default function ParentsDashboard() {
       description: 'Manage your children',
       gradient: 'from-green-500 to-teal-600',
       badge: stats.totalChildren > 0 ? stats.totalChildren : undefined,
-      available: true,
+      available: canAccess('students', 'read'),
     },
     {
       id: 'enrollments',
@@ -598,7 +598,7 @@ export default function ParentsDashboard() {
       description: 'Course enrollments & progress',
       gradient: 'from-blue-500 to-indigo-600',
       badge: stats.activeEnrollments > 0 ? stats.activeEnrollments : undefined,
-      available: true,
+      available: canAccess('enrollments', 'read'),
     },
     {
       id: 'progress',
@@ -606,7 +606,7 @@ export default function ParentsDashboard() {
       icon: ChartBarIcon,
       description: 'Learning analytics & insights',
       gradient: 'from-purple-500 to-pink-600',
-      available: true,
+      available: canAccess('certificates', 'read'),
     },
     {
       id: 'analytics',
@@ -614,7 +614,7 @@ export default function ParentsDashboard() {
       icon: TrophyIcon,
       description: 'Detailed performance metrics',
       gradient: 'from-yellow-500 to-orange-600',
-      available: true,
+      available: canAccess('batches', 'read'),
     },
     {
       id: 'settings',
@@ -622,7 +622,7 @@ export default function ParentsDashboard() {
       icon: CogIcon,
       description: 'Account & preferences',
       gradient: 'from-gray-500 to-gray-600',
-      available: true,
+      available: canAccess('settings', 'view'),
     },
   ]
   if (loading) {
@@ -817,6 +817,7 @@ export default function ParentsDashboard() {
                 children={children}
                 courses={courses}
                 coursesLoading={coursesLoading}
+                canAccess={canAccess}
                 onAddChild={() => setShowAddChildModal(true)}
                 onCourseEnrollment={handleCourseEnrollment}
               />
@@ -1007,6 +1008,7 @@ function HomeTab({
   children,
   courses,
   coursesLoading,
+  canAccess,
   onAddChild,
   onCourseEnrollment,
 }: {
@@ -1014,10 +1016,12 @@ function HomeTab({
   children: Child[]
   courses: AvailableCourse[]
   coursesLoading: boolean
+  canAccess: (resource: string, action: string) => boolean
   onAddChild: () => void
   onCourseEnrollment: (course: AvailableCourse) => void
 }) {
-  const statCards = [
+  // Define all possible stats cards
+  const allStatCards = [
     {
       title: 'Total Children',
       value: stats.totalChildren,
@@ -1026,6 +1030,7 @@ function HomeTab({
       bgGradient: 'from-blue-500/20 to-purple-600/20',
       description: 'Registered children',
       delay: 0.1,
+      permission: { resource: 'students', action: 'read' },
     },
     {
       title: 'Active Enrollments',
@@ -1035,6 +1040,7 @@ function HomeTab({
       bgGradient: 'from-green-500/20 to-teal-600/20',
       description: 'Ongoing courses',
       delay: 0.2,
+      permission: { resource: 'enrollments', action: 'read' },
     },
     {
       title: 'Certificates Earned',
@@ -1044,6 +1050,7 @@ function HomeTab({
       bgGradient: 'from-yellow-500/20 to-orange-600/20',
       description: 'Achievements unlocked',
       delay: 0.3,
+      permission: { resource: 'certificates', action: 'read' },
     },
     {
       title: 'Learning Hours',
@@ -1054,321 +1061,350 @@ function HomeTab({
       description: 'This month',
       suffix: 'hrs',
       delay: 0.4,
+      permission: { resource: 'certificates', action: 'read' },
     },
   ]
+
+  // Filter stats cards based on permissions
+  const statCards = allStatCards.filter((card) => {
+    const hasPermission = canAccess(card.permission.resource, card.permission.action)
+    console.log(
+      `Stat card "${card.title}" - ${card.permission.resource}.${card.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+    )
+    return hasPermission
+  })
   return (
     <div className="space-y-6">
-      {/* Reduced from space-y-8 to space-y-6 */}
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Reduced from gap-6 to gap-4 */}
-        {statCards.map((stat) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              delay: stat.delay,
-              duration: 0.6,
-              type: 'spring',
-              stiffness: 100,
-            }}
-            whileHover={{ scale: 1.05, y: -5 }}
-            whileTap={{ scale: 0.95 }}
-            className="group"
-          >
-            <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
-              />
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-3">
-                    <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
-                      {stat.title}
-                    </p>
-                    <motion.p
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: stat.delay + 0.2 }}
-                      className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+      {/* Stats Grid - Only show if there are permitted stats cards */}
+      {statCards.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Reduced from gap-6 to gap-4 */}
+          {statCards.map((stat) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: stat.delay,
+                duration: 0.6,
+                type: 'spring',
+                stiffness: 100,
+              }}
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              className="group"
+            >
+              <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
+                />
+                <div className="relative">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-3">
+                      <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                        {stat.title}
+                      </p>
+                      <motion.p
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: stat.delay + 0.2 }}
+                        className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                      >
+                        {stat.value}
+                        {stat.suffix || ''}
+                      </motion.p>
+                      <p className="text-sm text-gray-500">{stat.description}</p>
+                    </div>
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        delay: stat.delay + 0.3,
+                        type: 'spring',
+                        stiffness: 200,
+                      }}
+                      whileHover={{ scale: 1.2, rotate: 10 }}
+                      className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
                     >
-                      {stat.value}
-                      {stat.suffix || ''}
-                    </motion.p>
-                    <p className="text-sm text-gray-500">{stat.description}</p>
+                      <stat.icon className="h-8 w-8 text-white" />
+                    </motion.div>
                   </div>
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{
-                      delay: stat.delay + 0.3,
-                      type: 'spring',
-                      stiffness: 200,
-                    }}
-                    whileHover={{ scale: 1.2, rotate: 10 }}
-                    className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
-                  >
-                    <stat.icon className="h-8 w-8 text-white" />
-                  </motion.div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
       {/* Recent Activity & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Activity */}
-        <motion.div
-          className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-6"
-          initial={{ x: -50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-600/10 opacity-50" />
-          <div className="relative">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <ClipboardDocumentListIcon className="h-6 w-6 mr-3 text-blue-600" />
-              Recent Activity
-            </h3>
-            <div className="space-y-4">
-              {children.slice(0, 3).map((child, index) => (
-                <motion.div
-                  key={child.student_id}
-                  className="p-4 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-300 border border-white/30"
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.6 + 0.1 * index }}
-                  whileHover={{ scale: 1.02, x: 5 }}
-                >
-                  {/* Child Header */}
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg">
-                      {child.full_name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">{child.full_name}</p>
-                      <p className="text-xs text-gray-600">{child.grade}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-gray-900">
-                        {child.overall_progress}%
-                      </div>
-                      <div className="text-xs text-gray-600">Progress</div>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-3">
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300"
-                        style={{ width: `${child.overall_progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Learning Stats */}
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="bg-blue-50 rounded-md p-2">
-                      <div className="text-sm font-bold text-blue-600">
-                        {child.enrolled_courses?.length || 0}
-                      </div>
-                      <div className="text-xs text-blue-500">Courses</div>
-                    </div>
-                    <div className="bg-green-50 rounded-md p-2">
-                      <div className="text-sm font-bold text-green-600">
-                        {child.learning_time.weekly}
-                      </div>
-                      <div className="text-xs text-green-500">Min/Week</div>
-                    </div>
-                    <div className="bg-purple-50 rounded-md p-2">
-                      <div className="text-sm font-bold text-purple-600">{child.streak_days}</div>
-                      <div className="text-xs text-purple-500">Streak</div>
-                    </div>
-                    <div className="bg-orange-50 rounded-md p-2">
-                      <div className="text-sm font-bold text-orange-600">
-                        {child.enrolled_courses
-                          ? Math.round(
-                              child.enrolled_courses.reduce(
-                                (acc, course) => acc + course.progress,
-                                0,
-                              ) / child.enrolled_courses.length,
-                            ) || 0
-                          : 0}
-                        %
-                      </div>
-                      <div className="text-xs text-orange-500">Avg</div>
-                    </div>
-                  </div>
-
-                  {/* Recent Activity or Top Course */}
-                  {child.recent_activity && child.recent_activity.length > 0 ? (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-700 truncate">
-                            {child.recent_activity[0].description}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(child.recent_activity[0].date).toLocaleDateString()}
-                          </p>
+      {(canAccess('certificates', 'read') || canAccess('students', 'update')) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Activity */}
+          {canAccess('certificates', 'read') && (
+            <motion.div
+              className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-6"
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-600/10 opacity-50" />
+              <div className="relative">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <ClipboardDocumentListIcon className="h-6 w-6 mr-3 text-blue-600" />
+                  Recent Activity
+                </h3>
+                <div className="space-y-4">
+                  {children.slice(0, 3).map((child, index) => (
+                    <motion.div
+                      key={child.student_id}
+                      className="p-4 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-300 border border-white/30"
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ duration: 0.4, delay: 0.6 + 0.1 * index }}
+                      whileHover={{ scale: 1.02, x: 5 }}
+                    >
+                      {/* Child Header */}
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg">
+                          {child.full_name.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-900">{child.full_name}</p>
+                          <p className="text-xs text-gray-600">{child.grade}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">
+                            {child.overall_progress}%
+                          </div>
+                          <div className="text-xs text-gray-600">Progress</div>
                         </div>
                       </div>
-                    </div>
-                  ) : child.enrolled_courses && child.enrolled_courses.length > 0 ? (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">Top Course:</span>
-                        <span className="text-xs font-medium text-gray-900 truncate ml-2">
-                          {child.enrolled_courses.sort((a, b) => b.progress - a.progress)[0].title}
-                        </span>
+
+                      {/* Progress Bar */}
+                      <div className="mb-3">
+                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300"
+                            style={{ width: `${child.overall_progress}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-        {/* Quick Actions */}
-        <motion.div
-          className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-6"
-          initial={{ x: 50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-teal-600/10 opacity-50" />
-          <div className="relative">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <StarIcon className="h-6 w-6 mr-3 text-yellow-500" />
-              Quick Actions
-            </h3>
-            <div className="space-y-4">
-              <motion.button
-                onClick={onAddChild}
-                className="w-full flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <UserPlusIcon className="h-6 w-6" />
-                <span className="font-semibold">Add New Child</span>
-              </motion.button>
-              <motion.button
-                className="w-full flex items-center space-x-4 p-4 rounded-xl bg-white/60 hover:bg-white/80 border border-white/30 text-gray-700 hover:text-gray-900 transition-all duration-300"
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <ChartBarIcon className="h-6 w-6" />
-                <span className="font-semibold">View Reports</span>
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-      {/* Course Enrollment Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.7 }}
-        className="mt-8"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-            <AcademicCapIcon className="h-6 w-6 mr-3 text-blue-600" />
-            Available Courses
-          </h3>
-          <motion.button
-            onClick={() => {
-              window.location.href = '/ssh-app/courses'
-            }}
-            className="text-blue-600 hover:text-blue-800 font-medium flex items-center cursor-pointer"
-            whileHover={{ scale: 1.05 }}
-          >
-            View All Courses
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </motion.button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {coursesLoading
-            ? // Loading skeleton
-              Array.from({ length: 6 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm"
-                >
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-20"></div>
-                  </div>
+
+                      {/* Learning Stats */}
+                      <div className="grid grid-cols-4 gap-2 text-center">
+                        <div className="bg-blue-50 rounded-md p-2">
+                          <div className="text-sm font-bold text-blue-600">
+                            {child.enrolled_courses?.length || 0}
+                          </div>
+                          <div className="text-xs text-blue-500">Courses</div>
+                        </div>
+                        <div className="bg-green-50 rounded-md p-2">
+                          <div className="text-sm font-bold text-green-600">
+                            {child.learning_time.weekly}
+                          </div>
+                          <div className="text-xs text-green-500">Min/Week</div>
+                        </div>
+                        <div className="bg-purple-50 rounded-md p-2">
+                          <div className="text-sm font-bold text-purple-600">
+                            {child.streak_days}
+                          </div>
+                          <div className="text-xs text-purple-500">Streak</div>
+                        </div>
+                        <div className="bg-orange-50 rounded-md p-2">
+                          <div className="text-sm font-bold text-orange-600">
+                            {child.enrolled_courses
+                              ? Math.round(
+                                  child.enrolled_courses.reduce(
+                                    (acc, course) => acc + course.progress,
+                                    0,
+                                  ) / child.enrolled_courses.length,
+                                ) || 0
+                              : 0}
+                            %
+                          </div>
+                          <div className="text-xs text-orange-500">Avg</div>
+                        </div>
+                      </div>
+
+                      {/* Recent Activity or Top Course */}
+                      {child.recent_activity && child.recent_activity.length > 0 ? (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-700 truncate">
+                                {child.recent_activity[0].description}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(child.recent_activity[0].date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : child.enrolled_courses && child.enrolled_courses.length > 0 ? (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600">Top Course:</span>
+                            <span className="text-xs font-medium text-gray-900 truncate ml-2">
+                              {
+                                child.enrolled_courses.sort((a, b) => b.progress - a.progress)[0]
+                                  .title
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      ) : null}
+                    </motion.div>
+                  ))}
                 </div>
-              ))
-            : courses.slice(0, 6).map((course: AvailableCourse, index: number) => (
-                <motion.div
-                  key={course.id}
-                  className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 * index }}
-                  whileHover={{ y: -2 }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 text-sm mb-1">{course.title}</h4>
-                      <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
-                      <span
-                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                          course.difficulty === 'Beginner'
-                            ? 'bg-green-100 text-green-800'
-                            : course.difficulty === 'Intermediate'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {course.difficulty}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-gray-900">
-                        {formatCurrency(course.price)}
-                      </div>
-                      <div className="text-xs text-gray-600">{course.duration}</div>
-                    </div>
-                  </div>
-                  <div
-                    className="text-xs text-gray-600 mb-3"
-                    dangerouslySetInnerHTML={{ __html: course.description }}
-                  />
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="flex text-yellow-400">
-                        {[...Array(5)].map((_, i) => (
-                          <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
-                    </div>
-                    <span className="text-xs text-gray-600">{course.instructor}</span>
-                  </div>
+              </div>
+            </motion.div>
+          )}
+          {/* Quick Actions */}
+          {canAccess('students', 'update') && (
+            <motion.div
+              className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-6"
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-teal-600/10 opacity-50" />
+              <div className="relative">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <StarIcon className="h-6 w-6 mr-3 text-yellow-500" />
+                  Quick Actions
+                </h3>
+                <div className="space-y-4">
                   <motion.button
-                    onClick={() => onCourseEnrollment(course)}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
-                    whileHover={{ scale: 1.02 }}
+                    onClick={onAddChild}
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Enroll Now
+                    <UserPlusIcon className="h-6 w-6" />
+                    <span className="font-semibold">Add New Child</span>
                   </motion.button>
-                </motion.div>
-              ))}
+                  <motion.button
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-white/60 hover:bg-white/80 border border-white/30 text-gray-700 hover:text-gray-900 transition-all duration-300"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <ChartBarIcon className="h-6 w-6" />
+                    <span className="font-semibold">View Reports</span>
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
-      </motion.div>
+      )}
+      {/* Course Enrollment Section */}
+      {canAccess('courses', 'view') && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="mt-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center">
+              <AcademicCapIcon className="h-6 w-6 mr-3 text-blue-600" />
+              Available Courses
+            </h3>
+            <motion.button
+              onClick={() => {
+                window.location.href = '/ssh-app/courses'
+              }}
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center cursor-pointer"
+              whileHover={{ scale: 1.05 }}
+            >
+              View All Courses
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </motion.button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {coursesLoading
+              ? // Loading skeleton
+                Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm"
+                  >
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+                ))
+              : courses.slice(0, 6).map((course: AvailableCourse, index: number) => (
+                  <motion.div
+                    key={course.id}
+                    className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 * index }}
+                    whileHover={{ y: -2 }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-sm mb-1">{course.title}</h4>
+                        <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                            course.difficulty === 'Beginner'
+                              ? 'bg-green-100 text-green-800'
+                              : course.difficulty === 'Intermediate'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {course.difficulty}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-gray-900">
+                          {formatCurrency(course.price)}
+                        </div>
+                        <div className="text-xs text-gray-600">{course.duration}</div>
+                      </div>
+                    </div>
+                    <div
+                      className="text-xs text-gray-600 mb-3"
+                      dangerouslySetInnerHTML={{ __html: course.description }}
+                    />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="flex text-yellow-400">
+                          {[...Array(5)].map((_, i) => (
+                            <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
+                      </div>
+                      <span className="text-xs text-gray-600">{course.instructor}</span>
+                    </div>
+                    <motion.button
+                      onClick={() => onCourseEnrollment(course)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Enroll Now
+                    </motion.button>
+                  </motion.div>
+                ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

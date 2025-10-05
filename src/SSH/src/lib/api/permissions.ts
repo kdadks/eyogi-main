@@ -9,9 +9,7 @@ export async function getPermissions(filters?: {
   is_active?: boolean
 }): Promise<Permission[]> {
   try {
-    let query = supabaseAdmin
-      .from('permissions')
-      .select(`
+    let query = supabaseAdmin.from('permissions').select(`
         *,
         profiles!permissions_created_by_fkey (
           id,
@@ -49,7 +47,8 @@ export async function getPermission(id: string): Promise<Permission | null> {
   try {
     const { data, error } = await supabaseAdmin
       .from('permissions')
-      .select(`
+      .select(
+        `
         *,
         profiles!permissions_created_by_fkey (
           id,
@@ -57,7 +56,8 @@ export async function getPermission(id: string): Promise<Permission | null> {
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('id', id)
       .single()
 
@@ -74,7 +74,7 @@ export async function getPermission(id: string): Promise<Permission | null> {
 }
 
 export async function createPermission(
-  permission: Omit<Permission, 'id' | 'created_at' | 'updated_at'>
+  permission: Omit<Permission, 'id' | 'created_at' | 'updated_at'>,
 ): Promise<Permission> {
   try {
     const { data, error } = await supabaseAdmin
@@ -85,7 +85,8 @@ export async function createPermission(
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select(`
+      .select(
+        `
         *,
         profiles!permissions_created_by_fkey (
           id,
@@ -93,7 +94,8 @@ export async function createPermission(
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -110,7 +112,7 @@ export async function createPermission(
 
 export async function updatePermission(
   id: string,
-  updates: Partial<Permission>
+  updates: Partial<Permission>,
 ): Promise<Permission> {
   try {
     const { data, error } = await supabaseAdmin
@@ -120,7 +122,8 @@ export async function updatePermission(
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select(`
+      .select(
+        `
         *,
         profiles!permissions_created_by_fkey (
           id,
@@ -128,7 +131,8 @@ export async function updatePermission(
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -164,41 +168,77 @@ export async function deletePermission(id: string): Promise<void> {
 
 export async function getUserPermissions(userId: string): Promise<UserPermission[]> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('user_permissions')
-      .select(`
-        *,
-        profiles!user_permissions_user_id_fkey (
-          id,
-          full_name,
-          email,
-          role
-        ),
+    console.log('getUserPermissions called with userId:', userId)
+
+    // First, get the user's role
+    const { data: userProfile, error: userError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (userError || !userProfile) {
+      console.error('Error fetching user profile:', userError)
+      return []
+    }
+
+    console.log('User role found:', userProfile.role)
+
+    // Then get permissions for that role from role_permissions table
+    const { data: rolePermissions, error: roleError } = await supabaseAdmin
+      .from('role_permissions')
+      .select(
+        `
+        id,
+        role,
+        permission_id,
         permissions (
           id,
           name,
           description,
           resource,
-          action,
-          is_active
-        ),
-        profiles!user_permissions_granted_by_fkey (
-          id,
-          full_name,
-          email,
-          role
+          action
         )
-      `)
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('granted_at', { ascending: false })
+      `,
+      )
+      .eq('role', userProfile.role)
 
-    if (error) {
-      console.error('Error fetching user permissions:', error)
+    console.log('Database query result:', { data: rolePermissions, error: roleError })
+
+    if (roleError) {
+      console.error('Error fetching role permissions:', roleError)
       return []
     }
 
-    return data || []
+    // Filter and convert role_permissions format to UserPermission format for compatibility
+    const userPermissions: UserPermission[] = (rolePermissions || [])
+      .filter((rolePerm) => {
+        // Check if permissions exist (since all role permissions are assumed active)
+        const permission = Array.isArray(rolePerm.permissions)
+          ? rolePerm.permissions[0]
+          : rolePerm.permissions
+        return permission && permission.resource && permission.action
+      })
+      .map((rolePerm) => ({
+        id: rolePerm.id,
+        user_id: userId,
+        permission_id: rolePerm.permission_id,
+        permission: {
+          ...(Array.isArray(rolePerm.permissions) ? rolePerm.permissions[0] : rolePerm.permissions),
+          is_active: true, // Default all role permissions to active
+          created_by: 'system',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        granted_at: new Date().toISOString(),
+        granted_by: 'system', // Role-based permissions are system-granted
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }))
+
+    console.log('Returning converted permissions data:', userPermissions)
+    return userPermissions
   } catch (error) {
     console.error('Error in getUserPermissions:', error)
     return []
@@ -208,7 +248,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
 export async function grantPermissionToUser(
   userId: string,
   permissionId: string,
-  grantedBy: string
+  grantedBy: string,
 ): Promise<UserPermission> {
   try {
     const { data, error } = await supabaseAdmin
@@ -223,7 +263,8 @@ export async function grantPermissionToUser(
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select(`
+      .select(
+        `
         *,
         profiles!user_permissions_user_id_fkey (
           id,
@@ -245,7 +286,8 @@ export async function grantPermissionToUser(
           email,
           role
         )
-      `)
+      `,
+      )
       .single()
 
     if (error) {
@@ -262,14 +304,14 @@ export async function grantPermissionToUser(
 
 export async function revokePermissionFromUser(
   userId: string,
-  permissionId: string
+  permissionId: string,
 ): Promise<void> {
   try {
     const { error } = await supabaseAdmin
       .from('user_permissions')
       .update({
         is_active: false,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId)
       .eq('permission_id', permissionId)
@@ -288,7 +330,8 @@ export async function getAllUserPermissions(): Promise<UserPermission[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('user_permissions')
-      .select(`
+      .select(
+        `
         *,
         profiles!user_permissions_user_id_fkey (
           id,
@@ -310,7 +353,8 @@ export async function getAllUserPermissions(): Promise<UserPermission[]> {
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('is_active', true)
       .order('granted_at', { ascending: false })
 
@@ -331,18 +375,20 @@ export async function getAllUserPermissions(): Promise<UserPermission[]> {
 export async function checkUserPermission(
   userId: string,
   resource: string,
-  action: string
+  action: string,
 ): Promise<boolean> {
   try {
     const { data, error } = await supabaseAdmin
       .from('user_permissions')
-      .select(`
+      .select(
+        `
         permissions!inner (
           resource,
           action,
           is_active
         )
-      `)
+      `,
+      )
       .eq('user_id', userId)
       .eq('is_active', true)
       .eq('permissions.resource', resource)
@@ -365,7 +411,8 @@ export async function getPermissionsByResource(resource: string): Promise<Permis
   try {
     const { data, error } = await supabaseAdmin
       .from('permissions')
-      .select(`
+      .select(
+        `
         *,
         profiles!permissions_created_by_fkey (
           id,
@@ -373,7 +420,8 @@ export async function getPermissionsByResource(resource: string): Promise<Permis
           email,
           role
         )
-      `)
+      `,
+      )
       .eq('resource', resource)
       .eq('is_active', true)
       .order('action', { ascending: true })
@@ -395,7 +443,7 @@ export async function getPermissionsByResource(resource: string): Promise<Permis
 export async function grantBatchPermissions(
   userIds: string[],
   permissionIds: string[],
-  grantedBy: string
+  grantedBy: string,
 ): Promise<UserPermission[]> {
   try {
     const insertData = []
@@ -415,10 +463,7 @@ export async function grantBatchPermissions(
       }
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('user_permissions')
-      .insert(insertData)
-      .select(`
+    const { data, error } = await supabaseAdmin.from('user_permissions').insert(insertData).select(`
         *,
         profiles!user_permissions_user_id_fkey (
           id,

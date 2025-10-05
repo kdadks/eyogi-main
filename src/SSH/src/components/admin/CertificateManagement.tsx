@@ -319,13 +319,13 @@ export default function CertificateManagement() {
               onClick={() =>
                 setActiveTab(tab.id as 'certificates' | 'templates' | 'issue' | 'assignments')
               }
-              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`flex items-center gap-1.5 py-1.5 px-1 border-b-2 font-medium text-xs ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <tab.icon className="h-5 w-5" />
+              <tab.icon className="h-4 w-4" />
               <span>{tab.name}</span>
             </button>
           ))}
@@ -334,9 +334,6 @@ export default function CertificateManagement() {
       {/* Recent Certificates Tab */}
       {activeTab === 'certificates' && (
         <Card>
-          <CardHeader>
-            <h2 className="text-xl font-bold">Recent Certificates</h2>
-          </CardHeader>
           <CardContent>
             {certificates.length === 0 ? (
               <div className="text-center py-8">
@@ -440,8 +437,7 @@ export default function CertificateManagement() {
       {activeTab === 'templates' && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">Certificate Templates</h2>
+            <div className="flex items-center justify-end">
               <Button onClick={() => handleTemplateAction('create')}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 New Template
@@ -527,8 +523,7 @@ export default function CertificateManagement() {
         <Card>
           <CardHeader>
             <div className="space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <h2 className="text-xl font-bold">Issue Certificates</h2>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-end">
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -754,8 +749,7 @@ export default function CertificateManagement() {
       {activeTab === 'assignments' && canAssignTemplates && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">Template Assignments</h2>
+            <div className="flex items-center justify-end">
               <Button onClick={() => setAssignmentModalOpen(true)}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Assign Template
