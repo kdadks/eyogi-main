@@ -53,6 +53,7 @@ export function usePermissions() {
           'students',
           'gurukuls',
           'content',
+          'media',
           'certificates',
           'assignments',
           'batches',

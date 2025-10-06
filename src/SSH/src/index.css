@@ -244,6 +244,12 @@ html {
   .card-sheen { animation: none; opacity: 0.35; }
 }
 
+/* Disable sheen animation in modals to prevent overflow scrolling */
+.modal-card .card-sheen {
+  animation: none;
+  opacity: 0;
+}
+
 /* Premium Header Styles */
 .header-glass {
   background: rgba(255, 255, 255, 0.85);

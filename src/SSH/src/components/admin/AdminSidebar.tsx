@@ -14,6 +14,7 @@ import {
   ArrowRightOnRectangleIcon,
   BuildingLibraryIcon,
   QueueListIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -89,6 +90,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       href: '/admin/content',
       icon: DocumentDuplicateIcon,
       permission: { resource: 'content', action: 'read' },
+    },
+    {
+      name: 'Media',
+      href: '/admin/media',
+      icon: PhotoIcon,
+      permission: { resource: 'media', action: 'read' },
     },
     {
       name: 'Batch Management',

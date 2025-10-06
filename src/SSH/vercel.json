@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/uploadthing.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/uploadthing",
+      "destination": "/api/uploadthing.js"
+    }
+  ]
+}

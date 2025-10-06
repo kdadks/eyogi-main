@@ -29,6 +29,7 @@ import GurukulManagement from './components/admin/GurukulManagement'
 import SiteAnalytics from './components/admin/SiteAnalytics'
 import CertificateManagement from './components/admin/CertificateManagement'
 import ContentManagement from './components/admin/ContentManagement'
+import MediaManagement from './components/admin/MediaManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import GurukulDetailPage from './pages/GurukulDetailPage'
@@ -145,6 +146,7 @@ function App() {
               <Route path="gurukuls" element={<GurukulManagement />} />
               <Route path="certificates" element={<CertificateManagement />} />
               <Route path="content" element={<ContentManagement />} />
+              <Route path="media" element={<MediaManagement />} />
               <Route path="analytics" element={<SiteAnalytics />} />
               <Route path="batches" element={<BatchManagement />} />
               <Route path="students" element={<StudentManagement />} />
