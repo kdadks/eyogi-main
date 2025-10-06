@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../supabase'
 import { Gurukul } from '../../types'
+import { DEFAULT_IMAGES } from '../constants/images'
 export async function getGurukuls(): Promise<Gurukul[]> {
   try {
     const { data, error } = await supabaseAdmin
@@ -141,9 +142,7 @@ export async function getGurukulsWithStats(): Promise<
         ...gurukul,
         courses: 0,
         students: 0,
-        image:
-          gurukul.image_url ||
-          'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=400&h=300&fit=crop',
+        image: gurukul.cover_image_url || gurukul.image_url || DEFAULT_IMAGES.GURUKUL_COVER,
       }))
     }
 
@@ -174,9 +173,7 @@ export async function getGurukulsWithStats(): Promise<
       ...gurukul,
       courses: courseCounts[gurukul.id] || 0,
       students: studentCounts[gurukul.id] || 0,
-      image:
-        gurukul.image_url ||
-        'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=400&h=300&fit=crop',
+      image: gurukul.cover_image_url || gurukul.image_url || DEFAULT_IMAGES.GURUKUL_COVER,
     }))
   } catch {
     return []

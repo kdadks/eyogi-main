@@ -58,6 +58,7 @@ export interface Gurukul {
   slug: string
   description: string
   image_url?: string
+  cover_image_url?: string
   is_active: boolean
   sort_order?: number
   created_at: string

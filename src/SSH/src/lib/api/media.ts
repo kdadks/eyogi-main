@@ -298,6 +298,20 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+export function getFileIconName(fileType: string): string {
+  // Return icon name for Lucide React components
+  if (fileType.startsWith('image/')) return 'Image'
+  if (fileType.startsWith('video/')) return 'Video'
+  if (fileType.startsWith('audio/')) return 'Music'
+  if (fileType.includes('pdf')) return 'FileText'
+  if (fileType.includes('word') || fileType.includes('document')) return 'FileText'
+  if (fileType.includes('sheet') || fileType.includes('excel')) return 'Sheet'
+  if (fileType.includes('presentation') || fileType.includes('powerpoint')) return 'Presentation'
+  if (fileType.startsWith('text/')) return 'FileText'
+  return 'File'
+}
+
+// Legacy function for backward compatibility (emoji icons)
 export function getFileIcon(fileType: string): string {
   if (fileType.startsWith('image/')) return '🖼️'
   if (fileType.startsWith('video/')) return '🎥'

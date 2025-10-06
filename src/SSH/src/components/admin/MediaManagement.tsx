@@ -33,7 +33,6 @@ import {
   bulkDeleteMediaFiles,
   getMediaStats,
   formatFileSize,
-  getFileIcon,
   getThumbnailUrl,
   canPreview,
   type MediaFile,
@@ -42,6 +41,7 @@ import {
 import { uploadFilesToUploadThing } from '../../lib/uploadthing-client'
 import { canBeWatermarked } from '../../hooks/useWatermark'
 import WatermarkDialog from './WatermarkDialog'
+import FileIcon from '../ui/FileIcon'
 
 const CATEGORIES = [
   { value: 'all', label: 'All Files', icon: FileText },
@@ -686,10 +686,12 @@ function MediaGridItem({
             </div>
           </>
         ) : (
-          <div className="text-4xl">{getFileIcon(file.file_type)}</div>
+          <div className="flex items-center justify-center">
+            <FileIcon fileType={file.file_type} size={48} className="text-gray-600" />
+          </div>
         )}
-        <div className="hidden items-center justify-center text-4xl">
-          {getFileIcon(file.file_type)}
+        <div className="hidden items-center justify-center">
+          <FileIcon fileType={file.file_type} size={48} className="text-gray-600" />
         </div>
 
         {/* Overlay actions */}
@@ -756,7 +758,9 @@ function MediaListItem({
             className="w-full h-full object-cover rounded"
           />
         ) : (
-          <span className="text-lg">{getFileIcon(file.file_type)}</span>
+          <div className="flex items-center justify-center w-full h-full">
+            <FileIcon fileType={file.file_type} size={24} className="text-gray-600" />
+          </div>
         )}
       </div>
 
@@ -959,7 +963,7 @@ function UploadDialog({ onClose, onUpload, uploading }: UploadDialogProps) {
                     className="flex items-center justify-between p-2 bg-gray-50 rounded"
                   >
                     <div className="flex items-center space-x-2">
-                      <span className="text-lg">{getFileIcon(file.type)}</span>
+                      <FileIcon fileType={file.type} size={20} className="text-gray-600" />
                       <div>
                         <div className="text-sm font-medium">{file.name}</div>
                         <div className="text-xs text-gray-500">{formatFileSize(file.size)}</div>
@@ -1057,7 +1061,7 @@ function EditMediaDialog({ media, onClose, onSave }: EditMediaDialogProps) {
                   className="w-full h-full object-cover rounded"
                 />
               ) : (
-                <span className="text-2xl">{getFileIcon(media.file_type)}</span>
+                <FileIcon fileType={media.file_type} size={32} className="text-gray-600" />
               )}
             </div>
             <div>

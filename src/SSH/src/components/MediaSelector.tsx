@@ -22,12 +22,12 @@ import {
 import {
   getMediaFiles,
   formatFileSize,
-  getFileIcon,
   getThumbnailUrl,
   canPreview,
   type MediaFile,
   type MediaFilters,
 } from '../lib/api/media'
+import FileIcon from './ui/FileIcon'
 
 const CATEGORIES = [
   { value: 'all', label: 'All Files', icon: FileText },
@@ -495,7 +495,13 @@ function MediaGridItem({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className={compact ? 'text-2xl' : 'text-3xl'}>{getFileIcon(file.file_type)}</div>
+          <div className="flex items-center justify-center w-full h-full">
+            <FileIcon
+              fileType={file.file_type}
+              size={compact ? 32 : 48}
+              className="text-gray-600"
+            />
+          </div>
         )}
 
         {/* Preview overlay */}
@@ -564,7 +570,9 @@ function MediaListItem({ file, selected, onSelect, onPreview }: MediaListItemPro
             className="w-full h-full object-cover rounded"
           />
         ) : (
-          <span className="text-lg">{getFileIcon(file.file_type)}</span>
+          <div className="flex items-center justify-center w-full h-full">
+            <FileIcon fileType={file.file_type} size={24} className="text-gray-600" />
+          </div>
         )}
       </div>
 
@@ -628,7 +636,9 @@ function MediaPreviewModal({ media, onClose }: MediaPreviewModalProps) {
 
           {media.file_category === 'audio' && (
             <div className="text-center">
-              <div className="text-6xl mb-4">{getFileIcon(media.file_type)}</div>
+              <div className="flex justify-center mb-4">
+                <FileIcon fileType={media.file_type} size={72} className="text-gray-600" />
+              </div>
               <audio controls className="mx-auto">
                 <source src={media.file_url} type={media.mime_type} />
                 Your browser does not support the audio tag.

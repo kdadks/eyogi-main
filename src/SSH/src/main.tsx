@@ -7,6 +7,17 @@ import { WebsiteAuthProvider } from './contexts/WebsiteAuthContext'
 import { PermissionProvider } from './contexts/PermissionContext'
 import { SessionManager } from './lib/sessionManager'
 import './index.css'
+
+// Suppress ReactQuill findDOMNode warning in development
+if (import.meta.env.DEV) {
+  const originalError = console.error
+  console.error = (...args) => {
+    if (typeof args[0] === 'string' && args[0].includes('findDOMNode is deprecated')) {
+      return
+    }
+    originalError.call(console, ...args)
+  }
+}
 // Initialize session management before rendering (only in production or when needed)
 if (import.meta.env.PROD || import.meta.env.VITE_FORCE_SESSION_MANAGEMENT) {
   SessionManager.initializeSessionManagement()

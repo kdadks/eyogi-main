@@ -1,4 +1,6 @@
 // Local storage utilities for handling data without Supabase
+import { DEFAULT_IMAGES } from '../constants/images'
+
 export interface LocalUser {
   id: string
   email: string
@@ -152,7 +154,7 @@ export function initializeDefaultData(): void {
         slug: 'hinduism',
         description:
           'Explore the rich traditions, philosophy, and practices of Hinduism through comprehensive courses designed for all age groups.',
-        image_url: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800',
+        image_url: DEFAULT_IMAGES.GURUKUL_COVER,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -163,7 +165,7 @@ export function initializeDefaultData(): void {
         slug: 'mantra',
         description:
           'Learn the sacred science of mantras, their pronunciation, meanings, and transformative power in spiritual practice.',
-        image_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        image_url: DEFAULT_IMAGES.GURUKUL_COVER,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -174,7 +176,7 @@ export function initializeDefaultData(): void {
         slug: 'philosophy',
         description:
           'Dive deep into ancient philosophical traditions and their relevance to modern life and spiritual growth.',
-        image_url: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800',
+        image_url: DEFAULT_IMAGES.GURUKUL_COVER,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -185,7 +187,7 @@ export function initializeDefaultData(): void {
         slug: 'sanskrit',
         description:
           'Master the sacred language of Sanskrit through structured learning programs for beginners to advanced students.',
-        image_url: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800',
+        image_url: DEFAULT_IMAGES.GURUKUL_COVER,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -196,7 +198,7 @@ export function initializeDefaultData(): void {
         slug: 'yoga-wellness',
         description:
           'Integrate physical, mental, and spiritual wellness through traditional yoga practices and holistic health approaches.',
-        image_url: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800',
+        image_url: DEFAULT_IMAGES.GURUKUL_COVER,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

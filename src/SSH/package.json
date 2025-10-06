@@ -40,6 +40,7 @@
     "jspdf": "^3.0.3",
     "lucide-react": "^0.454.0",
     "multer": "^2.0.2",
+    "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",

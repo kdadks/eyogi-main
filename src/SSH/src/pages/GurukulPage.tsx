@@ -10,6 +10,7 @@ import { getGurukuls } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
 import Footer from '../components/layout/Footer'
 import RollingText from '../components/ui/RollingText'
+import { DEFAULT_IMAGES } from '../lib/constants/images'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -160,8 +161,9 @@ export default function GurukulPage() {
                     <div className="aspect-video overflow-hidden">
                       <img
                         src={
+                          gurukul.cover_image_url ||
                           gurukul.image_url ||
-                          `https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=400&fit=crop`
+                          DEFAULT_IMAGES.GURUKUL_COVER
                         }
                         alt={gurukul.name}
                         className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"

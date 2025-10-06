@@ -9,6 +9,9 @@ import { getCourses } from '@/lib/api/courses'
 import { formatDate, generateSlug } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import MediaSelector from '../MediaSelector'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import {
   GlobeAltIcon,
   PlusIcon,
@@ -25,6 +28,9 @@ interface GurukulFormData {
   slug: string
   description: string
   image_url: string
+  cover_image_url: string
+  selected_cover_media_id?: string
+  selected_content_media_id?: string
 }
 export default function GurukulManagement() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
@@ -41,8 +47,14 @@ export default function GurukulManagement() {
     slug: '',
     description: '',
     image_url: '',
+    cover_image_url: '',
+    selected_cover_media_id: undefined,
+    selected_content_media_id: undefined,
   })
   const [formLoading, setFormLoading] = useState(false)
+  const [mediaSelectorOpen, setMediaSelectorOpen] = useState(false)
+  const quillRef = React.useRef<ReactQuill>(null)
+
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -82,6 +94,7 @@ export default function GurukulManagement() {
       setLoading(false)
     }
   }
+
   const filterGurukuls = React.useCallback(() => {
     let filtered = gurukuls
     // Filter by search term
@@ -109,6 +122,9 @@ export default function GurukulManagement() {
       slug: '',
       description: '',
       image_url: '',
+      cover_image_url: '',
+      selected_cover_media_id: undefined,
+      selected_content_media_id: undefined,
     })
     setShowCreateForm(false)
     setEditingGurukul(null)
@@ -117,12 +133,16 @@ export default function GurukulManagement() {
     e.preventDefault()
     setFormLoading(true)
     try {
+      // Remove form-only fields that don't exist in database
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { selected_cover_media_id, selected_content_media_id, ...gurukulData } = formData
+
       if (editingGurukul) {
-        await updateGurukul(editingGurukul.id, formData)
+        await updateGurukul(editingGurukul.id, gurukulData)
         toast.success('Gurukul updated successfully')
       } else {
         await createGurukul({
-          ...formData,
+          ...gurukulData,
           is_active: true,
           sort_order: 0,
         })
@@ -143,6 +163,9 @@ export default function GurukulManagement() {
       slug: gurukul.slug,
       description: gurukul.description,
       image_url: gurukul.image_url || '',
+      cover_image_url: gurukul.cover_image_url || '',
+      selected_cover_media_id: undefined,
+      selected_content_media_id: undefined,
     })
     setShowCreateForm(true)
   }
@@ -247,24 +270,73 @@ export default function GurukulManagement() {
                   helperText="URL-friendly identifier"
                 />
               </div>
+              {/* Cover Image Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cover Image/Video
+                </label>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMediaSelectorOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span>Select Media</span>
+                  </Button>
+                  {formData.cover_image_url && (
+                    <span className="text-xs text-gray-500">✓ Media selected</span>
+                  )}
+                </div>
+
+                {/* Show selected cover media preview */}
+                {formData.selected_cover_media_id && formData.cover_image_url && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center space-x-2">
+                        <img
+                          src={formData.cover_image_url}
+                          alt="Selected cover media"
+                          className="w-8 h-8 object-cover rounded"
+                        />
+                        <span className="text-sm text-gray-600">Cover media selected</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            selected_cover_media_id: undefined,
+                            cover_image_url: '',
+                          }))
+                        }
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Rich Text Description */}
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
+                <ReactQuill
+                  ref={quillRef}
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  onChange={(value: string) =>
+                    setFormData((prev) => ({ ...prev, description: value }))
                   }
-                  rows={3}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                  required
+                  placeholder="Enter Gurukul description"
+                  className="bg-white"
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  Rich text description with support for formatting
+                </p>
               </div>
-              <Input
-                label="Image URL"
-                value={formData.image_url}
-                onChange={(e) => setFormData((prev) => ({ ...prev, image_url: e.target.value }))}
-                helperText="Optional: URL to gurukul image"
-              />
               <div className="flex space-x-4">
                 <Button type="submit" loading={formLoading}>
                   <CheckIcon className="h-4 w-4 mr-2" />
@@ -445,12 +517,6 @@ export default function GurukulManagement() {
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Slug</label>
-                        <p className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">
-                          /{viewingGurukul.slug}
-                        </p>
-                      </div>
-                      <div>
                         <label className="block text-sm font-medium text-gray-700">Status</label>
                         <Badge
                           className={
@@ -471,24 +537,12 @@ export default function GurukulManagement() {
                           {viewingGurukul.sort_order || 'Not set'}
                         </p>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">ID</label>
-                        <p className="mt-1 text-xs text-gray-500 font-mono break-all">
-                          {viewingGurukul.id}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">URL Path</label>
-                        <p className="mt-1 text-sm text-blue-600">
-                          /gurukuls/{viewingGurukul.slug}
-                        </p>
-                      </div>
                     </div>
                   </div>
-                  {viewingGurukul.image_url && (
+                  {(viewingGurukul.cover_image_url || viewingGurukul.image_url) && (
                     <div className="flex-shrink-0">
                       <img
-                        src={viewingGurukul.image_url}
+                        src={viewingGurukul.cover_image_url || viewingGurukul.image_url}
                         alt={viewingGurukul.name}
                         className="w-48 h-32 object-cover rounded-lg border shadow-sm"
                         onError={(e) => {
@@ -553,65 +607,49 @@ export default function GurukulManagement() {
                     </div>
                   </div>
                 </div>
-                {/* Technical Details */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Technical Details</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Database ID
-                        </label>
-                        <p className="mt-1 text-xs text-gray-500 font-mono break-all bg-white px-2 py-1 rounded border">
-                          {viewingGurukul.id}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Public URL
-                        </label>
-                        <p className="mt-1 text-sm text-blue-600 bg-white px-2 py-1 rounded border">
-                          /gurukuls/{viewingGurukul.slug}
-                        </p>
-                      </div>
-                      {viewingGurukul.image_url && (
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Image URL
-                          </label>
-                          <p className="mt-1 text-xs text-gray-500 break-all bg-white px-2 py-1 rounded border">
-                            {viewingGurukul.image_url}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {/* Timestamps */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Timestamps</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Created</label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {formatDate(viewingGurukul.created_at)}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Last Updated
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900">
-                        {formatDate(viewingGurukul.updated_at)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Media Selector Modal */}
+      {mediaSelectorOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Select Cover Media</h3>
+              <button
+                onClick={() => setMediaSelectorOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="sr-only">Close</span>✕
+              </button>
+            </div>
+            <MediaSelector
+              multiple={false}
+              accept={['image', 'video']}
+              compact={false}
+              showUpload={true}
+              onSelect={(mediaFiles) => {
+                if (mediaFiles.length > 0) {
+                  const selectedMedia = mediaFiles[0]
+                  setFormData((prev) => ({
+                    ...prev,
+                    selected_cover_media_id: selectedMedia.id,
+                    cover_image_url: selectedMedia.file_url,
+                  }))
+                }
+                setMediaSelectorOpen(false)
+              }}
+              title="Select Cover Media"
+              emptyMessage="No images or videos found. Upload some media first."
+              className="w-full"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}

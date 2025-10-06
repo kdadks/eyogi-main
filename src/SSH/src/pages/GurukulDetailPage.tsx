@@ -9,6 +9,7 @@ import { Gurukul, Course } from '../types'
 import { getGurukul } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
 import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
+import { DEFAULT_IMAGES } from '../lib/constants/images'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -188,8 +189,7 @@ export default function GurukulDetailPage() {
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                   <img
                     src={
-                      gurukul.image_url ||
-                      `https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&h=600&fit=crop`
+                      gurukul.cover_image_url || gurukul.image_url || DEFAULT_IMAGES.GURUKUL_COVER
                     }
                     alt={gurukul.name}
                     className="w-full h-full object-cover"
