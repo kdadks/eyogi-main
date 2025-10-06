@@ -12,9 +12,9 @@ interface UploadResult {
 
 // Create UploadThing client with environment-based URL
 const getUploadThingUrl = () => {
-  // In production, use the deployed Vercel function
   if (import.meta.env.PROD) {
-    return `${window.location.origin}/api/uploadthing`
+    // In production, use the main domain's API (where serverless functions are deployed)
+    return 'https://eyogi-main.vercel.app/api/uploadthing'
   }
   // In development, use the local Express server
   return 'http://localhost:3001/api/uploadthing'
