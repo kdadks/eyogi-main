@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -23,6 +25,7 @@ import {
   UserGroupIcon,
   BookOpenIcon,
   QueueListIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
@@ -317,379 +320,436 @@ export default function TeacherStudentManagement() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Student Management</h1>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <UserGroupIcon className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
-            <div className="text-xs text-gray-600">Total Students</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <CheckCircleIcon className="h-6 w-6 text-green-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-green-600">{stats.approvedStudents}</div>
-            <div className="text-xs text-gray-600">Approved</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <XCircleIcon className="h-6 w-6 text-yellow-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-yellow-600">{stats.pendingApprovals}</div>
-            <div className="text-xs text-gray-600">Pending Approvals</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <QueueListIcon className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-purple-600">{stats.totalBatches}</div>
-            <div className="text-xs text-gray-600">Your Batches</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex gap-8">
-          {[
-            { id: 'list', name: 'All Students', icon: UserGroupIcon },
-            { id: 'by-batch', name: 'By Batch', icon: QueueListIcon },
-            { id: 'pending', name: 'Pending Approvals', icon: XCircleIcon },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'list' | 'by-batch' | 'pending')}
-              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-                activeTab === tab.id
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <tab.icon className="h-5 w-5" />
-              {tab.name}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="lg:col-span-1">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search students..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-6 lg:pt-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-6 lg:top-8 z-40 shadow-lg"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <Link
+                to="/dashboard/teacher"
+                className="flex items-center gap-3 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+                <span className="font-medium">Back to Dashboard</span>
+              </Link>
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                className="h-16 w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl"
+              >
+                <UserGroupIcon className="h-8 w-8 text-white" />
+              </motion.div>
+              <div>
+                <motion.h1
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent"
+                >
+                  Student Management
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-gray-600 mt-1"
+                >
+                  Manage student enrollments and track progress
+                </motion.p>
               </div>
             </div>
-            <select
-              value={courseFilter}
-              onChange={(e) => setCourseFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="all">All Courses</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
-            <select
-              value={batchFilter}
-              onChange={(e) => setBatchFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="all">All Batches</option>
-              {batches.map((batch) => (
-                <option key={batch.id} value={batch.id}>
-                  {batch.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="completed">Completed</option>
-            </select>
           </div>
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing {filteredStudents.length} of {students.length} students
-            </p>
-            <Button
-              size="sm"
-              onClick={() => {
-                setSearchTerm('')
-                setCourseFilter('all')
-                setBatchFilter('all')
-                setStatusFilter('all')
-              }}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </motion.div>
 
-      {/* Student List */}
-      {activeTab === 'list' && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">All Students</h2>
-              <div className="flex gap-2">
-                {selectedStudents.size > 0 && (
-                  <Button variant="outline" onClick={() => setShowBulkBatchModal(true)}>
-                    <QueueListIcon className="h-4 w-4 mr-2" />
-                    Assign to Batches ({selectedStudents.size})
-                  </Button>
-                )}
+      {/* Main Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
+        <div className="space-y-8">
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <UserGroupIcon className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
+                <div className="text-xs text-gray-600">Total Students</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <CheckCircleIcon className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-600">{stats.approvedStudents}</div>
+                <div className="text-xs text-gray-600">Approved</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <XCircleIcon className="h-6 w-6 text-yellow-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-yellow-600">{stats.pendingApprovals}</div>
+                <div className="text-xs text-gray-600">Pending Approvals</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <QueueListIcon className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-purple-600">{stats.totalBatches}</div>
+                <div className="text-xs text-gray-600">Your Batches</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex gap-8">
+              {[
+                { id: 'list', name: 'All Students', icon: UserGroupIcon },
+                { id: 'by-batch', name: 'By Batch', icon: QueueListIcon },
+                { id: 'pending', name: 'Pending Approvals', icon: XCircleIcon },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as 'list' | 'by-batch' | 'pending')}
+                  className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
+                    activeTab === tab.id
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="h-5 w-5" />
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-1">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search students..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <select
+                  value={courseFilter}
+                  onChange={(e) => setCourseFilter(e.target.value)}
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="all">All Courses</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.title}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={batchFilter}
+                  onChange={(e) => setBatchFilter(e.target.value)}
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="all">All Batches</option>
+                  {batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Showing {filteredStudents.length} of {students.length} students
+                </p>
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    handleSelectAllStudents(selectedStudents.size !== filteredStudents.length)
-                  }
+                  onClick={() => {
+                    setSearchTerm('')
+                    setCourseFilter('all')
+                    setBatchFilter('all')
+                    setStatusFilter('all')
+                  }}
                 >
-                  {selectedStudents.size === filteredStudents.length
-                    ? 'Deselect All'
-                    : 'Select All'}
+                  Clear Filters
                 </Button>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            {filteredStudents.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No students found matching your criteria.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredStudents.map((student) => (
-                  <Card key={student.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedStudents.has(student.id)}
-                          onChange={() => handleSelectStudent(student.id)}
-                          className="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                        />
-                        <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                          <UserIcon className="h-6 w-6 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{student.full_name}</h3>
-                          <p className="text-sm text-gray-600">{student.email}</p>
-                          {student.student_id && (
-                            <p className="text-xs text-gray-500">ID: {student.student_id}</p>
-                          )}
-                        </div>
-                      </div>
+            </CardContent>
+          </Card>
 
-                      <div className="flex flex-col gap-2 text-sm mb-3">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Enrollments:</span>
-                          <span className="font-medium">{student.enrollments.length}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Batches:</span>
-                          <span className="font-medium">{student.batches.length}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="sm" onClick={() => handleViewStudent(student)}>
-                          <EyeIcon className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditStudent(student)}
-                        >
-                          <PencilIcon className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* By Batch View */}
-      {activeTab === 'by-batch' && (
-        <div className="flex flex-col gap-6">
-          {batches.map((batch) => {
-            const batchStudents = filteredStudents.filter((student) =>
-              student.batches.some((b) => b.batch_id === batch.id),
-            )
-
-            if (batchStudents.length === 0) return null
-
-            return (
-              <Card key={batch.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <QueueListIcon className="h-6 w-6 text-orange-600" />
-                      <div>
-                        <h3 className="text-lg font-semibold">{batch.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          {batch.gurukul?.name} • {batchStudents.length} students
-                        </p>
-                      </div>
-                    </div>
-                    <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
+          {/* Student List */}
+          {activeTab === 'list' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold">All Students</h2>
+                  <div className="flex gap-2">
+                    {selectedStudents.size > 0 && (
+                      <Button variant="outline" onClick={() => setShowBulkBatchModal(true)}>
+                        <QueueListIcon className="h-4 w-4 mr-2" />
+                        Assign to Batches ({selectedStudents.size})
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        handleSelectAllStudents(selectedStudents.size !== filteredStudents.length)
+                      }
+                    >
+                      {selectedStudents.size === filteredStudents.length
+                        ? 'Deselect All'
+                        : 'Select All'}
+                    </Button>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {filteredStudents.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    No students found matching your criteria.
+                  </div>
+                ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {batchStudents.map((student) => (
-                      <div
-                        key={student.id}
-                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                            <UserIcon className="h-4 w-4 text-white" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{student.full_name}</p>
-                            <p className="text-xs text-gray-600">{student.student_id}</p>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleViewStudent(student)}
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Pending Approvals */}
-      {activeTab === 'pending' && (
-        <Card>
-          <CardContent className="p-6">
-            {filteredStudents.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No pending enrollment approvals.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {filteredStudents.map((student) => {
-                  const pendingEnrollments = student.enrollments.filter(
-                    (e) => e.status === 'pending',
-                  )
-
-                  return pendingEnrollments.map((enrollment) => {
-                    const course = courses.find((c) => c.id === enrollment.course_id)
-
-                    return (
-                      <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                    {filteredStudents.map((student) => (
+                      <Card key={student.id} className="hover:shadow-lg transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3 mb-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedStudents.has(student.id)}
+                              onChange={() => handleSelectStudent(student.id)}
+                              className="mt-1 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                            />
                             <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                               <UserIcon className="h-6 w-6 text-white" />
                             </div>
-                            <div>
-                              <h3 className="font-medium">{student.full_name}</h3>
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">{student.full_name}</h3>
                               <p className="text-sm text-gray-600">{student.email}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <BookOpenIcon className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm text-gray-600">{course?.title}</span>
+                              {student.student_id && (
+                                <p className="text-xs text-gray-500">ID: {student.student_id}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2 text-sm mb-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Enrollments:</span>
+                              <span className="font-medium">{student.enrollments.length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Batches:</span>
+                              <span className="font-medium">{student.batches.length}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" onClick={() => handleViewStudent(student)}>
+                              <EyeIcon className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditStudent(student)}
+                            >
+                              <PencilIcon className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* By Batch View */}
+          {activeTab === 'by-batch' && (
+            <div className="flex flex-col gap-6">
+              {batches.map((batch) => {
+                const batchStudents = filteredStudents.filter((student) =>
+                  student.batches.some((b) => b.batch_id === batch.id),
+                )
+
+                if (batchStudents.length === 0) return null
+
+                return (
+                  <Card key={batch.id}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <QueueListIcon className="h-6 w-6 text-orange-600" />
+                          <div>
+                            <h3 className="text-lg font-semibold">{batch.name}</h3>
+                            <p className="text-sm text-gray-600">
+                              {batch.gurukul?.name} • {batchStudents.length} students
+                            </p>
+                          </div>
+                        </div>
+                        <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {batchStudents.map((student) => (
+                          <div
+                            key={student.id}
+                            className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                                <UserIcon className="h-4 w-4 text-white" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{student.full_name}</p>
+                                <p className="text-xs text-gray-600">{student.student_id}</p>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleViewStudent(student)}
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Pending Approvals */}
+          {activeTab === 'pending' && (
+            <Card>
+              <CardContent className="p-6">
+                {filteredStudents.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    No pending enrollment approvals.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {filteredStudents.map((student) => {
+                      const pendingEnrollments = student.enrollments.filter(
+                        (e) => e.status === 'pending',
+                      )
+
+                      return pendingEnrollments.map((enrollment) => {
+                        const course = courses.find((c) => c.id === enrollment.course_id)
+
+                        return (
+                          <div
+                            key={enrollment.id}
+                            className="border border-gray-200 rounded-lg p-4"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                                  <UserIcon className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium">{student.full_name}</h3>
+                                  <p className="text-sm text-gray-600">{student.email}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <BookOpenIcon className="h-4 w-4 text-gray-400" />
+                                    <span className="text-sm text-gray-600">{course?.title}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApproveEnrollment(enrollment.id)}
+                                >
+                                  <CheckCircleIcon className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleRejectEnrollment(enrollment.id)}
+                                >
+                                  <XCircleIcon className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleApproveEnrollment(enrollment.id)}
-                            >
-                              <CheckCircleIcon className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={() => handleRejectEnrollment(enrollment.id)}
-                            >
-                              <XCircleIcon className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                        )
+                      })
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-      {/* User Modal (View/Edit) */}
-      {showUserModal && (viewingStudent || editingStudent) && (
-        <UserFormModal
-          isOpen={showUserModal}
-          onClose={() => {
-            setShowUserModal(false)
-            setViewingStudent(null)
-            setEditingStudent(null)
-          }}
-          onSuccess={() => {
-            loadData()
-          }}
-          user={(viewingStudent || editingStudent) as unknown as Profile | undefined}
-          mode={userModalMode}
-        />
-      )}
+          {/* User Modal (View/Edit) */}
+          {showUserModal && (viewingStudent || editingStudent) && (
+            <UserFormModal
+              isOpen={showUserModal}
+              onClose={() => {
+                setShowUserModal(false)
+                setViewingStudent(null)
+                setEditingStudent(null)
+              }}
+              onSuccess={() => {
+                loadData()
+              }}
+              user={(viewingStudent || editingStudent) as unknown as Profile | undefined}
+              mode={userModalMode}
+            />
+          )}
 
-      {/* Bulk Batch Assignment Modal */}
-      {showBulkBatchModal && selectedStudents.size > 0 && (
-        <BulkBatchAssignmentModal
-          students={filteredStudents.filter((s) => selectedStudents.has(s.id))}
-          onClose={() => {
-            setShowBulkBatchModal(false)
-          }}
-          onSuccess={() => {
-            setSelectedStudents(new Set())
-            loadData()
-          }}
-        />
-      )}
+          {/* Bulk Batch Assignment Modal */}
+          {showBulkBatchModal && selectedStudents.size > 0 && (
+            <BulkBatchAssignmentModal
+              students={filteredStudents.filter((s) => selectedStudents.has(s.id))}
+              onClose={() => {
+                setShowBulkBatchModal(false)
+              }}
+              onSuccess={() => {
+                setSelectedStudents(new Set())
+                loadData()
+              }}
+            />
+          )}
+        </div>
+      </motion.div>
     </div>
   )
 }

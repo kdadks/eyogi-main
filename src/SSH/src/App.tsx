@@ -176,7 +176,7 @@ function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
-        redirectAfterAuth={false} // Stay on current page after auth
+        redirectAfterAuth="/dashboard" // Redirect to dashboard after successful login
       />
     </div>
   )
