@@ -65,11 +65,13 @@ export default function CertificateManagement() {
     title: string
     message: string
     onConfirm: () => void
+    loading?: boolean
   }>({
     isOpen: false,
     title: '',
     message: '',
     onConfirm: () => {},
+    loading: false,
   })
   // All hooks must be called before any early returns
   const loadData = useCallback(async () => {
@@ -244,15 +246,23 @@ export default function CertificateManagement() {
       isOpen: true,
       title: 'Remove Assignment',
       message: 'Are you sure you want to remove this assignment?',
+      loading: false,
       onConfirm: async () => {
         try {
+          // Set loading state to prevent double-clicks
+          setConfirmDialog((prev) => ({ ...prev, loading: true }))
+
           await deleteCertificateAssignment(assignmentId)
           toast.success('Assignment removed successfully')
           await loadData() // Reload data after deletion
+
+          // Close dialog after successful deletion
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false, loading: false }))
         } catch {
           toast.error('Failed to remove assignment')
+          // Reset loading state on error but keep dialog open
+          setConfirmDialog((prev) => ({ ...prev, loading: false }))
         }
-        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
       },
     })
   }
@@ -798,6 +808,7 @@ export default function CertificateManagement() {
                     {assignments.map((assignment) => {
                       const gurukul = gurukuls.find((g) => g.id === assignment.gurukul_id)
                       const course = courses.find((c) => c.id === assignment.course_id)
+                      const teacher = assignment.teacher
                       return (
                         <tr key={assignment.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -809,16 +820,39 @@ export default function CertificateManagement() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge variant={assignment.course_id ? 'default' : 'secondary'}>
-                              {assignment.course_id ? 'Course Specific' : 'Gurukul Wide'}
+                            <Badge
+                              variant={
+                                assignment.teacher_id
+                                  ? 'danger'
+                                  : assignment.course_id
+                                    ? 'default'
+                                    : 'secondary'
+                              }
+                              className="px-2 py-1 text-xs font-medium rounded-md"
+                            >
+                              {assignment.teacher_id
+                                ? 'Teacher'
+                                : assignment.course_id
+                                  ? 'Course'
+                                  : 'Gurukul'}
                             </Badge>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {gurukul?.name || 'Unknown Gurukul'}
-                            </div>
-                            {course && (
-                              <div className="text-sm text-gray-500">Course: {course.title}</div>
+                            {assignment.teacher_id ? (
+                              <div className="text-sm text-gray-900">
+                                Teacher: {teacher?.full_name || 'Unknown Teacher'}
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="text-sm text-gray-900">
+                                  {gurukul?.name || 'Unknown Gurukul'}
+                                </div>
+                                {course && (
+                                  <div className="text-sm text-gray-500">
+                                    Course: {course.title}
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -885,6 +919,7 @@ export default function CertificateManagement() {
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
         variant="danger"
+        loading={confirmDialog.loading}
       />
     </div>
   )

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../supabase'
-import { Batch, BatchStudent, BatchCourse } from '../../types'
+import { Batch, BatchStudent, BatchCourse, BatchProgress, BatchStudentWithInfo } from '../../types'
 
 // Batch Management Functions
 
@@ -31,6 +31,7 @@ export async function getBatches(filters?: {
           email,
           role
         )
+
       `)
 
     if (filters?.gurukul_id) {
@@ -57,8 +58,8 @@ export async function getBatches(filters?: {
       return []
     }
 
-    // Fetch counts for each batch
-    const batchesWithCounts = await Promise.all(
+    // Fetch counts and progress for each batch
+    const batchesWithData = await Promise.all(
       data.map(async (batch) => {
         try {
           // Get student count
@@ -68,30 +69,51 @@ export async function getBatches(filters?: {
             .eq('batch_id', batch.id)
             .eq('is_active', true)
 
-          // Get course count
-          const { count: courseCount } = await supabaseAdmin
+          // Get course data through batch_courses junction table
+          const { data: batchCoursesData } = await supabaseAdmin
             .from('batch_courses')
-            .select('*', { count: 'exact', head: true })
+            .select(
+              `
+              courses (
+                id,
+                title,
+                level,
+                duration_weeks,
+                course_number
+              )
+            `,
+            )
             .eq('batch_id', batch.id)
             .eq('is_active', true)
+
+          // Extract course data (assuming one course per batch for now)
+          const courseData =
+            batchCoursesData && batchCoursesData.length > 0 ? batchCoursesData[0].courses : null
+
+          // Get progress data
+          const progressData = await getBatchProgress(batch.id)
 
           return {
             ...batch,
             student_count: studentCount || 0,
-            course_count: courseCount || 0,
+            course_count: batchCoursesData?.length || 0,
+            course: courseData,
+            progress: progressData,
           }
         } catch (countError) {
-          console.error(`Error fetching counts for batch ${batch.id}:`, countError)
+          console.error(`Error fetching data for batch ${batch.id}:`, countError)
           return {
             ...batch,
             student_count: 0,
             course_count: 0,
+            course: null,
+            progress: [],
           }
         }
       }),
     )
 
-    return batchesWithCounts
+    return batchesWithData
   } catch (error) {
     console.error('Error in getBatches:', error)
     return []
@@ -240,13 +262,46 @@ export async function updateBatch(id: string, updates: Partial<Batch>): Promise<
 
 export async function deleteBatch(id: string): Promise<void> {
   try {
-    const { error } = await supabaseAdmin
-      .from('batches')
-      .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('id', id)
+    // Delete related records in the correct order (foreign key dependencies)
 
-    if (error) {
-      console.error('Error deleting batch:', error)
+    // 1. Delete batch progress records
+    const { error: progressError } = await supabaseAdmin
+      .from('batch_progress')
+      .delete()
+      .eq('batch_id', id)
+
+    if (progressError) {
+      console.error('Error deleting batch progress:', progressError)
+      throw new Error('Failed to delete batch progress records')
+    }
+
+    // 2. Delete batch student assignments
+    const { error: studentsError } = await supabaseAdmin
+      .from('batch_students')
+      .delete()
+      .eq('batch_id', id)
+
+    if (studentsError) {
+      console.error('Error deleting batch students:', studentsError)
+      throw new Error('Failed to delete batch student assignments')
+    }
+
+    // 3. Delete batch course assignments
+    const { error: coursesError } = await supabaseAdmin
+      .from('batch_courses')
+      .delete()
+      .eq('batch_id', id)
+
+    if (coursesError) {
+      console.error('Error deleting batch courses:', coursesError)
+      throw new Error('Failed to delete batch course assignments')
+    }
+
+    // 4. Finally delete the batch itself
+    const { error: batchError } = await supabaseAdmin.from('batches').delete().eq('id', id)
+
+    if (batchError) {
+      console.error('Error deleting batch:', batchError)
       throw new Error('Failed to delete batch')
     }
   } catch (error) {
@@ -581,6 +636,7 @@ export async function getBatchStats(): Promise<{
   inactive: number
   completed: number
   archived: number
+  in_progress: number
 }> {
   try {
     const { data, error } = await supabaseAdmin.from('batches').select('status, is_active')
@@ -589,10 +645,10 @@ export async function getBatchStats(): Promise<{
       // Check if error is due to table not existing
       if (error.code === '42P01' || error.message.includes('does not exist')) {
         console.log('Batches table does not exist yet, returning zero stats')
-        return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0 }
+        return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 }
       }
       console.error('Error fetching batch stats:', error)
-      return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0 }
+      return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 }
     }
 
     const stats = (data || []).reduce(
@@ -603,13 +659,13 @@ export async function getBatchStats(): Promise<{
         }
         return acc
       },
-      { total: 0, active: 0, inactive: 0, completed: 0, archived: 0 },
+      { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 },
     )
 
     return stats
   } catch (error) {
     console.error('Error in getBatchStats:', error)
-    return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0 }
+    return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 }
   }
 }
 
@@ -654,5 +710,229 @@ export async function getStudentBatches(studentId: string): Promise<BatchStudent
   } catch (error) {
     console.error('Error in getStudentBatches:', error)
     return []
+  }
+}
+
+export async function getCompletedBatchStudents(
+  teacherId: string,
+): Promise<BatchStudentWithInfo[]> {
+  try {
+    // Get all completed batches for the teacher
+    const { data: batchData, error: batchError } = await supabaseAdmin
+      .from('batches')
+      .select(
+        `
+        *,
+        gurukul:gurukuls (
+          id,
+          name,
+          slug
+        ),
+        batch_courses!inner (
+          course:courses (
+            id,
+            title,
+            duration_weeks
+          )
+        )
+      `,
+      )
+      .eq('teacher_id', teacherId)
+      .eq('is_active', true)
+      .eq('progress_percentage', 100) // Only batches that are 100% complete
+
+    if (batchError) {
+      console.error('Error fetching completed batches:', batchError)
+      return []
+    }
+
+    if (!batchData || batchData.length === 0) {
+      return []
+    }
+
+    // Get students from all completed batches
+    const allStudentsPromises = batchData.map(async (batch) => {
+      const { data: studentData, error: studentError } = await supabaseAdmin
+        .from('batch_students')
+        .select(
+          `
+          *,
+          student:user_profiles!batch_students_student_id_fkey(
+            id,
+            full_name,
+            email
+          )
+        `,
+        )
+        .eq('batch_id', batch.id)
+        .eq('is_active', true)
+
+      if (studentError) {
+        console.error('Error fetching batch students:', studentError)
+        return []
+      }
+
+      return (studentData || []).map((bs) => ({
+        ...bs,
+        name: bs.student?.full_name || 'Unknown Student',
+        email: bs.student?.email || 'No Email',
+        batch_name: batch.name,
+        course_title: batch.batch_courses?.[0]?.course?.title || 'Unknown Course',
+      }))
+    })
+
+    const allStudentArrays = await Promise.all(allStudentsPromises)
+    const allStudents = allStudentArrays.flat()
+
+    return allStudents
+  } catch (error) {
+    console.error('Error in getCompletedBatchStudents:', error)
+    return []
+  }
+}
+
+export async function getBatchProgress(batchId: string): Promise<BatchProgress[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('batch_progress')
+      .select('*')
+      .eq('batch_id', batchId)
+      .order('week_number', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching batch progress:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error in getBatchProgress:', error)
+    return []
+  }
+}
+
+export async function updateBatchProgress(
+  batchId: string,
+  weekNumber: number,
+  isCompleted: boolean,
+  teacherId: string,
+): Promise<void> {
+  try {
+    // Upsert the progress record
+    const { error: progressError } = await supabaseAdmin.from('batch_progress').upsert(
+      {
+        batch_id: batchId,
+        week_number: weekNumber,
+        is_completed: isCompleted,
+        updated_by: teacherId,
+        // completed_at will be handled by the database trigger
+      },
+      {
+        onConflict: 'batch_id,week_number',
+        ignoreDuplicates: false,
+      },
+    )
+
+    if (progressError) {
+      console.error('Error updating batch progress:', progressError)
+      throw new Error('Failed to update week progress')
+    }
+
+    // Recalculate overall progress and update batch (status updates disabled for now)
+    await updateBatchOverallProgress(batchId)
+  } catch (error) {
+    console.error('Error in updateBatchProgress:', error)
+    throw error
+  }
+}
+
+async function updateBatchOverallProgress(batchId: string): Promise<void> {
+  try {
+    // Get batch info
+    const { data: batch, error: batchError } = await supabaseAdmin
+      .from('batches')
+      .select('*')
+      .eq('id', batchId)
+      .single()
+
+    if (batchError || !batch) {
+      throw new Error('Failed to fetch batch information')
+    }
+
+    // Get course info through batch_courses junction table
+    const { data: batchCoursesData, error: courseError } = await supabaseAdmin
+      .from('batch_courses')
+      .select(
+        `
+        courses (
+          duration_weeks
+        )
+      `,
+      )
+      .eq('batch_id', batchId)
+      .eq('is_active', true)
+      .limit(1)
+
+    if (courseError) {
+      console.error('Error fetching course data:', courseError)
+    }
+
+    const courseData =
+      batchCoursesData && batchCoursesData.length > 0 ? batchCoursesData[0].courses : null
+
+    // Get all progress records for this batch
+    const { data: progressRecords, error: progressError } = await supabaseAdmin
+      .from('batch_progress')
+      .select('*')
+      .eq('batch_id', batchId)
+
+    if (progressError) {
+      throw new Error('Failed to fetch progress records')
+    }
+
+    const totalWeeks =
+      courseData && 'duration_weeks' in courseData ? (courseData.duration_weeks as number) : 0
+    const completedWeeks = progressRecords?.filter((p) => p.is_completed).length || 0
+
+    const progressPercentage = totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0
+
+    // Prepare update data - now safe to update status since trigger is disabled
+    const updateData: {
+      progress_percentage: number
+      updated_at: string
+      status?: 'not_started' | 'active' | 'in_progress' | 'completed'
+    } = {
+      progress_percentage: progressPercentage,
+      updated_at: new Date().toISOString(),
+    }
+
+    // Update status based on progress
+    if (
+      batch.status === 'not_started' ||
+      batch.status === 'active' ||
+      batch.status === 'in_progress'
+    ) {
+      if (progressPercentage === 100) {
+        updateData.status = 'completed'
+      } else if (progressPercentage > 0) {
+        updateData.status = 'in_progress'
+      } else if (batch.status === 'not_started') {
+        updateData.status = 'active'
+      }
+    }
+
+    console.log('Updating batch with data:', updateData)
+    const { error: updateError } = await supabaseAdmin
+      .from('batches')
+      .update(updateData)
+      .eq('id', batchId)
+
+    if (updateError) {
+      console.error('Batch update error:', updateError)
+      throw new Error(`Failed to update batch progress: ${updateError.message}`)
+    }
+  } catch (error) {
+    console.error('Error in updateBatchOverallProgress:', error)
+    throw error
   }
 }

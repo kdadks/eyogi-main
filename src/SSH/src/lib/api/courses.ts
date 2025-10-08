@@ -162,9 +162,12 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
     // Get courses assigned to this teacher via course_assignments
     const { data: assignments, error: assignmentError } = await supabaseAdmin
       .from('course_assignments')
-      .select(`
-        course:courses!inner(*)
-      `)
+      .select(
+        `
+        course_id,
+        courses!inner(*)
+      `,
+      )
       .eq('teacher_id', profile.teacher_id)
       .eq('is_active', true)
 
@@ -179,7 +182,7 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
     }
 
     const courses = assignments
-      .map((assignment) => assignment.course as unknown as Course)
+      .map((assignment) => assignment.courses as unknown as Course)
       .filter(Boolean)
 
     return courses

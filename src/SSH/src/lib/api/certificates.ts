@@ -428,3 +428,91 @@ export async function getAllCertificates(): Promise<Certificate[]> {
     return []
   }
 }
+
+export interface BatchCertificateResult {
+  success: boolean
+  studentId: string
+  error?: string
+}
+
+export async function issueBatchCertificates(
+  batchId: string,
+  templateId?: string,
+): Promise<BatchCertificateResult[]> {
+  try {
+    // Import getBatchStudents dynamically to avoid circular dependency
+    const { getBatchStudents } = await import('./batches')
+
+    // Get all active students in the batch
+    const batchStudents = await getBatchStudents(batchId)
+
+    if (!batchStudents || batchStudents.length === 0) {
+      throw new Error('No active students found in this batch')
+    }
+
+    // Get batch details with course information
+    const { data: batchDetails, error: batchError } = await supabaseAdmin
+      .from('batches')
+      .select('*')
+      .eq('id', batchId)
+      .single()
+
+    if (batchError || !batchDetails) {
+      throw new Error('Failed to fetch batch details')
+    }
+
+    // For each student, check if they have a completed enrollment and issue certificate
+    const certificatePromises = batchStudents.map(async (batchStudent) => {
+      try {
+        // Check if enrollment exists and is completed
+        const { data: existingEnrollment, error: enrollmentError } = await supabaseAdmin
+          .from('enrollments')
+          .select('*')
+          .eq('student_id', batchStudent.student_id)
+          .eq('course_id', batchDetails.course_id)
+          .eq('status', 'completed')
+          .single()
+
+        if (enrollmentError || !existingEnrollment) {
+          throw new Error(
+            `No completed enrollment found for student ${batchStudent.student_id}. Student must be manually enrolled by teacher first.`,
+          )
+        }
+
+        // Issue certificate
+        if (templateId) {
+          await issueCertificateWithTemplate(existingEnrollment.id, templateId)
+        } else {
+          await issueCertificate(existingEnrollment.id)
+        }
+
+        return { success: true, studentId: batchStudent.student_id }
+      } catch (error) {
+        console.error(`Error issuing certificate for student ${batchStudent.student_id}:`, error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+        return { success: false, studentId: batchStudent.student_id, error: errorMessage }
+      }
+    })
+
+    // Wait for all certificate operations to complete
+    const results = await Promise.all(certificatePromises)
+
+    // Update batch to mark certificates as issued
+    const successfulCount = results.filter((r) => r.success).length
+    if (successfulCount > 0) {
+      await supabaseAdmin
+        .from('batches')
+        .update({
+          certificates_issued: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', batchId)
+    }
+
+    return results
+  } catch (error) {
+    console.error('Error in issueBatchCertificates:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    throw new Error(`Failed to issue batch certificates: ${errorMessage}`)
+  }
+}

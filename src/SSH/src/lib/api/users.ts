@@ -20,6 +20,20 @@ export async function getAllUsers(): Promise<Profile[]> {
   }
   return data || []
 }
+
+export async function getAllStudents(): Promise<Profile[]> {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('role', 'student')
+    .not('student_id', 'is', null)
+    .ilike('student_id', 'EYG%')
+    .order('student_id', { ascending: true })
+  if (error) {
+    return []
+  }
+  return data || []
+}
 export async function updateUserRole(userId: string, newRole: Profile['role']): Promise<Profile> {
   const updateData: Partial<Profile> = {
     role: newRole,

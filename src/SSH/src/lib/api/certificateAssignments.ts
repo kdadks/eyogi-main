@@ -16,6 +16,7 @@ export interface CertificateAssignment {
   template_id: string
   gurukul_id?: string
   course_id?: string
+  teacher_id?: string
   created_by: string
   created_at: string
   updated_at: string
@@ -23,12 +24,14 @@ export interface CertificateAssignment {
   template?: CertificateTemplate
   gurukul?: Gurukul
   course?: Course
+  teacher?: User
   creator?: User
 }
 export interface CreateCertificateAssignmentData {
   template_id: string
   gurukul_id?: string
   course_id?: string
+  teacher_id?: string
 }
 // Get all assignments with filters
 export const getCertificateAssignments = async (filters?: {
@@ -45,7 +48,8 @@ export const getCertificateAssignments = async (filters?: {
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
-        creator:profiles(*)
+        teacher:profiles!teacher_id(*),
+        creator:profiles!created_by(*)
       `,
       )
       .order('created_at', { ascending: false })
@@ -76,42 +80,11 @@ export const getCertificateAssignments = async (filters?: {
 // Get assignments for a teacher's courses
 export const getTeacherCertificateAssignments = async (teacherId: string) => {
   try {
-    // Get courses where the teacher is assigned
-    // First try courses table with teacher_id, then try course_assignments table
-    let { data: teacherCourses, error: coursesError } = await supabaseAdmin
-      .from('courses')
-      .select('id, gurukul_id')
-      .eq('teacher_id', teacherId)
-    // If no courses found or teacher_id doesn't exist, try course_assignments table
-    if (coursesError || !teacherCourses || teacherCourses.length === 0) {
-      const { data: assignments, error: assignmentError } = await supabaseAdmin
-        .from('course_assignments')
-        .select(
-          `
-          course_id,
-          courses!inner(id, gurukul_id)
-        `,
-        )
-        .eq('teacher_id', teacherId)
-        .eq('is_active', true)
-      if (!assignmentError && assignments) {
-        teacherCourses = assignments.map((a: CourseAssignmentWithCourse) => ({
-          id: a.courses?.[0]?.id || a.course_id,
-          gurukul_id: a.courses?.[0]?.gurukul_id,
-        }))
-        coursesError = null
-      }
-    }
-    if (coursesError) {
-      return []
-    }
-    if (!teacherCourses || teacherCourses.length === 0) {
-      return []
-    }
-    const courseIds = teacherCourses.map((tc) => tc.id)
-    const gurukulIds = [...new Set(teacherCourses.map((tc) => tc.gurukul_id))]
-    // Get assignments for teacher's courses or gurukuls
-    const { data: assignments, error: assignmentsError } = await supabaseAdmin
+    // Step 1: Get direct teacher assignments
+    let assignments: CertificateAssignment[] = []
+
+    // Try to get direct teacher assignments first
+    const { data: directAssignments, error: directError } = await supabaseAdmin
       .from('certificate_assignments')
       .select(
         `
@@ -119,19 +92,114 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
-        creator:profiles(*)
+        teacher:profiles!teacher_id(*),
+        creator:profiles!created_by(*)
       `,
       )
-      .or(`course_id.in.(${courseIds.join(',')}),gurukul_id.in.(${gurukulIds.join(',')})`)
-    if (assignmentsError) {
-      // If table doesn't exist, return empty array instead of throwing
-      if (assignmentsError.message.includes('relation "certificate_assignments" does not exist')) {
-        return []
-      }
-      return []
+      .eq('teacher_id', teacherId)
+
+    if (!directError && directAssignments) {
+      assignments = [...assignments, ...directAssignments]
     }
-    return (assignments as CertificateAssignment[]) || []
-  } catch {
+
+    // Step 2: Get teacher's courses and their assignments
+    let teacherCourses: { id: string; gurukul_id: string }[] = []
+
+    // First try courses table with teacher_id
+    const { data: coursesData, error: coursesError } = await supabaseAdmin
+      .from('courses')
+      .select('id, gurukul_id')
+      .eq('teacher_id', teacherId)
+
+    if (!coursesError && coursesData) {
+      teacherCourses = [...teacherCourses, ...coursesData]
+    }
+
+    // Then try course_assignments table
+    const { data: courseAssignments, error: assignmentError } = await supabaseAdmin
+      .from('course_assignments')
+      .select(
+        `
+        course_id,
+        courses!inner(id, gurukul_id)
+      `,
+      )
+      .eq('teacher_id', teacherId)
+      .eq('is_active', true)
+
+    if (!assignmentError && courseAssignments) {
+      const additionalCourses = courseAssignments.map((a: CourseAssignmentWithCourse) => ({
+        id: a.courses?.[0]?.id || a.course_id,
+        gurukul_id: a.courses?.[0]?.gurukul_id,
+      }))
+      teacherCourses = [...teacherCourses, ...additionalCourses]
+    }
+
+    // Step 3: Get course-level assignments
+    if (teacherCourses.length > 0) {
+      const courseIds = teacherCourses.map((tc) => tc.id)
+      const { data: courseAssignments, error: courseAssignError } = await supabaseAdmin
+        .from('certificate_assignments')
+        .select(
+          `
+          *,
+          template:certificate_templates(*),
+          gurukul:gurukuls(*),
+          course:courses(*),
+          teacher:profiles!teacher_id(*),
+          creator:profiles!created_by(*)
+        `,
+        )
+        .in('course_id', courseIds)
+        .is('teacher_id', null)
+
+      if (!courseAssignError && courseAssignments) {
+        assignments = [...assignments, ...courseAssignments]
+      }
+    }
+
+    // Step 4: Get gurukul-level assignments
+    if (teacherCourses.length > 0) {
+      const gurukulIds = [...new Set(teacherCourses.map((tc) => tc.gurukul_id).filter(Boolean))]
+      if (gurukulIds.length > 0) {
+        const { data: gurukulAssignments, error: gurukulAssignError } = await supabaseAdmin
+          .from('certificate_assignments')
+          .select(
+            `
+            *,
+            template:certificate_templates(*),
+            gurukul:gurukuls(*),
+            course:courses(*),
+            teacher:profiles!teacher_id(*),
+            creator:profiles!created_by(*)
+          `,
+          )
+          .in('gurukul_id', gurukulIds)
+          .is('course_id', null)
+          .is('teacher_id', null)
+
+        if (!gurukulAssignError && gurukulAssignments) {
+          assignments = [...assignments, ...gurukulAssignments]
+        }
+      }
+    }
+
+    // Remove duplicates based on template_id and assignment type
+    const uniqueAssignments = assignments.filter(
+      (assignment, index, self) =>
+        index ===
+        self.findIndex(
+          (a) =>
+            a.template_id === assignment.template_id &&
+            a.gurukul_id === assignment.gurukul_id &&
+            a.course_id === assignment.course_id &&
+            a.teacher_id === assignment.teacher_id,
+        ),
+    )
+
+    return uniqueAssignments
+  } catch (error) {
+    console.error('Error getting teacher certificate assignments:', error)
     return []
   }
 }
@@ -140,14 +208,86 @@ export const createCertificateAssignment = async (
   assignmentData: CreateCertificateAssignmentData,
   createdByUserId: string,
 ) => {
-  // Validate that at least one of gurukul_id or course_id is provided
-  if (!assignmentData.gurukul_id && !assignmentData.course_id) {
-    throw new Error('Either gurukul_id or course_id must be provided')
+  // Validate that at least one of gurukul_id, course_id, or teacher_id is provided
+  if (!assignmentData.gurukul_id && !assignmentData.course_id && !assignmentData.teacher_id) {
+    throw new Error('Either gurukul_id, course_id, or teacher_id must be provided')
   }
+
+  // Check for duplicate assignment with detailed info
+  const existingQuery = supabaseAdmin
+    .from('certificate_assignments')
+    .select(
+      `
+      id,
+      created_at,
+      template:certificate_templates(name),
+      gurukul:gurukuls(name),
+      course:courses(title),
+      teacher:profiles!teacher_id(full_name),
+      creator:profiles!created_by(full_name)
+    `,
+    )
+    .eq('template_id', assignmentData.template_id)
+
+  if (assignmentData.gurukul_id) {
+    existingQuery.eq('gurukul_id', assignmentData.gurukul_id)
+  } else {
+    existingQuery.is('gurukul_id', null)
+  }
+
+  if (assignmentData.course_id) {
+    existingQuery.eq('course_id', assignmentData.course_id)
+  } else {
+    existingQuery.is('course_id', null)
+  }
+
+  if (assignmentData.teacher_id) {
+    existingQuery.eq('teacher_id', assignmentData.teacher_id)
+  } else {
+    existingQuery.is('teacher_id', null)
+  }
+
+  const { data: existing } = await existingQuery.single()
+
+  if (existing) {
+    // Type assertion for the complex joined data
+    interface ExistingAssignment {
+      template?: { name: string }
+      teacher?: { full_name: string }
+      course?: { title: string }
+      gurukul?: { name: string }
+      creator?: { full_name: string }
+      created_at: string
+    }
+
+    const existingData = existing as unknown as ExistingAssignment
+    const templateName = existingData.template?.name || 'Unknown Template'
+    let targetInfo = ''
+
+    if (assignmentData.teacher_id && existingData.teacher) {
+      targetInfo = `teacher "${existingData.teacher.full_name}"`
+    } else if (assignmentData.course_id && existingData.course) {
+      targetInfo = `course "${existingData.course.title}"`
+    } else if (assignmentData.gurukul_id && existingData.gurukul) {
+      targetInfo = `gurukul "${existingData.gurukul.name}"`
+    }
+
+    const createdBy = existingData.creator?.full_name || 'Unknown User'
+    const createdDate = existing.created_at
+      ? new Date(existing.created_at).toLocaleDateString()
+      : 'Unknown Date'
+
+    throw new Error(
+      `Template "${templateName}" is already assigned to ${targetInfo}. ` +
+        `This assignment was created by ${createdBy} on ${createdDate}.`,
+    )
+  }
+
   const insertData = {
     template_id: assignmentData.template_id,
     gurukul_id: assignmentData.gurukul_id || null,
     course_id: assignmentData.course_id || null,
+    teacher_id: assignmentData.teacher_id || null,
     created_by: createdByUserId,
   }
   const { data, error } = await supabaseAdmin
@@ -159,7 +299,8 @@ export const createCertificateAssignment = async (
         template:certificate_templates(*),
         gurukul:gurukuls(*),
         course:courses(*),
-        creator:profiles(*)
+        teacher:profiles!teacher_id(*),
+        creator:profiles!created_by(*)
       `,
     )
     .single()
@@ -249,6 +390,31 @@ export const getAvailableCourses = async (gurukulId?: string) => {
       title: c.title,
       gurukul_id: c.gurukul_id,
       status: 'active', // Assuming all returned courses are active
+    }))
+  } catch (_error) {
+    throw _error
+  }
+}
+
+// Get available teachers for assignment
+export const getAvailableTeachers = async () => {
+  try {
+    const { data: teachers, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, email, role')
+      .eq('role', 'teacher')
+      .eq('is_active', true)
+      .order('full_name')
+
+    if (error) {
+      throw error
+    }
+
+    return teachers.map((teacher) => ({
+      id: teacher.id,
+      name: teacher.full_name,
+      email: teacher.email,
+      status: 'active',
     }))
   } catch (_error) {
     throw _error

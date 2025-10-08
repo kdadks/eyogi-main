@@ -11,6 +11,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void
   onCancel: () => void
   variant?: 'danger' | 'warning' | 'info'
+  loading?: boolean
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -22,6 +23,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
   variant = 'danger',
+  loading = false,
 }) => {
   if (!isOpen) return null
 
@@ -46,11 +48,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <CardContent className="space-y-4">
             <p className="text-gray-600">{message}</p>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={onCancel}>
+              <Button variant="outline" onClick={onCancel} disabled={loading}>
                 {cancelText}
               </Button>
-              <Button variant={getButtonVariant()} onClick={onConfirm}>
-                {confirmText}
+              <Button variant={getButtonVariant()} onClick={onConfirm} disabled={loading}>
+                {loading ? 'Processing...' : confirmText}
               </Button>
             </div>
           </CardContent>

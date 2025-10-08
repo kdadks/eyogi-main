@@ -10,31 +10,41 @@ import { Course, Enrollment } from '@/types'
 import { getTeacherCourses, createCourse } from '@/lib/api/courses'
 import {
   getTeacherEnrollments,
-  updateEnrollmentStatus,
-  bulkUpdateEnrollments,
+  enrollInCourse,
+  enrollStudentByTeacher,
+  getPendingEnrollments,
+  approveEnrollment,
+  rejectEnrollment,
+  getStudentsEnrolledInCourse,
 } from '@/lib/api/enrollments'
 import {
-  issueCertificate,
   bulkIssueCertificates,
   issueCertificateWithTemplate,
+  issueBatchCertificates,
 } from '@/lib/api/certificates'
 import {
   getTeacherCertificateAssignments,
   CertificateAssignment,
 } from '@/lib/api/certificateAssignments'
 import { getGurukuls } from '@/lib/api/gurukuls'
-import { getUserProfile } from '@/lib/api/users'
-import { getBatches, getBatchStats, deleteBatch } from '@/lib/api/batches'
-import { Batch } from '@/types'
+import { getUserProfile, getAllStudents } from '@/lib/api/users'
+import {
+  getBatches,
+  getBatchStats,
+  deleteBatch,
+  updateBatchProgress,
+  getCompletedBatchStudents,
+  getBatchStudents,
+  createBatch,
+  assignStudentToBatch,
+  removeStudentFromBatch,
+  updateBatch,
+  assignCourseToBatch,
+} from '@/lib/api/batches'
+import { Batch, BatchStudentWithInfo } from '@/types'
 import { getCountryName, getStateName } from '@/lib/address-utils'
 import type { Database } from '@/lib/supabase'
-import {
-  formatCurrency,
-  formatDate,
-  getStatusColor,
-  getLevelColor,
-  generateCourseUrl,
-} from '@/lib/utils'
+import { formatCurrency, formatDate, generateCourseUrl } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -48,6 +58,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   XCircleIcon,
+  XMarkIcon,
   EyeIcon,
   ChartBarIcon,
   BookOpenIcon,
@@ -68,6 +79,7 @@ import {
   Cog6ToothIcon,
   QueueListIcon,
   TrashIcon,
+  PlayIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
@@ -93,6 +105,7 @@ interface ProfileWithAddress {
   id: string
   email: string
   full_name: string
+  student_id?: string
   phone?: string
   address_line_1?: string
   address_line_2?: string
@@ -105,11 +118,13 @@ export default function TeacherDashboard() {
   const { user, canAccess } = useWebsiteAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
+  const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [certificateAssignments, setCertificateAssignments] = useState<CertificateAssignment[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
+  const [allStudents, setAllStudents] = useState<ProfileWithAddress[]>([])
+  const [completedBatchStudents, setCompletedBatchStudents] = useState<BatchStudentWithInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedEnrollments, setSelectedEnrollments] = useState<string[]>([])
   const [showCreateCourse, setShowCreateCourse] = useState(false)
   const [activeView, setActiveView] = useState<
     'overview' | 'courses' | 'students' | 'certificates' | 'batches' | 'analytics' | 'settings'
@@ -118,7 +133,21 @@ export default function TeacherDashboard() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [showIssuanceModal, setShowIssuanceModal] = useState(false)
   const [selectedEnrollmentForCert, setSelectedEnrollmentForCert] = useState<string | null>(null)
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
+  const [selectedCertificateEnrollment, setSelectedCertificateEnrollment] =
+    useState<Enrollment | null>(null)
+  const [showPdfModal, setShowPdfModal] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [showBulkTemplateModal, setShowBulkTemplateModal] = useState(false)
+  const [bulkEligibleEnrollments, setBulkEligibleEnrollments] = useState<string[]>([])
+  const [showBatchCertificateModal, setShowBatchCertificateModal] = useState(false)
+  const [selectedBatchForCertificate, setSelectedBatchForCertificate] = useState<string | null>(
+    null,
+  )
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false)
+  const [selectedStudentForEnrollment, setSelectedStudentForEnrollment] =
+    useState<ProfileWithAddress | null>(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const notificationRef = useRef<HTMLDivElement>(null)
 
@@ -182,20 +211,35 @@ export default function TeacherDashboard() {
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
   const loadDashboardData = async () => {
     try {
-      const [coursesData, enrollmentsData, gurukulData, assignmentsData, batchesData] =
-        await Promise.all([
-          getTeacherCourses(user!.id),
-          getTeacherEnrollments(user!.id),
-          getGurukuls(),
-          getTeacherCertificateAssignments(user!.id),
-          getBatches({ teacher_id: user!.id, is_active: true }),
-        ])
+      const [
+        coursesData,
+        enrollmentsData,
+        pendingEnrollmentsData,
+        gurukulData,
+        assignmentsData,
+        batchesData,
+        studentsData,
+        completedBatchStudentsData,
+      ] = await Promise.all([
+        getTeacherCourses(user!.id),
+        getTeacherEnrollments(user!.id),
+        getPendingEnrollments(user!.id),
+        getGurukuls(),
+        getTeacherCertificateAssignments(user!.id),
+        getBatches({ teacher_id: user!.id, is_active: true }),
+        getAllStudents(),
+        getCompletedBatchStudents(user!.id),
+      ])
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
+      setPendingEnrollments(pendingEnrollmentsData)
       setGurukuls(gurukulData)
       setCertificateAssignments(assignmentsData)
       setBatches(batchesData)
-    } catch {
+      setAllStudents(studentsData as ProfileWithAddress[])
+      setCompletedBatchStudents(completedBatchStudentsData)
+    } catch (error) {
+      console.error('Dashboard load error:', error)
       toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
@@ -252,47 +296,7 @@ export default function TeacherDashboard() {
       toast.error('Failed to create course')
     }
   }
-  const handleApproveEnrollment = async (enrollmentId: string) => {
-    try {
-      await updateEnrollmentStatus(enrollmentId, 'approved')
-      await loadDashboardData()
-      toast.success('Enrollment approved!')
-    } catch {
-      toast.error('Failed to approve enrollment')
-    }
-  }
-  const handleRejectEnrollment = async (enrollmentId: string) => {
-    try {
-      await updateEnrollmentStatus(enrollmentId, 'rejected')
-      await loadDashboardData()
-      toast.success('Enrollment rejected')
-    } catch {
-      toast.error('Failed to reject enrollment')
-    }
-  }
-  const handleBulkApprove = async () => {
-    if (selectedEnrollments.length === 0) {
-      toast.error('Please select enrollments to approve')
-      return
-    }
-    try {
-      await bulkUpdateEnrollments(selectedEnrollments, 'approved')
-      await loadDashboardData()
-      setSelectedEnrollments([])
-      toast.success(`${selectedEnrollments.length} enrollments approved!`)
-    } catch {
-      toast.error('Failed to approve enrollments')
-    }
-  }
-  const handleIssueCertificate = async (enrollmentId: string) => {
-    try {
-      await issueCertificate(enrollmentId)
-      await loadDashboardData()
-      toast.success('Certificate issued successfully!')
-    } catch {
-      toast.error('Failed to issue certificate')
-    }
-  }
+
   const handleIssueCertificateWithTemplate = async (enrollmentId: string, templateId: string) => {
     try {
       await issueCertificateWithTemplate(enrollmentId, templateId)
@@ -309,20 +313,68 @@ export default function TeacherDashboard() {
     setSelectedEnrollmentForCert(enrollmentId)
     setShowIssuanceModal(true)
   }
-  const handleBulkIssueCertificates = async () => {
-    const eligibleEnrollments = enrollments.filter(
-      (e) => e.status === 'completed' && !e.certificate_issued,
-    )
-    if (eligibleEnrollments.length === 0) {
-      toast.error('No eligible students for certificate issuance')
+
+  const openEnrollmentModal = (student: ProfileWithAddress) => {
+    setSelectedStudentForEnrollment(student)
+    setShowEnrollmentModal(true)
+  }
+
+  const handleBulkIssueCertificatesWithTemplate = async (templateId: string) => {
+    if (bulkEligibleEnrollments.length === 0) {
+      toast.error('No eligible students selected')
       return
     }
+
     try {
-      await bulkIssueCertificates(eligibleEnrollments.map((e) => e.id))
+      // Issue certificates with the selected template
+      await Promise.all(
+        bulkEligibleEnrollments.map((enrollmentId) =>
+          issueCertificateWithTemplate(enrollmentId, templateId),
+        ),
+      )
       await loadDashboardData()
-      toast.success(`${eligibleEnrollments.length} certificates issued!`)
-    } catch {
+      toast.success(`${bulkEligibleEnrollments.length} certificates issued with selected template!`)
+      setShowBulkTemplateModal(false)
+      setBulkEligibleEnrollments([])
+      setSelectedTemplate(null)
+    } catch (error) {
+      console.error('Error issuing bulk certificates:', error)
       toast.error('Failed to issue certificates')
+    }
+  }
+
+  const handleIndividualCertificate = (student: BatchStudentWithInfo) => {
+    console.log('Issuing certificate for student:', student)
+    // Implementation for individual certificate issuance
+  }
+
+  const handleIssueBatchCertificates = async (templateId?: string) => {
+    if (!selectedBatchForCertificate) {
+      toast.error('No batch selected')
+      return
+    }
+
+    try {
+      const results = await issueBatchCertificates(selectedBatchForCertificate, templateId)
+
+      const successCount = results.filter((r) => r.success).length
+      const failCount = results.filter((r) => !r.success).length
+
+      if (successCount > 0) {
+        toast.success(`${successCount} certificates issued successfully!`)
+      }
+
+      if (failCount > 0) {
+        toast.error(`${failCount} certificates failed to issue`)
+      }
+
+      await loadDashboardData()
+      setShowBatchCertificateModal(false)
+      setSelectedBatchForCertificate(null)
+      setSelectedTemplate(null)
+    } catch (error) {
+      console.error('Error issuing batch certificates:', error)
+      toast.error('Failed to issue batch certificates')
     }
   }
   const addLearningOutcome = () => {
@@ -346,12 +398,19 @@ export default function TeacherDashboard() {
     totalStudents: new Set(enrollments.map((e) => e.student_id).filter(Boolean)).size,
     // Total enrollments for reference
     totalEnrollments: enrollments.length,
-    pendingApprovals: enrollments.filter((e) => e.status === 'pending').length,
+    // Total enrolled (approved + completed enrollments)
+    totalEnrolled: enrollments.filter((e) => e.status === 'approved' || e.status === 'completed')
+      .length,
+    // Pending enrollments that need approval
+    pendingApprovals: pendingEnrollments.length,
     completedCourses: enrollments.filter((e) => e.status === 'completed').length,
     certificatesIssued: enrollments.filter((e) => e.certificate_issued).length,
     pendingCertificates: enrollments.filter(
       (e) => e.status === 'completed' && !e.certificate_issued,
     ).length,
+    // Batch-centric certificate management
+    completedBatches: batches.filter((batch) => batch.status === 'completed').length,
+    batchesReadyForCertificates: completedBatchStudents.length,
     // Calculate revenue from paid enrollments only - handles currency conversion and edge cases
     totalRevenue: enrollments
       .filter((e) => e.payment_status === 'paid' && e.course?.price && e.course.price > 0)
@@ -1112,7 +1171,7 @@ export default function TeacherDashboard() {
                 </div>
                 <Button
                   onClick={() => setShowCreateCourse(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                  className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Create New Course
@@ -1128,7 +1187,7 @@ export default function TeacherDashboard() {
                     </p>
                     <Button
                       onClick={() => setShowCreateCourse(true)}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600"
+                      className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
                     >
                       <PlusIcon className="h-5 w-5 mr-2" />
                       Create Your First Course
@@ -1139,6 +1198,10 @@ export default function TeacherDashboard() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => {
                     const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
+                    // Count unique students enrolled in this course
+                    const uniqueStudentCount = new Set(
+                      courseEnrollments.map((e) => e.student_id).filter(Boolean),
+                    ).size
                     const pendingCertificates = courseEnrollments.filter(
                       (e) => e.status === 'completed' && !e.certificate_issued,
                     ).length
@@ -1147,24 +1210,31 @@ export default function TeacherDashboard() {
                         key={course.id}
                         className="border-0 shadow-xl bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group"
                       >
-                        <div className="h-32 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
+                        <div className="h-20 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
                           <div className="absolute inset-0 bg-black/20"></div>
-                          <div className="absolute bottom-4 left-4 text-white">
-                            <Badge className={`${getLevelColor(course.level)} mb-2`}>
-                              {course.level}
-                            </Badge>
-                            <p className="text-sm opacity-90">{course.course_number}</p>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <p className="text-white text-lg font-semibold">
+                              {course.course_number}
+                            </p>
                           </div>
                           {pendingCertificates > 0 && (
-                            <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
                               {pendingCertificates} Certificates
                             </div>
                           )}
                         </div>
                         <CardContent className="p-6">
-                          <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors">
-                            {course.title}
-                          </h3>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-bold text-lg group-hover:text-blue-600 transition-colors">
+                              {course.title}
+                            </h3>
+                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded border border-blue-200">
+                              {course.level
+                                ? course.level.charAt(0).toUpperCase() +
+                                  course.level.slice(1).toLowerCase()
+                                : 'Basic'}
+                            </span>
+                          </div>
                           <div
                             className="text-gray-600 text-sm mb-4 line-clamp-2"
                             dangerouslySetInnerHTML={{ __html: course.description }}
@@ -1172,7 +1242,7 @@ export default function TeacherDashboard() {
                           <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                             <div className="flex items-center space-x-2">
                               <UsersIcon className="h-4 w-4 text-gray-400" />
-                              <span>{courseEnrollments.length} students</span>
+                              <span>{uniqueStudentCount} students</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <ClockIcon className="h-4 w-4 text-gray-400" />
@@ -1192,7 +1262,11 @@ export default function TeacherDashboard() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <Link to={generateCourseUrl(course)} className="flex-1">
-                              <Button variant="outline" size="sm" className="w-full">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                              >
                                 <EyeIcon className="h-4 w-4 mr-1" />
                                 View Details
                               </Button>
@@ -1212,7 +1286,7 @@ export default function TeacherDashboard() {
                                     bulkIssueCertificates(eligibleEnrollments.map((e) => e.id))
                                   }
                                 }}
-                                className="bg-gradient-to-r from-green-500 to-green-600"
+                                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
                               >
                                 <GiftIcon className="h-4 w-4 mr-1" />
                                 Issue ({pendingCertificates})
@@ -1227,7 +1301,7 @@ export default function TeacherDashboard() {
               )}
             </motion.div>
           )}
-          {/* Students View */}
+          {/* Student & Batch Enrollment Management */}
           {activeView === 'students' && (
             <motion.div
               key="students"
@@ -1239,207 +1313,260 @@ export default function TeacherDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Student Management</h2>
-                  <p className="text-gray-600">Review enrollments and manage student progress</p>
-                </div>
-                <div className="flex gap-3">
-                  <Link to="/dashboard/teacher/students">
-                    <Button variant="outline">
-                      <UserGroupIcon className="h-5 w-5 mr-2" />
-                      Manage Students
-                    </Button>
-                  </Link>
-                  {selectedEnrollments.length > 0 && (
-                    <Button
-                      onClick={handleBulkApprove}
-                      className="bg-gradient-to-r from-green-500 to-green-600"
-                    >
-                      <CheckCircleIcon className="h-5 w-5 mr-2" />
-                      Approve Selected ({selectedEnrollments.length})
-                    </Button>
-                  )}
+                  <h2 className="text-2xl font-bold text-gray-900">Student & Batch Enrollment</h2>
+                  <p className="text-gray-600">
+                    Manage registered students and enroll them in batches
+                  </p>
                 </div>
               </div>
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+              {/* Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                  <CardContent className="p-4 text-center">
-                    <UserGroupIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-blue-900">{stats.totalStudents}</div>
-                    <div className="text-sm text-blue-700">Total Students</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-                  <CardContent className="p-4 text-center">
-                    <ClockIcon className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-orange-900">
-                      {stats.pendingApprovals}
-                    </div>
-                    <div className="text-sm text-orange-700">Pending Approvals</div>
+                  <CardContent className="p-6 text-center">
+                    <UserGroupIcon className="h-10 w-10 text-blue-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-blue-900">{allStudents.length}</div>
+                    <div className="text-sm text-blue-700">Registered Students</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                  <CardContent className="p-4 text-center">
-                    <CheckCircleIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-green-900">
-                      {enrollments.filter((e) => e.status === 'approved').length}
+                  <CardContent className="p-6 text-center">
+                    <CheckCircleIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-green-900">{stats.totalEnrolled}</div>
+                    <div className="text-sm text-green-700">Total Enrolled</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+                  <CardContent className="p-6 text-center">
+                    <ClockIcon className="h-10 w-10 text-yellow-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-yellow-900">
+                      {stats.pendingApprovals}
                     </div>
-                    <div className="text-sm text-green-700">Active Students</div>
+                    <div className="text-sm text-yellow-700">Pending Approvals</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-200">
+                  <CardContent className="p-6 text-center">
+                    <TrophyIcon className="h-10 w-10 text-indigo-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-indigo-900">
+                      {enrollments.filter((e) => e.status === 'completed').length}
+                    </div>
+                    <div className="text-sm text-indigo-700">Completed</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                  <CardContent className="p-4 text-center">
-                    <TrophyIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-purple-900">
-                      {stats.completedCourses}
-                    </div>
-                    <div className="text-sm text-purple-700">Completed</div>
+                  <CardContent className="p-6 text-center">
+                    <UserIcon className="h-10 w-10 text-purple-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-purple-900">{stats.totalBatches}</div>
+                    <div className="text-sm text-purple-700">Active Batches</div>
                   </CardContent>
                 </Card>
               </div>
-              {/* Enrollments Table */}
+
+              {/* Pending Enrollment Approvals */}
+              {pendingEnrollments.length > 0 && (
+                <Card className="border-0 shadow-xl bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
+                  <CardHeader>
+                    <div className="flex items-center space-x-2">
+                      <ClockIcon className="h-6 w-6 text-yellow-600" />
+                      <h3 className="text-lg font-semibold text-yellow-900">
+                        Pending Enrollment Approvals
+                      </h3>
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                        {pendingEnrollments.length} pending
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {pendingEnrollments.map((enrollment) => (
+                        <div
+                          key={enrollment.id}
+                          className="flex items-center justify-between p-4 bg-white rounded-lg border border-yellow-200 shadow-sm"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <UserIcon className="h-5 w-5 text-gray-400" />
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {enrollment.student?.full_name || 'Unknown Student'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Course: {enrollment.courses?.title || 'Unknown Course'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await approveEnrollment(enrollment.id)
+                                  toast.success('Enrollment approved!')
+                                  loadDashboardData()
+                                } catch (error) {
+                                  console.error('Error approving enrollment:', error)
+                                  toast.error('Failed to approve enrollment')
+                                }
+                              }}
+                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                              <CheckCircleIcon className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  await rejectEnrollment(enrollment.id)
+                                  toast.success('Enrollment rejected')
+                                  loadDashboardData()
+                                } catch (error) {
+                                  console.error('Error rejecting enrollment:', error)
+                                  toast.error('Failed to reject enrollment')
+                                }
+                              }}
+                              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                            >
+                              <XCircleIcon className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Registered Students */}
               <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  {enrollments.length === 0 ? (
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <UserGroupIcon className="h-6 w-6 text-blue-600" />
+                    <h3 className="text-lg font-semibold">Registered Students</h3>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {allStudents.length === 0 ? (
                     <div className="text-center py-12">
                       <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No students yet</h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No registered students
+                      </h3>
                       <p className="text-gray-600">
-                        Students will appear here once they enroll in your courses.
+                        Students with EYG IDs will appear here once they register.
                       </p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-200">
-                            <th className="text-left py-3 px-4">
-                              <input
-                                type="checkbox"
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedEnrollments(
-                                      enrollments
-                                        .filter((e) => e.status === 'pending')
-                                        .map((e) => e.id),
-                                    )
-                                  } else {
-                                    setSelectedEnrollments([])
-                                  }
-                                }}
-                                className="rounded border-gray-300"
-                              />
-                            </th>
-                            <th className="text-left py-3 px-4 font-semibold">Student</th>
-                            <th className="text-left py-3 px-4 font-semibold">Course</th>
-                            <th className="text-left py-3 px-4 font-semibold">Status</th>
-                            <th className="text-left py-3 px-4 font-semibold">Enrolled</th>
-                            <th className="text-left py-3 px-4 font-semibold">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {enrollments.map((enrollment) => (
-                            <tr
-                              key={enrollment.id}
-                              className="border-b border-gray-100 hover:bg-gray-50/50"
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {allStudents.map((student) => {
+                        const studentEnrollments = enrollments.filter(
+                          (e) => e.student_id === student.id,
+                        )
+                        const activeEnrollments = studentEnrollments.filter(
+                          (e) => e.status === 'approved' || e.status === 'completed',
+                        )
+
+                        return (
+                          <div
+                            key={student.id}
+                            className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200"
+                          >
+                            <div className="flex items-center space-x-3 mb-3">
+                              <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold">
+                                  {student.full_name?.charAt(0) || 'S'}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-blue-900">{student.full_name}</p>
+                                <p className="text-sm text-blue-700">{student.student_id}</p>
+                              </div>
+                            </div>
+                            <div className="text-xs text-blue-600 mb-3 space-y-1">
+                              <div>Email: {student.email}</div>
+                              <div>Enrollments: {activeEnrollments.length}</div>
+                              <div>
+                                Completed:{' '}
+                                {studentEnrollments.filter((e) => e.status === 'completed').length}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEnrollmentModal(student)}
+                              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
                             >
-                              <td className="py-3 px-4">
-                                {enrollment.status === 'pending' && (
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedEnrollments.includes(enrollment.id)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedEnrollments([
-                                          ...selectedEnrollments,
-                                          enrollment.id,
-                                        ])
-                                      } else {
-                                        setSelectedEnrollments(
-                                          selectedEnrollments.filter((id) => id !== enrollment.id),
-                                        )
-                                      }
-                                    }}
-                                    className="rounded border-gray-300"
-                                  />
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center space-x-3">
-                                  <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm font-bold">
-                                      {enrollment.student?.full_name?.charAt(0) || 'S'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <p className="font-medium">{enrollment.student?.full_name}</p>
-                                    <p className="text-sm text-gray-500">
-                                      {enrollment.student?.email}
-                                    </p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <div>
-                                  <p className="font-medium">{enrollment.course?.title}</p>
-                                  <p className="text-sm text-gray-500">
-                                    {enrollment.course?.course_number}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                <Badge className={getStatusColor(enrollment.status)}>
-                                  {enrollment.status}
-                                </Badge>
-                              </td>
-                              <td className="py-3 px-4 text-sm text-gray-600">
-                                {formatDate(enrollment.enrolled_at)}
-                              </td>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center space-x-2">
-                                  {enrollment.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleApproveEnrollment(enrollment.id)}
-                                        className="bg-green-600 hover:bg-green-700"
-                                      >
-                                        <CheckCircleIcon className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRejectEnrollment(enrollment.id)}
-                                        className="text-red-600 border-red-300 hover:bg-red-50"
-                                      >
-                                        <XCircleIcon className="h-4 w-4" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  {enrollment.status === 'completed' &&
-                                    !enrollment.certificate_issued && (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => openIssuanceModal(enrollment.id)}
-                                        className="bg-gradient-to-r from-purple-500 to-purple-600"
-                                      >
-                                        <TrophyIcon className="h-4 w-4 mr-1" />
-                                        Issue Certificate
-                                      </Button>
-                                    )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                              <UserIcon className="h-4 w-4 mr-1" />
+                              Manage Enrollments
+                            </Button>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </CardContent>
               </Card>
+
+              {/* Batch Enrollment Helper */}
+              <Card className="border-0 shadow-xl bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <QueueListIcon className="h-6 w-6 text-purple-600" />
+                    <h3 className="text-lg font-semibold text-purple-900">
+                      Quick Enrollment Guide
+                    </h3>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 text-sm text-purple-800">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        1
+                      </div>
+                      <div>
+                        <p className="font-medium">Create or select a batch</p>
+                        <p className="text-purple-700">
+                          Go to Batches tab to create new batches for your courses
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        2
+                      </div>
+                      <div>
+                        <p className="font-medium">Enroll students manually</p>
+                        <p className="text-purple-700">
+                          Add registered students to batches - only enrolled students can receive
+                          certificates
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        3
+                      </div>
+                      <div>
+                        <p className="font-medium">Complete batch and issue certificates</p>
+                        <p className="text-purple-700">
+                          Mark batch as completed when course is finished, then issue certificates
+                          to all students
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           )}
-          {/* Certificates View */}
+          {/* Batch Certificate Management View */}
           {activeView === 'certificates' && (
             <motion.div
               key="certificates"
@@ -1451,44 +1578,36 @@ export default function TeacherDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Certificate Management</h2>
-                  <p className="text-gray-600">Issue and manage student certificates</p>
+                  <h2 className="text-2xl font-bold text-gray-900">Batch Certificate Management</h2>
+                  <p className="text-gray-600">Issue certificates to completed batches</p>
                 </div>
-                {stats.pendingCertificates > 0 && (
-                  <Button
-                    onClick={handleBulkIssueCertificates}
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
-                  >
-                    <TrophyIcon className="h-5 w-5 mr-2" />
-                    Issue All Eligible ({stats.pendingCertificates})
-                  </Button>
-                )}
               </div>
+
               {/* Certificate Stats */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                   <CardContent className="p-6 text-center">
-                    <TrophyIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-green-900">
-                      {stats.certificatesIssued}
-                    </div>
-                    <div className="text-sm text-green-700">Certificates Issued</div>
+                    <UserGroupIcon className="h-10 w-10 text-blue-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-blue-900">{stats.completedBatches}</div>
+                    <div className="text-sm text-blue-700">Completed Batches</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
                   <CardContent className="p-6 text-center">
                     <ClockIcon className="h-10 w-10 text-orange-600 mx-auto mb-3" />
                     <div className="text-3xl font-bold text-orange-900">
-                      {stats.pendingCertificates}
+                      {stats.batchesReadyForCertificates}
                     </div>
-                    <div className="text-sm text-orange-700">Pending Certificates</div>
+                    <div className="text-sm text-orange-700">Students Ready for Certificates</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
                   <CardContent className="p-6 text-center">
-                    <CheckCircleIcon className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-blue-900">{stats.completedCourses}</div>
-                    <div className="text-sm text-blue-700">Completed Courses</div>
+                    <TrophyIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
+                    <div className="text-3xl font-bold text-green-900">
+                      {stats.certificatesIssued}
+                    </div>
+                    <div className="text-sm text-green-700">Total Certificates Issued</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
@@ -1501,204 +1620,119 @@ export default function TeacherDashboard() {
                   </CardContent>
                 </Card>
               </div>
-              {/* Available Certificate Templates */}
-              {certificateAssignments.length > 0 && (
-                <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
-                  <CardHeader>
-                    <div className="flex items-center space-x-2">
-                      <DocumentTextIcon className="h-6 w-6 text-purple-600" />
-                      <h3 className="text-lg font-semibold">Available Certificate Templates</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {certificateAssignments.map((assignment) => {
-                        const assignedCourse = courses.find((c) => c.id === assignment.course_id)
-                        const assignedGurukul = gurukuls.find((g) => g.id === assignment.gurukul_id)
-                        return (
-                          <div
-                            key={assignment.id}
-                            className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
-                                <h4 className="font-semibold text-purple-900">
-                                  {assignment.template?.name || 'Certificate Template'}
-                                </h4>
-                                <p className="text-sm text-purple-700">
-                                  {assignment.template?.type || 'Student'} Certificate
-                                </p>
-                              </div>
-                              <Badge className="bg-purple-600 text-white">
-                                {assignment.course_id ? 'Course' : 'Gurukul'}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-purple-600 mb-3">
-                              <p>
-                                <strong>Assigned to:</strong>
-                              </p>
-                              {assignedCourse ? (
-                                <p>📚 {assignedCourse.title}</p>
-                              ) : assignedGurukul ? (
-                                <p>🏛️ {assignedGurukul.name} (All Courses)</p>
-                              ) : (
-                                <p>Unknown Assignment</p>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-purple-500">Active Template</span>
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-purple-600 border-purple-300 hover:bg-purple-50"
-                                  onClick={() => {
-                                    // TODO: Implement template preview
-                                    toast('Template preview coming soon!')
-                                  }}
-                                >
-                                  <EyeIcon className="h-4 w-4 mr-1" />
-                                  Preview
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="bg-purple-600 text-white hover:bg-purple-700"
-                                  onClick={() => {
-                                    // Find eligible students for this template
-                                    const templateCourseEnrollments = assignedCourse
-                                      ? enrollments.filter(
-                                          (e) =>
-                                            e.course_id === assignedCourse.id &&
-                                            e.status === 'completed' &&
-                                            !e.certificate_issued,
-                                        )
-                                      : enrollments.filter(
-                                          (e) =>
-                                            e.status === 'completed' &&
-                                            !e.certificate_issued &&
-                                            courses.some(
-                                              (c) =>
-                                                c.id === e.course_id &&
-                                                c.gurukul_id === assignment.gurukul_id,
-                                            ),
-                                        )
-                                    if (templateCourseEnrollments.length === 0) {
-                                      toast('No eligible students for this template')
-                                    } else if (templateCourseEnrollments.length === 1) {
-                                      setSelectedTemplate(assignment.template_id)
-                                      openIssuanceModal(templateCourseEnrollments[0].id)
-                                    } else {
-                                      toast(
-                                        `${templateCourseEnrollments.length} students eligible for this template`,
-                                      )
-                                    }
-                                  }}
-                                >
-                                  <TrophyIcon className="h-4 w-4 mr-1" />
-                                  Use Template
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              {/* Pending Certificates */}
-              {stats.pendingCertificates > 0 && (
+
+              {/* Students Ready for Certificates */}
+              {completedBatchStudents.length > 0 ? (
                 <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
                   <CardHeader>
                     <div className="flex items-center space-x-2">
                       <ClockIcon className="h-6 w-6 text-orange-600" />
-                      <h3 className="text-lg font-semibold">Pending Certificates</h3>
+                      <h3 className="text-lg font-semibold">
+                        Students Ready for Certificate Issuance
+                      </h3>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {enrollments
-                        .filter((e) => e.status === 'completed' && !e.certificate_issued)
-                        .map((enrollment) => (
-                          <div
-                            key={enrollment.id}
-                            className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200"
-                          >
-                            <div className="flex items-center space-x-3 mb-3">
-                              <div className="h-10 w-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                                <span className="text-white font-bold">
-                                  {enrollment.student?.full_name?.charAt(0) || 'S'}
-                                </span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-orange-900">
-                                  {enrollment.student?.full_name}
-                                </p>
-                                <p className="text-sm text-orange-700">
-                                  {enrollment.course?.title}
-                                </p>
-                              </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {completedBatchStudents.map((student) => (
+                        <div
+                          key={`${student.batch_id}-${student.id}`}
+                          className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200"
+                        >
+                          <div className="flex flex-col items-center text-center space-y-3">
+                            <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                              <UserIcon className="h-6 w-6 text-white" />
                             </div>
-                            <div className="text-xs text-orange-600 mb-3">
-                              Completed:{' '}
-                              {formatDate(enrollment.completed_at || enrollment.enrolled_at)}
+                            <div>
+                              <p className="font-medium text-orange-900">{student.name}</p>
+                              <p className="text-xs text-orange-700">{student.email}</p>
+                            </div>
+                            <div className="text-xs text-orange-600 space-y-1 w-full">
+                              <div className="bg-orange-100 rounded p-2">
+                                <div>Batch: {student.batch_name}</div>
+                                <div>Course: {student.course_title}</div>
+                              </div>
                             </div>
                             <Button
                               size="sm"
-                              onClick={() => openIssuanceModal(enrollment.id)}
-                              className="w-full bg-gradient-to-r from-purple-500 to-purple-600"
+                              onClick={() => handleIndividualCertificate(student)}
+                              className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
                             >
                               <TrophyIcon className="h-4 w-4 mr-1" />
                               Issue Certificate
                             </Button>
                           </div>
-                        ))}
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
+              ) : (
+                <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+                  <CardContent className="py-12 text-center">
+                    <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No students ready for certificates
+                    </h3>
+                    <p className="text-gray-600">
+                      Students from completed batches will appear here when they're ready for
+                      certificate issuance.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
-              {/* Issued Certificates */}
+
+              {/* Batches with Certificates Already Issued */}
               <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex items-center space-x-2">
                     <TrophyIcon className="h-6 w-6 text-green-600" />
-                    <h3 className="text-lg font-semibold">Issued Certificates</h3>
+                    <h3 className="text-lg font-semibold">Batches with Certificates Issued</h3>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {stats.certificatesIssued === 0 ? (
+                  {batches.filter((batch) => batch.certificates_issued).length === 0 ? (
                     <div className="text-center py-12">
                       <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No certificates issued yet
+                        No batch certificates issued yet
                       </h3>
                       <p className="text-gray-600">
-                        Certificates will appear here once you issue them to students.
+                        Batches with issued certificates will appear here.
                       </p>
                     </div>
                   ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {enrollments
-                        .filter((e) => e.certificate_issued)
-                        .map((enrollment) => (
+                      {batches
+                        .filter((batch) => batch.certificates_issued)
+                        .map((batch) => (
                           <div
-                            key={enrollment.id}
+                            key={batch.id}
                             className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200"
                           >
                             <div className="flex items-center space-x-3 mb-3">
                               <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
                                 <TrophyIcon className="h-5 w-5 text-white" />
                               </div>
-                              <div>
-                                <p className="font-medium text-green-900">
-                                  {enrollment.student?.full_name}
+                              <div className="flex-1">
+                                <p className="font-medium text-green-900">{batch.name}</p>
+                                <p className="text-sm text-green-700">
+                                  Course: {batch.course?.title || 'N/A'}
                                 </p>
-                                <p className="text-sm text-green-700">{enrollment.course?.title}</p>
                               </div>
                             </div>
-                            <div className="text-xs text-green-600">
-                              Issued: {formatDate(enrollment.updated_at)}
+                            <div className="text-xs text-green-600 mb-3 space-y-1">
+                              <div>Students: {batch.student_count || 0}</div>
+                              <div>Certificates Issued: {formatDate(batch.updated_at)}</div>
                             </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
+                            >
+                              <DocumentTextIcon className="h-4 w-4 mr-1" />
+                              View Certificates
+                            </Button>
                           </div>
                         ))}
                     </div>
@@ -2329,16 +2363,11 @@ export default function TeacherDashboard() {
                   <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Available</h3>
                   <p className="text-gray-600 mb-6">
-                    No certificate templates have been assigned to your courses.
+                    No certificate templates have been assigned to you by the administrator. Please
+                    contact your administrator to assign certificate templates before you can issue
+                    certificates.
                   </p>
-                  <div className="flex space-x-4 justify-center">
-                    <Button
-                      onClick={() => handleIssueCertificate(selectedEnrollmentForCert)}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600"
-                    >
-                      <DocumentTextIcon className="h-4 w-4 mr-2" />
-                      Issue Default Certificate
-                    </Button>
+                  <div className="flex justify-center">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -2346,7 +2375,7 @@ export default function TeacherDashboard() {
                         setSelectedEnrollmentForCert(null)
                       }}
                     >
-                      Cancel
+                      Close
                     </Button>
                   </div>
                 </div>
@@ -2358,9 +2387,8 @@ export default function TeacherDashboard() {
                     </h3>
                     <div className="grid gap-4">
                       {certificateAssignments.map((assignment) => {
-                        const assignedCourse = courses.find((c) => c.id === assignment.course_id)
-                        const assignedGurukul = gurukuls.find((g) => g.id === assignment.gurukul_id)
                         const isSelected = selectedTemplate === assignment.template_id
+
                         return (
                           <div
                             key={assignment.id}
@@ -2388,27 +2416,10 @@ export default function TeacherDashboard() {
                                   <h4 className="font-semibold text-gray-900">
                                     {assignment.template?.name || 'Certificate Template'}
                                   </h4>
-                                  <Badge
-                                    className={`${isSelected ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white'}`}
-                                  >
-                                    {assignment.course_id ? 'Course' : 'Gurukul'}
-                                  </Badge>
                                 </div>
-                                <p className="text-sm text-gray-600 mb-2">
+                                <p className="text-sm text-gray-600">
                                   {assignment.template?.type || 'Student'} Certificate
                                 </p>
-                                <div className="text-sm text-gray-500">
-                                  <p>
-                                    <strong>Assigned to:</strong>
-                                  </p>
-                                  {assignedCourse ? (
-                                    <p>📚 {assignedCourse.title}</p>
-                                  ) : assignedGurukul ? (
-                                    <p>🏛️ {assignedGurukul.name} (All Courses)</p>
-                                  ) : (
-                                    <p>Unknown Assignment</p>
-                                  )}
-                                </div>
                               </div>
                             </div>
                           </div>
@@ -2416,44 +2427,32 @@ export default function TeacherDashboard() {
                       })}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                    <div className="flex space-x-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleIssueCertificate(selectedEnrollmentForCert)}
-                        className="text-gray-600"
-                      >
-                        <DocumentTextIcon className="h-4 w-4 mr-2" />
-                        Use Default Template
-                      </Button>
-                    </div>
-                    <div className="flex space-x-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowIssuanceModal(false)
-                          setSelectedEnrollmentForCert(null)
-                          setSelectedTemplate(null)
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          if (selectedTemplate && selectedEnrollmentForCert) {
-                            handleIssueCertificateWithTemplate(
-                              selectedEnrollmentForCert,
-                              selectedTemplate,
-                            )
-                          }
-                        }}
-                        disabled={!selectedTemplate}
-                        className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
-                      >
-                        <TrophyIcon className="h-4 w-4 mr-2" />
-                        Issue with Selected Template
-                      </Button>
-                    </div>
+                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowIssuanceModal(false)
+                        setSelectedEnrollmentForCert(null)
+                        setSelectedTemplate(null)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (selectedTemplate && selectedEnrollmentForCert) {
+                          handleIssueCertificateWithTemplate(
+                            selectedEnrollmentForCert,
+                            selectedTemplate,
+                          )
+                        }
+                      }}
+                      disabled={!selectedTemplate}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
+                    >
+                      <TrophyIcon className="h-4 w-4 mr-2" />
+                      Issue Certificate
+                    </Button>
                   </div>
                 </div>
               )}
@@ -2461,6 +2460,533 @@ export default function TeacherDashboard() {
           </div>
         </div>
       )}
+      {/* Certificate Viewing Modal */}
+      {showCertificateModal && selectedCertificateEnrollment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="w-full max-w-4xl mx-4 bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Certificate Details</h2>
+                <p className="text-gray-600">
+                  Certificate for {selectedCertificateEnrollment.student?.full_name}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCertificateModal(false)
+                  setSelectedCertificateEnrollment(null)
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-lg border border-green-200 mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                    <TrophyIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-green-900">Certificate Issued</h3>
+                    <p className="text-green-700">
+                      Successfully completed {selectedCertificateEnrollment.course?.title}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Student Name
+                    </label>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {selectedCertificateEnrollment.student?.full_name}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Course Title
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {selectedCertificateEnrollment.course?.title}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Completion Date
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {formatDate(selectedCertificateEnrollment.updated_at)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Certificate Status
+                    </label>
+                    <Badge className="bg-green-600 text-white">Issued</Badge>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Issue Date
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {formatDate(selectedCertificateEnrollment.updated_at)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Student Email
+                    </label>
+                    <p className="text-lg text-gray-900">
+                      {selectedCertificateEnrollment.student?.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                      Certificate Actions
+                    </h4>
+                    <p className="text-gray-600">
+                      This certificate has been successfully issued and is now available to the
+                      student.
+                    </p>
+                  </div>
+                  <div className="flex space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowCertificateModal(false)
+                        setSelectedCertificateEnrollment(null)
+                      }}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      className="bg-gradient-to-r from-blue-500 to-blue-600"
+                      onClick={() => {
+                        // Generate certificate download link
+                        const certificateNumber = `CERT-${selectedCertificateEnrollment.updated_at?.replace(/[-:.]/g, '')}-${selectedCertificateEnrollment.id}`
+                        const downloadUrl = `/certificates/${certificateNumber}.pdf`
+                        setPdfUrl(downloadUrl)
+                        setShowPdfModal(true)
+                      }}
+                    >
+                      <DocumentTextIcon className="h-4 w-4 mr-2" />
+                      View Certificate PDF
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Preview Modal */}
+      {showPdfModal && pdfUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm">
+          <div className="w-full max-w-6xl mx-4 bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <DocumentTextIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Certificate Preview</h2>
+                  <p className="text-gray-600 text-sm">
+                    {selectedCertificateEnrollment?.student?.full_name} -{' '}
+                    {selectedCertificateEnrollment?.course?.title}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(pdfUrl, '_blank')}
+                  className="text-gray-600 border-gray-300"
+                >
+                  <svg
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  Download
+                </Button>
+                <button
+                  onClick={() => {
+                    setShowPdfModal(false)
+                    setPdfUrl(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* PDF Viewer */}
+            <div className="flex-1 bg-gray-100 flex items-center justify-center p-4">
+              <div className="w-full h-full bg-white rounded-lg shadow-inner overflow-hidden">
+                <iframe
+                  src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&page=1&view=FitH`}
+                  className="w-full h-full border-0"
+                  title="Certificate Preview"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Certificate generated and issued successfully</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPdfModal(false)
+                    setPdfUrl(null)
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-green-500 to-green-600"
+                  onClick={() => {
+                    // Copy certificate link to clipboard
+                    navigator.clipboard.writeText(window.location.origin + pdfUrl)
+                    toast.success('Certificate link copied to clipboard!')
+                  }}
+                >
+                  <svg
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Copy Link
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Template Selection Modal */}
+      {showBulkTemplateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Select Template for Bulk Certificate Issuance
+                  </h2>
+                  <p className="text-gray-600">
+                    Choose a template to issue certificates for {bulkEligibleEnrollments.length}{' '}
+                    eligible students
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBulkTemplateModal(false)
+                    setBulkEligibleEnrollments([])
+                    setSelectedTemplate(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {certificateAssignments.length === 0 ? (
+                <div className="text-center py-8">
+                  <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Available</h3>
+                  <p className="text-gray-600 mb-6">
+                    No certificate templates have been assigned to you by the administrator. Please
+                    contact your administrator to assign certificate templates before you can issue
+                    certificates.
+                  </p>
+                  <div className="flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowBulkTemplateModal(false)
+                        setBulkEligibleEnrollments([])
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Available Templates
+                    </h3>
+                    <div className="grid gap-4">
+                      {certificateAssignments.map((assignment) => {
+                        const isSelected = selectedTemplate === assignment.template_id
+
+                        return (
+                          <div
+                            key={assignment.id}
+                            onClick={() => setSelectedTemplate(assignment.template_id)}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 hover:border-purple-300 hover:bg-purple-25'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                      isSelected
+                                        ? 'bg-purple-500 border-purple-500'
+                                        : 'border-gray-300'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <h4 className="font-semibold text-gray-900">
+                                    {assignment.template?.name || 'Certificate Template'}
+                                  </h4>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {assignment.template?.type || 'Student'} Certificate
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowBulkTemplateModal(false)
+                        setBulkEligibleEnrollments([])
+                        setSelectedTemplate(null)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (selectedTemplate) {
+                          handleBulkIssueCertificatesWithTemplate(selectedTemplate)
+                        }
+                      }}
+                      disabled={!selectedTemplate}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
+                    >
+                      <TrophyIcon className="h-4 w-4 mr-2" />
+                      Issue {bulkEligibleEnrollments.length} Certificates
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Certificate Template Selection Modal */}
+      {showBatchCertificateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Select Template for Batch Certificate Issuance
+                  </h2>
+                  <p className="text-gray-600">
+                    Choose a template to issue certificates for all students in this batch
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBatchCertificateModal(false)
+                    setSelectedBatchForCertificate(null)
+                    setSelectedTemplate(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {certificateAssignments.length === 0 ? (
+                <div className="text-center py-8">
+                  <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates Available</h3>
+                  <p className="text-gray-600 mb-6">
+                    No certificate templates have been assigned to you by the administrator. Please
+                    contact your administrator to assign certificate templates before you can issue
+                    batch certificates.
+                  </p>
+                  <div className="flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowBatchCertificateModal(false)
+                        setSelectedBatchForCertificate(null)
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Available Templates
+                    </h3>
+                    <div className="grid gap-4">
+                      {certificateAssignments.map((assignment) => {
+                        const isSelected = selectedTemplate === assignment.template_id
+
+                        return (
+                          <div
+                            key={assignment.id}
+                            onClick={() => setSelectedTemplate(assignment.template_id)}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 hover:border-purple-300 hover:bg-purple-25'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3 mb-2">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                      isSelected
+                                        ? 'bg-purple-500 border-purple-500'
+                                        : 'border-gray-300'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <h4 className="font-semibold text-gray-900">
+                                    {assignment.template?.name || 'Certificate Template'}
+                                  </h4>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {assignment.template?.type || 'Student'} Certificate
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowBatchCertificateModal(false)
+                        setSelectedBatchForCertificate(null)
+                        setSelectedTemplate(null)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (selectedTemplate) {
+                          handleIssueBatchCertificates(selectedTemplate)
+                        }
+                      }}
+                      disabled={!selectedTemplate}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
+                    >
+                      <TrophyIcon className="h-4 w-4 mr-2" />
+                      Issue Batch Certificates
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enrollment Management Modal */}
+      {showEnrollmentModal && selectedStudentForEnrollment && (
+        <EnrollmentManagementModal
+          isOpen={showEnrollmentModal}
+          student={selectedStudentForEnrollment}
+          teacherCourses={courses}
+          existingEnrollments={enrollments.filter(
+            (e) => e.student_id === selectedStudentForEnrollment.id,
+          )}
+          teacherId={user?.id || ''}
+          onClose={() => {
+            setShowEnrollmentModal(false)
+            setSelectedStudentForEnrollment(null)
+          }}
+          onEnrollmentChange={() => {
+            // Reload enrollments and refresh data
+            loadDashboardData()
+          }}
+        />
+      )}
+
       {/* Profile Edit Modal */}
       {isProfileModalOpen && user && teacherProfile && (
         <ProfileEditModal
@@ -2488,6 +3014,662 @@ export default function TeacherDashboard() {
   )
 }
 
+// Enrollment Management Modal Component
+interface EnrollmentManagementModalProps {
+  isOpen: boolean
+  student: ProfileWithAddress
+  teacherCourses: Course[]
+  existingEnrollments: Enrollment[]
+  teacherId: string
+  onClose: () => void
+  onEnrollmentChange: () => void
+}
+
+const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
+  isOpen,
+  student,
+  teacherCourses,
+  existingEnrollments,
+  teacherId,
+  onClose,
+  onEnrollmentChange,
+}) => {
+  const [enrolling, setEnrolling] = useState(false)
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+
+  const handleEnrollStudent = async () => {
+    if (!selectedCourseId) {
+      toast.error('Please select a course')
+      return
+    }
+
+    // Check if student is already enrolled in this course
+    const alreadyEnrolled = existingEnrollments.some((e) => e.course_id === selectedCourseId)
+    if (alreadyEnrolled) {
+      toast.error('Student is already enrolled in this course')
+      return
+    }
+
+    setEnrolling(true)
+    try {
+      await enrollStudentByTeacher(selectedCourseId, student.id)
+      toast.success('Student enrolled successfully and auto-approved!')
+      onEnrollmentChange()
+      setSelectedCourseId('')
+    } catch (error) {
+      console.error('Error enrolling student:', error)
+      toast.error('Failed to enroll student')
+    } finally {
+      setEnrolling(false)
+    }
+  }
+
+  // Get courses student is not enrolled in
+  const availableCourses = teacherCourses.filter(
+    (course) => !existingEnrollments.some((e) => e.course_id === course.id),
+  )
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Manage Enrollments - {student.full_name}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XCircleIcon className="h-6 w-6" />
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mt-1">{student.email}</p>
+        </div>
+
+        <div className="p-6">
+          {/* Existing Enrollments */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Current Enrollments</h3>
+            {existingEnrollments.length > 0 ? (
+              <div className="space-y-3">
+                {existingEnrollments.map((enrollment) => {
+                  const course = teacherCourses.find((c) => c.id === enrollment.course_id)
+                  return (
+                    <div
+                      key={enrollment.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {course?.title || 'Unknown Course'}
+                        </h4>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <span>
+                            Status:{' '}
+                            <span
+                              className={`capitalize ${enrollment.status === 'completed' ? 'text-green-600' : enrollment.status === 'approved' ? 'text-blue-600' : 'text-yellow-600'}`}
+                            >
+                              {enrollment.status}
+                            </span>
+                          </span>
+                          <span>
+                            Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {enrollment.certificate_issued && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <TrophyIcon className="h-3 w-3 mr-1" />
+                            Certified
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No enrollments found.</p>
+            )}
+          </div>
+
+          {/* Enroll in New Course */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Enroll in New Course</h3>
+            {availableCourses.length > 0 ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Course
+                  </label>
+                  <select
+                    value={selectedCourseId}
+                    onChange={(e) => setSelectedCourseId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Choose a course...</option>
+                    {availableCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.course_number} - {course.title} ({course.level})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  onClick={handleEnrollStudent}
+                  disabled={!selectedCourseId || enrolling}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  {enrolling ? 'Enrolling...' : 'Enroll Student'}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">
+                No available courses. Student is enrolled in all your courses.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-end">
+            <Button onClick={onClose} variant="outline" className="px-6">
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Edit Students Modal Component
+interface EditStudentsModalProps {
+  batch: Batch | null
+  allCourseStudents: { id: string; full_name: string; email: string; isInBatch: boolean }[]
+  loading: boolean
+  onClose: () => void
+  onToggleStudent: (studentId: string, shouldAdd: boolean) => Promise<void>
+}
+
+const EditStudentsModal: React.FC<EditStudentsModalProps> = ({
+  batch,
+  allCourseStudents,
+  loading,
+  onClose,
+  onToggleStudent,
+}) => {
+  const [processingStudents, setProcessingStudents] = useState<Set<string>>(new Set())
+
+  const handleToggleStudent = async (studentId: string, currentlyInBatch: boolean) => {
+    setProcessingStudents((prev) => new Set(prev).add(studentId))
+    try {
+      // If currently in batch, remove them; if not in batch, add them
+      await onToggleStudent(studentId, !currentlyInBatch)
+    } finally {
+      setProcessingStudents((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(studentId)
+        return newSet
+      })
+    }
+  }
+
+  if (!batch) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">Edit Students - {batch.name}</h2>
+          <p className="text-sm text-gray-600 mt-1">Course: {batch.course?.title}</p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Loading student data...</p>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Course Students ({allCourseStudents.length})
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Check students to include them in this batch. Unchecked students will be removed.
+              </p>
+
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {allCourseStudents.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">
+                    No students enrolled in this course
+                  </p>
+                ) : (
+                  allCourseStudents.map((student) => (
+                    <div
+                      key={student.id}
+                      className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                        student.isInBatch
+                          ? 'border-indigo-200 bg-indigo-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={student.isInBatch}
+                          disabled={processingStudents.has(student.id)}
+                          onChange={() => handleToggleStudent(student.id, student.isInBatch)}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                      </div>
+
+                      {processingStudents.has(student.id) && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                      )}
+
+                      <UserIcon className="h-5 w-5 text-gray-400" />
+
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{student.full_name}</p>
+                        <p className="text-sm text-gray-600">{student.email}</p>
+                      </div>
+
+                      <div className="text-xs">
+                        {student.isInBatch ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            In Batch
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Not in Batch
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 bg-gray-50 rounded-b-2xl">
+          <div className="flex justify-end">
+            <Button onClick={onClose} variant="outline">
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Create Batch Modal Component
+interface CreateBatchModalProps {
+  teacherId?: string
+  onClose: () => void
+  onSuccess: () => void
+}
+
+const CreateBatchModal: React.FC<CreateBatchModalProps> = ({ teacherId, onClose, onSuccess }) => {
+  const [loading, setLoading] = useState(false)
+  const [batchName, setBatchName] = useState('')
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [students, setStudents] = useState<{ id: string; full_name: string; email: string }[]>([])
+  const [step, setStep] = useState<'basic' | 'course' | 'students'>('basic')
+
+  const loadCourses = useCallback(async () => {
+    if (!teacherId) return
+    try {
+      const coursesData = await getTeacherCourses(teacherId)
+      setCourses(coursesData)
+    } catch (error) {
+      console.error('Error loading courses:', error)
+      toast.error('Failed to load courses')
+    }
+  }, [teacherId])
+
+  const loadStudentsForCourse = useCallback(async (courseId: string) => {
+    try {
+      const studentsData = await getStudentsEnrolledInCourse(courseId)
+      setStudents(studentsData)
+    } catch (error) {
+      console.error('Error loading students for course:', error)
+      toast.error('Failed to load students enrolled in this course')
+      setStudents([])
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCourses()
+  }, [loadCourses])
+
+  const handleCreateBatch = async () => {
+    if (!teacherId || !batchName.trim() || !selectedCourse) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    if (!selectedCourse.gurukul_id) {
+      toast.error('Selected course must have a valid gurukul')
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Create the batch with "not_started" status
+      const batchData = {
+        name: batchName.trim(),
+        description: batchName.trim(),
+        gurukul_id: selectedCourse.gurukul_id,
+        teacher_id: teacherId,
+        status: 'not_started' as const,
+        created_by: teacherId,
+        is_active: true,
+        progress_percentage: 0,
+      }
+
+      console.log('Creating batch with data:', batchData)
+      const newBatch = await createBatch(batchData)
+
+      // Assign the selected course to the batch
+      await assignCourseToBatch(newBatch.id, selectedCourse.id, teacherId)
+
+      // Assign selected students to the batch
+      if (selectedStudents.length > 0) {
+        await Promise.all(
+          selectedStudents.map((studentId) =>
+            assignStudentToBatch(newBatch.id, studentId, teacherId),
+          ),
+        )
+      }
+
+      toast.success('Batch created successfully!')
+      onSuccess()
+    } catch (error) {
+      console.error('Error creating batch:', error)
+
+      // Provide more specific error messages
+      let errorMessage = 'Failed to create batch'
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate')) {
+          errorMessage = 'A batch with this name already exists'
+        } else if (error.message.includes('foreign key')) {
+          errorMessage = 'Invalid course or gurukul selection'
+        } else if (error.message.includes('check constraint')) {
+          errorMessage = 'Invalid batch data provided'
+        } else {
+          errorMessage = `Error: ${error.message}`
+        }
+      }
+
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const nextStep = () => {
+    if (step === 'basic' && batchName.trim()) {
+      setStep('course')
+    } else if (step === 'course' && selectedCourse) {
+      // Load students enrolled in the selected course
+      loadStudentsForCourse(selectedCourse.id)
+      setStep('students')
+    }
+  }
+
+  const prevStep = () => {
+    if (step === 'course') {
+      setStep('basic')
+    } else if (step === 'students') {
+      setStep('course')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Create New Batch</h2>
+              <p className="text-gray-600">Set up a new learning group for your students</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XCircleIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-center mt-6 space-x-4">
+            <div
+              className={`flex items-center space-x-2 ${step === 'basic' ? 'text-indigo-600' : step === 'course' || step === 'students' ? 'text-green-600' : 'text-gray-400'}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'basic' ? 'bg-indigo-100' : step === 'course' || step === 'students' ? 'bg-green-100' : 'bg-gray-100'}`}
+              >
+                1
+              </div>
+              <span className="font-medium">Basic Info</span>
+            </div>
+            <div className="w-8 h-px bg-gray-300"></div>
+            <div
+              className={`flex items-center space-x-2 ${step === 'course' ? 'text-indigo-600' : step === 'students' ? 'text-green-600' : 'text-gray-400'}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'course' ? 'bg-indigo-100' : step === 'students' ? 'bg-green-100' : 'bg-gray-100'}`}
+              >
+                2
+              </div>
+              <span className="font-medium">Select Course</span>
+            </div>
+            <div className="w-8 h-px bg-gray-300"></div>
+            <div
+              className={`flex items-center space-x-2 ${step === 'students' ? 'text-indigo-600' : 'text-gray-400'}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'students' ? 'bg-indigo-100' : 'bg-gray-100'}`}
+              >
+                3
+              </div>
+              <span className="font-medium">Add Students</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {/* Step 1: Basic Info */}
+          {step === 'basic' && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Batch Name *</label>
+                <Input
+                  type="text"
+                  value={batchName}
+                  onChange={(e) => setBatchName(e.target.value)}
+                  placeholder="Enter a name for your batch (e.g., 'Morning Yoga Batch', 'Advanced Students Group')"
+                  className="w-full"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose a descriptive name that helps identify this group of students
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Course Selection */}
+          {step === 'course' && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Select Course *
+                </label>
+                <div className="grid gap-3 max-h-64 overflow-y-auto">
+                  {courses.map((course) => (
+                    <div
+                      key={course.id}
+                      onClick={() => setSelectedCourse(course)}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedCourse?.id === course.id
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <BookOpenIcon
+                          className={`h-6 w-6 mt-0.5 ${
+                            selectedCourse?.id === course.id ? 'text-indigo-600' : 'text-gray-400'
+                          }`}
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{course.title}</h3>
+                          {course.description && (
+                            <div
+                              className="text-sm text-gray-600 mt-1 line-clamp-2"
+                              dangerouslySetInnerHTML={{ __html: course.description }}
+                            />
+                          )}
+                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                            <span>Level: {course.level || 'Basic'}</span>
+                            <span>Duration: {course.duration_weeks || 8} weeks</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {courses.length === 0 && (
+                  <p className="text-gray-500 text-center py-8">
+                    No courses available. Please create a course first.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Student Selection */}
+          {step === 'students' && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Select Students (Optional)
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Only students enrolled in "{selectedCourse?.title}" are shown. You can add more
+                  students later.
+                </p>
+                <div className="grid gap-2 max-h-64 overflow-y-auto">
+                  {students.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <UserIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">No students enrolled in "{selectedCourse?.title}"</p>
+                      <p className="text-xs mt-1">
+                        You can create the batch and add students later
+                      </p>
+                    </div>
+                  ) : (
+                    students.map((student) => (
+                      <div
+                        key={student.id}
+                        onClick={() => {
+                          setSelectedStudents((prev) =>
+                            prev.includes(student.id)
+                              ? prev.filter((id) => id !== student.id)
+                              : [...prev, student.id],
+                          )
+                        }}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          selectedStudents.includes(student.id)
+                            ? 'border-indigo-500 bg-indigo-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-4 h-4 rounded border-2 ${
+                              selectedStudents.includes(student.id)
+                                ? 'bg-indigo-500 border-indigo-500'
+                                : 'border-gray-300'
+                            }`}
+                          >
+                            {selectedStudents.includes(student.id) && (
+                              <CheckCircleIcon className="h-4 w-4 text-white" />
+                            )}
+                          </div>
+                          <UserIcon className="h-5 w-5 text-gray-400" />
+                          <div>
+                            <p className="font-medium text-gray-900">{student.full_name}</p>
+                            <p className="text-sm text-gray-600">{student.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''}{' '}
+                  selected
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-4 bg-gray-50 rounded-b-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-3">
+              {step !== 'basic' && (
+                <Button variant="outline" onClick={prevStep}>
+                  Previous
+                </Button>
+              )}
+            </div>
+            <div className="flex space-x-3">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              {step === 'students' ? (
+                <Button
+                  onClick={handleCreateBatch}
+                  disabled={loading || !batchName.trim() || !selectedCourse}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300"
+                >
+                  {loading ? 'Creating...' : 'Create Batch'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={nextStep}
+                  disabled={
+                    (step === 'basic' && !batchName.trim()) ||
+                    (step === 'course' && !selectedCourse)
+                  }
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300"
+                >
+                  Next
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Batch Management Component for Teachers
 interface BatchManagementContentProps {
   teacherId?: string
@@ -2504,12 +3686,30 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
 }) => {
   const [batches, setBatches] = useState<Batch[]>(initialBatches)
   const [loading, setLoading] = useState(false)
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
+  const [showProgressModal, setShowProgressModal] = useState(false)
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [batchToDelete, setBatchToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [loadingWeeks, setLoadingWeeks] = useState<Set<number>>(new Set())
+  const [showBatchViewModal, setShowBatchViewModal] = useState(false)
+  const [selectedBatchForView, setSelectedBatchForView] = useState<Batch | null>(null)
+  const [batchStudents, setBatchStudents] = useState<BatchStudentWithInfo[]>([])
+  const [showCreateBatchModal, setShowCreateBatchModal] = useState(false)
+  const [showEditStudentsModal, setShowEditStudentsModal] = useState(false)
+  const [batchToEdit, setBatchToEdit] = useState<Batch | null>(null)
+  const [allCourseStudentsForEdit, setAllCourseStudentsForEdit] = useState<
+    { id: string; full_name: string; email: string; isInBatch: boolean }[]
+  >([])
+  const [loadingStudentData, setLoadingStudentData] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
     inactive: 0,
     completed: 0,
     archived: 0,
+    in_progress: 0,
   })
 
   const loadBatches = useCallback(async () => {
@@ -2565,16 +3765,221 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
     }
   }
 
+  const handleEditProgress = (batch: Batch) => {
+    setEditingBatch(batch)
+    setShowProgressModal(true)
+  }
+
+  const handleProgressUpdate = async (weekNumber: number, isCompleted: boolean) => {
+    if (!editingBatch || !teacherId) return
+
+    // Add loading state for this week
+    setLoadingWeeks((prev) => new Set(prev).add(weekNumber))
+
+    try {
+      await updateBatchProgress(editingBatch.id, weekNumber, isCompleted, teacherId)
+      toast.success(`Week ${weekNumber} ${isCompleted ? 'completed' : 'reset'}!`)
+
+      // Immediately refresh batch data to show progress updates
+      const updatedBatches = await getBatches()
+      const updatedBatch = updatedBatches.find((b) => b.id === editingBatch.id)
+
+      if (updatedBatch) {
+        // Update the current editing batch with fresh data
+        setEditingBatch(updatedBatch)
+      }
+
+      // Refresh batches list and stats
+      if (onBatchUpdate) {
+        onBatchUpdate()
+      } else {
+        loadBatches()
+      }
+      loadStats()
+    } catch (error) {
+      console.error('Error updating progress:', error)
+      toast.error('Failed to update progress')
+    } finally {
+      // Remove loading state for this week
+      setLoadingWeeks((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(weekNumber)
+        return newSet
+      })
+    }
+  }
+
+  const handleStartBatch = async (batch: Batch) => {
+    if (!batch.course) {
+      toast.error('Cannot start batch without an assigned course')
+      return
+    }
+
+    try {
+      const startDate = new Date()
+      const endDate = new Date()
+      endDate.setDate(startDate.getDate() + (batch.course.duration_weeks || 8) * 7)
+
+      // Update batch status and set dates
+      await updateBatch(batch.id, {
+        status: 'active',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+
+      toast.success(
+        'Batch started successfully! Dates have been calculated based on course duration.',
+      )
+
+      // Refresh the batches list
+      if (onBatchUpdate) {
+        onBatchUpdate()
+      } else {
+        loadBatches()
+      }
+      loadStats()
+    } catch (error) {
+      console.error('Error starting batch:', error)
+      toast.error('Failed to start batch')
+    }
+  }
+
+  const handleViewBatch = async (batch: Batch) => {
+    try {
+      setSelectedBatchForView(batch)
+      setShowBatchViewModal(true)
+
+      // Fetch students for this batch
+      const students = await getBatchStudents(batch.id)
+
+      // Transform BatchStudent[] to BatchStudentWithInfo[]
+      const studentsWithInfo: BatchStudentWithInfo[] = students.map((student) => ({
+        ...student,
+        name: student.student?.full_name || 'Unknown',
+        email: student.student?.email || 'No email',
+        batch_name: student.batch?.name || batch.name,
+        course_title: batch.course?.title || 'No course',
+      }))
+
+      setBatchStudents(studentsWithInfo)
+    } catch (error) {
+      console.error('Error fetching batch students:', error)
+      toast.error('Failed to load batch details')
+    }
+  }
+
+  const handleDeleteConfirmation = (batchId: string) => {
+    setBatchToDelete(batchId)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleEditStudents = async (batch: Batch) => {
+    if (!batch.course?.id) {
+      toast.error('Cannot edit students: Batch has no associated course')
+      return
+    }
+
+    setBatchToEdit(batch)
+    setLoadingStudentData(true)
+    setShowEditStudentsModal(true)
+
+    try {
+      // Load current batch students
+      const currentStudents = await getBatchStudents(batch.id)
+      const currentStudentIds = new Set(currentStudents.map((s) => s.student_id))
+
+      // Load all students enrolled in the course
+      const allCourseStudents = await getStudentsEnrolledInCourse(batch.course.id)
+
+      // Combine data to show all students with their batch status
+      const studentsWithBatchStatus = allCourseStudents.map((student) => ({
+        id: student.id,
+        full_name: student.full_name,
+        email: student.email,
+        isInBatch: currentStudentIds.has(student.id),
+      }))
+
+      setAllCourseStudentsForEdit(studentsWithBatchStatus)
+    } catch (error) {
+      console.error('Error loading student data:', error)
+      toast.error('Failed to load student information')
+    } finally {
+      setLoadingStudentData(false)
+    }
+  }
+
+  const handleToggleStudentInBatch = async (studentId: string, shouldAdd: boolean) => {
+    if (!batchToEdit || !teacherId) return
+
+    try {
+      if (shouldAdd) {
+        await assignStudentToBatch(batchToEdit.id, studentId, teacherId)
+        toast.success('Student added to batch successfully')
+      } else {
+        await removeStudentFromBatch(batchToEdit.id, studentId)
+        toast.success('Student removed from batch successfully')
+      }
+
+      // Refresh the student list with updated batch status
+      const currentStudents = await getBatchStudents(batchToEdit.id)
+      const currentStudentIds = new Set(currentStudents.map((s) => s.student_id))
+
+      // Update the students list with new batch status
+      setAllCourseStudentsForEdit((prev) =>
+        prev.map((student) => ({
+          ...student,
+          isInBatch: currentStudentIds.has(student.id),
+        })),
+      )
+    } catch (error) {
+      console.error('Error toggling student in batch:', error)
+      toast.error(
+        shouldAdd ? 'Failed to add student to batch' : 'Failed to remove student from batch',
+      )
+    }
+  }
+
+  const confirmDeleteBatch = async () => {
+    if (!batchToDelete) return
+
+    if (!canAccess('batches', 'delete')) {
+      toast.error('You do not have permission to delete batches')
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      await deleteBatch(batchToDelete)
+      toast.success('Batch deleted successfully')
+      if (onBatchUpdate) {
+        onBatchUpdate()
+      } else {
+        loadBatches()
+      }
+      loadStats()
+      setShowDeleteConfirm(false)
+      setBatchToDelete(null)
+    } catch (error) {
+      console.error('Error deleting batch:', error)
+      toast.error('Failed to delete batch')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'not_started':
+        return 'bg-red-100 text-red-800'
       case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800'
-      case 'completed':
         return 'bg-blue-100 text-blue-800'
+      case 'in_progress':
+        return 'bg-orange-100 text-orange-800'
+      case 'completed':
+        return 'bg-green-100 text-green-800'
       case 'archived':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -2591,8 +3996,8 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold text-gray-900">Batch Management</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -2608,15 +4013,24 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Batch Management</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Manage your student batches, create groups, and organize learning sessions.
-        </p>
+      <div className="flex flex-col items-center justify-between space-y-4 md:space-y-0 md:flex-row">
+        <div className="text-center md:text-left">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Batch Management</h2>
+          <p className="text-gray-600 max-w-2xl">
+            Manage your student batches, create groups, and organize learning sessions.
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowCreateBatchModal(true)}
+          className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold px-8 py-3"
+        >
+          <PlusIcon className="h-5 w-5 mr-2" />
+          Create New Batch
+        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -2637,6 +4051,18 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                 <p className="text-2xl font-bold text-green-600">{stats.active}</p>
               </div>
               <CheckCircleIcon className="h-8 w-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-indigo-600">{stats.in_progress}</p>
+              </div>
+              <PlayIcon className="h-8 w-8 text-indigo-400" />
             </div>
           </CardContent>
         </Card>
@@ -2672,11 +4098,17 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
           <CardContent className="p-12">
             <div className="text-center">
               <QueueListIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Batches Found</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Batches Yet</h3>
               <p className="text-gray-500 mb-6">
-                You don't have any batches assigned yet. Contact your administrator to get batches
-                assigned to you.
+                Start building your teaching community by creating your first batch of students.
               </p>
+              <Button
+                onClick={() => setShowCreateBatchModal(true)}
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Create Your First Batch
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -2692,63 +4124,534 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{batch.name}</h3>
                     <p className="text-sm text-gray-600">{batch.gurukul?.name}</p>
+                    {batch.course && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{batch.course.title}</span>
+                        <span className="text-xs text-gray-400">-</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                          {(batch.course.level || 'Basic').charAt(0).toUpperCase() +
+                            (batch.course.level || 'Basic').slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(batch.status)}`}
+                  >
+                    {batch.status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </span>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-700 line-clamp-2">{batch.description}</p>
-
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center">
                       <UserGroupIcon className="h-4 w-4 text-gray-400 mr-1" />
                       <span className="text-gray-600">{batch.student_count || 0} students</span>
                     </div>
-                    <div className="flex items-center">
-                      <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1" />
-                      <span className="text-gray-600">{batch.course_count || 0} courses</span>
-                    </div>
+                    {batch.course && (
+                      <div className="flex items-center">
+                        <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1" />
+                        <span className="text-gray-600">{batch.course.duration_weeks} weeks</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="pt-2 border-t">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Start: {formatDate(batch.start_date)}</span>
-                      <span>End: {formatDate(batch.end_date)}</span>
+                  {/* Progress Bar */}
+                  {batch.course && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Course Progress</span>
+                        <span className="text-xs font-medium text-gray-700">
+                          {batch.progress_percentage || 0}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${batch.progress_percentage || 0}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {batch.progress?.filter((p) => p.is_completed).length || 0} of{' '}
+                        {batch.course.duration_weeks} weeks completed
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {canAccess('batches', 'view') && (
-                    <div className="flex gap-2 pt-2">
+                  {/* Show dates only if batch is started */}
+                  {batch.status !== 'not_started' && (batch.start_date || batch.end_date) && (
+                    <div className="pt-2 border-t">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>
+                          Start: {batch.start_date ? formatDate(batch.start_date) : 'TBD'}
+                        </span>
+                        <span>End: {batch.end_date ? formatDate(batch.end_date) : 'TBD'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Batch Actions */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                      onClick={() => handleViewBatch(batch)}
+                    >
+                      <EyeIcon className="h-3 w-3 mr-1.5" />
+                      View Details
+                    </Button>
+
+                    {/* Show Start button for not_started batches */}
+                    {batch.status === 'not_started' ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 text-xs"
-                        onClick={() => {
-                          // TODO: Implement view batch details
-                          toast.success('Batch details view coming soon!')
-                        }}
+                        className="flex-1 text-xs font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                        onClick={() => handleStartBatch(batch)}
                       >
-                        <EyeIcon className="h-3 w-3 mr-1" />
-                        View Details
+                        <ClockIcon className="h-3 w-3 mr-1.5" />
+                        Start Batch
                       </Button>
-                      {canAccess('batches', 'delete') && (
+                    ) : (
+                      /* Show Progress button for started batches */
+                      batch.course && (
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
-                          className="px-2"
-                          onClick={() => handleDeleteBatch(batch.id)}
+                          className="flex-1 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                          onClick={() => handleEditProgress(batch)}
                         >
-                          <TrashIcon className="h-3 w-3" />
+                          <Cog6ToothIcon className="h-3 w-3 mr-1.5" />
+                          Progress
                         </Button>
-                      )}
-                    </div>
-                  )}
+                      )
+                    )}
+
+                    {/* Edit Students button */}
+                    {batch.course && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs font-semibold bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                        onClick={() => handleEditStudents(batch)}
+                      >
+                        <UserGroupIcon className="h-3 w-3 mr-1.5" />
+                        Edit Students
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      className="px-3 font-semibold bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                      onClick={() => handleDeleteConfirmation(batch.id)}
+                    >
+                      <TrashIcon className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Progress Edit Modal */}
+      {showProgressModal && editingBatch && editingBatch.course && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Edit Course Progress</h2>
+                  <p className="text-gray-600">
+                    {editingBatch.name} - {editingBatch.course.title}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowProgressModal(false)
+                    setEditingBatch(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    {editingBatch.progress_percentage || 0}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${editingBatch.progress_percentage || 0}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900 mb-4">Weekly Progress</h3>
+                <div className="text-xs text-gray-500 mb-4 p-2 bg-blue-50 rounded">
+                  💡 Complete weeks in sequence. Only the next week can be checked off.
+                </div>
+                {Array.from({ length: editingBatch.course.duration_weeks }, (_, index) => {
+                  const weekNumber = index + 1
+                  const weekProgress = editingBatch.progress?.find(
+                    (p) => p.week_number === weekNumber,
+                  )
+                  const isCompleted = weekProgress?.is_completed || false
+
+                  // Find the first uncompleted week
+                  const completedWeeks = editingBatch.progress?.filter((p) => p.is_completed) || []
+                  const firstUncompletedWeek = completedWeeks.length + 1
+
+                  // Check if this week is currently being updated
+                  const isLoadingWeek = loadingWeeks.has(weekNumber)
+
+                  // Allow interaction if:
+                  // 1. Week is completed (can uncheck)
+                  // 2. Week is the next sequential week to complete
+                  // 3. Not currently loading
+                  const canInteract =
+                    (isCompleted || weekNumber === firstUncompletedWeek) && !isLoadingWeek
+
+                  // Determine status text and styling
+                  const getWeekStatus = () => {
+                    if (isLoadingWeek) return { text: 'Updating...', color: 'text-blue-500' }
+                    if (isCompleted) return { text: 'Completed ✅', color: 'text-green-600' }
+                    if (weekNumber === firstUncompletedWeek)
+                      return { text: 'Ready to start 🎯', color: 'text-blue-600' }
+                    return { text: 'Locked 🔒', color: 'text-gray-400' }
+                  }
+
+                  const status = getWeekStatus()
+
+                  return (
+                    <div
+                      key={weekNumber}
+                      className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
+                        canInteract
+                          ? 'border-gray-200 hover:bg-gray-50 hover:shadow-sm'
+                          : 'border-gray-100 bg-gray-50'
+                      } ${
+                        weekNumber === firstUncompletedWeek && !isCompleted
+                          ? 'ring-2 ring-blue-200 border-blue-300'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span
+                          className={`text-sm font-medium ${canInteract ? 'text-gray-900' : 'text-gray-400'}`}
+                        >
+                          Week {weekNumber}
+                        </span>
+                        {weekProgress?.completed_at && (
+                          <span className="text-xs text-gray-500">
+                            {formatDate(weekProgress.completed_at)}
+                          </span>
+                        )}
+                      </div>
+                      <label
+                        className={`flex items-center space-x-2 ${canInteract ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                      >
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={isCompleted}
+                            disabled={!canInteract || isLoadingWeek}
+                            onChange={(e) => handleProgressUpdate(weekNumber, e.target.checked)}
+                            className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${
+                              !canInteract || isLoadingWeek ? 'opacity-40 cursor-not-allowed' : ''
+                            }`}
+                          />
+                          {isLoadingWeek && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-sm ${status.color} flex items-center gap-1`}>
+                          {isLoadingWeek && (
+                            <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          )}
+                          {status.text}
+                        </span>
+                      </label>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowProgressModal(false)
+                    setEditingBatch(null)
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch View Modal */}
+      {showBatchViewModal && selectedBatchForView && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Batch Details</h2>
+                  <p className="text-gray-600">{selectedBatchForView.name}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBatchViewModal(false)
+                    setSelectedBatchForView(null)
+                    setBatchStudents([])
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Course Information */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Course Title:</p>
+                    <p className="text-gray-900">
+                      {selectedBatchForView.course?.title || 'Not assigned'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Duration:</p>
+                    <p className="text-gray-900">
+                      {selectedBatchForView.course?.duration_weeks || 0} weeks
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Gurukul:</p>
+                    <p className="text-gray-900">
+                      {selectedBatchForView.gurukul?.name || 'Not assigned'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Level:</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      {selectedBatchForView.course?.level || 'Basic'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Students List */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Students ({batchStudents.length})
+                </h3>
+                {batchStudents.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                    <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500">No students assigned to this batch yet.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Student Name
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Student ID
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {batchStudents.map((student) => (
+                          <tr key={student.student_id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-8 w-8">
+                                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <span className="text-sm font-medium text-white">
+                                      {student.student?.full_name?.charAt(0) || 'S'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {student.student?.full_name || 'Unknown'}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              {student.student?.student_id || 'Not set'}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                              {student.student?.email || 'Not provided'}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end pt-4 border-t border-gray-200">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowBatchViewModal(false)
+                    setSelectedBatchForView(null)
+                    setBatchStudents([])
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && batchToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <svg
+                    className="h-6 w-6 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Batch</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Are you sure you want to delete this batch? This will only remove the batch
+                  record. Students and courses will not be affected.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setBatchToDelete(null)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    className="flex-1"
+                    onClick={confirmDeleteBatch}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <div className="flex items-center space-x-2">
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            className="opacity-25"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            className="opacity-75"
+                          />
+                        </svg>
+                        <span>Deleting...</span>
+                      </div>
+                    ) : (
+                      'Delete'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Students Modal */}
+      {showEditStudentsModal && batchToEdit && (
+        <EditStudentsModal
+          batch={batchToEdit}
+          allCourseStudents={allCourseStudentsForEdit}
+          loading={loadingStudentData}
+          onClose={() => {
+            setShowEditStudentsModal(false)
+            setBatchToEdit(null)
+            setAllCourseStudentsForEdit([])
+            // Refresh batch data to show updated student counts
+            loadBatches()
+            if (onBatchUpdate) onBatchUpdate()
+          }}
+          onToggleStudent={handleToggleStudentInBatch}
+        />
+      )}
+
+      {/* Create Batch Modal */}
+      {showCreateBatchModal && (
+        <CreateBatchModal
+          teacherId={teacherId}
+          onClose={() => setShowCreateBatchModal(false)}
+          onSuccess={() => {
+            setShowCreateBatchModal(false)
+            loadBatches()
+            if (onBatchUpdate) onBatchUpdate()
+          }}
+        />
       )}
     </div>
   )

@@ -55,6 +55,37 @@ export async function enrollInCourseWithoutPrerequisites(
     throw error
   }
 }
+
+// Auto-approved enrollment for teacher/admin actions
+export async function enrollStudentByTeacher(
+  courseId: string,
+  studentId: string,
+): Promise<Enrollment> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .insert({
+        id: crypto.randomUUID(),
+        course_id: courseId,
+        student_id: studentId,
+        status: 'approved', // Auto-approve for teacher/admin enrollments
+        enrolled_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+    if (error) {
+      console.error('Database error:', error)
+      throw new Error('Failed to enroll student')
+    }
+    return data
+  } catch (error) {
+    console.error('Error in enrollStudentByTeacher:', error)
+    throw error
+  }
+}
+
 export async function getStudentEnrollments(studentId: string): Promise<Enrollment[]> {
   try {
     const { data, error } = await supabaseAdmin
@@ -115,7 +146,7 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
       .select(
         `
         *,
-        course:courses!inner (*),
+        courses!inner (*),
         student:profiles!enrollments_student_id_fkey (*)
       `,
       )
@@ -290,5 +321,132 @@ export async function getEnrollmentsByParent(parentId: string): Promise<Enrollme
     return transformedData
   } catch {
     return []
+  }
+}
+
+// Approve a pending enrollment
+export async function approveEnrollment(enrollmentId: string): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin
+      .from('enrollments')
+      .update({
+        status: 'approved',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', enrollmentId)
+      .eq('status', 'pending') // Only update if currently pending
+
+    if (error) {
+      console.error('Database error approving enrollment:', error)
+      throw new Error('Failed to approve enrollment')
+    }
+  } catch (error) {
+    console.error('Error in approveEnrollment:', error)
+    throw error
+  }
+} // Reject a pending enrollment
+export async function rejectEnrollment(enrollmentId: string): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin
+      .from('enrollments')
+      .update({
+        status: 'rejected',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', enrollmentId)
+      .eq('status', 'pending') // Only update if currently pending
+
+    if (error) {
+      console.error('Database error rejecting enrollment:', error)
+      throw new Error('Failed to reject enrollment')
+    }
+  } catch (error) {
+    console.error('Error in rejectEnrollment:', error)
+    throw error
+  }
+}
+
+// Get pending enrollments for teacher approval
+export async function getPendingEnrollments(teacherId: string): Promise<Enrollment[]> {
+  try {
+    // First get the course IDs assigned to this teacher
+    const { data: assignments } = await supabaseAdmin
+      .from('course_assignments')
+      .select('course_id')
+      .eq('teacher_id', teacherId)
+      .eq('is_active', true)
+
+    if (!assignments || assignments.length === 0) {
+      return []
+    }
+
+    const courseIds = assignments.map((a) => a.course_id)
+
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        *,
+        courses!inner (*),
+        student:profiles!enrollments_student_id_fkey (*)
+      `,
+      )
+      .in('course_id', courseIds)
+      .eq('status', 'pending')
+      .order('enrolled_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching pending enrollments:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error in getPendingEnrollments:', error)
+    return []
+  }
+}
+
+// Get students enrolled in a specific course
+export async function getStudentsEnrolledInCourse(
+  courseId: string,
+): Promise<{ id: string; full_name: string; email: string }[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        student_id,
+        student:profiles!enrollments_student_id_fkey (
+          id,
+          full_name,
+          email
+        )
+      `,
+      )
+      .eq('course_id', courseId)
+      .in('status', ['approved', 'completed'])
+
+    if (error) {
+      console.error('Database error getting course students:', error)
+      throw new Error('Failed to get students for course')
+    }
+
+    // Transform data to the expected format and remove duplicates
+    const studentsMap = new Map()
+    data?.forEach((enrollment: any) => {
+      if (enrollment.student) {
+        studentsMap.set(enrollment.student.id, {
+          id: enrollment.student.id,
+          full_name: enrollment.student.full_name,
+          email: enrollment.student.email,
+        })
+      }
+    })
+
+    return Array.from(studentsMap.values())
+  } catch (error) {
+    console.error('Error in getStudentsEnrolledInCourse:', error)
+    throw error
   }
 }

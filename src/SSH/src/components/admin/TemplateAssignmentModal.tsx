@@ -6,10 +6,16 @@ import {
   createCertificateAssignment,
   getAvailableGurukuls,
   getAvailableCourses,
+  getAvailableTeachers,
   type CreateCertificateAssignmentData,
 } from '@/lib/api/certificateAssignments'
 import toast from 'react-hot-toast'
-import { XMarkIcon, AcademicCapIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
+import {
+  XMarkIcon,
+  AcademicCapIcon,
+  BuildingOfficeIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline'
 interface TemplateAssignmentModalProps {
   isOpen: boolean
   onClose: () => void
@@ -28,6 +34,12 @@ interface Course {
   gurukul_id: string
   status: string
 }
+interface Teacher {
+  id: string
+  name: string
+  email: string
+  status: string
+}
 export default function TemplateAssignmentModal({
   isOpen,
   onClose,
@@ -36,22 +48,26 @@ export default function TemplateAssignmentModal({
   userId,
 }: TemplateAssignmentModalProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('')
-  const [assignmentType, setAssignmentType] = useState<'gurukul' | 'course'>('course')
+  const [assignmentType, setAssignmentType] = useState<'gurukul' | 'course' | 'teacher'>('course')
   const [selectedGurukul, setSelectedGurukul] = useState('')
   const [selectedCourse, setSelectedCourse] = useState('')
+  const [selectedTeacher, setSelectedTeacher] = useState('')
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [courses, setCourses] = useState<Course[]>([])
+  const [teachers, setTeachers] = useState<Teacher[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const loadData = async () => {
     setLoading(true)
     try {
-      const [gurukulData, courseData] = await Promise.all([
+      const [gurukulData, courseData, teacherData] = await Promise.all([
         getAvailableGurukuls(),
         getAvailableCourses(),
+        getAvailableTeachers(),
       ])
       setGurukuls(gurukulData)
       setCourses(courseData)
+      setTeachers(teacherData)
     } catch {
       toast.error('Failed to load data')
     } finally {
@@ -91,12 +107,17 @@ export default function TemplateAssignmentModal({
       toast.error('Please select a course')
       return
     }
+    if (assignmentType === 'teacher' && !selectedTeacher) {
+      toast.error('Please select a teacher')
+      return
+    }
     setSaving(true)
     try {
       const assignmentData: CreateCertificateAssignmentData = {
         template_id: selectedTemplate,
         gurukul_id: assignmentType === 'gurukul' ? selectedGurukul : undefined,
         course_id: assignmentType === 'course' ? selectedCourse : undefined,
+        teacher_id: assignmentType === 'teacher' ? selectedTeacher : undefined,
       }
       // Ensure we don't send both gurukul_id and course_id
       if (assignmentType === 'gurukul') {
@@ -120,6 +141,7 @@ export default function TemplateAssignmentModal({
     setAssignmentType('course')
     setSelectedGurukul('')
     setSelectedCourse('')
+    setSelectedTeacher('')
     onClose()
   }
   // Reset course when gurukul changes and assignment type is gurukul
@@ -172,12 +194,13 @@ export default function TemplateAssignmentModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Assignment Type *
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setAssignmentType('gurukul')
                   setSelectedCourse('') // Reset course when switching to gurukul
+                  setSelectedTeacher('') // Reset teacher when switching
                 }}
                 className={`flex items-center justify-center gap-2 p-3 border rounded-md ${
                   assignmentType === 'gurukul'
@@ -192,6 +215,7 @@ export default function TemplateAssignmentModal({
                 type="button"
                 onClick={() => {
                   setAssignmentType('course')
+                  setSelectedTeacher('') // Reset teacher when switching
                   // Don't reset gurukul when switching to course, as course needs gurukul selection
                 }}
                 className={`flex items-center justify-center gap-2 p-3 border rounded-md ${
@@ -203,26 +227,44 @@ export default function TemplateAssignmentModal({
                 <AcademicCapIcon className="h-5 w-5" />
                 Course
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAssignmentType('teacher')
+                  setSelectedGurukul('') // Reset gurukul when switching
+                  setSelectedCourse('') // Reset course when switching
+                }}
+                className={`flex items-center justify-center gap-2 p-3 border rounded-md ${
+                  assignmentType === 'teacher'
+                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <UserIcon className="h-5 w-5" />
+                Teacher
+              </button>
             </div>
           </div>
-          {/* Gurukul Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Gurukul *</label>
-            <select
-              value={selectedGurukul}
-              onChange={(e) => handleGurukulChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-              required
-              disabled={loading}
-            >
-              <option value="">Select Gurukul</option>
-              {gurukuls.map((gurukul) => (
-                <option key={gurukul.id} value={gurukul.id}>
-                  {gurukul.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Gurukul Selection (only for gurukul and course assignments) */}
+          {(assignmentType === 'gurukul' || assignmentType === 'course') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Gurukul *</label>
+              <select
+                value={selectedGurukul}
+                onChange={(e) => handleGurukulChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                required
+                disabled={loading}
+              >
+                <option value="">Select Gurukul</option>
+                {gurukuls.map((gurukul) => (
+                  <option key={gurukul.id} value={gurukul.id}>
+                    {gurukul.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {/* Course Selection (only for course assignments) */}
           {assignmentType === 'course' && (
             <div>
@@ -246,6 +288,29 @@ export default function TemplateAssignmentModal({
               )}
             </div>
           )}
+          {/* Teacher Selection (only for teacher assignments) */}
+          {assignmentType === 'teacher' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher *</label>
+              <select
+                value={selectedTeacher}
+                onChange={(e) => setSelectedTeacher(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                required
+                disabled={loading}
+              >
+                <option value="">Select Teacher</option>
+                {teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name} ({teacher.email})
+                  </option>
+                ))}
+              </select>
+              {teachers.length === 0 && !loading && (
+                <p className="text-sm text-gray-500 mt-1">No teachers available</p>
+              )}
+            </div>
+          )}
           {/* Assignment Scope Info */}
           <div className="bg-blue-50 p-3 rounded-md">
             <div className="flex">
@@ -257,9 +322,14 @@ export default function TemplateAssignmentModal({
                       Template will be available to all teachers in the selected gurukul for any
                       course.
                     </p>
-                  ) : (
+                  ) : assignmentType === 'course' ? (
                     <p>
                       Template will be available only to teachers assigned to the selected course.
+                    </p>
+                  ) : (
+                    <p>
+                      Template will be directly assigned to the selected teacher for all their
+                      courses.
                     </p>
                   )}
                 </div>

@@ -15,7 +15,16 @@ interface BatchModalProps {
 }
 
 const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuccess }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    description: string
+    gurukul_id: string
+    teacher_id: string
+    start_date: string
+    end_date: string
+    max_students: string
+    status: 'not_started' | 'active' | 'in_progress' | 'completed' | 'archived'
+  }>({
     name: '',
     description: '',
     gurukul_id: '',
@@ -23,7 +32,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
     start_date: '',
     end_date: '',
     max_students: '',
-    status: 'active' as const,
+    status: 'not_started',
   })
   const [assignmentType, setAssignmentType] = useState<'gurukul' | 'course'>('gurukul')
   const [selectedCourseId, setSelectedCourseId] = useState('')
@@ -46,7 +55,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
         start_date: batch.start_date ? batch.start_date.split('T')[0] : '',
         end_date: batch.end_date ? batch.end_date.split('T')[0] : '',
         max_students: batch.max_students?.toString() || '',
-        status: 'active' as const,
+        status: batch.status || 'not_started',
       })
     }
   }, [batch])

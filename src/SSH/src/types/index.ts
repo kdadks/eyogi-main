@@ -283,10 +283,13 @@ export interface Batch {
   description?: string | null
   gurukul_id: string
   teacher_id?: string | null
+  course_id?: string | null
   start_date?: string | null
   end_date?: string | null
   max_students?: number | null
-  status: 'active' | 'inactive' | 'completed' | 'archived'
+  status: 'not_started' | 'active' | 'in_progress' | 'completed' | 'archived'
+  certificates_issued?: boolean
+  progress_percentage?: number // Calculated percentage based on completed weeks
   created_by: string
   is_active: boolean
   created_at: string
@@ -296,8 +299,10 @@ export interface Batch {
   teacher?: User
   students?: User[]
   courses?: Course[]
+  course?: Course
   student_count?: number
   course_count?: number
+  progress?: BatchProgress[] // Weekly progress records
 }
 
 export interface BatchStudent {
@@ -328,6 +333,25 @@ export interface BatchCourse {
   course?: Course
   batch?: Batch
   assigned_by_user?: User
+}
+
+export interface BatchProgress {
+  id: string
+  batch_id: string
+  week_number: number
+  is_completed: boolean
+  updated_by?: string
+  completed_at?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface BatchStudentWithInfo extends BatchStudent {
+  name: string
+  email: string
+  batch_name: string
+  course_title: string
 }
 
 export interface Permission {

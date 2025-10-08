@@ -300,7 +300,7 @@ export interface Database {
           start_date: string | null
           end_date: string | null
           max_students: number | null
-          status: 'active' | 'inactive' | 'completed' | 'archived'
+          status: 'not_started' | 'active' | 'in_progress' | 'completed' | 'archived'
           created_by: string
           is_active: boolean
           created_at: string
@@ -315,7 +315,7 @@ export interface Database {
           start_date?: string | null
           end_date?: string | null
           max_students?: number | null
-          status?: 'active' | 'inactive' | 'completed' | 'archived'
+          status?: 'not_started' | 'active' | 'in_progress' | 'completed' | 'archived'
           created_by: string
           is_active?: boolean
           created_at?: string
@@ -330,7 +330,7 @@ export interface Database {
           start_date?: string | null
           end_date?: string | null
           max_students?: number | null
-          status?: 'active' | 'inactive' | 'completed' | 'archived'
+          status?: 'not_started' | 'active' | 'in_progress' | 'completed' | 'archived'
           created_by?: string
           is_active?: boolean
           created_at?: string
