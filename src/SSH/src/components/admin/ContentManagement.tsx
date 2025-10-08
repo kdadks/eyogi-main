@@ -1,96 +1,57 @@
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input } from '@/components/ui/Input'
-import { formatDate, generateSlug, toSentenceCase } from '@/lib/utils'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect, useCallback } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
+import { toast } from 'sonner'
+import { EyeIcon, PencilIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Page } from '../../types'
+import { getPages, createPage, updatePage, deletePage } from '../../lib/api/pages'
+import { getCurrentUser } from '../../lib/auth'
+import { Button } from '../ui/Button'
+
+import { Input } from '../ui/Input'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import {
-  DocumentTextIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  EyeIcon,
-  MagnifyingGlassIcon,
-  GlobeAltIcon,
-  DocumentDuplicateIcon,
-  XMarkIcon,
-  CheckIcon,
-  Bars3Icon,
-  LinkIcon,
-} from '@heroicons/react/24/outline'
-interface ContentPage {
-  id: string
-  title: string
-  slug: string
-  type: 'page' | 'blog' | 'gurukul'
-  status: 'published' | 'draft' | 'archived'
-  author: string
-  content: string
-  meta_description: string
-  created_at: string
-  updated_at: string
-  views: number
-}
-interface HeaderMenuItem {
-  id: string
-  name: string
-  href: string
-  order: number
-  is_active: boolean
-  icon?: string
-  parent_id?: string
-  children?: HeaderMenuItem[]
-}
+import { toSentenceCase } from '../../lib/utils'
+
+// Form data interface for creating/editing pages
 interface PageFormData {
   title: string
   slug: string
-  type: 'page' | 'blog' | 'gurukul'
-  status: 'published' | 'draft' | 'archived'
+  page_type: string
+  is_published: boolean
   content: string
-  meta_description: string
+  seo_description: string
+  seo_title?: string
+  seo_keywords?: string[]
+  featured_image_url?: string
+  template?: string
+  sort_order?: number
 }
-interface MenuFormData {
-  name: string
-  href: string
-  icon: string
-  parent_id: string
-  is_active: boolean
+
+const initialFormData: PageFormData = {
+  title: '',
+  slug: '',
+  page_type: 'legal',
+  is_published: false,
+  content: '',
+  seo_description: '',
 }
+
 export default function ContentManagement() {
-  const [pages, setPages] = useState<ContentPage[]>([])
-  const [menuItems, setMenuItems] = useState<HeaderMenuItem[]>([])
-  const [filteredPages, setFilteredPages] = useState<ContentPage[]>([])
+  const [pages, setPages] = useState<Page[]>([])
+  const [filteredPages, setFilteredPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [activeTab, setActiveTab] = useState<'pages' | 'menu'>('pages')
-  // Page Management States
-  const [showPageForm, setShowPageForm] = useState(false)
-  const [editingPage, setEditingPage] = useState<ContentPage | null>(null)
-  const [viewingPage, setViewingPage] = useState<ContentPage | null>(null)
-  const [pageFormData, setPageFormData] = useState<PageFormData>({
-    title: '',
-    slug: '',
-    type: 'page',
-    status: 'draft',
-    content: '',
-    meta_description: '',
-  })
-  const [pageFormLoading, setPageFormLoading] = useState(false)
-  // Menu Management States
-  const [showMenuForm, setShowMenuForm] = useState(false)
-  const [editingMenuItem, setEditingMenuItem] = useState<HeaderMenuItem | null>(null)
-  const [menuFormData, setMenuFormData] = useState<MenuFormData>({
-    name: '',
-    href: '',
-    icon: '',
-    parent_id: '',
-    is_active: true,
-  })
-  const [menuFormLoading, setMenuFormLoading] = useState(false)
+
+  // Modal States
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [viewingPage, setViewingPage] = useState<Page | null>(null)
+  const [editingPage, setEditingPage] = useState<Page | null>(null)
+  const [formData, setFormData] = useState<PageFormData>(initialFormData)
+  const [saving, setSaving] = useState(false)
+
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -102,136 +63,161 @@ export default function ContentManagement() {
     message: '',
     onConfirm: () => {},
   })
+
   useEffect(() => {
     loadData()
   }, [])
-  useEffect(() => {
-    // Auto-generate slug when title changes
-    if (pageFormData.title && !editingPage) {
-      setPageFormData((prev) => ({
-        ...prev,
-        slug: generateSlug(pageFormData.title),
-      }))
-    }
-  }, [pageFormData.title, editingPage])
+
   const loadData = async () => {
     setLoading(true)
     try {
-      // Load real content pages from database
-      // For now, use empty arrays until content API is implemented
-      setPages([])
-      setMenuItems([])
+      const pagesData = await getPages()
+      setPages(pagesData)
     } catch {
-      toast.error('Failed to load content data')
+      toast.error('Failed to load pages')
     } finally {
       setLoading(false)
     }
   }
-  const filterPages = React.useCallback(() => {
+
+  const filterPages = useCallback(() => {
     let filtered = pages
+
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
         (page) =>
           page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          page.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          page.content.toLowerCase().includes(searchTerm.toLowerCase()),
+          page.slug.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
+
     // Filter by type
     if (typeFilter !== 'all') {
-      filtered = filtered.filter((page) => page.type === typeFilter)
+      filtered = filtered.filter((page) => page.page_type === typeFilter)
     }
+
     // Filter by status
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((page) => page.status === statusFilter)
+      if (statusFilter === 'published') {
+        filtered = filtered.filter((page) => page.is_published)
+      } else if (statusFilter === 'draft') {
+        filtered = filtered.filter((page) => !page.is_published)
+      }
     }
+
     setFilteredPages(filtered)
   }, [pages, searchTerm, typeFilter, statusFilter])
+
   useEffect(() => {
     filterPages()
   }, [filterPages])
-  // Page Management Functions
-  const resetPageForm = () => {
-    setPageFormData({
-      title: '',
-      slug: '',
-      type: 'page',
-      status: 'draft',
-      content: '',
-      meta_description: '',
-    })
-    setShowPageForm(false)
-    setEditingPage(null)
-    setViewingPage(null)
+
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
   }
-  const handlePageSubmit = async (e: React.FormEvent) => {
+
+  const resetForm = () => {
+    setFormData(initialFormData)
+    setEditingPage(null)
+    setShowCreateModal(false)
+    setShowEditModal(false)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+
+    // Auto-generate slug when title changes for new pages
+    if (name === 'title' && !editingPage) {
+      setFormData((prev) => ({
+        ...prev,
+        slug: generateSlug(value),
+      }))
+    }
+  }
+
+  const handleContentChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, content: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setPageFormLoading(true)
+    setSaving(true)
+
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const currentUser = await getCurrentUser()
+
+      const pageData = {
+        ...formData,
+        content: { html: formData.content }, // Convert string to JSONB format
+      }
+
       if (editingPage) {
         // Update existing page
+        await updatePage(editingPage.id, pageData)
         const updatedPages = pages.map((page) =>
           page.id === editingPage.id
-            ? {
-                ...page,
-                ...pageFormData,
-                updated_at: new Date().toISOString(),
-              }
+            ? { ...page, ...pageData, updated_at: new Date().toISOString() }
             : page,
         )
         setPages(updatedPages)
         toast.success('Page updated successfully')
       } else {
-        // Create new page
-        const newPage: ContentPage = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...pageFormData,
-          author: 'Admin',
-          views: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+        // Create new page - include created_by
+        const newPageData = {
+          ...pageData,
+          created_by: currentUser?.id, // Use actual user ID or null
         }
-        setPages([...pages, newPage])
+        const newPage = await createPage(newPageData)
+        setPages([newPage, ...pages])
         toast.success('Page created successfully')
       }
-      resetPageForm()
+
+      resetForm()
     } catch {
       toast.error('Failed to save page')
     } finally {
-      setPageFormLoading(false)
+      setSaving(false)
     }
   }
-  const handleEditPage = (page: ContentPage) => {
+
+  const handleEdit = (page: Page) => {
     setEditingPage(page)
-    setPageFormData({
+    setFormData({
       title: page.title,
       slug: page.slug,
-      type: page.type,
-      status: page.status,
-      content: page.content,
-      meta_description: page.meta_description,
+      page_type: page.page_type,
+      is_published: page.is_published,
+      content:
+        typeof page.content === 'object' && page.content?.html ? String(page.content.html) : '',
+      seo_description: page.seo_description || '',
+      seo_title: page.seo_title,
+      seo_keywords: page.seo_keywords,
+      featured_image_url: page.featured_image_url,
+      template: page.template,
+      sort_order: page.sort_order,
     })
-    setShowPageForm(true)
+    setShowEditModal(true)
   }
-  const handleViewPage = (page: ContentPage) => {
-    setViewingPage(page)
-  }
-  const handleDeletePage = async (pageId: string) => {
-    const pageToDelete = pages.find((p) => p.id === pageId)
-    if (!pageToDelete) return
 
+  const handleDelete = (page: Page) => {
     setConfirmDialog({
       isOpen: true,
       title: 'Delete Page',
-      message: `Are you sure you want to delete "${pageToDelete.title}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${page.title}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          // Simulate API delay
-          await new Promise((resolve) => setTimeout(resolve, 300))
-          const updatedPages = pages.filter((page) => page.id !== pageId)
+          await deletePage(page.id)
+          const updatedPages = pages.filter((p) => p.id !== page.id)
           setPages(updatedPages)
           toast.success('Page deleted successfully')
         } catch {
@@ -241,705 +227,510 @@ export default function ContentManagement() {
       },
     })
   }
-  // Menu Management Functions
-  const resetMenuForm = () => {
-    setMenuFormData({
-      name: '',
-      href: '',
-      icon: '',
-      parent_id: '',
-      is_active: true,
-    })
-    setShowMenuForm(false)
-    setEditingMenuItem(null)
-  }
-  const handleMenuSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setMenuFormLoading(true)
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      if (editingMenuItem) {
-        // Update existing menu item
-        const updatedMenuItems = menuItems.map((item) =>
-          item.id === editingMenuItem.id
-            ? {
-                ...item,
-                ...menuFormData,
-                order: item.order,
-              }
-            : item,
-        )
-        setMenuItems(updatedMenuItems)
-        toast.success('Menu item updated successfully')
-      } else {
-        // Create new menu item
-        const newMenuItem: HeaderMenuItem = {
-          id: Math.random().toString(36).substr(2, 9),
-          ...menuFormData,
-          order: menuItems.length + 1,
-        }
-        setMenuItems([...menuItems, newMenuItem])
-        toast.success('Menu item created successfully')
-      }
-      resetMenuForm()
-    } catch {
-      toast.error('Failed to save menu item')
-    } finally {
-      setMenuFormLoading(false)
-    }
-  }
-  const handleEditMenuItem = (menuItem: HeaderMenuItem) => {
-    setEditingMenuItem(menuItem)
-    setMenuFormData({
-      name: menuItem.name,
-      href: menuItem.href,
-      icon: menuItem.icon || '',
-      parent_id: menuItem.parent_id || '',
-      is_active: menuItem.is_active,
-    })
-    setShowMenuForm(true)
-  }
-  const handleDeleteMenuItem = async (menuItemId: string) => {
-    const menuItemToDelete = menuItems.find((m) => m.id === menuItemId)
-    if (!menuItemToDelete) return
 
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Delete Menu Item',
-      message: `Are you sure you want to delete "${menuItemToDelete.name}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        try {
-          // Simulate API delay
-          await new Promise((resolve) => setTimeout(resolve, 300))
-          const updatedMenuItems = menuItems.filter((item) => item.id !== menuItemId)
-          setMenuItems(updatedMenuItems)
-          toast.success('Menu item deleted successfully')
-        } catch {
-          toast.error('Failed to delete menu item')
-        }
-        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
-      },
-    })
-  }
-  const handleToggleMenuStatus = async (menuItemId: string, currentStatus: boolean) => {
+  const handleTogglePublish = async (page: Page) => {
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 200))
-      const updatedMenuItems = menuItems.map((item) =>
-        item.id === menuItemId ? { ...item, is_active: !currentStatus } : item,
+      const currentUser = await getCurrentUser()
+      const updatedData: { is_published: boolean; published_by?: string } = {
+        is_published: !page.is_published,
+      }
+
+      // Set published_by when publishing
+      if (updatedData.is_published) {
+        updatedData.published_by = currentUser?.id // Use actual user ID or null
+      }
+
+      await updatePage(page.id, updatedData)
+
+      const updatedPages = pages.map((p) =>
+        p.id === page.id ? { ...p, ...updatedData, updated_at: new Date().toISOString() } : p,
       )
-      setMenuItems(updatedMenuItems)
-      toast.success(`Menu item ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
+      setPages(updatedPages)
+
+      toast.success(`Page ${updatedData.is_published ? 'published' : 'unpublished'} successfully`)
     } catch {
-      toast.error('Failed to update menu item status')
+      toast.error('Failed to update page status')
     }
   }
-  const getStatusColor = (status: string) => {
-    const colors = {
-      published: 'bg-green-100 text-green-800',
-      draft: 'bg-yellow-100 text-yellow-800',
-      archived: 'bg-gray-100 text-gray-800',
-    }
-    return colors[status as keyof typeof colors] || colors.draft
-  }
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'page':
-        return DocumentTextIcon
-      case 'blog':
-        return DocumentDuplicateIcon
-      case 'gurukul':
-        return GlobeAltIcon
-      default:
-        return DocumentTextIcon
-    }
-  }
-  const iconOptions = [
-    { value: 'HomeIcon', label: 'Home' },
-    { value: 'GlobeAltIcon', label: 'Globe' },
-    { value: 'AcademicCapIcon', label: 'Academic' },
-    { value: 'InformationCircleIcon', label: 'Info' },
-    { value: 'PhoneIcon', label: 'Phone' },
-    { value: 'BookOpenIcon', label: 'Book' },
-    { value: 'UserGroupIcon', label: 'Users' },
-  ]
-  const stats = {
-    totalPages: pages.length,
-    published: pages.filter((p) => p.status === 'published').length,
-    draft: pages.filter((p) => p.status === 'draft').length,
-    archived: pages.filter((p) => p.status === 'archived').length,
-    totalViews: pages.reduce((sum, p) => sum + p.views, 0),
-    totalMenuItems: menuItems.length,
-    activeMenuItems: menuItems.filter((m) => m.is_active).length,
-  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="spinner w-8 h-8 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading content...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
+
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.totalPages}</div>
-            <div className="text-sm text-gray-600">Total Pages</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.published}</div>
-            <div className="text-sm text-gray-600">Published</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.draft}</div>
-            <div className="text-sm text-gray-600">Drafts</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {stats.totalViews.toLocaleString()}
+      {/* Search and Filters */}
+      <div className="flex gap-4 items-center">
+        <div className="flex-1">
+          <Input
+            placeholder="Search pages..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Types</option>
+          <option value="legal">Legal</option>
+          <option value="page">Page</option>
+          <option value="blog">Blog</option>
+          <option value="gurukul">Gurukul</option>
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">All Status</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Create Page
+        </Button>
+      </div>
+
+      {/* Pages List */}
+      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Title
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Published
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredPages.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                      ? 'No pages match your filters'
+                      : 'No pages created yet'}
+                  </td>
+                </tr>
+              ) : (
+                filteredPages.map((page) => (
+                  <tr key={page.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{page.title}</div>
+                        <div className="text-sm text-gray-500">/{page.slug}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {toSentenceCase(page.page_type)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                          page.is_published
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {page.is_published ? 'Published' : 'Draft'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(page.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {page.published_at ? new Date(page.published_at).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setViewingPage(page)}>
+                          <EyeIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(page)}>
+                          <PencilIcon className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTogglePublish(page)}
+                          className={page.is_published ? 'text-yellow-600' : 'text-green-600'}
+                        >
+                          {page.is_published ? 'Unpublish' : 'Publish'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(page)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Create New Page</h2>
+                <Button variant="ghost" size="sm" onClick={resetForm}>
+                  <XMarkIcon className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <Input
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+                    <Input
+                      name="slug"
+                      value={formData.slug}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      name="page_type"
+                      value={formData.page_type}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="legal">Legal</option>
+                      <option value="page">Page</option>
+                      <option value="blog">Blog</option>
+                      <option value="gurukul">Gurukul</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="is_published"
+                      id="is_published"
+                      checked={formData.is_published}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    <label htmlFor="is_published" className="text-sm font-medium text-gray-700">
+                      Publish immediately
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    SEO Description
+                  </label>
+                  <Input
+                    name="seo_description"
+                    value={formData.seo_description}
+                    onChange={handleInputChange}
+                    placeholder="Brief description for search engines"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <ReactQuill
+                    value={formData.content}
+                    onChange={handleContentChange}
+                    placeholder="Enter page content..."
+                    className="bg-white"
+                    style={{ height: '300px', marginBottom: '50px' }}
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ script: 'sub' }, { script: 'super' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        [{ direction: 'rtl' }],
+                        [{ color: [] }, { background: [] }],
+                        [{ align: [] }],
+                        ['link', 'image', 'video'],
+                        ['clean'],
+                      ],
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving ? 'Creating...' : 'Create Page'}
+                  </Button>
+                </div>
+              </form>
             </div>
-            <div className="text-sm text-gray-600">Total Views</div>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('pages')}
-            className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-              activeTab === 'pages'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <DocumentTextIcon className="h-5 w-5" />
-            <span>Pages & Content</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('menu')}
-            className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-              activeTab === 'menu'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <Bars3Icon className="h-5 w-5" />
-            <span>Header Menu</span>
-          </button>
-        </nav>
-      </div>
-      {/* Page View Modal */}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Edit Page</h2>
+                <Button variant="ghost" size="sm" onClick={resetForm}>
+                  <XMarkIcon className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <Input
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+                    <Input
+                      name="slug"
+                      value={formData.slug}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      name="page_type"
+                      value={formData.page_type}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="legal">Legal</option>
+                      <option value="page">Page</option>
+                      <option value="blog">Blog</option>
+                      <option value="gurukul">Gurukul</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="is_published"
+                      id="is_published_edit"
+                      checked={formData.is_published}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    <label
+                      htmlFor="is_published_edit"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Published
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    SEO Description
+                  </label>
+                  <Input
+                    name="seo_description"
+                    value={formData.seo_description}
+                    onChange={handleInputChange}
+                    placeholder="Brief description for search engines"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <ReactQuill
+                    value={formData.content}
+                    onChange={handleContentChange}
+                    placeholder="Enter page content..."
+                    className="bg-white"
+                    style={{ height: '300px', marginBottom: '50px' }}
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ script: 'sub' }, { script: 'super' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        [{ direction: 'rtl' }],
+                        [{ color: [] }, { background: [] }],
+                        [{ align: [] }],
+                        ['link', 'image', 'video'],
+                        ['clean'],
+                      ],
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving ? 'Updating...' : 'Update Page'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
       {viewingPage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Page Preview</h2>
-                <Button variant="ghost" onClick={() => setViewingPage(null)}>
-                  <XMarkIcon className="h-5 w-5" />
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">View Page</h2>
+                <Button variant="ghost" size="sm" onClick={() => setViewingPage(null)}>
+                  <XMarkIcon className="w-4 h-4" />
                 </Button>
               </div>
+
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold mb-2">Page Information</h3>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <p>
-                      <strong>Title:</strong> {viewingPage.title}
-                    </p>
-                    <p>
-                      <strong>Slug:</strong> /{viewingPage.slug}
-                    </p>
-                    <p>
-                      <strong>Type:</strong>{' '}
-                      <Badge className={getStatusColor(viewingPage.type)} size="sm">
-                        {toSentenceCase(viewingPage.type)}
-                      </Badge>
-                    </p>
-                    <p>
-                      <strong>Status:</strong>{' '}
-                      <Badge className={getStatusColor(viewingPage.status)} size="sm">
-                        {toSentenceCase(viewingPage.status)}
-                      </Badge>
-                    </p>
-                    <p>
-                      <strong>Author:</strong> {viewingPage.author}
-                    </p>
-                    <p>
-                      <strong>Views:</strong> {viewingPage.views.toLocaleString()}
-                    </p>
+                  <h3 className="text-2xl font-bold">{viewingPage.title}</h3>
+                  <div className="flex gap-2 mt-2">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      {toSentenceCase(viewingPage.page_type)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                        viewingPage.is_published
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {viewingPage.is_published ? 'Published' : 'Draft'}
+                    </span>
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Meta Description</h3>
-                  <p className="text-sm text-gray-600">{viewingPage.meta_description}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Content Preview</h3>
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
-                    <div dangerouslySetInnerHTML={{ __html: viewingPage.content }} />
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <strong>Slug:</strong> /{viewingPage.slug}
+                  </div>
+                  <div>
+                    <strong>Created:</strong> {new Date(viewingPage.created_at).toLocaleString()}
+                  </div>
+                  <div>
+                    <strong>Created By:</strong> {viewingPage.created_by || 'System'}
+                  </div>
+                  {viewingPage.published_at && (
+                    <div>
+                      <strong>Published:</strong>{' '}
+                      {new Date(viewingPage.published_at).toLocaleString()}
+                    </div>
+                  )}
+                  <div>
+                    <strong>Published By:</strong>{' '}
+                    {viewingPage.published_by ||
+                      (viewingPage.is_published ? 'System' : 'Not published')}
                   </div>
                 </div>
+
+                {viewingPage.seo_description && (
+                  <div>
+                    <strong>SEO Description:</strong>
+                    <p className="text-sm text-gray-600">{viewingPage.seo_description}</p>
+                  </div>
+                )}
+
+                <div>
+                  <strong>Content:</strong>
+                  <div className="mt-2 p-6 bg-gray-50 rounded border max-h-96 overflow-y-auto">
+                    {typeof viewingPage.content === 'object' && viewingPage.content?.html ? (
+                      <div
+                        className="prose prose-sm max-w-none"
+                        style={{
+                          lineHeight: '1.6',
+                          fontSize: '14px',
+                        }}
+                        dangerouslySetInnerHTML={{ __html: String(viewingPage.content.html) }}
+                      />
+                    ) : (
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {String(viewingPage.content)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setViewingPage(null)}>Close</Button>
               </div>
             </div>
           </div>
         </div>
       )}
-      {/* Pages Tab */}
-      {activeTab === 'pages' && (
-        <div className="space-y-6">
-          {/* Page Form */}
-          {showPageForm && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
-                    {editingPage ? 'Edit Page' : 'Create New Page'}
-                  </h3>
-                  <Button variant="ghost" onClick={resetPageForm}>
-                    <XMarkIcon className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePageSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <Input
-                      label="Page Title"
-                      value={pageFormData.title}
-                      onChange={(e) =>
-                        setPageFormData((prev) => ({ ...prev, title: e.target.value }))
-                      }
-                      required
-                    />
-                    <Input
-                      label="URL Slug"
-                      value={pageFormData.slug}
-                      onChange={(e) =>
-                        setPageFormData((prev) => ({ ...prev, slug: e.target.value }))
-                      }
-                      required
-                      helperText="URL-friendly identifier"
-                    />
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">Page Type</label>
-                      <select
-                        value={pageFormData.type}
-                        onChange={(e) =>
-                          setPageFormData((prev) => ({
-                            ...prev,
-                            type: e.target.value as 'page' | 'blog' | 'gurukul',
-                          }))
-                        }
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                      >
-                        <option value="page">Page</option>
-                        <option value="blog">Blog Post</option>
-                        <option value="gurukul">Gurukul Page</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">Status</label>
-                      <select
-                        value={pageFormData.status}
-                        onChange={(e) =>
-                          setPageFormData((prev) => ({
-                            ...prev,
-                            status: e.target.value as 'published' | 'draft' | 'archived',
-                          }))
-                        }
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                        <option value="archived">Archived</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Meta Description
-                    </label>
-                    <textarea
-                      value={pageFormData.meta_description}
-                      onChange={(e) =>
-                        setPageFormData((prev) => ({ ...prev, meta_description: e.target.value }))
-                      }
-                      rows={2}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                      placeholder="Brief description for search engines..."
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Content</label>
-                    <textarea
-                      value={pageFormData.content}
-                      onChange={(e) =>
-                        setPageFormData((prev) => ({ ...prev, content: e.target.value }))
-                      }
-                      rows={10}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                      placeholder="Page content (HTML supported)..."
-                      required
-                    />
-                  </div>
-                  <div className="flex space-x-4">
-                    <Button type="submit" loading={pageFormLoading}>
-                      <CheckIcon className="h-4 w-4 mr-2" />
-                      {editingPage ? 'Update Page' : 'Create Page'}
-                    </Button>
-                    <Button type="button" variant="danger" onClick={resetPageForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-          {/* Pages Management */}
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                <h2 className="text-xl font-bold">Pages & Content</h2>
-                <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search pages..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                  {/* Type Filter */}
-                  <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="page">Pages</option>
-                    <option value="blog">Blog Posts</option>
-                    <option value="gurukul">Gurukul Pages</option>
-                  </select>
-                  {/* Status Filter */}
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                  <Button onClick={() => setShowPageForm(true)}>
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    New Page
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {filteredPages.length === 0 ? (
-                <div className="text-center py-8">
-                  <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No pages found</h3>
-                  <p className="text-gray-600">No pages match your current filters.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Page
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Author
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Views
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Updated
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredPages.map((page) => {
-                        const TypeIcon = getTypeIcon(page.type)
-                        return (
-                          <tr key={page.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center">
-                                <TypeIcon className="h-5 w-5 text-gray-400 mr-3" />
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {page.title}
-                                  </div>
-                                  <div className="text-sm text-gray-500">/{page.slug}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="capitalize text-sm text-gray-600">{page.type}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <Badge className={getStatusColor(page.status)} size="sm">
-                                {toSentenceCase(page.status)}
-                              </Badge>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">{page.author}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {page.views.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {formatDate(page.updated_at)}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleViewPage(page)}
-                                >
-                                  <EyeIcon className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEditPage(page)}
-                                >
-                                  <PencilIcon className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="danger"
-                                  onClick={() => handleDeletePage(page.id)}
-                                >
-                                  <TrashIcon className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      {/* Header Menu Tab */}
-      {activeTab === 'menu' && (
-        <div className="space-y-6">
-          {/* Menu Form */}
-          {showMenuForm && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
-                    {editingMenuItem ? 'Edit Menu Item' : 'Create New Menu Item'}
-                  </h3>
-                  <Button variant="ghost" onClick={resetMenuForm}>
-                    <XMarkIcon className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleMenuSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <Input
-                      label="Menu Name"
-                      value={menuFormData.name}
-                      onChange={(e) =>
-                        setMenuFormData((prev) => ({ ...prev, name: e.target.value }))
-                      }
-                      required
-                    />
-                    <Input
-                      label="Link URL"
-                      value={menuFormData.href}
-                      onChange={(e) =>
-                        setMenuFormData((prev) => ({ ...prev, href: e.target.value }))
-                      }
-                      required
-                      placeholder="/page-url"
-                    />
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">Icon</label>
-                      <select
-                        value={menuFormData.icon}
-                        onChange={(e) =>
-                          setMenuFormData((prev) => ({ ...prev, icon: e.target.value }))
-                        }
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
-                      >
-                        <option value="">No Icon</option>
-                        {iconOptions.map((icon) => (
-                          <option key={icon.value} value={icon.value}>
-                            {icon.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex items-center space-x-2 pt-6">
-                      <input
-                        type="checkbox"
-                        id="is_active"
-                        checked={menuFormData.is_active}
-                        onChange={(e) =>
-                          setMenuFormData((prev) => ({ ...prev, is_active: e.target.checked }))
-                        }
-                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                      />
-                      <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                        Active in Menu
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex space-x-4">
-                    <Button type="submit" loading={menuFormLoading}>
-                      <CheckIcon className="h-4 w-4 mr-2" />
-                      {editingMenuItem ? 'Update Menu Item' : 'Create Menu Item'}
-                    </Button>
-                    <Button type="button" variant="danger" onClick={resetMenuForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-          {/* Menu Management */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold">Header Menu Management</h2>
-                  <p className="text-sm text-gray-600">Manage navigation menu items</p>
-                </div>
-                <Button onClick={() => setShowMenuForm(true)}>
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Menu Item
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {menuItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <Bars3Icon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items</h3>
-                  <p className="text-gray-600">Create your first menu item to get started.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {menuItems
-                    .sort((a, b) => a.order - b.order)
-                    .map((menuItem) => (
-                      <div
-                        key={menuItem.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <Bars3Icon className="h-4 w-4 text-gray-400 cursor-move" />
-                            <span className="text-sm text-gray-500">#{menuItem.order}</span>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            {menuItem.icon && (
-                              <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <LinkIcon className="h-4 w-4 text-gray-600" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium text-gray-900">{menuItem.name}</p>
-                              <p className="text-sm text-gray-500">{menuItem.href}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <Badge
-                            className={
-                              menuItem.is_active
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }
-                          >
-                            {menuItem.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditMenuItem(menuItem)}
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={menuItem.is_active ? 'ghost' : 'secondary'}
-                              onClick={() =>
-                                handleToggleMenuStatus(menuItem.id, menuItem.is_active)
-                              }
-                            >
-                              {menuItem.is_active ? 'Deactivate' : 'Activate'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={() => handleDeleteMenuItem(menuItem.id)}
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      {/* Confirmation Dialog */}
+
+      {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
-        variant="danger"
       />
     </div>
   )

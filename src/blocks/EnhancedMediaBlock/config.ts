@@ -132,7 +132,7 @@ export const EnhancedMediaBlock: Block = {
             },
             {
               name: 'externalUrl',
-              type: 'url',
+              type: 'text',
               admin: {
                 condition: (_, siblingData) => siblingData?.type === 'external',
               },

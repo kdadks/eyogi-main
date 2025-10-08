@@ -1,9 +1,27 @@
 'use client'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { getPublishedPages } from '../../lib/api/pages'
+import { Page } from '../../types'
+
 export default function Footer() {
   const currentYear = new Date().getFullYear()
-  const footerSections = [
+  const [legalPages, setLegalPages] = useState<Page[]>([])
+
+  useEffect(() => {
+    const loadLegalPages = async () => {
+      try {
+        const pages = await getPublishedPages('legal')
+        setLegalPages(pages)
+      } catch (error) {
+        console.error('Failed to load legal pages:', error)
+      }
+    }
+
+    loadLegalPages()
+  }, [])
+
+  const staticFooterSections = [
     {
       title: 'Gurukuls',
       links: [
@@ -34,16 +52,23 @@ export default function Footer() {
         { name: 'Blog', href: '/blog' },
       ],
     },
-    {
-      title: 'Legal',
-      links: [
-        { name: 'Privacy Policy', href: '/privacy' },
-        { name: 'Terms of Service', href: '/terms' },
-        { name: 'Cookie Policy', href: '/cookies' },
-        { name: 'Accessibility', href: '/accessibility' },
-      ],
-    },
   ]
+
+  // Dynamic footer sections with legal pages from database
+  const dynamicFooterSections = []
+
+  // Only add Legal section if we have pages to show
+  if (legalPages.length > 0) {
+    dynamicFooterSections.push({
+      title: 'Legal',
+      links: legalPages.map((page) => ({
+        name: page.title,
+        href: `/legal/${page.slug}`,
+      })),
+    })
+  }
+
+  const footerSections = [...staticFooterSections, ...dynamicFooterSections]
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

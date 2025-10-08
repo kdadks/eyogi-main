@@ -358,3 +358,47 @@ export interface UserPermission {
   permission?: Permission
   granted_by_user?: User
 }
+
+export interface Page {
+  id: string
+  title: string
+  slug: string
+  content: Record<string, unknown> // JSONB content from database
+  page_type: string
+  gurukul_id?: string
+  is_published: boolean
+  seo_title?: string
+  seo_description?: string
+  seo_keywords?: string[]
+  featured_image_url?: string
+  template?: string
+  sort_order?: number
+  created_by?: string
+  published_by?: string
+  published_at?: string
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  created_by_user?: User
+  published_by_user?: User
+  gurukul?: {
+    id: string
+    name: string
+    slug: string
+  }
+}
+
+export interface PageAnalytics {
+  id: string
+  page_path: string
+  user_id?: string
+  session_id?: string
+  referrer?: string
+  device_type?: string
+  browser?: string
+  country?: string
+  duration_seconds?: number
+  created_at: string
+  // Extended properties for UI
+  user?: User
+}

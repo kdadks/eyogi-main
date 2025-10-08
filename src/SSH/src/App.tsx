@@ -34,6 +34,7 @@ import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import GurukulDetailPage from './pages/GurukulDetailPage'
 import CourseDetailPage from './pages/CourseDetailPage'
+import LegalPageDisplay from './components/legal/LegalPageDisplay'
 import CertificateViewer from './components/certificates/CertificateViewer'
 import BatchManagement from './components/admin/BatchManagement'
 import StudentManagement from './components/admin/StudentManagement'
@@ -73,6 +74,8 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/gurukuls" element={<GurukulPage />} />
+            {/* Legal Pages Route */}
+            <Route path="/legal/:slug" element={<LegalPageDisplay />} />
             {/* Auth Redirects - Opens modals instead of separate pages */}
             <Route path="/auth/*" element={<AuthRedirect openModal={openAuthModal} />} />
             {/* User Dashboard Routes */}
