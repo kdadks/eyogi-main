@@ -117,8 +117,8 @@ export interface Enrollment {
   completed_at?: string
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded'
   payment_id?: string
-  certificate_issued: boolean
-  certificate_url?: string
+  // certificate_issued: boolean  // Moved to certificates table
+  // certificate_url?: string  // Moved to certificates table
   progress_percentage?: number
   final_grade?: string
   created_at: string
@@ -128,19 +128,31 @@ export interface Enrollment {
 }
 export interface Certificate {
   id: string
-  enrollment_id: string
+  certificate_number: string
   student_id: string
   course_id: string
-  certificate_number: string
-  template_id: string
-  issued_at: string
-  issued_by: string
-  verification_code: string
-  certificate_data: object
-  file_url: string
+  template_id?: string | null
+  teacher_id?: string | null
+  title: string
+  completion_date: string
+  issue_date?: string | null
+  certificate_data?: object | null
+  file_url?: string | null
+  verification_code?: string | null
+  is_verified?: boolean | null
+  downloaded_at?: string | null
+  shared_count?: number | null
+  metadata?: object | null
   created_at: string
+  updated_at: string
+  is_active?: boolean | null
+  // Extended properties for UI compatibility
+  enrollment_id?: string // For backward compatibility
+  issued_at?: string // Alias for issue_date for backward compatibility
+  issued_by?: string // For backward compatibility
   course?: Course
   student?: User
+  teacher?: User
 }
 export interface CertificateTemplate {
   id: string

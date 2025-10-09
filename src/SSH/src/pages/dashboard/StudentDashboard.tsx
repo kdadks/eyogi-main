@@ -291,7 +291,7 @@ export default function StudentDashboard() {
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50',
       borderColor: 'border-yellow-200',
-      date: new Date(cert.issued_at),
+      date: new Date(cert.issued_at || new Date().toISOString()),
       points: 50,
       action: () => setActiveTab('certificates'),
     })),
@@ -1504,7 +1504,10 @@ export default function StudentDashboard() {
                         {certificate.course?.title}
                       </h3>
                       <p className="text-gray-600 text-sm mb-4">
-                        Completed: {new Date(certificate.issued_at).toLocaleDateString()}
+                        Completed:{' '}
+                        {new Date(
+                          certificate.issued_at || new Date().toISOString(),
+                        ).toLocaleDateString()}
                       </p>
                       <div className="space-y-2">
                         <p className="text-xs text-gray-500">Verification Code</p>
@@ -1514,7 +1517,7 @@ export default function StudentDashboard() {
                       </div>
                       {certificate.file_url && (
                         <button
-                          onClick={() => window.open(certificate.file_url, '_blank')}
+                          onClick={() => window.open(certificate.file_url!, '_blank')}
                           className="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer"
                         >
                           <svg

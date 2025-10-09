@@ -181,8 +181,6 @@ export interface Database {
           completed_at: string | null
           payment_status: 'pending' | 'paid' | 'failed' | 'refunded'
           payment_id: string | null
-          certificate_issued: boolean
-          certificate_url: string | null
           created_at: string
           updated_at: string
         }
@@ -196,8 +194,8 @@ export interface Database {
           completed_at?: string | null
           payment_status?: 'pending' | 'paid' | 'failed' | 'refunded'
           payment_id?: string | null
-          certificate_issued?: boolean
-          certificate_url?: string | null
+          // certificate_issued?: boolean  // Moved to certificates table
+          // certificate_url?: string | null  // Moved to certificates table
           created_at?: string
           updated_at?: string
         }
@@ -211,8 +209,8 @@ export interface Database {
           completed_at?: string | null
           payment_status?: 'pending' | 'paid' | 'failed' | 'refunded'
           payment_id?: string | null
-          certificate_issued?: boolean
-          certificate_url?: string | null
+          // certificate_issued?: boolean  // Moved to certificates table
+          // certificate_url?: string | null  // Moved to certificates table
           created_at?: string
           updated_at?: string
         }

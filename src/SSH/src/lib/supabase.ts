@@ -316,8 +316,8 @@ export interface Database {
           completed_at: string | null
           progress_percentage: number
           final_grade: string | null
-          certificate_issued_at: string | null
-          certificate_url: string | null
+          // certificate_issued_at: string | null  // Moved to certificates table
+          // certificate_url: string | null  // Moved to certificates table
           notes: string | null
           created_at: string
           updated_at: string
@@ -333,8 +333,8 @@ export interface Database {
           completed_at?: string | null
           progress_percentage?: number
           final_grade?: string | null
-          certificate_issued_at?: string | null
-          certificate_url?: string | null
+          // certificate_issued_at?: string | null  // Moved to certificates table
+          // certificate_url?: string | null  // Moved to certificates table
           notes?: string | null
         }
         Update: {
@@ -348,8 +348,8 @@ export interface Database {
           completed_at?: string | null
           progress_percentage?: number
           final_grade?: string | null
-          certificate_issued_at?: string | null
-          certificate_url?: string | null
+          // certificate_issued_at?: string | null  // Moved to certificates table
+          // certificate_url?: string | null  // Moved to certificates table
           notes?: string | null
         }
       }

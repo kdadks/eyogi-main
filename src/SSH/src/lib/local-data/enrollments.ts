@@ -31,8 +31,6 @@ export async function enrollInCourse(courseId: string, studentId: string): Promi
     completed_at: undefined,
     payment_status: 'pending',
     payment_id: undefined,
-    certificate_issued: false,
-    certificate_url: undefined,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }

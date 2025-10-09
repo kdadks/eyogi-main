@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { User, Course, Enrollment, Gurukul } from '@/types'
+import { User, Course, Enrollment, Gurukul, Certificate } from '@/types'
 import { getAllUsers, deleteUser } from '@/lib/api/users'
 import { getCourses } from '@/lib/api/courses'
 import { getAllEnrollments } from '@/lib/api/enrollments'
 import { getGurukuls } from '@/lib/api/gurukuls'
+import { getCertificatesFromTable } from '@/lib/api/certificates'
 import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
@@ -60,8 +61,14 @@ export default function StudentManagement() {
   const [students, setStudents] = useState<StudentWithEnrollments[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
+  const [certificates, setCertificates] = useState<Certificate[]>([])
   const [filteredStudents, setFilteredStudents] = useState<StudentWithEnrollments[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Helper function to check if student has certificate for course
+  const hasCertificate = (studentId: string, courseId: string): boolean => {
+    return certificates.some((cert) => cert.student_id === studentId && cert.course_id === courseId)
+  }
   const [activeTab, setActiveTab] = useState<
     'overview' | 'by-course' | 'details' | 'communication'
   >('overview')
@@ -77,7 +84,8 @@ export default function StudentManagement() {
   const [editingStudent, setEditingStudent] = useState<StudentWithEnrollments | null>(null)
   const [showStudentForm, setShowStudentForm] = useState(false)
   const [showBatchModal, setShowBatchModal] = useState(false)
-  const [selectedStudentForBatch, setSelectedStudentForBatch] = useState<StudentWithEnrollments | null>(null)
+  const [selectedStudentForBatch, setSelectedStudentForBatch] =
+    useState<StudentWithEnrollments | null>(null)
   const [showBulkBatchModal, setShowBulkBatchModal] = useState(false)
   const [studentFormData, setStudentFormData] = useState<StudentFormData>({
     full_name: '',
@@ -158,18 +166,29 @@ export default function StudentManagement() {
       setFilteredStudents(filtered)
     }
     filterStudents()
-  }, [students, searchTerm, courseFilter, statusFilter, userStatusFilter, ageGroupFilter, gurukulFilter])
+  }, [
+    students,
+    searchTerm,
+    courseFilter,
+    statusFilter,
+    userStatusFilter,
+    ageGroupFilter,
+    gurukulFilter,
+  ])
   // Removed duplicate filterStudents function
   const loadData = async () => {
     try {
-      const [usersData, coursesData, enrollmentsData, gurukulData] = await Promise.all([
-        getAllUsers(),
-        getCourses(),
-        getAllEnrollments(),
-        getGurukuls(),
-      ])
+      const [usersData, coursesData, enrollmentsData, gurukulData, certificatesData] =
+        await Promise.all([
+          getAllUsers(),
+          getCourses(),
+          getAllEnrollments(),
+          getGurukuls(),
+          getCertificatesFromTable(),
+        ])
       setCourses(coursesData)
       setGurukuls(gurukulData)
+      setCertificates(certificatesData)
       // Filter only students and enrich with enrollment data
       const studentsOnly = usersData.filter((user) => user.role === 'student')
       const enrichedStudents = studentsOnly.map((student) => {
@@ -362,7 +381,7 @@ export default function StudentManagement() {
       return new Date(s.created_at) > weekAgo
     }).length,
     studentsWithCertificates: students.filter((s) =>
-      s.enrollments.some((e) => e.certificate_issued),
+      s.enrollments.some((e) => hasCertificate(s.id, e.course_id)),
     ).length,
     averageAge:
       students.length > 0 && students.some((s) => s.age)
@@ -1112,10 +1131,7 @@ export default function StudentManagement() {
                       <EnvelopeIcon className="h-4 w-4 mr-2" />
                       Message Selected ({selectedStudents.size})
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowBulkBatchModal(true)}
-                    >
+                    <Button variant="outline" onClick={() => setShowBulkBatchModal(true)}>
                       <QueueListIcon className="h-4 w-4 mr-2" />
                       Assign to Batches ({selectedStudents.size})
                     </Button>

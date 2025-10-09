@@ -37,18 +37,17 @@ export default function CertificateViewer() {
           return
         }
 
-        // Find enrollment by matching the certificate pattern
-        const { data: enrollments, error: fetchError } = await supabaseAdmin
-          .from('enrollments')
+        // Find certificate by certificate number
+        const { data: certificates, error: fetchError } = await supabaseAdmin
+          .from('certificates')
           .select(
             `
             *,
             courses(*),
-            profiles!enrollments_student_id_fkey(*)
+            profiles!certificates_student_id_fkey(*)
           `,
           )
-          .eq('certificate_issued', true)
-          .ilike('certificate_url', `%${certificateNumber}%`)
+          .eq('certificate_number', certificateNumber)
 
         if (fetchError) {
           console.error('Error fetching certificate:', fetchError)
@@ -57,24 +56,24 @@ export default function CertificateViewer() {
           return
         }
 
-        if (!enrollments || enrollments.length === 0) {
+        if (!certificates || certificates.length === 0) {
           setError('Certificate not found')
           setLoading(false)
           return
         }
 
-        const enrollment = enrollments[0]
-        const profile = enrollment.profiles
-        const course = enrollment.courses
+        const certificate = certificates[0]
+        const profile = certificate.profiles
+        const course = certificate.courses
 
-        // Get template info if certificate_template_id exists
+        // Get template info if template_id exists
         let templateName = 'Standard Certificate'
-        if (enrollment.certificate_template_id) {
+        if (certificate.template_id) {
           try {
             const { data: template } = await supabaseAdmin
               .from('certificate_templates')
               .select('name')
-              .eq('id', enrollment.certificate_template_id)
+              .eq('id', certificate.template_id)
               .single()
 
             if (template) {
@@ -89,8 +88,8 @@ export default function CertificateViewer() {
           student_name: profile?.full_name || 'Student Name',
           course_title: course?.title || 'Course Title',
           certificate_number: certificateNumber.replace('.pdf', ''),
-          verification_code: certificateNumber.split('-').pop()?.toUpperCase() || 'N/A',
-          completion_date: enrollment.certificate_issued_at || enrollment.updated_at,
+          verification_code: certificate.verification_code || 'N/A',
+          completion_date: certificate.issue_date || certificate.completion_date,
           template_name: templateName,
         })
       } catch (err) {

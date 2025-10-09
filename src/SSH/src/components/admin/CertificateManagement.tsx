@@ -3,7 +3,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Certificate, Enrollment, CertificateTemplate, Course, Gurukul } from '@/types'
-import { getAllCertificates, issueCertificate, bulkIssueCertificates } from '@/lib/api/certificates'
+import {
+  getAllCertificates,
+  issueCertificate,
+  bulkIssueCertificates,
+  getCertificatesFromTable,
+} from '@/lib/api/certificates'
 import {
   getCertificateTemplates,
   deleteCertificateTemplate,
@@ -77,18 +82,34 @@ export default function CertificateManagement() {
   const loadData = useCallback(async () => {
     try {
       // Load all data in parallel
-      const [allEnrollments, templatesData, coursesData, gurukulData, assignmentsData] =
-        await Promise.all([
-          getAllEnrollments(),
-          getCertificateTemplates(),
-          getCourses(),
-          getGurukuls(),
-          getCertificateAssignments(),
-        ])
+      const [
+        allEnrollments,
+        templatesData,
+        coursesData,
+        gurukulData,
+        assignmentsData,
+        certificatesData,
+      ] = await Promise.all([
+        getAllEnrollments(),
+        getCertificateTemplates(),
+        getCourses(),
+        getGurukuls(),
+        getCertificateAssignments(),
+        getCertificatesFromTable(),
+      ])
+
+      // Helper function to check if student has certificate for course
+      const hasCertificate = (studentId: string, courseId: string): boolean => {
+        return certificatesData.some(
+          (cert) => cert.student_id === studentId && cert.course_id === courseId,
+        )
+      }
+
       const completedWithoutCerts = allEnrollments.filter(
-        (e) => e.status === 'completed' && !e.certificate_issued,
+        (e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id),
       )
       setCompletedEnrollments(completedWithoutCerts)
+      setCertificates(certificatesData)
       setTemplates(templatesData)
       setCourses(coursesData)
       setGurukuls(gurukulData)
@@ -98,9 +119,7 @@ export default function CertificateManagement() {
         setSelectedTemplate(templatesData[0].id)
       }
 
-      // Load actual certificates from database
-      const certificatesData = await getAllCertificates()
-      setCertificates(certificatesData)
+      // Certificates already loaded above, no need to reload
       console.log(`Loaded ${certificatesData.length} certificates for admin view`)
     } catch {
       toast.error('Failed to load certificate data')
@@ -386,7 +405,7 @@ export default function CertificateManagement() {
                         <td className="px-6 py-4 text-sm">{certificate.student?.full_name}</td>
                         <td className="px-6 py-4 text-sm">{certificate.course?.title}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {formatDate(certificate.issued_at)}
+                          {formatDate(certificate.issue_date || certificate.created_at)}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
@@ -409,9 +428,13 @@ export default function CertificateManagement() {
                                     certificate.course?.course_number ||
                                     `C${Math.random().toString().slice(-3)}`,
                                   gurukulName: certificate.course?.gurukul?.name || 'Gurukul Name',
-                                  completionDate: certificate.issued_at,
-                                  certificateNumber: certificate.certificate_number,
-                                  verificationCode: certificate.verification_code,
+                                  completionDate:
+                                    certificate.completion_date ||
+                                    certificate.issue_date ||
+                                    certificate.created_at,
+                                  certificateNumber:
+                                    certificate.certificate_number || certificate.id,
+                                  verificationCode: certificate.verification_code || 'N/A',
                                 }
                                 setPreviewData(certificateData)
                                 setPreviewModalOpen(true)
@@ -426,7 +449,13 @@ export default function CertificateManagement() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleIssueCertificate(certificate.enrollment_id)}
+                              onClick={() => {
+                                // For reissuing, we need to find the enrollment or create a new certificate
+                                // This might need a different handler since certificates table doesn't have enrollment_id
+                                toast.error(
+                                  'Reissue functionality needs to be updated for new certificate system',
+                                )
+                              }}
                               className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                               title="Reissue Certificate"
                             >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
@@ -6,7 +6,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { Course, Enrollment } from '@/types'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
+import MediaSelectorButton from '@/components/MediaSelectorButton'
+import MediaSelector from '@/components/MediaSelector'
+import { Course, Enrollment, Certificate } from '@/types'
+import { MediaFile } from '@/lib/api/media'
 import { getTeacherCourses, createCourse } from '@/lib/api/courses'
 import {
   getTeacherEnrollments,
@@ -21,6 +26,7 @@ import {
   bulkIssueCertificates,
   issueCertificateWithTemplate,
   issueBatchCertificates,
+  getCertificatesFromTable,
 } from '@/lib/api/certificates'
 import {
   getTeacherCertificateAssignments,
@@ -80,23 +86,39 @@ import {
   QueueListIcon,
   TrashIcon,
   PlayIcon,
+  ClipboardDocumentCheckIcon,
+  TagIcon,
+  PhotoIcon,
+  AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
   course_number: z.string().min(1, 'Course number is required'),
   title: z.string().min(5, 'Title must be at least 5 characters'),
+  slug: z.string().optional(),
   description: z.string().min(20, 'Description must be at least 20 characters'),
+  detailed_description: z.string().optional(),
   level: z.enum(['elementary', 'basic', 'intermediate', 'advanced']),
-  age_group_min: z.number().min(4, 'Minimum age must be at least 4'),
-  age_group_max: z.number().max(100, 'Maximum age must be less than 100'),
-  duration_weeks: z.number().min(1, 'Duration must be at least 1 week'),
-  fee: z.number().min(0, 'Fee must be non-negative'),
-  price: z.number().min(0, 'Price must be non-negative'),
+  age_group_min: z.number().min(4, 'Minimum age must be at least 4').optional(),
+  age_group_max: z.number().max(100, 'Maximum age must be less than 100').optional(),
+  duration_weeks: z.number().min(1, 'Duration must be at least 1 week').optional(),
+  duration_hours: z.number().min(1, 'Duration must be at least 1 hour').optional(),
+  delivery_method: z.enum(['physical', 'remote', 'hybrid']).default('hybrid'),
+  price: z.number().min(0, 'Price must be non-negative').default(0),
   currency: z.string().default('EUR'),
-  max_students: z.number().min(1, 'Must allow at least 1 student'),
-  delivery_method: z.enum(['physical', 'remote', 'hybrid']),
-  entry_requirements: z.string().optional(),
+  max_students: z.number().min(1, 'Must allow at least 1 student').default(20),
+  min_students: z.number().min(1, 'Must allow at least 1 student').default(10),
+  prerequisites: z.array(z.string()).optional(),
   learning_outcomes: z.array(z.string()).min(1, 'At least one learning outcome is required'),
+  includes_certificate: z.boolean().default(true),
+  image_url: z.string().optional(),
+  cover_image_url: z.string().optional(),
+  video_preview_url: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  meta_title: z.string().optional(),
+  meta_description: z.string().optional(),
+  featured: z.boolean().default(false),
+  is_active: z.boolean().default(true),
 })
 type CourseForm = z.infer<typeof courseSchema>
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -121,6 +143,7 @@ export default function TeacherDashboard() {
   const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [certificateAssignments, setCertificateAssignments] = useState<CertificateAssignment[]>([])
+  const [certificates, setCertificates] = useState<Certificate[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [allStudents, setAllStudents] = useState<ProfileWithAddress[]>([])
   const [completedBatchStudents, setCompletedBatchStudents] = useState<BatchStudentWithInfo[]>([])
@@ -130,7 +153,14 @@ export default function TeacherDashboard() {
     'overview' | 'courses' | 'students' | 'certificates' | 'batches' | 'analytics' | 'settings'
   >('overview')
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
+  const [prerequisites, setPrerequisites] = useState<string[]>([''])
+  const [tags, setTags] = useState<string[]>([''])
+  const [detailedDescription, setDetailedDescription] = useState('')
+  const [selectedCourseImage, setSelectedCourseImage] = useState<MediaFile | null>(null)
+  const [selectedCoverImage, setSelectedCoverImage] = useState<MediaFile | null>(null)
+  const [selectedVideoPreview, setSelectedVideoPreview] = useState<MediaFile | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const quillRef = useRef<ReactQuill>(null)
   const [showIssuanceModal, setShowIssuanceModal] = useState(false)
   const [selectedEnrollmentForCert, setSelectedEnrollmentForCert] = useState<string | null>(null)
   const [showCertificateModal, setShowCertificateModal] = useState(false)
@@ -200,8 +230,15 @@ export default function TeacherDashboard() {
     resolver: zodResolver(courseSchema),
     defaultValues: {
       level: 'basic',
-      delivery_method: 'remote',
-      learning_outcomes: [''],
+      delivery_method: 'hybrid',
+      currency: 'EUR',
+      price: 0,
+      max_students: 20,
+      min_students: 10,
+      duration_weeks: 6,
+      includes_certificate: true,
+      is_active: true,
+      featured: false,
     },
   })
   useEffect(() => {
@@ -220,6 +257,7 @@ export default function TeacherDashboard() {
         batchesData,
         studentsData,
         completedBatchStudentsData,
+        certificatesData,
       ] = await Promise.all([
         getTeacherCourses(user!.id),
         getTeacherEnrollments(user!.id),
@@ -229,6 +267,7 @@ export default function TeacherDashboard() {
         getBatches({ teacher_id: user!.id, is_active: true }),
         getAllStudents(),
         getCompletedBatchStudents(user!.id),
+        getCertificatesFromTable(),
       ])
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
@@ -238,6 +277,7 @@ export default function TeacherDashboard() {
       setBatches(batchesData)
       setAllStudents(studentsData as ProfileWithAddress[])
       setCompletedBatchStudents(completedBatchStudentsData)
+      setCertificates(certificatesData)
     } catch (error) {
       console.error('Dashboard load error:', error)
       toast.error('Failed to load dashboard data')
@@ -245,6 +285,12 @@ export default function TeacherDashboard() {
       setLoading(false)
     }
   }
+
+  // Helper function to check if student has certificate for course
+  const hasCertificate = (studentId: string, courseId: string): boolean => {
+    return certificates.some((cert) => cert.student_id === studentId && cert.course_id === courseId)
+  }
+
   // Load teacher profile from database
   const loadTeacherProfile = useCallback(async () => {
     if (!user?.id) return
@@ -277,25 +323,122 @@ export default function TeacherDashboard() {
   }, [user?.id, loadTeacherProfile])
   const handleCreateCourse = async (data: CourseForm) => {
     try {
+      // Generate slug from title if not provided
+      const slug =
+        data.slug ||
+        data.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+
       const courseData = {
         ...data,
+        slug,
+        detailed_description: detailedDescription,
         teacher_id: user!.id,
-        is_active: true,
+        created_by: user!.id,
+        is_active: data.is_active ?? true,
         learning_outcomes: learningOutcomes.filter((outcome) => outcome.trim() !== ''),
-        syllabus: null, // or {} or "" depending on your requirements
+        prerequisites:
+          prerequisites.filter((prereq) => prereq.trim() !== '').length > 0
+            ? prerequisites.filter((prereq) => prereq.trim() !== '').join(', ')
+            : null,
+        tags: tags.filter((tag) => tag.trim() !== ''),
+        syllabus: null,
+        resources: [],
         price: data.price || 0,
         currency: data.currency || 'EUR',
+        age_group_min: data.age_group_min || 4,
+        age_group_max: data.age_group_max || 18,
+        duration_weeks: data.duration_weeks || 6,
+        duration_hours: data.duration_hours || 24,
+        image_url: selectedCourseImage?.file_url || data.image_url,
+        cover_image_url: selectedCoverImage?.file_url || data.cover_image_url,
+        video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url,
       }
       await createCourse(courseData)
       await loadDashboardData()
       setShowCreateCourse(false)
       reset()
       setLearningOutcomes([''])
+      setPrerequisites([''])
+      setTags([''])
+      setDetailedDescription('')
       toast.success('Course created successfully!')
     } catch {
       toast.error('Failed to create course')
     }
   }
+
+  // State for media selector for ReactQuill
+  const [showImageSelector, setShowImageSelector] = useState(false)
+
+  // Image handler for ReactQuill
+  const imageHandler = useCallback(() => {
+    setShowImageSelector(true)
+  }, [])
+
+  // Handle image selection from media selector
+  const handleImageSelect = useCallback((files: MediaFile[]) => {
+    setShowImageSelector(false)
+
+    if (files.length > 0) {
+      const selectedImage = files[0]
+      // Use setTimeout to ensure the modal is closed and ReactQuill is re-rendered
+      setTimeout(() => {
+        const quill = quillRef.current?.getEditor()
+        if (quill) {
+          // Get current selection or default to end of content
+          const range = quill.getSelection() || { index: quill.getLength() }
+          quill.insertEmbed(range.index, 'image', selectedImage.file_url)
+          // Move cursor after the image
+          quill.setSelection(range.index + 1)
+          // Focus back to the editor
+          quill.focus()
+        }
+      }, 100)
+    }
+  }, [])
+
+  const quillModules = useMemo(
+    () => ({
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, 4, 5, 6, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ color: [] }, { background: [] }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ indent: '-1' }, { indent: '+1' }],
+          [{ align: [] }],
+          ['link', 'image'],
+          ['clean'],
+        ],
+        handlers: {
+          image: imageHandler,
+        },
+      },
+    }),
+    [imageHandler],
+  )
+
+  const quillFormats = useMemo(
+    () => [
+      'header',
+      'bold',
+      'italic',
+      'underline',
+      'strike',
+      'color',
+      'background',
+      'list',
+      'bullet',
+      'indent',
+      'align',
+      'link',
+      'image',
+    ],
+    [],
+  )
 
   const handleIssueCertificateWithTemplate = async (enrollmentId: string, templateId: string) => {
     try {
@@ -391,6 +534,39 @@ export default function TeacherDashboard() {
     newOutcomes[index] = value
     setLearningOutcomes(newOutcomes)
   }
+
+  // Prerequisites management
+  const addPrerequisite = () => {
+    setPrerequisites([...prerequisites, ''])
+  }
+  const removePrerequisite = (index: number) => {
+    if (prerequisites.length > 1) {
+      const newPrerequisites = prerequisites.filter((_, i) => i !== index)
+      setPrerequisites(newPrerequisites)
+    }
+  }
+  const updatePrerequisite = (index: number, value: string) => {
+    const newPrerequisites = [...prerequisites]
+    newPrerequisites[index] = value
+    setPrerequisites(newPrerequisites)
+  }
+
+  // Tags management
+  const addTag = () => {
+    setTags([...tags, ''])
+  }
+  const removeTag = (index: number) => {
+    if (tags.length > 1) {
+      const newTags = tags.filter((_, i) => i !== index)
+      setTags(newTags)
+    }
+  }
+  const updateTag = (index: number, value: string) => {
+    const newTags = [...tags]
+    newTags[index] = value
+    setTags(newTags)
+  }
+
   // Calculate stats from real database data
   const stats = {
     totalCourses: courses.length,
@@ -404,9 +580,11 @@ export default function TeacherDashboard() {
     // Pending enrollments that need approval
     pendingApprovals: pendingEnrollments.length,
     completedCourses: enrollments.filter((e) => e.status === 'completed').length,
-    certificatesIssued: enrollments.filter((e) => e.certificate_issued).length,
+    certificatesIssued: enrollments.filter(
+      (e) => e.status === 'completed' && hasCertificate(e.student_id, e.course_id),
+    ).length,
     pendingCertificates: enrollments.filter(
-      (e) => e.status === 'completed' && !e.certificate_issued,
+      (e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id),
     ).length,
     // Batch-centric certificate management
     completedBatches: batches.filter((batch) => batch.status === 'completed').length,
@@ -446,7 +624,7 @@ export default function TeacherDashboard() {
       })),
     // Pending certificates to issue
     ...enrollments
-      .filter((e) => e.status === 'completed' && !e.certificate_issued)
+      .filter((e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id))
       .map((enrollment) => ({
         id: `cert-${enrollment.id}`,
         type: 'certificate' as const,
@@ -498,7 +676,7 @@ export default function TeacherDashboard() {
           time: timeText,
           icon: CheckCircleIcon,
         }
-      } else if (enrollment.certificate_issued) {
+      } else if (hasCertificate(enrollment.student_id, enrollment.course_id)) {
         return {
           type: 'certificate',
           message: `Certificate issued to ${enrollment.student?.full_name || 'student'}`,
@@ -1203,7 +1381,7 @@ export default function TeacherDashboard() {
                       courseEnrollments.map((e) => e.student_id).filter(Boolean),
                     ).size
                     const pendingCertificates = courseEnrollments.filter(
-                      (e) => e.status === 'completed' && !e.certificate_issued,
+                      (e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id),
                     ).length
                     return (
                       <Card
@@ -1255,7 +1433,11 @@ export default function TeacherDashboard() {
                             <div className="flex items-center space-x-2">
                               <TrophyIcon className="h-4 w-4 text-gray-400" />
                               <span>
-                                {courseEnrollments.filter((e) => e.certificate_issued).length}{' '}
+                                {
+                                  courseEnrollments.filter((e) =>
+                                    hasCertificate(e.student_id, e.course_id),
+                                  ).length
+                                }{' '}
                                 certified
                               </span>
                             </div>
@@ -1276,7 +1458,9 @@ export default function TeacherDashboard() {
                                 size="sm"
                                 onClick={() => {
                                   const eligibleEnrollments = courseEnrollments.filter(
-                                    (e) => e.status === 'completed' && !e.certificate_issued,
+                                    (e) =>
+                                      e.status === 'completed' &&
+                                      !hasCertificate(e.student_id, e.course_id),
                                   )
                                   if (eligibleEnrollments.length === 1) {
                                     // Single enrollment - open template selection modal
@@ -1392,7 +1576,7 @@ export default function TeacherDashboard() {
                                   {enrollment.student?.full_name || 'Unknown Student'}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                  Course: {enrollment.courses?.title || 'Unknown Course'}
+                                  Course: {enrollment.course?.title || 'Unknown Course'}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
@@ -1958,8 +2142,9 @@ export default function TeacherDashboard() {
                                 },
                                 {
                                   label: 'Certificates',
-                                  value: courseEnrollments.filter((e) => e.certificate_issued)
-                                    .length,
+                                  value: courseEnrollments.filter((e) =>
+                                    hasCertificate(e.student_id, e.course_id),
+                                  ).length,
                                   icon: '🏆',
                                 },
                               ].map((stat, statIndex) => (
@@ -2141,200 +2326,555 @@ export default function TeacherDashboard() {
       </div>
       {/* Create Course Modal */}
       {showCreateCourse && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Create New Course</h2>
-                  <p className="text-gray-600">Design your next educational masterpiece</p>
+                  <h2 className="text-xl font-bold flex items-center">
+                    <SparklesIcon className="h-5 w-5 mr-2" />
+                    Create New Course
+                  </h2>
+                  <p className="text-blue-100 text-sm mt-1">
+                    Design your next educational masterpiece
+                  </p>
                 </div>
                 <button
                   onClick={() => {
                     setShowCreateCourse(false)
                     reset()
                     setLearningOutcomes([''])
+                    setPrerequisites([''])
+                    setTags([''])
+                    setDetailedDescription('')
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
                 >
                   <XCircleIcon className="h-6 w-6" />
                 </button>
               </div>
             </div>
-            <form onSubmit={handleSubmit(handleCreateCourse)} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Gurukul</label>
-                  <select
-                    {...register('gurukul_id')}
-                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="">Select a Gurukul</option>
-                    {gurukuls.map((gurukul) => (
-                      <option key={gurukul.id} value={gurukul.id}>
-                        {gurukul.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.gurukul_id && (
-                    <p className="text-sm text-red-600">{errors.gurukul_id.message}</p>
-                  )}
-                </div>
-                <Input
-                  label="Course Number"
-                  placeholder="e.g., C1001"
-                  {...register('course_number')}
-                  error={errors.course_number?.message}
-                />
-                <div className="md:col-span-2">
-                  <Input
-                    label="Course Title"
-                    placeholder="Enter an engaging course title"
-                    {...register('title')}
-                    error={errors.title?.message}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                      {...register('description')}
-                      rows={4}
-                      className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Describe what students will learn and achieve"
-                    />
-                    {errors.description && (
-                      <p className="text-sm text-red-600">{errors.description.message}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Level</label>
-                  <select
-                    {...register('level')}
-                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="elementary">Elementary (4-7 years)</option>
-                    <option value="basic">Basic (8-11 years)</option>
-                    <option value="intermediate">Intermediate (12-15 years)</option>
-                    <option value="advanced">Advanced (16-19 years)</option>
-                  </select>
-                  {errors.level && <p className="text-sm text-red-600">{errors.level.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Delivery Method</label>
-                  <select
-                    {...register('delivery_method')}
-                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="remote">Online</option>
-                    <option value="physical">In-person</option>
-                    <option value="hybrid">Hybrid</option>
-                  </select>
-                  {errors.delivery_method && (
-                    <p className="text-sm text-red-600">{errors.delivery_method.message}</p>
-                  )}
-                </div>
-                <Input
-                  label="Minimum Age"
-                  type="number"
-                  {...register('age_group_min', { valueAsNumber: true })}
-                  error={errors.age_group_min?.message}
-                />
-                <Input
-                  label="Maximum Age"
-                  type="number"
-                  {...register('age_group_max', { valueAsNumber: true })}
-                  error={errors.age_group_max?.message}
-                />
-                <Input
-                  label="Duration (weeks)"
-                  type="number"
-                  {...register('duration_weeks', { valueAsNumber: true })}
-                  error={errors.duration_weeks?.message}
-                />
-                <Input
-                  label="Course Fee (€)"
-                  type="number"
-                  step="0.01"
-                  {...register('fee', { valueAsNumber: true })}
-                  error={errors.fee?.message}
-                />
-                <Input
-                  label="Maximum Students"
-                  type="number"
-                  {...register('max_students', { valueAsNumber: true })}
-                  error={errors.max_students?.message}
-                />
-                <div className="md:col-span-2">
-                  <Input
-                    label="Entry Requirements (Optional)"
-                    placeholder="Any prerequisites or requirements"
-                    {...register('entry_requirements')}
-                    error={errors.entry_requirements?.message}
-                  />
-                </div>
-              </div>
-              {/* Learning Outcomes */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Learning Outcomes
-                  </label>
-                  <Button type="button" variant="outline" size="sm" onClick={addLearningOutcome}>
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add Outcome
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {learningOutcomes.map((outcome, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={outcome}
-                        onChange={(e) => updateLearningOutcome(index, e.target.value)}
-                        placeholder={`Learning outcome ${index + 1}`}
-                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+
+            {/* Form Content */}
+            <form onSubmit={handleSubmit(handleCreateCourse)} className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-4">
+                {/* Basic Information */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <BookOpenIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Course Title"
+                        placeholder="Enter course title"
+                        {...register('title')}
+                        error={errors.title?.message}
+                        className="text-sm"
                       />
-                      {learningOutcomes.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeLearningOutcome(index)}
-                          className="text-red-600 border-red-300 hover:bg-red-50"
-                        >
-                          <XCircleIcon className="h-4 w-4" />
-                        </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Gurukul</label>
+                      <select
+                        {...register('gurukul_id')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="">Select Gurukul</option>
+                        {gurukuls.map((gurukul) => (
+                          <option key={gurukul.id} value={gurukul.id}>
+                            {gurukul.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.gurukul_id && (
+                        <p className="text-sm text-red-600">{errors.gurukul_id.message}</p>
                       )}
                     </div>
-                  ))}
+                    <Input
+                      label="Course Number"
+                      placeholder="C1001"
+                      {...register('course_number')}
+                      error={errors.course_number?.message}
+                      className="text-sm"
+                    />
+                    <Input
+                      label="Slug (Optional)"
+                      placeholder="auto-generated"
+                      {...register('slug')}
+                      error={errors.slug?.message}
+                      className="text-sm"
+                    />
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Level</label>
+                      <select
+                        {...register('level')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="elementary">Elementary (4-7 years)</option>
+                        <option value="basic">Basic (8-11 years)</option>
+                        <option value="intermediate">Intermediate (12-15 years)</option>
+                        <option value="advanced">Advanced (16-19 years)</option>
+                      </select>
+                      {errors.level && (
+                        <p className="text-sm text-red-600">{errors.level.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descriptions */}
+                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <DocumentTextIcon className="h-4 w-4 mr-2 text-green-600" />
+                    Course Descriptions
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Short Description
+                      </label>
+                      <textarea
+                        {...register('description')}
+                        rows={2}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                        placeholder="Brief overview for course listings"
+                      />
+                      {errors.description && (
+                        <p className="text-sm text-red-600">{errors.description.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Detailed Description
+                      </label>
+                      <ReactQuill
+                        key="course-description-editor"
+                        ref={quillRef}
+                        value={detailedDescription}
+                        onChange={setDetailedDescription}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="Comprehensive course description with formatting..."
+                        className="bg-white text-sm"
+                        style={{ minHeight: '150px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Course Details */}
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <Cog6ToothIcon className="h-4 w-4 mr-2 text-orange-600" />
+                    Course Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Delivery Method
+                      </label>
+                      <select
+                        {...register('delivery_method')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="hybrid">Hybrid</option>
+                        <option value="remote">Online Only</option>
+                        <option value="physical">In-person Only</option>
+                      </select>
+                      {errors.delivery_method && (
+                        <p className="text-sm text-red-600">{errors.delivery_method.message}</p>
+                      )}
+                    </div>
+                    <Input
+                      label="Duration (weeks)"
+                      type="number"
+                      placeholder="6"
+                      {...register('duration_weeks', { valueAsNumber: true })}
+                      error={errors.duration_weeks?.message}
+                    />
+                    <Input
+                      label="Duration (hours)"
+                      type="number"
+                      placeholder="24"
+                      {...register('duration_hours', { valueAsNumber: true })}
+                      error={errors.duration_hours?.message}
+                    />
+                    <Input
+                      label="Minimum Age"
+                      type="number"
+                      placeholder="8"
+                      {...register('age_group_min', { valueAsNumber: true })}
+                      error={errors.age_group_min?.message}
+                    />
+                    <Input
+                      label="Maximum Age"
+                      type="number"
+                      placeholder="12"
+                      {...register('age_group_max', { valueAsNumber: true })}
+                      error={errors.age_group_max?.message}
+                    />
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Currency</label>
+                      <select
+                        {...register('currency')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="INR">INR (₹)</option>
+                      </select>
+                    </div>
+                    <Input
+                      label="Course Price"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...register('price', { valueAsNumber: true })}
+                      error={errors.price?.message}
+                    />
+                    <Input
+                      label="Maximum Students"
+                      type="number"
+                      placeholder="20"
+                      {...register('max_students', { valueAsNumber: true })}
+                      error={errors.max_students?.message}
+                    />
+                    <Input
+                      label="Minimum Students"
+                      type="number"
+                      placeholder="10"
+                      {...register('min_students', { valueAsNumber: true })}
+                      error={errors.min_students?.message}
+                    />
+                  </div>
+                </div>
+
+                {/* Prerequisites */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <ClipboardDocumentCheckIcon className="h-4 w-4 mr-2 text-purple-600" />
+                      Prerequisites
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addPrerequisite}
+                      className="text-xs px-2 py-1"
+                    >
+                      <PlusIcon className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {prerequisites.map((prereq, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={prereq}
+                          onChange={(e) => updatePrerequisite(index, e.target.value)}
+                          placeholder={`Prerequisite ${index + 1}`}
+                          className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                        />
+                        {prerequisites.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removePrerequisite(index)}
+                            className="text-red-600 border-red-300 hover:bg-red-50 p-1"
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Learning Outcomes */}
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <LightBulbIcon className="h-4 w-4 mr-2 text-yellow-600" />
+                      Learning Outcomes
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addLearningOutcome}
+                      className="text-xs px-2 py-1"
+                    >
+                      <PlusIcon className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {learningOutcomes.map((outcome, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={outcome}
+                          onChange={(e) => updateLearningOutcome(index, e.target.value)}
+                          placeholder={`Learning outcome ${index + 1}`}
+                          className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                        />
+                        {learningOutcomes.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeLearningOutcome(index)}
+                            className="text-red-600 border-red-300 hover:bg-red-50 p-1"
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <TagIcon className="h-4 w-4 mr-2 text-indigo-600" />
+                      Tags
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addTag}
+                      className="text-xs px-2 py-1"
+                    >
+                      <PlusIcon className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {tags.map((tag, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={tag}
+                          onChange={(e) => updateTag(index, e.target.value)}
+                          placeholder={`Tag ${index + 1}`}
+                          className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                        />
+                        {tags.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeTag(index)}
+                            className="text-red-600 border-red-300 hover:bg-red-50 p-1"
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Media & SEO */}
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <PhotoIcon className="h-4 w-4 mr-2 text-gray-600" />
+                    Media & SEO (Optional)
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <MediaSelectorButton
+                        label="Course Image"
+                        accept={['image/*']}
+                        variant="field"
+                        onSelect={(files) => {
+                          setSelectedCourseImage(files[0] || null)
+                          if (files[0]) {
+                            // Set the URL in the form - not needed as we handle in courseData
+                          }
+                        }}
+                        placeholder="Select course thumbnail"
+                        showPreview
+                        size="sm"
+                      />
+                      <MediaSelectorButton
+                        label="Cover Image"
+                        accept={['image/*']}
+                        variant="field"
+                        onSelect={(files) => {
+                          setSelectedCoverImage(files[0] || null)
+                          if (files[0]) {
+                            // Set the URL in the form - not needed as we handle in courseData
+                          }
+                        }}
+                        placeholder="Select cover image"
+                        showPreview
+                        size="sm"
+                      />
+                      <MediaSelectorButton
+                        label="Video Preview"
+                        accept={['video/*']}
+                        variant="field"
+                        onSelect={(files) => {
+                          setSelectedVideoPreview(files[0] || null)
+                          if (files[0]) {
+                            // Set the URL in the form - not needed as we handle in courseData
+                          }
+                        }}
+                        placeholder="Select preview video"
+                        showPreview
+                        size="sm"
+                      />
+                      <Input
+                        label="Meta Title"
+                        placeholder="SEO title"
+                        {...register('meta_title')}
+                        error={errors.meta_title?.message}
+                        className="text-sm"
+                      />
+                    </div>
+                    <Input
+                      label="Meta Description"
+                      placeholder="SEO description"
+                      {...register('meta_description')}
+                      error={errors.meta_description?.message}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Course Settings */}
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <AdjustmentsHorizontalIcon className="h-4 w-4 mr-2 text-emerald-600" />
+                    Course Settings
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-6">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          {...register('includes_certificate')}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Include Certificate</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          {...register('featured')}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Featured Course</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          {...register('is_active')}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Active Course</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowCreateCourse(false)
-                    reset()
-                    setLearningOutcomes([''])
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  <SparklesIcon className="h-5 w-5 mr-2" />
-                  Create Course
-                </Button>
+
+              {/* Action Buttons */}
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-end space-x-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateCourse(false)
+                      reset()
+                      setLearningOutcomes([''])
+                      setPrerequisites([''])
+                      setTags([''])
+                      setDetailedDescription('')
+                      setSelectedCourseImage(null)
+                      setSelectedCoverImage(null)
+                      setSelectedVideoPreview(null)
+                    }}
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    size="sm"
+                  >
+                    <SparklesIcon className="h-4 w-4 mr-2" />
+                    Create Course
+                  </Button>
+                </div>
               </div>
             </form>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Media Selector for ReactQuill Images */}
+      {showImageSelector && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[60]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Select Image for Course Description</h3>
+              <button
+                onClick={() => {
+                  setShowImageSelector(false)
+                  // Refocus ReactQuill after closing modal
+                  setTimeout(() => {
+                    const quill = quillRef.current?.getEditor()
+                    if (quill) {
+                      quill.focus()
+                    }
+                  }, 100)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="sr-only">Close</span>✕
+              </button>
+            </div>
+            <MediaSelector
+              multiple={false}
+              accept={['image']}
+              compact={false}
+              showUpload={true}
+              onSelect={handleImageSelect}
+              title="Select Image"
+            />
           </div>
         </div>
       )}
+
       {/* Certificate Issuance Modal */}
       {showIssuanceModal && selectedEnrollmentForCert && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2976,6 +3516,7 @@ export default function TeacherDashboard() {
             (e) => e.student_id === selectedStudentForEnrollment.id,
           )}
           teacherId={user?.id || ''}
+          certificates={certificates}
           onClose={() => {
             setShowEnrollmentModal(false)
             setSelectedStudentForEnrollment(null)
@@ -3021,6 +3562,7 @@ interface EnrollmentManagementModalProps {
   teacherCourses: Course[]
   existingEnrollments: Enrollment[]
   teacherId: string
+  certificates: Certificate[]
   onClose: () => void
   onEnrollmentChange: () => void
 }
@@ -3031,11 +3573,17 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
   teacherCourses,
   existingEnrollments,
   teacherId,
+  certificates,
   onClose,
   onEnrollmentChange,
 }) => {
   const [enrolling, setEnrolling] = useState(false)
   const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+
+  // Helper function to check if student has certificate for course
+  const hasCertificate = (studentId: string, courseId: string): boolean => {
+    return certificates.some((cert) => cert.student_id === studentId && cert.course_id === courseId)
+  }
 
   const handleEnrollStudent = async () => {
     if (!selectedCourseId) {
@@ -3121,7 +3669,7 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {enrollment.certificate_issued && (
+                        {hasCertificate(enrollment.student_id, enrollment.course_id) && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             <TrophyIcon className="h-3 w-3 mr-1" />
                             Certified
