@@ -29,7 +29,8 @@ import { AddressFormData, getCountryName, getStateName } from '../../../lib/addr
 import { enrollInCourse } from '../../../lib/api/enrollments'
 import { getCourses } from '../../../lib/api/courses'
 import { formatCurrency } from '../../../lib/utils'
-import { getStudentEnrollments } from '../../../lib/api/enrollments'
+import { getStudentEnrollments, getStudentCourseProgress } from '../../../lib/api/enrollments'
+import { getStudentBatchProgress } from '../../../lib/api/batches'
 import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
 import {
   createChild,
@@ -70,6 +71,7 @@ interface Child {
   recent_activity: Activity[]
   achievements: Achievement[]
   upcoming_assignments?: Activity[] // Optional - not yet implemented
+  batch_progress?: ChildBatchProgress[] // Batch progress information
   // Address information from database
   address_line_1?: string
   address_line_2?: string
@@ -79,6 +81,18 @@ interface Child {
   country?: string
   phone?: string
   date_of_birth?: string
+}
+
+interface ChildBatchProgress {
+  batch_name: string
+  batch_id: string
+  course_title: string
+  progress_percentage: number
+  completed_weeks: number
+  total_weeks: number
+  start_date?: string
+  end_date?: string
+  status: string
 }
 interface Course {
   id: string
@@ -92,6 +106,11 @@ interface Course {
   enrollment_date: string
   estimated_completion_date: string
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+  batch_info?: {
+    batch_id: string
+    batch_name: string
+    is_in_batch: boolean
+  }
 }
 interface Activity {
   id: string
@@ -139,6 +158,19 @@ interface ParentStats {
   monthlySpending: number
   upcomingEvents: number
   totalLearningHours: number
+}
+
+interface StatCard {
+  title: string
+  value: number
+  icon: React.ComponentType<{ className?: string }>
+  gradient: string
+  bgGradient: string
+  description: string
+  delay: number
+  permission: { resource: string; action: string }
+  suffix?: string
+  comingSoon?: boolean
 }
 export default function ParentsDashboard() {
   const { show: showConfirmDialog, Dialog: ConfirmDialogModal } = useConfirmDialog()
@@ -253,19 +285,41 @@ export default function ParentsDashboard() {
           }
           // Fetch enrollments for this child
           const enrollments = await getStudentEnrollments(profile.id)
+
+          // Fetch real progress data from progress table
+          const progressData = await getStudentCourseProgress(profile.id)
+
+          // Fetch batch progress for this child to correlate with courses
+          const batchProgressData = await getStudentBatchProgress(profile.id)
+
           // Transform enrollments to match Course interface expected by Child
           const enrolled_courses = enrollments.map((enrollment) => {
-            // Calculate real progress based on enrollment status and database data
+            // Get real progress from database or default based on status
             let progress = 0
             let currentGrade = 0
 
-            // Calculate progress based on enrollment status only (no mock data)
-            if (enrollment.status === 'completed') {
-              progress = 100
-            } else if (enrollment.status === 'approved') {
-              progress = 0 // Start at 0 for approved enrollments until real progress tracking is implemented
+            const courseId = enrollment.course?.id || enrollment.course_id
+
+            // Check if there's batch progress for this course
+            const batchForCourse = batchProgressData.find((batch) =>
+              batch.courses.some((bc) => bc.courses.id === courseId),
+            )
+
+            // First check if we have progress data from the progress table
+            if (progressData[courseId] !== undefined) {
+              progress = progressData[courseId]
+            } else if (batchForCourse) {
+              // Use batch progress if no individual progress data
+              progress = batchForCourse.progress_percentage
             } else {
-              progress = 0
+              // Fallback to enrollment status if no progress data
+              if (enrollment.status === 'completed') {
+                progress = 100
+              } else if (enrollment.status === 'approved') {
+                progress = 0
+              } else {
+                progress = 0
+              }
             }
 
             // Use progress as grade since separate grade tracking is not yet implemented
@@ -280,6 +334,15 @@ export default function ParentsDashboard() {
               enrolledDate.getTime() +
                 (enrollment.course?.duration_weeks || 4) * 7 * 24 * 60 * 60 * 1000,
             )
+
+            // Prepare batch info if student is in a batch for this course
+            const batch_info = batchForCourse
+              ? {
+                  batch_id: batchForCourse.batch.id,
+                  batch_name: batchForCourse.batch.name,
+                  is_in_batch: true,
+                }
+              : undefined
 
             return {
               id: enrollment.course?.id || enrollment.course_id,
@@ -301,8 +364,24 @@ export default function ParentsDashboard() {
                 day: 'numeric',
               }),
               difficulty: mapCourseLevel(enrollment.course?.level || 'basic'),
+              batch_info: batch_info,
             }
           })
+
+          // Map batch progress data for the child interface
+          const batch_progress: ChildBatchProgress[] = batchProgressData.map((batchData) => ({
+            batch_name: batchData.batch.name,
+            batch_id: batchData.batch.id,
+            course_title:
+              batchData.courses.length > 0 ? batchData.courses[0].courses.title : 'No Course',
+            progress_percentage: batchData.progress_percentage,
+            completed_weeks: batchData.completed_weeks,
+            total_weeks: batchData.total_weeks,
+            start_date: batchData.batch.start_date,
+            end_date: batchData.batch.end_date,
+            status: batchData.batch.status,
+          }))
+
           // Calculate overall progress based on enrolled courses
           const overallProgress =
             enrolled_courses.length > 0
@@ -341,6 +420,7 @@ export default function ParentsDashboard() {
             enrolled_courses,
             recent_activity: recentActivities,
             achievements: achievements,
+            batch_progress: batch_progress,
             // Store address data from database
             address_line_1: profile.address_line_1 || '',
             address_line_2: profile.address_line_2 || '',
@@ -725,7 +805,7 @@ export default function ParentsDashboard() {
                 onClick={() => {
                   setIsProfileModalOpen(true)
                 }}
-                className="p-3 rounded-xl bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 text-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="p-3 rounded-xl bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 text-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -778,7 +858,7 @@ export default function ParentsDashboard() {
                     // Scroll to top of page
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
-                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg transform scale-105'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
@@ -926,7 +1006,7 @@ export default function ParentsDashboard() {
               <h3 className="text-lg font-bold text-gray-900">Select Child for Enrollment</h3>
               <button
                 onClick={() => setShowChildSelectionModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 cursor-pointer"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -956,7 +1036,7 @@ export default function ParentsDashboard() {
                       setShowChildSelectionModal(false)
                       setShowAddChildModal(true)
                     }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer"
                   >
                     Add Child First
                   </button>
@@ -966,7 +1046,7 @@ export default function ParentsDashboard() {
                   <motion.button
                     key={child.student_id}
                     onClick={() => handleChildSelection(child.student_id)}
-                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left"
+                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left cursor-pointer"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -988,7 +1068,7 @@ export default function ParentsDashboard() {
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowChildSelectionModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 cursor-pointer"
               >
                 Cancel
               </button>
@@ -1021,7 +1101,7 @@ function HomeTab({
   onCourseEnrollment: (course: AvailableCourse) => void
 }) {
   // Define all possible stats cards
-  const allStatCards = [
+  const allStatCards: StatCard[] = [
     {
       title: 'Total Children',
       value: stats.totalChildren,
@@ -1051,6 +1131,7 @@ function HomeTab({
       description: 'Achievements unlocked',
       delay: 0.3,
       permission: { resource: 'certificates', action: 'read' },
+      comingSoon: true,
     },
     {
       title: 'Learning Hours',
@@ -1062,6 +1143,7 @@ function HomeTab({
       suffix: 'hrs',
       delay: 0.4,
       permission: { resource: 'certificates', action: 'read' },
+      comingSoon: true,
     },
   ]
 
@@ -1098,6 +1180,13 @@ function HomeTab({
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                 />
+                {stat.comingSoon && (
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
+                )}
                 <div className="relative">
                   <div className="flex items-center justify-between">
                     <div className="space-y-3">
@@ -1108,7 +1197,9 @@ function HomeTab({
                         initial={{ scale: 0.8 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: stat.delay + 0.2 }}
-                        className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                        className={`text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent ${
+                          stat.comingSoon ? 'opacity-50' : ''
+                        }`}
                       >
                         {stat.value}
                         {stat.suffix || ''}
@@ -1226,8 +1317,11 @@ function HomeTab({
                       </div>
 
                       {/* Recent Activity or Top Course */}
-                      {child.recent_activity && child.recent_activity.length > 0 ? (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="mt-3 pt-3 border-t border-gray-200 relative">
+                        <span className="absolute top-1 right-0 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                          Coming Soon
+                        </span>
+                        {child.recent_activity && child.recent_activity.length > 0 ? (
                           <div className="flex items-start space-x-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
                             <div className="flex-1 min-w-0">
@@ -1239,20 +1333,17 @@ function HomeTab({
                               </p>
                             </div>
                           </div>
-                        </div>
-                      ) : child.enrolled_courses && child.enrolled_courses.length > 0 ? (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600">Top Course:</span>
-                            <span className="text-xs font-medium text-gray-900 truncate ml-2">
-                              {
-                                child.enrolled_courses.sort((a, b) => b.progress - a.progress)[0]
-                                  .title
-                              }
-                            </span>
+                        ) : (
+                          <div className="flex items-start space-x-2 opacity-50">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500 truncate">
+                                Recent activity tracking coming soon
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
+                        )}
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -1276,7 +1367,7 @@ function HomeTab({
                 <div className="space-y-4">
                   <motion.button
                     onClick={onAddChild}
-                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -1284,7 +1375,7 @@ function HomeTab({
                     <span className="font-semibold">Add New Child</span>
                   </motion.button>
                   <motion.button
-                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-white/60 hover:bg-white/80 border border-white/30 text-gray-700 hover:text-gray-900 transition-all duration-300"
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-white/60 hover:bg-white/80 border border-white/30 text-gray-700 hover:text-gray-900 transition-all duration-300 cursor-pointer"
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -1394,7 +1485,7 @@ function HomeTab({
                     </div>
                     <motion.button
                       onClick={() => onCourseEnrollment(course)}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -1426,7 +1517,7 @@ function ChildrenTab({
         <h2 className="text-2xl font-bold text-gray-900">My Children</h2>
         <motion.button
           onClick={onAddChild}
-          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 cursor-pointer"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -1451,7 +1542,7 @@ function ChildrenTab({
               <div className="absolute top-0 right-0 flex space-x-2">
                 <motion.button
                   onClick={() => onEditChild(child.student_id)}
-                  className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200"
+                  className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Edit Child"
@@ -1467,7 +1558,7 @@ function ChildrenTab({
                 </motion.button>
                 <motion.button
                   onClick={() => onDeleteChild(child.student_id)}
-                  className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200"
+                  className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Delete Child"
@@ -1511,20 +1602,59 @@ function ChildrenTab({
                 {/* Course Progress Summary */}
                 {child.enrolled_courses && child.enrolled_courses.length > 0 && (
                   <div className="bg-white/40 rounded-lg p-3 border border-white/20">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Course Progress</h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-700">Course Progress</h4>
+                      <div className="flex items-center space-x-1">
+                        {child.enrolled_courses.some(
+                          (course) => course.batch_info?.is_in_batch,
+                        ) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            <svg
+                              className="w-2.5 h-2.5 mr-0.5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                            </svg>
+                            In Batches
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <div className="space-y-2 max-h-24 overflow-y-auto">
                       {child.enrolled_courses.slice(0, 3).map((course) => (
-                        <div key={course.id} className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600 truncate flex-1 mr-2">{course.title}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-gray-900 font-medium">{course.progress}%</span>
-                            <div className="w-8 h-1.5 bg-gray-200 rounded-full">
-                              <div
-                                className="h-full bg-gradient-to-r from-blue-400 to-purple-500 rounded-full transition-all duration-300"
-                                style={{ width: `${course.progress}%` }}
-                              />
+                        <div key={course.id} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center flex-1 mr-2">
+                              <span className="text-gray-600 truncate">{course.title}</span>
+                              {course.batch_info && (
+                                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                  <svg
+                                    className="w-2.5 h-2.5 mr-0.5"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                                  </svg>
+                                  Batch
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-900 font-medium">{course.progress}%</span>
+                              <div className="w-8 h-1.5 bg-gray-200 rounded-full">
+                                <div
+                                  className="h-full bg-gradient-to-r from-blue-400 to-purple-500 rounded-full transition-all duration-300"
+                                  style={{ width: `${course.progress}%` }}
+                                />
+                              </div>
                             </div>
                           </div>
+                          {course.batch_info && (
+                            <div className="text-xs text-orange-600 pl-1">
+                              {course.batch_info.batch_name}
+                            </div>
+                          )}
                         </div>
                       ))}
                       {child.enrolled_courses.length > 3 && (
@@ -1544,20 +1674,35 @@ function ChildrenTab({
                     </p>
                     <p className="text-xs text-gray-600 font-medium">Courses</p>
                   </div>
-                  <div className="bg-white/60 rounded-lg p-3 border border-white/30">
-                    <p className="text-lg font-bold text-gray-900">{child.streak_days}</p>
+                  <div className="bg-white/60 rounded-lg p-3 border border-white/30 relative">
+                    <span className="absolute top-1 right-1 bg-yellow-100 text-yellow-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                    <p className="text-lg font-bold text-gray-900 opacity-50">
+                      {child.streak_days}
+                    </p>
                     <p className="text-xs text-gray-600 font-medium">Streak</p>
                   </div>
-                  <div className="bg-white/60 rounded-lg p-3 border border-white/30">
-                    <p className="text-lg font-bold text-gray-900">{child.learning_time.weekly}</p>
+                  <div className="bg-white/60 rounded-lg p-3 border border-white/30 relative">
+                    <span className="absolute top-1 right-1 bg-yellow-100 text-yellow-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                    <p className="text-lg font-bold text-gray-900 opacity-50">
+                      {child.learning_time.weekly}
+                    </p>
                     <p className="text-xs text-gray-600 font-medium">Mins/Week</p>
                   </div>
                 </div>
 
                 {/* Recent Activity Preview */}
-                {child.recent_activity && child.recent_activity.length > 0 && (
-                  <div className="bg-white/40 rounded-lg p-3 border border-white/20">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Activity</h4>
+                <div className="bg-white/40 rounded-lg p-3 border border-white/20 relative">
+                  <div className="absolute top-2 right-2">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Activity</h4>
+                  {child.recent_activity && child.recent_activity.length > 0 ? (
                     <div className="space-y-1">
                       {child.recent_activity.slice(0, 2).map((activity) => (
                         <div key={activity.id} className="flex items-center space-x-2 text-xs">
@@ -1571,19 +1716,43 @@ function ChildrenTab({
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="opacity-50">
+                      <div className="flex items-center space-x-2 text-xs">
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-500">Activity tracking coming soon</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Achievements Preview */}
-                {child.achievements && child.achievements.length > 0 && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-3 border border-yellow-200">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-yellow-800">Latest Achievement</h4>
-                      <div className="text-lg">{child.achievements[0].icon}</div>
-                    </div>
-                    <p className="text-xs text-yellow-700 mt-1">{child.achievements[0].title}</p>
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-3 border border-yellow-200 relative">
+                  <div className="absolute top-2 right-2">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                      Coming Soon
+                    </span>
                   </div>
-                )}
+                  {child.achievements && child.achievements.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-yellow-800">Latest Achievement</h4>
+                        <div className="text-lg">{child.achievements[0].icon}</div>
+                      </div>
+                      <p className="text-xs text-yellow-700 mt-1">{child.achievements[0].title}</p>
+                    </>
+                  ) : (
+                    <div className="opacity-50">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-yellow-800">Latest Achievement</h4>
+                        <div className="text-lg">🏆</div>
+                      </div>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Achievement tracking coming soon
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -1611,115 +1780,50 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
       </div>
 
       {allEnrollments.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {allEnrollments.map((enrollment, index) => (
             <motion.div
               key={`${enrollment.childId}-${enrollment.id}`}
-              className="rounded-xl backdrop-blur-md bg-white/90 border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-all duration-300"
-              initial={{ y: 50, opacity: 0 }}
+              className="rounded-lg bg-white border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-300"
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.1 * index }}
-              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.4, delay: 0.1 * index }}
             >
-              {/* Course Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 text-lg mb-1">{enrollment.title}</h3>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <span>Student: {enrollment.childName}</span>
-                    <span>•</span>
-                    <span>{enrollment.subject}</span>
-                    <span>•</span>
+              {/* Course Info */}
+              <div className="space-y-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-base">{enrollment.title}</h3>
+                  <p className="text-sm text-gray-600">{enrollment.subject}</p>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Student:</span>
+                    <span className="font-medium text-gray-900">{enrollment.childName}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Level:</span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        enrollment.difficulty === 'Beginner'
-                          ? 'bg-green-100 text-green-700'
-                          : enrollment.difficulty === 'Intermediate'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r ${
+                        enrollment.level === 'elementary' || enrollment.level === 'basic'
+                          ? 'from-green-400 to-blue-500 text-white'
+                          : enrollment.level === 'intermediate'
+                            ? 'from-yellow-400 to-orange-500 text-white'
+                            : 'from-red-400 to-pink-500 text-white'
                       }`}
                     >
-                      {enrollment.difficulty}
+                      {enrollment.level.charAt(0).toUpperCase() +
+                        enrollment.level.slice(1).toLowerCase()}
                     </span>
                   </div>
-                </div>
-                <div className="text-right ml-4">
-                  <div className="text-2xl font-bold text-gray-900">{enrollment.progress}%</div>
-                  <div className="text-xs text-gray-600">Complete</div>
-                </div>
-              </div>
 
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${enrollment.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Course Details */}
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center bg-blue-50 rounded-lg p-3">
-                  <div className="text-lg font-bold text-blue-600">
-                    {enrollment.completed_lessons}/{enrollment.total_lessons}
-                  </div>
-                  <div className="text-xs text-blue-500">Lessons</div>
-                </div>
-                <div className="text-center bg-green-50 rounded-lg p-3">
-                  <div className="text-lg font-bold text-green-600">
-                    {enrollment.current_grade}%
-                  </div>
-                  <div className="text-xs text-green-500">Grade</div>
-                </div>
-                <div className="text-center bg-purple-50 rounded-lg p-3">
-                  <div className="text-lg font-bold text-purple-600">{enrollment.level}</div>
-                  <div className="text-xs text-purple-500">Level</div>
-                </div>
-              </div>
-
-              {/* Timeline Information */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Started:</span>
-                    <div className="font-medium text-gray-900">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Enrolled:</span>
+                    <span className="font-medium text-gray-900">
                       {new Date(enrollment.enrollment_date).toLocaleDateString()}
-                    </div>
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Expected Completion:</span>
-                    <div className="font-medium text-gray-900">
-                      {new Date(enrollment.estimated_completion_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress Status Indicator */}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      enrollment.progress >= 80
-                        ? 'bg-green-500'
-                        : enrollment.progress >= 50
-                          ? 'bg-yellow-500'
-                          : 'bg-red-500'
-                    }`}
-                  ></div>
-                  <span className="text-xs text-gray-600">
-                    {enrollment.progress >= 80
-                      ? 'Excellent Progress'
-                      : enrollment.progress >= 50
-                        ? 'Good Progress'
-                        : 'Needs Attention'}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {Math.max(0, enrollment.total_lessons - enrollment.completed_lessons)} lessons
-                  remaining
                 </div>
               </div>
             </motion.div>
@@ -1746,25 +1850,35 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         <motion.div
-          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
+          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 relative"
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
+          <div className="absolute top-3 right-3">
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+              Coming Soon
+            </span>
+          </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Progress</h3>
-          <div className="text-center">
+          <div className="text-center opacity-50">
             <div className="text-4xl font-bold text-gray-900 mb-2">{stats.weeklyProgress}%</div>
             <p className="text-gray-600">Average completion this week</p>
           </div>
         </motion.div>
         <motion.div
-          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
+          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 relative"
           initial={{ x: 50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
+          <div className="absolute top-3 right-3">
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+              Coming Soon
+            </span>
+          </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Time</h3>
-          <div className="text-center">
+          <div className="text-center opacity-50">
             <div className="text-4xl font-bold text-gray-900 mb-2">{stats.totalLearningHours}</div>
             <p className="text-gray-600">Hours this month</p>
           </div>
@@ -1837,6 +1951,20 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
                           <p className="text-xs text-gray-600">
                             {course.subject} • {course.level}
                           </p>
+                          {course.batch_info && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                <svg
+                                  className="w-3 h-3 mr-1"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                                </svg>
+                                Batch: {course.batch_info.batch_name}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right ml-3">
                           <div className="text-lg font-bold text-gray-900">{course.progress}%</div>
@@ -1902,12 +2030,15 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
             )}
 
             {/* Recent Achievements */}
-            {child.achievements && child.achievements.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-white/20">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                  <TrophyIcon className="h-5 w-5 mr-2 text-yellow-600" />
-                  Recent Achievements
-                </h4>
+            <div className="mt-6 pt-6 border-t border-white/20">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <TrophyIcon className="h-5 w-5 mr-2 text-yellow-600" />
+                Recent Achievements
+                <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  Coming Soon
+                </span>
+              </h4>
+              {child.achievements && child.achievements.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {child.achievements.slice(0, 3).map((achievement) => (
                     <div
@@ -1928,8 +2059,14 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-4 opacity-50">
+                  <p className="text-gray-500 text-sm">
+                    Achievement tracking will be available soon
+                  </p>
+                </div>
+              )}
+            </div>
           </motion.div>
         ))}
       </div>
@@ -1944,13 +2081,20 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         <motion.div
-          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center"
+          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center relative"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <TrophyIcon className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
-          <div className="text-2xl font-bold text-gray-900">{stats.certificatesEarned}</div>
+          <div className="absolute top-2 right-2">
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+              Soon
+            </span>
+          </div>
+          <TrophyIcon className="h-8 w-8 text-yellow-500 mx-auto mb-3 opacity-50" />
+          <div className="text-2xl font-bold text-gray-900 opacity-50">
+            {stats.certificatesEarned}
+          </div>
           <div className="text-sm text-gray-600">Certificates</div>
         </motion.div>
         <motion.div
@@ -1964,23 +2108,35 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
           <div className="text-sm text-gray-600">Active Courses</div>
         </motion.div>
         <motion.div
-          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center"
+          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center relative"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <FireIcon className="h-8 w-8 text-orange-500 mx-auto mb-3" />
-          <div className="text-2xl font-bold text-gray-900">{stats.totalLearningHours}</div>
+          <div className="absolute top-2 right-2">
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+              Soon
+            </span>
+          </div>
+          <FireIcon className="h-8 w-8 text-orange-500 mx-auto mb-3 opacity-50" />
+          <div className="text-2xl font-bold text-gray-900 opacity-50">
+            {stats.totalLearningHours}
+          </div>
           <div className="text-sm text-gray-600">Hours Learned</div>
         </motion.div>
         <motion.div
-          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center"
+          className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6 text-center relative"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <CalendarDaysIcon className="h-8 w-8 text-green-500 mx-auto mb-3" />
-          <div className="text-2xl font-bold text-gray-900">{stats.upcomingEvents}</div>
+          <div className="absolute top-2 right-2">
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+              Soon
+            </span>
+          </div>
+          <CalendarDaysIcon className="h-8 w-8 text-green-500 mx-auto mb-3 opacity-50" />
+          <div className="text-2xl font-bold text-gray-900 opacity-50">{stats.upcomingEvents}</div>
           <div className="text-sm text-gray-600">Upcoming Events</div>
         </motion.div>
       </div>
@@ -2017,22 +2173,38 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
 
             {/* Analytics Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">{child.learning_time.daily}</div>
+              <div className="bg-blue-50 rounded-xl p-4 text-center relative">
+                <span className="absolute top-1 right-1 bg-yellow-100 text-yellow-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  Soon
+                </span>
+                <div className="text-2xl font-bold text-blue-600 opacity-50">
+                  {child.learning_time.daily}
+                </div>
                 <div className="text-xs text-blue-500 font-medium">Daily Minutes</div>
               </div>
-              <div className="bg-green-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="bg-green-50 rounded-xl p-4 text-center relative">
+                <span className="absolute top-1 right-1 bg-yellow-100 text-yellow-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  Soon
+                </span>
+                <div className="text-2xl font-bold text-green-600 opacity-50">
                   {child.learning_time.weekly}
                 </div>
                 <div className="text-xs text-green-500 font-medium">Weekly Minutes</div>
               </div>
-              <div className="bg-purple-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-purple-600">{child.streak_days}</div>
+              <div className="bg-purple-50 rounded-xl p-4 text-center relative">
+                <span className="absolute top-1 right-1 bg-yellow-100 text-yellow-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  Soon
+                </span>
+                <div className="text-2xl font-bold text-purple-600 opacity-50">
+                  {child.streak_days}
+                </div>
                 <div className="text-xs text-purple-500 font-medium">Day Streak</div>
               </div>
-              <div className="bg-orange-50 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-orange-600">
+              <div className="bg-orange-50 rounded-xl p-4 text-center relative">
+                <span className="absolute top-1 right-1 bg-yellow-100 text-yellow-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  Soon
+                </span>
+                <div className="text-2xl font-bold text-orange-600 opacity-50">
                   {child.achievements?.length || 0}
                 </div>
                 <div className="text-xs text-orange-500 font-medium">Achievements</div>
@@ -2281,7 +2453,7 @@ function SettingsTab({
         <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
         <motion.button
           onClick={() => setShowEditProfile(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 cursor-pointer"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -2407,7 +2579,7 @@ function SettingsTab({
                 <h3 className="text-lg font-semibold text-gray-900">Edit Profile</h3>
                 <button
                   onClick={() => setShowEditProfile(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -2470,13 +2642,13 @@ function SettingsTab({
               <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
                 <button
                   onClick={() => setShowEditProfile(false)}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 font-medium"
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
                 >
                   Cancel
                 </button>
                 <motion.button
                   onClick={handleSaveProfile}
-                  className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200"
+                  className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 cursor-pointer"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

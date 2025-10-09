@@ -450,3 +450,30 @@ export async function getStudentsEnrolledInCourse(
     throw error
   }
 }
+
+export async function getStudentCourseProgress(
+  studentId: string,
+): Promise<{ [courseId: string]: number }> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('course_progress')
+      .select('course_id, progress_percentage')
+      .eq('student_id', studentId)
+
+    if (error) {
+      console.error('Error fetching course progress:', error)
+      return {}
+    }
+
+    // Convert to object with course_id as key and progress_percentage as value
+    const progressMap: { [courseId: string]: number } = {}
+    data.forEach((item) => {
+      progressMap[item.course_id] = item.progress_percentage || 0
+    })
+
+    return progressMap
+  } catch (error) {
+    console.error('Error in getStudentCourseProgress:', error)
+    return {}
+  }
+}

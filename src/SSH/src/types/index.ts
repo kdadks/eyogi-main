@@ -354,6 +354,32 @@ export interface BatchStudentWithInfo extends BatchStudent {
   course_title: string
 }
 
+export interface StudentBatchProgress {
+  batch: {
+    id: string
+    name: string
+    description?: string
+    status: string
+    start_date?: string
+    end_date?: string
+    progress_percentage?: number
+    gurukul?: {
+      id: string
+      name: string
+      slug: string
+    }
+  }
+  assigned_at: string
+  progress: BatchProgress[]
+  courses: {
+    course_id: string
+    courses: Course
+  }[]
+  total_weeks: number
+  completed_weeks: number
+  progress_percentage: number
+}
+
 export interface Permission {
   id: string
   name: string

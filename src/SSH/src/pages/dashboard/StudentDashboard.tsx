@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { useRoleBasedUI } from '../../contexts/PermissionContext'
 import { Badge } from '../../components/ui/Badge'
-import { Card, CardContent, CardHeader } from '../../components/ui/Card'
+
 import { Button } from '../../components/ui/Button'
-import { Enrollment, Certificate, Course, BatchStudent } from '../../types'
-import { getStudentEnrollments } from '../../lib/api/enrollments'
+import { Enrollment, Certificate, Course, StudentBatchProgress } from '../../types'
+import { getStudentEnrollments, getStudentCourseProgress } from '../../lib/api/enrollments'
 import { getStudentCertificates } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
 import { enrollInCourse } from '../../lib/api/enrollments'
 import { getUserProfile } from '../../lib/api/users'
-import { getStudentBatches } from '../../lib/api/batches'
+import { getStudentBatches, getStudentBatchProgress } from '../../lib/api/batches'
 import { getCountryName, getStateName } from '../../lib/address-utils'
 import toast from 'react-hot-toast'
 import type { Database } from '../../lib/supabase'
@@ -79,7 +79,8 @@ export default function StudentDashboard() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
-  const [batches, setBatches] = useState<BatchStudent[]>([])
+
+  const [batchProgress, setBatchProgress] = useState<StudentBatchProgress[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<StudentStats>({
     totalEnrollments: 0,
@@ -137,6 +138,8 @@ export default function StudentDashboard() {
     country?: string
   }
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null)
+  // Course Progress State
+  const [courseProgressData, setCourseProgressData] = useState<Record<string, number>>({})
   // Search and Filter State
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -152,44 +155,90 @@ export default function StudentDashboard() {
   }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const loadStudentData = async () => {
     try {
-      const [enrollmentsData, certificatesData, coursesData, batchesData] = await Promise.all([
+      const [
+        enrollmentsData,
+        certificatesData,
+        coursesData,
+        batchesData,
+        batchProgressData,
+        courseProgressData,
+      ] = await Promise.all([
         getStudentEnrollments(user!.id),
         getStudentCertificates(user!.id),
         getCourses(),
         getStudentBatches(user!.id),
+        getStudentBatchProgress(user!.id),
+        getStudentCourseProgress(user!.id),
       ])
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
       setAvailableCourses(coursesData)
-      setBatches(batchesData)
-      // Calculate stats
-      const completedCount = enrollmentsData.filter((e) => e.status === 'completed').length
-      const activeCount = enrollmentsData.filter((e) => e.status === 'approved').length
+
+      setBatchProgress(batchProgressData)
+      setCourseProgressData(courseProgressData)
+
+      // Calculate stats using real progress data from course_progress table
+      // Count completed courses based on 100% progress in course_progress table only
+      const completedCount = enrollmentsData.filter((enrollment) => {
+        const courseId = enrollment.course?.id || enrollment.course_id
+        const progress = courseProgressData[courseId] || 0
+        const isCompleted = progress >= 100
+        if (isCompleted) {
+          console.log(`✅ Course completed: ${enrollment.course?.title} with ${progress}% progress`)
+        }
+        return isCompleted // Only count courses with 100% actual progress
+      }).length
+
+      // Active courses are those that are approved and not yet 100% completed
+      const activeCount = enrollmentsData.filter((enrollment) => {
+        if (enrollment.status !== 'approved') return false
+        const courseId = enrollment.course?.id || enrollment.course_id
+        const progress = courseProgressData[courseId] || 0
+        return progress < 100
+      }).length
       const totalSpent = enrollmentsData.reduce((sum, e) => sum + (e.course?.price || 0), 0)
+
+      // Calculate overall completion rate using real progress data
+      const totalProgressSum = enrollmentsData
+        .filter((e) => e.status === 'approved' || e.status === 'completed')
+        .reduce((sum, enrollment) => {
+          const courseId = enrollment.course?.id || enrollment.course_id
+          return sum + (courseProgressData[courseId] || 0)
+        }, 0)
       const completionRate =
-        enrollmentsData.length > 0 ? (completedCount / enrollmentsData.length) * 100 : 0
-      // Calculate average grade from completed enrollments with final_grade
-      const gradesFromEnrollments = enrollmentsData
-        .filter((e) => e.status === 'completed' && e.final_grade)
+        enrollmentsData.length > 0 ? totalProgressSum / enrollmentsData.length : 0
+
+      // Calculate average grade from completed courses with real progress data
+      const completedCoursesWithProgress = enrollmentsData.filter((enrollment) => {
+        const courseId = enrollment.course?.id || enrollment.course_id
+        const progress = courseProgressData[courseId] || 0
+        return progress >= 100 && enrollment.final_grade
+      })
+      const gradesFromProgress = completedCoursesWithProgress
         .map((e) => parseFloat(e.final_grade!))
         .filter((grade) => !isNaN(grade))
       const averageGrade =
-        gradesFromEnrollments.length > 0
+        gradesFromProgress.length > 0
           ? Math.round(
-              gradesFromEnrollments.reduce((sum, grade) => sum + grade, 0) /
-                gradesFromEnrollments.length,
+              gradesFromProgress.reduce((sum, grade) => sum + grade, 0) / gradesFromProgress.length,
             )
           : 0
-      // Calculate learning streak from recent completion dates
-      const completedEnrollments = enrollmentsData
-        .filter((e) => e.status === 'completed' && e.completed_at)
+
+      // Calculate learning streak based on completed courses from progress data
+      const completedWithProgress = enrollmentsData
+        .filter((enrollment) => {
+          const courseId = enrollment.course?.id || enrollment.course_id
+          const progress = courseProgressData[courseId] || 0
+          return progress >= 100 && enrollment.completed_at
+        })
         .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
+
       let learningStreak = 0
-      if (completedEnrollments.length > 0) {
+      if (completedWithProgress.length > 0) {
         const today = new Date()
         const oneDayMs = 24 * 60 * 60 * 1000
         let currentDate = new Date(today)
-        for (const enrollment of completedEnrollments) {
+        for (const enrollment of completedWithProgress) {
           const completedDate = new Date(enrollment.completed_at!)
           const daysDiff = Math.floor((currentDate.getTime() - completedDate.getTime()) / oneDayMs)
           if (daysDiff <= 1) {
@@ -200,12 +249,15 @@ export default function StudentDashboard() {
           }
         }
       }
-      // Calculate XP points based on real achievements
+      // Calculate XP points based on real progress data
       const baseXP = completedCount * 100 // 100 XP per completed course
       const certificateXP = certificatesData.length * 50 // 50 XP per certificate
       const progressXP = enrollmentsData
-        .filter((e) => e.status === 'approved')
-        .reduce((sum, e) => sum + (e.progress_percentage || 0), 0) // 1 XP per progress percentage point
+        .filter((e) => e.status === 'approved' || e.status === 'completed')
+        .reduce((sum, enrollment) => {
+          const courseId = enrollment.course?.id || enrollment.course_id
+          return sum + (courseProgressData[courseId] || 0)
+        }, 0) // 1 XP per progress percentage point from real progress data
       const xpPoints = baseXP + certificateXP + Math.round(progressXP)
       setStats({
         totalEnrollments: enrollmentsData.length,
@@ -261,22 +313,28 @@ export default function StudentDashboard() {
       })),
     // Progress milestones
     ...enrollments
-      .filter(
-        (e) => e.progress_percentage && e.progress_percentage >= 50 && e.status !== 'completed',
-      )
-      .map((enrollment) => ({
-        id: `progress-${enrollment.id}`,
-        type: 'progress' as const,
-        title: 'Great Progress!',
-        description: `${enrollment.progress_percentage}% completed in ${enrollment.course?.title || 'course'}`,
-        icon: ChartBarIcon,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-blue-200',
-        date: new Date(enrollment.updated_at),
-        points: Math.floor((enrollment.progress_percentage || 0) / 10) * 5, // 5 points per 10% progress
-        action: () => setActiveTab('courses'),
-      })),
+      .filter((e) => {
+        const courseId = e.course?.id || e.course_id
+        const progress = courseProgressData[courseId] || 0
+        return progress >= 50 && e.status !== 'completed'
+      })
+      .map((enrollment) => {
+        const courseId = enrollment.course?.id || enrollment.course_id
+        const progress = courseProgressData[courseId] || 0
+        return {
+          id: `progress-${enrollment.id}`,
+          type: 'progress' as const,
+          title: 'Great Progress!',
+          description: `${Math.round(progress)}% completed in ${enrollment.course?.title || 'course'}`,
+          icon: ChartBarIcon,
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-50',
+          borderColor: 'border-blue-200',
+          date: new Date(enrollment.updated_at),
+          points: Math.floor(progress / 10) * 5, // 5 points per 10% progress
+          action: () => setActiveTab('courses'),
+        }
+      }),
     // Level achievements
     ...(stats.level !== 'Beginner'
       ? [
@@ -684,7 +742,7 @@ export default function StudentDashboard() {
                     // Scroll to top of page
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
-                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
@@ -719,243 +777,195 @@ export default function StudentDashboard() {
                 className="space-y-8"
               >
                 {/* Enhanced Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
-                    (() => {
-                      const active = stats.activeCourses
-                      let message
-
-                      if (active === 0) {
-                        message = 'Ready to start! 🚀'
-                      } else if (active === 1) {
-                        message = 'Good focus! 📚'
-                      } else if (active <= 3) {
-                        message = 'Great balance! ⚖️'
-                      } else {
-                        message = 'Ambitious learner! 💪'
-                      }
-
-                      return {
-                        title: 'Active Courses',
-                        value: active,
-                        icon: BookOpenIcon,
-                        gradient: 'from-blue-500 via-blue-600 to-indigo-600',
-                        bgGradient: 'from-blue-50 via-blue-100 to-indigo-100',
-                        message,
-                        delay: 0.1,
-                        requiresPermission: 'courses',
-                        permissionAction: 'view',
-                      }
-                    })(),
-                    (() => {
-                      const completed = stats.completedCourses
-                      let message
-
-                      if (completed === 0) {
-                        message = 'Your journey begins! 🌟'
-                      } else if (completed === 1) {
-                        message = 'First milestone! 🎯'
-                      } else if (completed < 5) {
-                        message = 'Building expertise! 📈'
-                      } else if (completed < 10) {
-                        message = 'Amazing progress! 🎉'
-                      } else {
-                        message = 'Course master! 🏆'
-                      }
-
-                      return {
-                        title: 'Completed Courses',
-                        value: completed,
-                        icon: CheckCircleIcon,
-                        gradient: 'from-green-500 via-emerald-600 to-teal-600',
-                        bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
-                        message,
-                        delay: 0.2,
-                        requiresPermission: 'courses',
-                        permissionAction: 'view',
-                      }
-                    })(),
-                    (() => {
-                      const certs = stats.certificatesEarned
-                      let message
-
-                      if (certs === 0) {
-                        message = 'Earn your first! 🎯'
-                      } else if (certs === 1) {
-                        message = 'First achievement! 🏅'
-                      } else if (certs < 3) {
-                        message = 'Building credentials! 📜'
-                      } else if (certs < 5) {
-                        message = "You're a star! ⭐"
-                      } else {
-                        message = 'Certification expert! 🏆'
-                      }
-
-                      return {
-                        title: 'Certificates',
-                        value: certs,
-                        icon: TrophyIcon,
-                        gradient: 'from-purple-500 via-violet-600 to-purple-600',
-                        bgGradient: 'from-purple-50 via-violet-100 to-purple-100',
-                        message,
-                        delay: 0.3,
-                        requiresPermission: 'certificates',
-                        permissionAction: 'read',
-                      }
-                    })(),
-                    (() => {
-                      const batches = stats.totalBatches
-                      let message
-
-                      if (batches === 0) {
-                        message = 'Join a group! 👋'
-                      } else if (batches === 1) {
-                        message = 'Team player! 👥'
-                      } else {
-                        message = 'Social learner! 🤝'
-                      }
-
-                      return {
-                        title: 'My Batches',
-                        value: batches,
-                        icon: QueueListIcon,
-                        gradient: 'from-orange-500 via-red-500 to-pink-600',
-                        bgGradient: 'from-orange-50 via-red-100 to-pink-100',
-                        message,
-                        delay: 0.4,
-                        requiresPermission: 'batches',
-                        permissionAction: 'read',
-                      }
-                    })(),
-                    (() => {
-                      const streak = stats.learningStreak
-                      let message, icon, gradient, bgGradient
-
-                      if (streak === 0) {
-                        message = 'Ready to start! 💪'
-                        icon = FireIcon
-                        gradient = 'from-gray-500 via-gray-600 to-gray-700'
-                        bgGradient = 'from-gray-50 via-gray-100 to-gray-200'
-                      } else if (streak === 1) {
-                        message = 'Good start! 🌱'
-                        icon = FireIcon
-                        gradient = 'from-green-500 via-green-600 to-emerald-600'
-                        bgGradient = 'from-green-50 via-green-100 to-emerald-100'
-                      } else if (streak < 7) {
-                        message = 'Building momentum! ⚡'
-                        icon = FireIcon
-                        gradient = 'from-orange-500 via-amber-500 to-yellow-600'
-                        bgGradient = 'from-orange-50 via-amber-100 to-yellow-100'
-                      } else if (streak < 30) {
-                        message = 'On fire! 🔥'
-                        icon = FireIcon
-                        gradient = 'from-red-500 via-pink-500 to-rose-600'
-                        bgGradient = 'from-red-50 via-pink-100 to-rose-100'
-                      } else {
-                        message = 'Legendary! 🏆'
-                        icon = TrophyIcon
-                        gradient = 'from-purple-500 via-violet-500 to-purple-600'
-                        bgGradient = 'from-purple-50 via-violet-100 to-purple-100'
-                      }
-
-                      return {
-                        title: 'Learning Streak',
-                        value: `${streak} ${streak === 1 ? 'day' : 'days'}`,
-                        icon,
-                        gradient,
-                        bgGradient,
-                        message,
-                        delay: 0.5,
-                        requiresPermission: null, // Always show learning streak
-                      }
-                    })(),
+                    {
+                      title: 'Active Courses',
+                      value: stats.activeCourses,
+                      icon: BookOpenIcon,
+                      gradient: 'from-blue-500 to-indigo-600',
+                      bgGradient: 'from-blue-500/20 to-indigo-600/20',
+                      description: 'Enrolled courses',
+                      delay: 0.1,
+                      permission: { resource: 'courses', action: 'view' },
+                    },
+                    {
+                      title: 'Completed Courses',
+                      value: stats.completedCourses,
+                      icon: CheckCircleIcon,
+                      gradient: 'from-green-500 to-teal-600',
+                      bgGradient: 'from-green-500/20 to-teal-600/20',
+                      description: 'Finished successfully',
+                      delay: 0.2,
+                      permission: { resource: 'courses', action: 'view' },
+                    },
+                    {
+                      title: 'Certificates Earned',
+                      value: stats.certificatesEarned,
+                      icon: TrophyIcon,
+                      gradient: 'from-yellow-500 to-orange-600',
+                      bgGradient: 'from-yellow-500/20 to-orange-600/20',
+                      description: 'Achievements unlocked',
+                      delay: 0.3,
+                      permission: { resource: 'certificates', action: 'read' },
+                    },
+                    {
+                      title: 'My Batches',
+                      value: stats.totalBatches,
+                      icon: QueueListIcon,
+                      gradient: 'from-orange-500 to-red-600',
+                      bgGradient: 'from-orange-500/20 to-red-600/20',
+                      description: 'Learning groups',
+                      delay: 0.4,
+                      permission: { resource: 'batches', action: 'read' },
+                    },
+                    {
+                      title: 'Learning Streak',
+                      value: stats.learningStreak,
+                      icon: FireIcon,
+                      gradient: 'from-purple-500 to-pink-600',
+                      bgGradient: 'from-purple-500/20 to-pink-600/20',
+                      description: stats.learningStreak === 1 ? 'Day' : 'Days',
+                      suffix: stats.learningStreak === 1 ? ' day' : ' days',
+                      delay: 0.5,
+                      permission: null, // Always show learning streak
+                    },
                   ]
                     .filter((stat) => {
-                      if (stat.requiresPermission === null) return true
+                      if (stat.permission === null) return true
                       const hasPermission = canAccess(
-                        stat.requiresPermission,
-                        stat.permissionAction || 'read',
+                        stat.permission.resource,
+                        stat.permission.action,
                       )
                       console.log(
-                        `Student stat "${stat.title}" - ${stat.requiresPermission}.${stat.permissionAction || 'read'}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+                        `Student stat "${stat.title}" - ${stat.permission.resource}.${stat.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
                       )
                       return hasPermission
                     })
-                    .map((stat, index) => {
-                      // Recalculate delays after filtering
-                      const adjustedStat = { ...stat, delay: (index + 1) * 0.1 }
-                      return (
-                        <motion.div
-                          key={adjustedStat.title}
-                          initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          transition={{
-                            delay: adjustedStat.delay,
-                            duration: 0.6,
-                            type: 'spring',
-                            stiffness: 100,
-                          }}
-                          whileHover={{ scale: 1.05, y: -5 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="group"
-                        >
-                          <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
-                            <div
-                              className={`absolute inset-0 bg-gradient-to-br ${adjustedStat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
-                            />
-                            <div className="relative">
-                              <div className="flex items-center justify-between">
-                                <div className="space-y-3">
-                                  <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
-                                    {adjustedStat.title}
-                                  </p>
-                                  <motion.p
-                                    initial={{ scale: 0.8 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ delay: adjustedStat.delay + 0.2 }}
-                                    className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
-                                  >
-                                    {typeof adjustedStat.value === 'string'
-                                      ? adjustedStat.value
-                                      : adjustedStat.value.toLocaleString()}
-                                  </motion.p>
-                                  <p className="text-sm text-gray-500">{adjustedStat.message}</p>
-                                </div>
-                                <motion.div
-                                  initial={{ scale: 0, rotate: -180 }}
-                                  animate={{ scale: 1, rotate: 0 }}
-                                  transition={{
-                                    delay: adjustedStat.delay + 0.3,
-                                    type: 'spring',
-                                    stiffness: 200,
-                                  }}
-                                  whileHover={{ scale: 1.2, rotate: 10 }}
-                                  className={`h-16 w-16 bg-gradient-to-r ${adjustedStat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                    .map((stat) => (
+                      <motion.div
+                        key={stat.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: stat.delay,
+                          duration: 0.6,
+                          type: 'spring',
+                          stiffness: 100,
+                        }}
+                        whileHover={{ scale: 1.05, y: -5 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="group"
+                      >
+                        <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
+                          <div
+                            className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
+                          />
+                          <div className="relative">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-3">
+                                <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                                  {stat.title}
+                                </p>
+                                <motion.p
+                                  initial={{ scale: 0.8 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: stat.delay + 0.2 }}
+                                  className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
                                 >
-                                  <adjustedStat.icon className="h-8 w-8 text-white" />
-                                </motion.div>
+                                  {stat.value}
+                                  {stat.suffix || ''}
+                                </motion.p>
+                                <p className="text-sm text-gray-500">{stat.description}</p>
                               </div>
                               <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: '100%' }}
-                                transition={{ delay: adjustedStat.delay + 0.5, duration: 1 }}
-                                className="mt-6"
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{
+                                  delay: stat.delay + 0.3,
+                                  type: 'spring',
+                                  stiffness: 200,
+                                }}
+                                whileHover={{ scale: 1.2, rotate: 10 }}
+                                className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
                               >
-                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: '75%' }}
-                                    transition={{ delay: adjustedStat.delay + 0.7, duration: 1.5 }}
-                                    className={`h-full bg-gradient-to-r ${adjustedStat.gradient} rounded-full`}
-                                  />
-                                </div>
+                                <stat.icon className="h-8 w-8 text-white" />
                               </motion.div>
                             </div>
                           </div>
-                        </motion.div>
-                      )
-                    })}
+                        </div>
+                      </motion.div>
+                    ))}
                 </div>
+
+                {/* Batch Information Section - Show if student is in any batches */}
+                {batchProgress.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl shadow-lg p-6 border border-orange-200"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <QueueListIcon className="h-8 w-8 text-orange-600" />
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">Your Learning Groups</h3>
+                          <p className="text-sm text-gray-600">
+                            You're part of {batchProgress.length} batch
+                            {batchProgress.length !== 1 ? 'es' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('batches')}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors cursor-pointer"
+                      >
+                        View All Batches
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {batchProgress.slice(0, 3).map((batchData, index) => (
+                        <div
+                          key={batchData.batch.id || index}
+                          className="bg-white/60 rounded-lg p-4 border border-orange-100"
+                        >
+                          <h4 className="font-semibold text-gray-900 mb-2">
+                            {batchData.batch.name || 'Unnamed Batch'}
+                          </h4>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Progress:</span>
+                            <span className="font-medium text-orange-600">
+                              {Math.round(batchData.progress_percentage || 0)}%
+                            </span>
+                          </div>
+                          <div className="mt-2">
+                            <div className="bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${Math.min(100, Math.max(0, batchData.progress_percentage || 0))}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {batchProgress.length > 3 && (
+                      <div className="mt-4 text-center">
+                        <button
+                          onClick={() => setActiveTab('batches')}
+                          className="text-orange-600 hover:text-orange-800 font-medium cursor-pointer"
+                        >
+                          View {batchProgress.length - 3} more batch
+                          {batchProgress.length - 3 !== 1 ? 'es' : ''}
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
                 {/* Learning Progress Section */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -1006,7 +1016,8 @@ export default function StudentDashboard() {
                         .filter((e) => e.status === 'approved')
                         .slice(0, 3)
                         .map((enrollment, index) => {
-                          const progress = enrollment.progress_percentage || 0 // Use real progress from database
+                          const courseId = enrollment.course?.id || enrollment.course_id
+                          const progress = courseProgressData?.[courseId] || 0 // Use real progress from course_progress table
                           return (
                             <motion.div
                               key={enrollment.id}
@@ -1217,13 +1228,19 @@ export default function StudentDashboard() {
                         <div className="flex justify-between text-sm">
                           <span>Progress</span>
                           <span className="font-semibold">
-                            {enrollment.progress_percentage || 0}%
+                            {Math.round(
+                              courseProgressData?.[enrollment.course?.id || enrollment.course_id] ||
+                                0,
+                            )}
+                            %
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-gradient-to-r from-green-500 to-teal-500 h-2 rounded-full"
-                            style={{ width: `${enrollment.progress_percentage || 0}%` }}
+                            style={{
+                              width: `${Math.min(100, courseProgressData?.[enrollment.course?.id || enrollment.course_id] || 0)}%`,
+                            }}
                           ></div>
                         </div>
                       </div>
@@ -1276,7 +1293,7 @@ export default function StudentDashboard() {
                           <button
                             onClick={() => handleEnrollment(course.id)}
                             disabled={enrollingCourseId === course.id}
-                            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-lg text-sm hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-lg text-sm hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           >
                             {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now'}
                           </button>
@@ -1498,7 +1515,7 @@ export default function StudentDashboard() {
                       {certificate.file_url && (
                         <button
                           onClick={() => window.open(certificate.file_url, '_blank')}
-                          className="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2"
+                          className="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer"
                         >
                           <svg
                             className="w-4 h-4"
@@ -1549,11 +1566,11 @@ export default function StudentDashboard() {
                 </h2>
                 <p className="text-xl text-gray-600">Your assigned batches and learning groups</p>
               </div>
-              {/* Batch Grid */}
+              {/* Batch Progress Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {batches.map((batchStudent) => (
+                {batchProgress.map((batchData, index) => (
                   <div
-                    key={batchStudent.id}
+                    key={batchData.batch.id || index}
                     className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl shadow-lg p-6 border border-orange-200 hover:shadow-xl transition-shadow duration-300"
                   >
                     <div className="mb-4">
@@ -1561,54 +1578,91 @@ export default function StudentDashboard() {
                         <QueueListIcon className="h-8 w-8 text-orange-600 flex-shrink-0" />
                         <Badge
                           className={`text-xs ${
-                            batchStudent.batch?.status === 'active'
+                            batchData.batch.status === 'active'
                               ? 'bg-green-100 text-green-800'
-                              : batchStudent.batch?.status === 'completed'
+                              : batchData.batch.status === 'completed'
                                 ? 'bg-blue-100 text-blue-800'
-                                : batchStudent.batch?.status === 'inactive'
-                                  ? 'bg-gray-100 text-gray-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                : batchData.batch.status === 'in_progress'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {batchStudent.batch?.status || 'Unknown'}
+                          {batchData.batch.status || 'Unknown'}
                         </Badge>
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {batchStudent.batch?.name || 'Unknown Batch'}
+                        {batchData.batch.name || 'Unknown Batch'}
                       </h3>
-                      {batchStudent.batch?.description && (
+                      {batchData.batch.description && (
                         <div
                           className="text-sm text-gray-600 mb-3 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: batchStudent.batch.description }}
+                          dangerouslySetInnerHTML={{ __html: batchData.batch.description }}
                         />
                       )}
                     </div>
 
+                    {/* Course Progress */}
+                    {batchData.courses.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Course:</h4>
+                        {batchData.courses.map((courseData) => (
+                          <div key={courseData.course_id} className="text-sm text-gray-600 mb-2">
+                            <div className="font-medium">{courseData.courses.title}</div>
+                            <div className="text-xs text-gray-500">
+                              {courseData.courses.course_number} •{' '}
+                              {courseData.courses.duration_weeks} weeks
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">Progress</span>
+                        <span className="text-sm text-gray-600">
+                          {batchData.completed_weeks}/{batchData.total_weeks} weeks
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${batchData.total_weeks > 0 ? (batchData.completed_weeks / batchData.total_weeks) * 100 : 0}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-center text-gray-500 mt-1">
+                        {batchData.progress_percentage}% complete
+                      </div>
+                    </div>
+
                     <div className="space-y-2 text-sm">
-                      {batchStudent.batch?.gurukul && (
+                      {batchData.batch.gurukul && (
                         <div className="flex items-center text-gray-600">
                           <div className="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
                           <span className="font-medium">Gurukul:</span>
-                          <span className="ml-1">{batchStudent.batch.gurukul.name}</span>
+                          <span className="ml-1">{batchData.batch.gurukul.name}</span>
                         </div>
                       )}
 
-                      {batchStudent.batch?.start_date && (
+                      {batchData.batch.start_date && (
                         <div className="flex items-center text-gray-600">
                           <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                           <span className="font-medium">Start Date:</span>
                           <span className="ml-1">
-                            {new Date(batchStudent.batch.start_date).toLocaleDateString()}
+                            {new Date(batchData.batch.start_date).toLocaleDateString()}
                           </span>
                         </div>
                       )}
 
-                      {batchStudent.batch?.end_date && (
+                      {batchData.batch.end_date && (
                         <div className="flex items-center text-gray-600">
                           <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
                           <span className="font-medium">End Date:</span>
                           <span className="ml-1">
-                            {new Date(batchStudent.batch.end_date).toLocaleDateString()}
+                            {new Date(batchData.batch.end_date).toLocaleDateString()}
                           </span>
                         </div>
                       )}
@@ -1617,13 +1671,13 @@ export default function StudentDashboard() {
                         <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
                         <span className="font-medium">Joined:</span>
                         <span className="ml-1">
-                          {new Date(batchStudent.assigned_at).toLocaleDateString()}
+                          {new Date(batchData.assigned_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   </div>
                 ))}
-                {batches.length === 0 && (
+                {batchProgress.length === 0 && (
                   <div className="col-span-full text-center py-12">
                     <QueueListIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">
@@ -1656,27 +1710,7 @@ export default function StudentDashboard() {
                   Manage your personal information and preferences
                 </p>
               </div>
-              {/* Learning Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{stats.totalEnrollments}</div>
-                  <div className="text-sm text-gray-500">Total Enrollments</div>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-green-600">{stats.completedCourses}</div>
-                  <div className="text-sm text-gray-500">Completed Courses</div>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {stats.certificatesEarned}
-                  </div>
-                  <div className="text-sm text-gray-500">Certificates Earned</div>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 text-center">
-                  <div className="text-2xl font-bold text-purple-600">{stats.learningStreak}</div>
-                  <div className="text-sm text-gray-500">Day Streak</div>
-                </div>
-              </div>
+
               {/* Profile Information */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
                 <div className="flex items-center justify-between mb-6">
@@ -1691,7 +1725,7 @@ export default function StudentDashboard() {
                       }
                       setIsProfileModalOpen(true)
                     }}
-                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2 cursor-pointer"
                   >
                     <span>✏️</span>
                     <span>Edit Profile</span>
@@ -1847,7 +1881,7 @@ export default function StudentDashboard() {
                       }
                       setIsProfileModalOpen(true)
                     }}
-                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2 cursor-pointer"
                   >
                     <PencilIcon className="h-4 w-4" />
                     <span>Edit Profile</span>

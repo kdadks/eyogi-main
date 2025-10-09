@@ -1,5 +1,13 @@
 import { supabaseAdmin } from '../supabase'
-import { Batch, BatchStudent, BatchCourse, BatchProgress, BatchStudentWithInfo } from '../../types'
+import {
+  Batch,
+  BatchStudent,
+  BatchCourse,
+  BatchProgress,
+  BatchStudentWithInfo,
+  StudentBatchProgress,
+  Course,
+} from '../../types'
 
 // Batch Management Functions
 
@@ -683,6 +691,7 @@ export async function getStudentBatches(studentId: string): Promise<BatchStudent
           status,
           start_date,
           end_date,
+          progress_percentage,
           gurukul:gurukuls (
             id,
             name,
@@ -807,6 +816,120 @@ export async function getBatchProgress(batchId: string): Promise<BatchProgress[]
     return data || []
   } catch (error) {
     console.error('Error in getBatchProgress:', error)
+    return []
+  }
+}
+
+// Get batch progress with course details for students
+export async function getStudentBatchProgress(studentId: string): Promise<StudentBatchProgress[]> {
+  try {
+    // First get all batches the student is enrolled in
+    const { data: studentBatches, error: batchError } = await supabaseAdmin
+      .from('batch_students')
+      .select(
+        `
+        batch_id,
+        student_id,
+        assigned_at,
+        batch:batches (
+          id,
+          name,
+          description,
+          status,
+          start_date,
+          end_date,
+          progress_percentage,
+          gurukul:gurukuls (
+            id,
+            name,
+            slug
+          )
+        )
+      `,
+      )
+      .eq('student_id', studentId)
+      .eq('is_active', true)
+
+    if (batchError) {
+      console.error('Error fetching student batches for progress:', batchError)
+      return []
+    }
+
+    const batchProgressData = []
+
+    // For each batch, get the progress and course information
+    for (const studentBatch of studentBatches || []) {
+      const batchId = studentBatch.batch_id
+
+      // Get batch progress
+      const { data: progress, error: progressError } = await supabaseAdmin
+        .from('batch_progress')
+        .select('*')
+        .eq('batch_id', batchId)
+        .order('week_number', { ascending: true })
+
+      if (progressError) {
+        console.error(`Error fetching progress for batch ${batchId}:`, progressError)
+        continue
+      }
+
+      // Get course information for this batch
+      const { data: batchCourses, error: courseError } = await supabaseAdmin
+        .from('batch_courses')
+        .select(
+          `
+          course_id,
+          courses (
+            id,
+            title,
+            description,
+            duration_weeks,
+            course_number
+          )
+        `,
+        )
+        .eq('batch_id', batchId)
+        .eq('is_active', true)
+
+      if (courseError) {
+        console.error(`Error fetching courses for batch ${batchId}:`, courseError)
+        continue
+      }
+
+      // Ensure we have batch data
+      const batchData = Array.isArray(studentBatch.batch)
+        ? studentBatch.batch[0]
+        : studentBatch.batch
+      if (batchData) {
+        batchProgressData.push({
+          batch: {
+            id: batchData.id,
+            name: batchData.name,
+            description: batchData.description,
+            status: batchData.status,
+            start_date: batchData.start_date,
+            end_date: batchData.end_date,
+            progress_percentage: batchData.progress_percentage,
+            gurukul: Array.isArray(batchData.gurukul) ? batchData.gurukul[0] : batchData.gurukul,
+          },
+          assigned_at: studentBatch.assigned_at,
+          progress: progress || [],
+          courses: batchCourses
+            ? (batchCourses.map((bc) => ({
+                course_id: bc.course_id,
+                courses: Array.isArray(bc.courses) ? bc.courses[0] : bc.courses,
+              })) as { course_id: string; courses: Course }[])
+            : [],
+          total_weeks: progress?.length || 0,
+          completed_weeks: progress?.filter((p) => p.is_completed)?.length || 0,
+          progress_percentage: batchData.progress_percentage || 0,
+        })
+      }
+    }
+
+    return batchProgressData
+  } catch (error) {
+    console.error('Error in getStudentBatchProgress:', error)
     return []
   }
 }
