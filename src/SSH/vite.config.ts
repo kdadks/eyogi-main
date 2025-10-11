@@ -55,13 +55,16 @@ export default defineConfig(({ command }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    // Development-specific optimizations
+    // Development-specific optimizations and production console removal
     esbuild: isDev
       ? {
           // Faster rebuilds in development
           target: 'es2020',
         }
-      : undefined,
+      : {
+          // Remove console logs in production builds only
+          drop: ['console', 'debugger'],
+        },
     optimizeDeps: {
       // Force reload dependencies in development
       force: isDev, // Set to true in dev to force dep optimization
