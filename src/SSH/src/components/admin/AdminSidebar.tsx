@@ -16,6 +16,8 @@ import {
   QueueListIcon,
   PhotoIcon,
   ClipboardDocumentCheckIcon,
+  DocumentTextIcon,
+  CreditCardIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -119,6 +121,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       adminOnly: true, // Only admin and super_admin can manage compliance
     },
     {
+      name: 'Invoice',
+      href: '/admin/invoice',
+      icon: DocumentTextIcon,
+      permission: { resource: 'invoice', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can manage invoices
+    },
+    {
+      name: 'Payment',
+      href: '/admin/payment',
+      icon: CreditCardIcon,
+      permission: { resource: 'payment', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can manage payments
+    },
+    {
       name: 'Permissions',
       href: '/admin/permissions',
       icon: ShieldCheckIcon,
@@ -182,15 +198,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-        <nav className="mt-8 px-4">
-          <div className="space-y-2">
+        <nav className="mt-6 px-4">
+          <div className="space-y-1">
             {filteredNavigation.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center px-3 py-3 text-sm font-medium rounded-md ${
+                  `group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                     isActive
                       ? 'bg-blue-50 border-r-2 border-blue-500 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'

@@ -14,6 +14,7 @@ Instead of removing console logs from source code (which can break features), we
 
 **File**: `src/SSH/vite.config.ts`
 
+### Method 1: ESBuild Drop (Initial)
 ```typescript
 esbuild: isDev
   ? {
@@ -25,6 +26,24 @@ esbuild: isDev
       drop: ['console', 'debugger'],
     }
 ```
+
+### Method 2: Terser (Enhanced - CURRENT)
+```typescript
+build: {
+  minify: !isDev ? 'terser' : false,
+  terserOptions: !isDev
+    ? {
+        compress: {
+          drop_console: true, // Remove all console statements
+          drop_debugger: true, // Remove debugger statements
+          pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+        },
+      }
+    : undefined,
+}
+```
+
+**Why Terser?** More aggressive console removal during the minification phase, ensures all console statements are stripped even in complex code patterns.
 
 ---
 

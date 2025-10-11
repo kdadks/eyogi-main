@@ -167,9 +167,7 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
               <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">{page.title}</h1>
 
-                {page.seo_description && (
-                  <p className="text-lg text-gray-600 mb-4">{page.seo_description}</p>
-                )}
+                {/* SEO description is in meta tags only, not displayed on page */}
 
                 <div className="flex items-center text-sm text-gray-500 space-x-4">
                   <span>

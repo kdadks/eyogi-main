@@ -40,6 +40,8 @@ import BatchManagement from './components/admin/BatchManagement'
 import StudentManagement from './components/admin/StudentManagement'
 import TeacherStudentManagement from './components/teacher/TeacherStudentManagement'
 import ComplianceManagement from './components/admin/ComplianceManagement'
+import InvoiceManagement from './components/admin/InvoiceManagement'
+import PaymentManagement from './components/admin/PaymentManagement'
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -155,6 +157,8 @@ function App() {
               <Route path="batches" element={<BatchManagement />} />
               <Route path="students" element={<StudentManagement />} />
               <Route path="compliance" element={<ComplianceManagement />} />
+              <Route path="invoice" element={<InvoiceManagement />} />
+              <Route path="payment" element={<PaymentManagement />} />
             </Route>
             {/* Detail pages */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />

@@ -43,7 +43,16 @@ export default defineConfig(({ command }) => {
         },
       },
       chunkSizeWarningLimit: 1000,
-      minify: !isDev, // Don't minify in development
+      minify: !isDev ? 'terser' : false, // Use terser for better console removal
+      terserOptions: !isDev
+        ? {
+            compress: {
+              drop_console: true, // Remove all console statements
+              drop_debugger: true, // Remove debugger statements
+              pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'], // Remove specific console methods
+            },
+          }
+        : undefined,
     },
     define: {
       global: 'globalThis',
