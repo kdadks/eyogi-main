@@ -13,6 +13,7 @@ import { enrollInCourse } from '../../lib/api/enrollments'
 import { getUserProfile } from '../../lib/api/users'
 import { getStudentBatches, getStudentBatchProgress } from '../../lib/api/batches'
 import { getCountryName, getStateName } from '../../lib/address-utils'
+import DashboardComplianceSection from '../../components/compliance/DashboardComplianceSection'
 import toast from 'react-hot-toast'
 import type { Database } from '../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -1962,6 +1963,17 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* Compliance Section */}
+              <div>
+                <DashboardComplianceSection
+                  userId={user?.id || ''}
+                  userRole="student"
+                  compactView={false}
+                  showNotifications={true}
+                />
+              </div>
+
               {/* System Settings (Admin Only) */}
               {canAccess('settings', 'view') && (
                 <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">

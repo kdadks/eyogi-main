@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "check-rls": "tsx scripts/check-rls-status.ts",
+    "generate-rls": "tsx scripts/generate-rls-script.ts",
+    "rls-help": "cat scripts/QUICK_START_RLS.md"
+  }
+}

@@ -14,7 +14,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "db:generate-types": "supabase gen types typescript --project-id YOUR_PROJECT_ID > src/lib/supabase-types.ts"
+    "db:generate-types": "supabase gen types typescript --project-id YOUR_PROJECT_ID > src/lib/supabase-types.ts",
+    "rls:check": "tsx scripts/check-rls-status.ts",
+    "rls:generate": "tsx scripts/generate-rls-script.ts",
+    "rls:help": "type scripts\\QUICK_START_RLS.md"
   },
   "dependencies": {
     "@headlessui/react": "^2.1.9",

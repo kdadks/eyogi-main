@@ -23,6 +23,7 @@ const routeTitles: RouteTitle[] = [
   { path: '/admin/assignments', title: 'Course Assignment Management' },
   { path: '/admin/gurukuls', title: 'Gurukul Management' },
   { path: '/admin/media', title: 'Media Management' },
+  { path: '/admin/compliance', title: 'Compliance Management' },
 ]
 
 export const usePageTitle = () => {

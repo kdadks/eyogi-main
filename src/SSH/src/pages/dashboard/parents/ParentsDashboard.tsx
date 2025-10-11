@@ -25,6 +25,7 @@ import AddChildModal from '../../../components/parents/AddChildModal'
 import ChatBotTrigger from '../../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../../components/profile/ProfileEditModal'
 import AddressForm from '../../../components/forms/AddressForm'
+import DashboardComplianceSection from '../../../components/compliance/DashboardComplianceSection'
 import { AddressFormData, getCountryName, getStateName } from '../../../lib/address-utils'
 import { enrollInCourse } from '../../../lib/api/enrollments'
 import { getCourses } from '../../../lib/api/courses'
@@ -2559,6 +2560,21 @@ function SettingsTab({
           </label>
         </div>
       </motion.div>
+
+      {/* Compliance Section */}
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        <DashboardComplianceSection
+          userId={user?.id || ''}
+          userRole="parent"
+          compactView={false}
+          showNotifications={true}
+        />
+      </motion.div>
+
       {/* Edit Profile Modal */}
       <AnimatePresence>
         {showEditProfile && (

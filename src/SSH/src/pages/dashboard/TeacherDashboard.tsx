@@ -56,6 +56,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
+import DashboardComplianceSection from '../../components/compliance/DashboardComplianceSection'
 import {
   PlusIcon,
   AcademicCapIcon,
@@ -2319,6 +2320,16 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Compliance Section */}
+              <div className="mt-8">
+                <DashboardComplianceSection
+                  userId={user?.id || ''}
+                  userRole="teacher"
+                  compactView={false}
+                  showNotifications={true}
+                />
               </div>
             </motion.div>
           )}
