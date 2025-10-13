@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../supabase'
 import { Course } from '../../types'
 import { generateCourseSlug, generateSlug } from '../utils'
+import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 export async function getCourses(filters?: {
   gurukul_id?: string
   level?: string
@@ -8,6 +9,37 @@ export async function getCourses(filters?: {
   search?: string
 }): Promise<Course[]> {
   try {
+    // Create cache key based on filters
+    const cacheKey = createCacheKey(
+      'courses',
+      filters?.gurukul_id || 'all',
+      filters?.level || 'all',
+      filters?.search || 'all',
+    )
+
+    // Use cache for queries without search (search should be fresh)
+    if (!filters?.search) {
+      return await queryCache.get(
+        cacheKey,
+        async () => {
+          let query = supabaseAdmin.from('courses').select('*')
+          if (filters?.gurukul_id) {
+            query = query.eq('gurukul_id', filters.gurukul_id)
+          }
+          if (filters?.level) {
+            query = query.eq('level', filters.level)
+          }
+          const { data, error } = await query.order('created_at', { ascending: false })
+          if (error) {
+            throw error
+          }
+          return data || []
+        },
+        CACHE_DURATIONS.COURSES, // Cache for 1 week
+      )
+    }
+
+    // For search queries, don't cache (always get fresh results)
     let query = supabaseAdmin.from('courses').select('*')
     if (filters?.gurukul_id) {
       query = query.eq('gurukul_id', filters.gurukul_id)
@@ -29,11 +61,22 @@ export async function getCourses(filters?: {
 }
 export async function getCourse(id: string): Promise<Course | null> {
   try {
-    const { data, error } = await supabaseAdmin.from('courses').select('*').eq('id', id).single()
-    if (error) {
-      return null
-    }
-    return data
+    // Cache individual course queries
+    return await queryCache.get(
+      createCacheKey('course', id),
+      async () => {
+        const { data, error } = await supabaseAdmin
+          .from('courses')
+          .select('*')
+          .eq('id', id)
+          .single()
+        if (error) {
+          throw error
+        }
+        return data
+      },
+      CACHE_DURATIONS.COURSES, // Cache for 1 week
+    )
   } catch {
     return null
   }
@@ -111,6 +154,10 @@ export async function createCourse(
     if (error) {
       throw error
     }
+
+    // Invalidate all course list caches (new course added)
+    queryCache.invalidatePattern('courses:.*')
+
     return data
   } catch (error) {
     throw error
@@ -130,6 +177,11 @@ export async function updateCourse(id: string, updates: Partial<Course>): Promis
     if (error) {
       throw new Error('Failed to update course')
     }
+
+    // Invalidate all course-related caches
+    queryCache.invalidate(createCacheKey('course', id))
+    queryCache.invalidatePattern('courses:.*') // Invalidate all course list caches
+
     return data
   } catch (error) {
     throw error
@@ -141,6 +193,10 @@ export async function deleteCourse(id: string): Promise<void> {
     if (error) {
       throw new Error('Failed to delete course')
     }
+
+    // Invalidate all course-related caches
+    queryCache.invalidate(createCacheKey('course', id))
+    queryCache.invalidatePattern('courses:.*') // Invalidate all course list caches
   } catch (error) {
     throw error
   }

@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 // Layout Components
@@ -58,6 +58,21 @@ function App() {
 
   // Check if current path is admin route
   const isAdminRoute = location.pathname.startsWith('/admin')
+
+  // Load cache testing utilities in development
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // Import both testing utilities
+      Promise.all([import('./lib/testCaching'), import('./lib/quickCacheTest')])
+        .then(([testingModule]) => {
+          testingModule.initCacheTestingUtils()
+          // quickCacheTest is auto-initialized
+        })
+        .catch(() => {
+          // Silently fail if utilities can't load
+        })
+    }
+  }, [])
 
   const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
     setAuthModalMode(mode)

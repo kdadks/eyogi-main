@@ -4,6 +4,7 @@
 // API functions for managing parent dashboard data and operations
 // =========================================================================
 import { supabaseAdmin } from '../supabase'
+import { queryCache, createCacheKey, CACHE_DURATIONS } from '../cache'
 // Local interface definitions for parent dashboard
 interface ParentChildRelationship {
   parent_id: string
@@ -114,6 +115,11 @@ export async function addChildToParent(
     }
     // Update child's parent_id in profiles table
     await supabaseAdmin.from('profiles').update({ parent_id: parentId }).eq('id', childProfile.id)
+
+    // Invalidate dashboard caches
+    queryCache.invalidatePattern(`dashboard:.*:${parentId}`)
+    queryCache.invalidatePattern(`dashboard:.*:${childProfile.id}`)
+
     return { data: relationship, error: null }
   } catch {
     return { data: null, error: 'An unexpected error occurred' }
@@ -122,11 +128,16 @@ export async function addChildToParent(
 export async function getParentChildren(
   parentId: string,
 ): Promise<{ data: ChildProfile[] | null; error: string | null }> {
-  try {
-    const { data: relationships, error: relationshipError } = await supabaseAdmin
-      .from('parent_child_relationships')
-      .select(
-        `
+  const cacheKey = createCacheKey('dashboard', 'parent-children', parentId)
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        const { data: relationships, error: relationshipError } = await supabaseAdmin
+          .from('parent_child_relationships')
+          .select(
+            `
         *,
         child:profiles!child_id (
           id,
@@ -144,28 +155,31 @@ export async function getParentChildren(
           updated_at
         )
       `,
-      )
-      .eq('parent_id', parentId)
-      .eq('is_active', true)
-    if (relationshipError) {
-      return { data: null, error: 'Failed to fetch children' }
-    }
-    // Get dashboard stats for each child
-    const childrenWithStats = await Promise.all(
-      relationships?.map(async (rel) => {
-        const child = rel.child as ChildProfile
-        const stats = await getChildDashboardStats(child.id)
-        return {
-          ...child,
-          relationship: rel,
-          stats: stats.data || undefined,
+          )
+          .eq('parent_id', parentId)
+          .eq('is_active', true)
+        if (relationshipError) {
+          return { data: null, error: 'Failed to fetch children' }
         }
-      }) || [],
-    )
-    return { data: childrenWithStats, error: null }
-  } catch {
-    return { data: null, error: 'An unexpected error occurred' }
-  }
+        // Get dashboard stats for each child
+        const childrenWithStats = await Promise.all(
+          relationships?.map(async (rel) => {
+            const child = rel.child as ChildProfile
+            const stats = await getChildDashboardStats(child.id)
+            return {
+              ...child,
+              relationship: rel,
+              stats: stats.data || undefined,
+            }
+          }) || [],
+        )
+        return { data: childrenWithStats, error: null }
+      } catch {
+        return { data: null, error: 'An unexpected error occurred' }
+      }
+    },
+    CACHE_DURATIONS.DASHBOARD, // 10 minutes
+  )
 }
 export async function removeChildFromParent(
   parentId: string,
@@ -183,6 +197,11 @@ export async function removeChildFromParent(
     }
     // Remove parent_id from child's profile
     await supabaseAdmin.from('profiles').update({ parent_id: null }).eq('id', childId)
+
+    // Invalidate dashboard caches
+    queryCache.invalidatePattern(`dashboard:.*:${parentId}`)
+    queryCache.invalidatePattern(`dashboard:.*:${childId}`)
+
     return { error: null }
   } catch {
     return { error: 'An unexpected error occurred' }
@@ -194,65 +213,81 @@ export async function removeChildFromParent(
 export async function getChildDashboardStats(
   childId: string,
 ): Promise<{ data: ParentDashboardStats | null; error: string | null }> {
-  try {
-    const { data: stats, error } = await supabaseAdmin
-      .from('parent_dashboard_stats')
-      .select('*')
-      .eq('child_id', childId)
-      .single()
-    if (error && error.code !== 'PGRST116') {
-      return { data: null, error: 'Failed to fetch dashboard stats' }
-    }
-    return { data: stats, error: null }
-  } catch {
-    return { data: null, error: 'An unexpected error occurred' }
-  }
+  const cacheKey = createCacheKey('dashboard', 'child-stats', childId)
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        const { data: stats, error } = await supabaseAdmin
+          .from('parent_dashboard_stats')
+          .select('*')
+          .eq('child_id', childId)
+          .single()
+        if (error && error.code !== 'PGRST116') {
+          return { data: null, error: 'Failed to fetch dashboard stats' }
+        }
+        return { data: stats, error: null }
+      } catch {
+        return { data: null, error: 'An unexpected error occurred' }
+      }
+    },
+    CACHE_DURATIONS.DASHBOARD, // 10 minutes
+  )
 }
 export async function getParentDashboardData(
   parentId: string,
 ): Promise<{ data: ParentDashboardData | null; error: string | null }> {
-  try {
-    // Get parent info
-    const { data: parent, error: parentError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, full_name, email, avatar_url')
-      .eq('id', parentId)
-      .single()
-    if (parentError) {
-      return { data: null, error: 'Parent not found' }
-    }
-    // Get children data
-    const { data: children, error: childrenError } = await getParentChildren(parentId)
-    if (childrenError) {
-      return { data: null, error: childrenError }
-    }
-    // Calculate summary statistics
-    const summary = {
-      total_children: children?.length || 0,
-      total_active_courses:
-        children?.reduce((sum, child) => sum + (child.stats?.active_courses || 0), 0) || 0,
-      total_pending_assignments:
-        children?.reduce((sum, child) => sum + (child.stats?.pending_assignments || 0), 0) || 0,
-      total_recent_achievements:
-        children?.reduce((sum, child) => sum + (child.stats?.total_achievements || 0), 0) || 0,
-      combined_study_minutes:
-        children?.reduce((sum, child) => sum + (child.stats?.total_study_minutes || 0), 0) || 0,
-      average_grade_across_children: children?.length
-        ? children.reduce((sum, child) => sum + (child.stats?.average_grade || 0), 0) /
-          children.length
-        : 0,
-    }
-    return {
-      data: {
-        parent,
-        children: children || [],
-        summary,
-      },
-      error: null,
-    }
-  } catch {
-    return { data: null, error: 'An unexpected error occurred' }
-  }
+  const cacheKey = createCacheKey('dashboard', 'parent-data', parentId)
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        // Get parent info
+        const { data: parent, error: parentError } = await supabaseAdmin
+          .from('profiles')
+          .select('id, full_name, email, avatar_url')
+          .eq('id', parentId)
+          .single()
+        if (parentError) {
+          return { data: null, error: 'Parent not found' }
+        }
+        // Get children data
+        const { data: children, error: childrenError } = await getParentChildren(parentId)
+        if (childrenError) {
+          return { data: null, error: childrenError }
+        }
+        // Calculate summary statistics
+        const summary = {
+          total_children: children?.length || 0,
+          total_active_courses:
+            children?.reduce((sum, child) => sum + (child.stats?.active_courses || 0), 0) || 0,
+          total_pending_assignments:
+            children?.reduce((sum, child) => sum + (child.stats?.pending_assignments || 0), 0) || 0,
+          total_recent_achievements:
+            children?.reduce((sum, child) => sum + (child.stats?.total_achievements || 0), 0) || 0,
+          combined_study_minutes:
+            children?.reduce((sum, child) => sum + (child.stats?.total_study_minutes || 0), 0) || 0,
+          average_grade_across_children: children?.length
+            ? children.reduce((sum, child) => sum + (child.stats?.average_grade || 0), 0) /
+              children.length
+            : 0,
+        }
+        return {
+          data: {
+            parent,
+            children: children || [],
+            summary,
+          },
+          error: null,
+        }
+      } catch {
+        return { data: null, error: 'An unexpected error occurred' }
+      }
+    },
+    CACHE_DURATIONS.DASHBOARD, // 10 minutes
+  )
 }
 // -------------------------------------------------------------------------
 // UTILITY FUNCTIONS
