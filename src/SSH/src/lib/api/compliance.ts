@@ -1,5 +1,6 @@
 // Compliance API Functions
 import { supabaseAdmin } from '../supabase'
+import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import type {
   ComplianceItem,
   ComplianceForm,
@@ -18,30 +19,38 @@ import type {
 // ================================
 
 export async function getComplianceItems(targetRole?: UserRole): Promise<ComplianceItem[]> {
-  try {
-    let query = supabaseAdmin
-      .from('compliance_items')
-      .select(
-        `
+  const cacheKey = createCacheKey('compliance', 'items', targetRole || 'all')
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        let query = supabaseAdmin
+          .from('compliance_items')
+          .select(
+            `
         *,
         form:compliance_forms(*)
       `,
-      )
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
+          )
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
 
-    if (targetRole) {
-      query = query.eq('target_role', targetRole)
-    }
+        if (targetRole) {
+          query = query.eq('target_role', targetRole)
+        }
 
-    const { data, error } = await query
+        const { data, error } = await query
 
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    console.error('Error fetching compliance items:', error)
-    throw error
-  }
+        if (error) throw error
+        return data || []
+      } catch (error) {
+        console.error('Error fetching compliance items:', error)
+        throw error
+      }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 export async function createComplianceItem(
@@ -59,6 +68,10 @@ export async function createComplianceItem(
       .single()
 
     if (error) throw error
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
+
     return data
   } catch (error) {
     console.error('Error creating compliance item:', error)
@@ -82,6 +95,10 @@ export async function updateComplianceItem(
       .single()
 
     if (error) throw error
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
+
     return data
   } catch (error) {
     console.error('Error updating compliance item:', error)
@@ -94,6 +111,9 @@ export async function deleteComplianceItem(id: string): Promise<void> {
     const { error } = await supabaseAdmin.from('compliance_items').delete().eq('id', id)
 
     if (error) throw error
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
   } catch (error) {
     console.error('Error deleting compliance item:', error)
     throw error
@@ -105,35 +125,51 @@ export async function deleteComplianceItem(id: string): Promise<void> {
 // ================================
 
 export async function getComplianceForms(): Promise<ComplianceForm[]> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('compliance_forms')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
+  const cacheKey = createCacheKey('compliance', 'forms')
 
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    console.error('Error fetching compliance forms:', error)
-    throw error
-  }
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('compliance_forms')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        return data || []
+      } catch (error) {
+        console.error('Error fetching compliance forms:', error)
+        throw error
+      }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 export async function getComplianceForm(id: string): Promise<ComplianceForm | null> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('compliance_forms')
-      .select('*')
-      .eq('id', id)
-      .single()
+  const cacheKey = createCacheKey('compliance', 'form', id)
 
-    if (error) throw error
-    return data
-  } catch (error) {
-    console.error('Error fetching compliance form:', error)
-    throw error
-  }
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('compliance_forms')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (error) throw error
+        return data
+      } catch (error) {
+        console.error('Error fetching compliance form:', error)
+        throw error
+      }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 export async function createComplianceForm(
@@ -152,6 +188,10 @@ export async function createComplianceForm(
       .single()
 
     if (error) throw error
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
+
     return data
   } catch (error) {
     console.error('Error creating compliance form:', error)
@@ -183,6 +223,10 @@ export async function updateComplianceForm(
       .single()
 
     if (error) throw error
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
+
     return data
   } catch (error) {
     console.error('Error updating compliance form:', error)
@@ -200,72 +244,80 @@ export async function getComplianceSubmissions(filters: {
   status?: string
   reviewerId?: string
 }): Promise<ComplianceSubmission[]> {
-  try {
-    let query = supabaseAdmin
-      .from('compliance_submissions')
-      .select('*')
-      .order('submitted_at', { ascending: false })
+  const cacheKey = createCacheKey('compliance', 'submissions', JSON.stringify(filters))
 
-    if (filters.complianceItemId) {
-      query = query.eq('compliance_item_id', filters.complianceItemId)
-    }
-    if (filters.userId) {
-      query = query.eq('user_id', filters.userId)
-    }
-    if (filters.status) {
-      query = query.eq('status', filters.status)
-    }
-    if (filters.reviewerId) {
-      query = query.eq('reviewed_by', filters.reviewerId)
-    }
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        let query = supabaseAdmin
+          .from('compliance_submissions')
+          .select('*')
+          .order('submitted_at', { ascending: false })
 
-    const { data: submissions, error } = await query
+        if (filters.complianceItemId) {
+          query = query.eq('compliance_item_id', filters.complianceItemId)
+        }
+        if (filters.userId) {
+          query = query.eq('user_id', filters.userId)
+        }
+        if (filters.status) {
+          query = query.eq('status', filters.status)
+        }
+        if (filters.reviewerId) {
+          query = query.eq('reviewed_by', filters.reviewerId)
+        }
 
-    if (error) throw error
+        const { data: submissions, error } = await query
 
-    if (!submissions || submissions.length === 0) {
-      return []
-    }
+        if (error) throw error
 
-    // Fetch related data manually
-    const userIds = [...new Set(submissions.map((s) => s.user_id).filter(Boolean))]
-    const itemIds = [...new Set(submissions.map((s) => s.compliance_item_id).filter(Boolean))]
-    const submissionIds = submissions.map((s) => s.id)
+        if (!submissions || submissions.length === 0) {
+          return []
+        }
 
-    // Get users
-    const { data: users } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email, full_name')
-      .in('id', userIds)
+        // Fetch related data manually
+        const userIds = [...new Set(submissions.map((s) => s.user_id).filter(Boolean))]
+        const itemIds = [...new Set(submissions.map((s) => s.compliance_item_id).filter(Boolean))]
+        const submissionIds = submissions.map((s) => s.id)
 
-    // Get compliance items
-    const { data: items } = await supabaseAdmin
-      .from('compliance_items')
-      .select('*')
-      .in('id', itemIds)
+        // Get users
+        const { data: users } = await supabaseAdmin
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', userIds)
 
-    // Get files
-    const { data: files } = await supabaseAdmin
-      .from('compliance_files')
-      .select('*')
-      .in('submission_id', submissionIds)
+        // Get compliance items
+        const { data: items } = await supabaseAdmin
+          .from('compliance_items')
+          .select('*')
+          .in('id', itemIds)
 
-    // Combine data
-    const enrichedSubmissions = submissions.map((submission) => ({
-      ...submission,
-      user: users?.find((u) => u.id === submission.user_id) || null,
-      compliance_item: items?.find((i) => i.id === submission.compliance_item_id) || null,
-      files: files?.filter((f) => f.submission_id === submission.id) || [],
-      reviewer: submission.reviewed_by
-        ? users?.find((u) => u.id === submission.reviewed_by) || null
-        : null,
-    }))
+        // Get files
+        const { data: files } = await supabaseAdmin
+          .from('compliance_files')
+          .select('*')
+          .in('submission_id', submissionIds)
 
-    return enrichedSubmissions
-  } catch (error) {
-    console.error('Error fetching compliance submissions:', error)
-    throw error
-  }
+        // Combine data
+        const enrichedSubmissions = submissions.map((submission) => ({
+          ...submission,
+          user: users?.find((u) => u.id === submission.user_id) || null,
+          compliance_item: items?.find((i) => i.id === submission.compliance_item_id) || null,
+          files: files?.filter((f) => f.submission_id === submission.id) || [],
+          reviewer: submission.reviewed_by
+            ? users?.find((u) => u.id === submission.reviewed_by) || null
+            : null,
+        }))
+
+        return enrichedSubmissions
+      } catch (error) {
+        console.error('Error fetching compliance submissions:', error)
+        throw error
+      }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 export async function submitComplianceForm(
@@ -295,6 +347,9 @@ export async function submitComplianceForm(
       const uploadedFiles = await uploadComplianceFiles(submission.id, files)
       submission.files = uploadedFiles
     }
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
 
     return submission
   } catch (error) {
@@ -343,6 +398,9 @@ export async function markComplianceAsComplete(
           throw updateError
         }
 
+        // Invalidate compliance caches
+        queryCache.invalidatePattern('compliance:.*')
+
         return updatedSubmission
       } else {
         return existingSubmission
@@ -375,6 +433,9 @@ export async function markComplianceAsComplete(
       complianceItemId,
       submission.id,
     )
+
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
 
     return submission
   } catch (error) {
@@ -463,6 +524,9 @@ export async function reviewComplianceSubmission(
       // Don't throw - notification failure shouldn't block the review
     }
 
+    // Invalidate compliance caches
+    queryCache.invalidatePattern('compliance:.*')
+
     return data
   } catch (error) {
     console.error('❌ Error reviewing compliance submission:', error)
@@ -478,78 +542,96 @@ export async function getUserComplianceStatus(
   userId: string,
   role: UserRole,
 ): Promise<ComplianceChecklistItem[]> {
-  try {
-    // Get all compliance items for user's role
-    const complianceItems = await getComplianceItems(role)
+  const cacheKey = createCacheKey('compliance', 'user-status', userId, role)
 
-    // Get user's submissions
-    const submissions = await getComplianceSubmissions({ userId })
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        // Get all compliance items for user's role
+        const complianceItems = await getComplianceItems(role)
 
-    // Create submission map for quick lookup
-    const submissionMap = new Map()
-    submissions.forEach((sub) => {
-      submissionMap.set(sub.compliance_item_id, sub)
-    })
+        // Get user's submissions
+        const submissions = await getComplianceSubmissions({ userId })
 
-    // Build checklist items
-    const checklistItems: ComplianceChecklistItem[] = complianceItems.map((item) => {
-      const submission = submissionMap.get(item.id)
+        // Create submission map for quick lookup
+        const submissionMap = new Map()
+        submissions.forEach((sub) => {
+          submissionMap.set(sub.compliance_item_id, sub)
+        })
 
-      return {
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        type: item.type,
-        status: submission?.status || 'pending',
-        is_mandatory: item.is_mandatory,
-        due_date: item.due_date,
-        has_form: item.has_form && item.form_id != null,
-        submission_id: submission?.id,
-        rejection_reason: submission?.rejection_reason,
-        can_submit: !submission || submission.status === 'rejected',
+        // Build checklist items
+        const checklistItems: ComplianceChecklistItem[] = complianceItems.map((item) => {
+          const submission = submissionMap.get(item.id)
+
+          return {
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            type: item.type,
+            status: submission?.status || 'pending',
+            is_mandatory: item.is_mandatory,
+            due_date: item.due_date,
+            has_form: item.has_form && item.form_id != null,
+            submission_id: submission?.id,
+            rejection_reason: submission?.rejection_reason,
+            can_submit: !submission || submission.status === 'rejected',
+          }
+        })
+
+        return checklistItems
+      } catch (error) {
+        console.error('Error getting user compliance status:', error)
+        throw error
       }
-    })
-
-    return checklistItems
-  } catch (error) {
-    console.error('Error getting user compliance status:', error)
-    throw error
-  }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 export async function getComplianceStats(
   userId?: string,
   role?: UserRole,
 ): Promise<ComplianceStats> {
-  try {
-    let items: ComplianceChecklistItem[] = []
+  const cacheKey = createCacheKey('compliance', 'stats', userId || 'all', role || 'all')
 
-    if (userId && role) {
-      items = await getUserComplianceStatus(userId, role)
-    }
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        let items: ComplianceChecklistItem[] = []
 
-    const totalItems = items.length
-    const completedItems = items.filter((item) => item.status === 'approved').length
-    // Pending includes: pending, submitted, and rejected (need action)
-    const pendingItems = items.filter(
-      (item) =>
-        item.status === 'pending' || item.status === 'submitted' || item.status === 'rejected',
-    ).length
-    const overdueItems = items.filter(
-      (item) => item.due_date && new Date(item.due_date) < new Date() && item.status !== 'approved',
-    ).length
+        if (userId && role) {
+          items = await getUserComplianceStatus(userId, role)
+        }
 
-    return {
-      total_items: totalItems,
-      completed_items: completedItems,
-      pending_items: pendingItems,
-      overdue_items: overdueItems,
-      completion_percentage: totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0,
-    }
-  } catch (error) {
-    console.error('Error getting compliance stats:', error)
-    throw error
-  }
+        const totalItems = items.length
+        const completedItems = items.filter((item) => item.status === 'approved').length
+        // Pending includes: pending, submitted, and rejected (need action)
+        const pendingItems = items.filter(
+          (item) =>
+            item.status === 'pending' || item.status === 'submitted' || item.status === 'rejected',
+        ).length
+        const overdueItems = items.filter(
+          (item) =>
+            item.due_date && new Date(item.due_date) < new Date() && item.status !== 'approved',
+        ).length
+
+        return {
+          total_items: totalItems,
+          completed_items: completedItems,
+          pending_items: pendingItems,
+          overdue_items: overdueItems,
+          completion_percentage:
+            totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0,
+        }
+      } catch (error) {
+        console.error('Error getting compliance stats:', error)
+        throw error
+      }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 // ================================
@@ -557,57 +639,65 @@ export async function getComplianceStats(
 // ================================
 
 export async function getComplianceAdminStats(): Promise<ComplianceAdminStats> {
-  try {
-    const [items, submissions] = await Promise.all([
-      getComplianceItems(),
-      getComplianceSubmissions({}),
-    ])
+  const cacheKey = createCacheKey('compliance', 'admin-stats')
 
-    const totalSubmissions = submissions.length
-    const pendingReviews = submissions.filter((s) => s.status === 'submitted').length
-    const approvedSubmissions = submissions.filter((s) => s.status === 'approved').length
-    const rejectedSubmissions = submissions.filter((s) => s.status === 'rejected').length
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      try {
+        const [items, submissions] = await Promise.all([
+          getComplianceItems(),
+          getComplianceSubmissions({}),
+        ])
 
-    // Calculate stats by role
-    const roleStats = {
-      teacher: {
-        total_items: 0,
-        completed_items: 0,
-        pending_items: 0,
-        overdue_items: 0,
-        completion_percentage: 0,
-      },
-      parent: {
-        total_items: 0,
-        completed_items: 0,
-        pending_items: 0,
-        overdue_items: 0,
-        completion_percentage: 0,
-      },
-      student: {
-        total_items: 0,
-        completed_items: 0,
-        pending_items: 0,
-        overdue_items: 0,
-        completion_percentage: 0,
-      },
-    }
+        const totalSubmissions = submissions.length
+        const pendingReviews = submissions.filter((s) => s.status === 'submitted').length
+        const approvedSubmissions = submissions.filter((s) => s.status === 'approved').length
+        const rejectedSubmissions = submissions.filter((s) => s.status === 'rejected').length
 
-    // This would need more complex queries to get accurate role-based stats
-    // For now, return basic stats
+        // Calculate stats by role
+        const roleStats = {
+          teacher: {
+            total_items: 0,
+            completed_items: 0,
+            pending_items: 0,
+            overdue_items: 0,
+            completion_percentage: 0,
+          },
+          parent: {
+            total_items: 0,
+            completed_items: 0,
+            pending_items: 0,
+            overdue_items: 0,
+            completion_percentage: 0,
+          },
+          student: {
+            total_items: 0,
+            completed_items: 0,
+            pending_items: 0,
+            overdue_items: 0,
+            completion_percentage: 0,
+          },
+        }
 
-    return {
-      total_items: items.length,
-      total_submissions: totalSubmissions,
-      pending_reviews: pendingReviews,
-      approved_submissions: approvedSubmissions,
-      rejected_submissions: rejectedSubmissions,
-      by_role: roleStats,
-    }
-  } catch (error) {
-    console.error('Error getting admin compliance stats:', error)
-    throw error
-  }
+        // This would need more complex queries to get accurate role-based stats
+        // For now, return basic stats
+
+        return {
+          total_items: items.length,
+          total_submissions: totalSubmissions,
+          pending_reviews: pendingReviews,
+          approved_submissions: approvedSubmissions,
+          rejected_submissions: rejectedSubmissions,
+          by_role: roleStats,
+        }
+      } catch (error) {
+        console.error('Error getting admin compliance stats:', error)
+        throw error
+      }
+    },
+    CACHE_DURATIONS.COMPLIANCE, // 1 day
+  )
 }
 
 // ================================
@@ -699,18 +789,26 @@ async function createComplianceNotification(
  * Get notifications for a user
  */
 export async function getNotifications(userId: string): Promise<ComplianceNotification[]> {
-  const { data, error } = await supabaseAdmin
-    .from('compliance_notifications')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+  const cacheKey = createCacheKey('compliance', 'notifications', userId)
 
-  if (error) {
-    console.error('Error fetching notifications:', error)
-    throw new Error('Failed to fetch notifications')
-  }
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      const { data, error } = await supabaseAdmin
+        .from('compliance_notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
 
-  return data || []
+      if (error) {
+        console.error('Error fetching notifications:', error)
+        throw new Error('Failed to fetch notifications')
+      }
+
+      return data || []
+    },
+    CACHE_DURATIONS.NOTIFICATIONS, // 5 minutes
+  )
 }
 
 /**
@@ -729,6 +827,9 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
     console.error('Error marking notification as read:', error)
     throw new Error('Failed to update notification')
   }
+
+  // Invalidate compliance notification caches
+  queryCache.invalidatePattern('compliance:notifications:.*')
 }
 
 /**
@@ -744,4 +845,7 @@ export async function deleteNotification(notificationId: string): Promise<void> 
     console.error('Error deleting notification:', error)
     throw new Error('Failed to delete notification')
   }
+
+  // Invalidate compliance notification caches
+  queryCache.invalidatePattern('compliance:notifications:.*')
 }
