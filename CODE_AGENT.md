@@ -38,6 +38,71 @@
 - **Backend**: Supabase (separate database)
 - **Build**: Separate build process (`yarn build:ssh`)
 
+## Development & Build Commands
+
+### Development
+```bash
+# Start development server (Next.js with Turbo)
+yarn dev
+
+# Development server runs on http://localhost:3000
+# Hot reload enabled for fast development
+# PayloadCMS admin accessible at /admin
+```
+
+### Production Build
+```bash
+# Full production build (includes SSH portal)
+yarn build
+
+# Build process:
+# 1. Builds Next.js application
+# 2. Builds SSH portal (Vite build in src/SSH)
+# 3. Copies SSH dist files to public/ssh-app/
+# 4. Output ready for deployment
+```
+
+### SSH Portal Build Process
+The SSH University Portal has a separate build process integrated into the main build:
+
+```bash
+# SSH-specific build (automatically runs in main build)
+yarn build:ssh
+
+# Process:
+# 1. cd src/SSH
+# 2. npm install --include=dev (install SSH dependencies)
+# 3. npx vite build (build Vite app to src/SSH/dist)
+# 4. cd ../.. (return to root)
+# 5. node copy-ssh-files.js (copy to public/ssh-app)
+```
+
+**Build Output Locations:**
+- **Next.js Build**: `.next/` directory
+- **SSH Source Build**: `src/SSH/dist/` (temporary)
+- **SSH Public Build**: `public/ssh-app/` (deployed with Next.js)
+
+**Important Notes:**
+- SSH portal is accessible at `/ssh-app/` in production
+- All SSH build files are automatically copied to `public/ssh-app/` during build
+- The `copy-ssh-files.js` script ensures proper file structure in public directory
+- SSH portal uses separate dependencies from main Next.js app
+
+### Other Build Commands
+```bash
+# Build only Next.js (skip SSH build)
+yarn build:next
+
+# Clean build (remove .next and rebuild)
+yarn build:clean
+
+# Fast build (skip telemetry)
+yarn build:fast
+
+# Development with production build preview
+yarn dev:prod
+```
+
 ## Code Standards & Conventions
 
 ### 1. TypeScript Guidelines
@@ -433,6 +498,38 @@ Before creating or modifying database structures:
 - Not considering data migration needs
 - Forgetting to update TypeScript types
 - Not testing with existing data
+
+### 🔧 Build & Deployment Considerations
+
+When making changes that affect the build process:
+
+1. **SSH Portal Changes**
+   - SSH portal has separate dependencies in `src/SSH/package.json`
+   - Changes to SSH require rebuilding: `yarn build:ssh`
+   - Verify files are copied to `public/ssh-app/` after build
+   - Check `copy-ssh-files.js` if build output structure changes
+
+2. **Public Directory Structure**
+   - `public/ssh-app/` is auto-generated during build (don't edit manually)
+   - Static assets in `public/` are served as-is
+   - SSH portal must be built before deployment
+
+3. **Build Verification**
+   ```bash
+   # After making changes, verify full build works
+   yarn build
+   
+   # Check SSH files were copied
+   ls -la public/ssh-app/
+   
+   # Test production build locally
+   yarn build && yarn start
+   ```
+
+4. **Development Workflow**
+   - Main app: `yarn dev` (http://localhost:3000)
+   - SSH portal: Separate Vite dev server if needed (in src/SSH)
+   - Changes to SSH require rebuild to see in main app
 
 ## Licensing Compliance
 

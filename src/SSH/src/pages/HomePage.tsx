@@ -17,6 +17,7 @@ import {
 import Footer from '../components/layout/Footer'
 import { getGurukulsWithStats } from '../lib/api/gurukuls'
 import { Gurukul } from '../types'
+import { sanitizeHtml } from '../utils/sanitize'
 export default function HomePage() {
   const [gurukuls, setGurukuls] = useState<
     Array<Gurukul & { courses: number; students: number; image: string }>
@@ -334,7 +335,7 @@ export default function HomePage() {
                       <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
                       <div
                         className="text-gray-600 mb-4 text-sm lg:text-base flex-grow"
-                        dangerouslySetInnerHTML={{ __html: gurukul.description }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }}
                       />
                       <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
                         <span>{gurukul.courses} Hindu Courses</span>
@@ -374,7 +375,7 @@ export default function HomePage() {
                     </div>
                     <div
                       className="text-gray-600 mb-4 italic"
-                      dangerouslySetInnerHTML={{ __html: `"${testimonial.content}"` }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(`"${testimonial.content}"`) }}
                     />
                     <div>
                       <p className="font-semibold">{testimonial.name}</p>

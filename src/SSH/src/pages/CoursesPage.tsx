@@ -11,6 +11,7 @@ import { Course, Gurukul } from '../types'
 import { getCourses } from '../lib/api/courses'
 import { getGurukuls } from '../lib/api/gurukuls'
 import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
+import { sanitizeHtml } from '../utils/sanitize'
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -226,7 +227,7 @@ export default function CoursesPage() {
                       <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
                       <div
                         className="text-gray-600 mb-4 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: course.description }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                       />
                       <div className="space-y-2 mb-4 text-sm text-gray-500">
                         <div className="flex items-center">

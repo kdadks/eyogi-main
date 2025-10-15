@@ -6,6 +6,7 @@ import { getBatchCourses, assignCourseToBatch, removeCourseFromBatch } from '../
 import { getCourses } from '../../lib/api/courses'
 import { Batch, BatchCourse, Course } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
+import { sanitizeHtml } from '../../utils/sanitize'
 
 interface CourseAssignmentModalProps {
   batch: Batch
@@ -177,7 +178,7 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
                         <div
                           className="text-sm text-gray-600"
                           dangerouslySetInnerHTML={{
-                            __html: batchCourse.course?.description || '',
+                            __html: sanitizeHtml(batchCourse.course?.description || ''),
                           }}
                         />
                         <div className="flex items-center gap-2 mt-2">
@@ -267,7 +268,7 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
                         <div className="font-medium">{course.title}</div>
                         <div
                           className="text-sm text-gray-600 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: course.description }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                         />
                         <div className="flex items-center gap-2 mt-2">
                           <Badge className={getLevelColor(course.level)}>{course.level}</Badge>

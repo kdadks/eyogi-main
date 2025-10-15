@@ -13,6 +13,7 @@ import MediaSelector from '@/components/MediaSelector'
 import { Course, Enrollment, Certificate } from '@/types'
 import { MediaFile } from '@/lib/api/media'
 import { getTeacherCourses, createCourse } from '@/lib/api/courses'
+import { sanitizeHtml } from '../../utils/sanitize'
 import {
   getTeacherEnrollments,
   enrollInCourse,
@@ -1416,7 +1417,7 @@ export default function TeacherDashboard() {
                           </div>
                           <div
                             className="text-gray-600 text-sm mb-4 line-clamp-2"
-                            dangerouslySetInnerHTML={{ __html: course.description }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                           />
                           <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                             <div className="flex items-center space-x-2">
@@ -4098,7 +4099,7 @@ const CreateBatchModal: React.FC<CreateBatchModalProps> = ({ teacherId, onClose,
                           {course.description && (
                             <div
                               className="text-sm text-gray-600 mt-1 line-clamp-2"
-                              dangerouslySetInnerHTML={{ __html: course.description }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                             />
                           )}
                           <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">

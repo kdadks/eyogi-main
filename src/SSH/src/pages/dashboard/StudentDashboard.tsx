@@ -12,6 +12,7 @@ import { getCourses } from '../../lib/api/courses'
 import { enrollInCourse } from '../../lib/api/enrollments'
 import { getUserProfile } from '../../lib/api/users'
 import { getStudentBatches, getStudentBatchProgress } from '../../lib/api/batches'
+import { sanitizeHtml } from '../../utils/sanitize'
 import { getCountryName, getStateName } from '../../lib/address-utils'
 import DashboardComplianceSection from '../../components/compliance/DashboardComplianceSection'
 import toast from 'react-hot-toast'
@@ -1285,7 +1286,7 @@ export default function StudentDashboard() {
                         </div>
                         <div
                           className="text-gray-600 text-sm mb-4"
-                          dangerouslySetInnerHTML={{ __html: course.description }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                         />
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-500">
@@ -1600,7 +1601,7 @@ export default function StudentDashboard() {
                       {batchData.batch.description && (
                         <div
                           className="text-sm text-gray-600 mb-3 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: batchData.batch.description }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(batchData.batch.description) }}
                         />
                       )}
                     </div>

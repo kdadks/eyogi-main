@@ -7,6 +7,7 @@ import { Gurukul } from '@/types'
 import { getAllGurukuls, createGurukul, updateGurukul, deleteGurukul } from '@/lib/api/gurukuls'
 import { getCourses } from '@/lib/api/courses'
 import { formatDate, generateSlug } from '@/lib/utils'
+import { sanitizeHtml } from '@/utils/sanitize'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import MediaSelector from '../MediaSelector'
@@ -424,7 +425,7 @@ export default function GurukulManagement() {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{gurukul.name}</div>
                             <div className="text-sm text-gray-500 line-clamp-2">
-                              <div dangerouslySetInnerHTML={{ __html: gurukul.description }} />
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }} />
                             </div>
                           </div>
                         </div>
@@ -558,7 +559,7 @@ export default function GurukulManagement() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
                   <div className="text-sm text-gray-900 leading-relaxed">
                     {viewingGurukul.description ? (
-                      <div dangerouslySetInnerHTML={{ __html: viewingGurukul.description }} />
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingGurukul.description) }} />
                     ) : (
                       'No description provided'
                     )}

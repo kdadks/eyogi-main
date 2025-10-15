@@ -10,6 +10,7 @@ import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { sanitizeHtml } from '@/utils/sanitize'
 interface CourseFormData {
   gurukul_id: string
   course_number: string
@@ -568,7 +569,7 @@ export default function CourseManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
-                  <div dangerouslySetInnerHTML={{ __html: viewingCourse.description }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.description) }} />
                 </div>
               </div>
               {/* Detailed Description */}
@@ -578,7 +579,7 @@ export default function CourseManagement() {
                     Detailed Description
                   </label>
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
-                    <div dangerouslySetInnerHTML={{ __html: viewingCourse.detailed_description }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.detailed_description) }} />
                   </div>
                 </div>
               )}
@@ -604,7 +605,7 @@ export default function CourseManagement() {
                       {viewingCourse.learning_outcomes.map((outcome, index) => (
                         <li key={index} className="flex items-start gap-2 text-gray-900">
                           <span className="text-blue-500 mt-1 text-sm">•</span>
-                          <span dangerouslySetInnerHTML={{ __html: outcome }} />
+                          <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(outcome) }} />
                         </li>
                       ))}
                     </ul>

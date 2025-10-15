@@ -6,6 +6,7 @@ import { getBatches, assignStudentToBatch } from '../../lib/api/batches'
 import { Batch, User } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
+import { sanitizeHtml } from '../../utils/sanitize'
 
 interface BulkBatchAssignmentModalProps {
   students: User[]
@@ -212,7 +213,7 @@ const BulkBatchAssignmentModal: React.FC<BulkBatchAssignmentModalProps> = ({
                       {batch.description && (
                         <div
                           className="text-sm text-gray-600 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: batch.description }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(batch.description) }}
                         />
                       )}
                       <div className="flex items-center gap-2 mt-2">

@@ -10,6 +10,7 @@ import {
 } from '../../lib/api/batches'
 import { Batch, BatchStudent, User } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
+import { sanitizeHtml } from '../../utils/sanitize'
 
 interface StudentBatchAssignmentModalProps {
   student: User
@@ -181,7 +182,7 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                         {studentBatch.batch?.description && (
                           <div
                             className="text-sm text-gray-600"
-                            dangerouslySetInnerHTML={{ __html: studentBatch.batch.description }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(studentBatch.batch.description) }}
                           />
                         )}
                         <div className="flex items-center gap-2 mt-2">
@@ -275,7 +276,7 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                         {batch.description && (
                           <div
                             className="text-sm text-gray-600 line-clamp-2"
-                            dangerouslySetInnerHTML={{ __html: batch.description }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(batch.description) }}
                           />
                         )}
                         <div className="flex items-center gap-2 mt-2">

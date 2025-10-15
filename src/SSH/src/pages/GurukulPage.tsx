@@ -11,6 +11,7 @@ import { getCourses } from '../lib/api/courses'
 import Footer from '../components/layout/Footer'
 import RollingText from '../components/ui/RollingText'
 import { DEFAULT_IMAGES } from '../lib/constants/images'
+import { sanitizeHtml } from '../utils/sanitize'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -173,7 +174,7 @@ export default function GurukulPage() {
                       <h3 className="text-2xl font-bold text-gray-900 mb-3">{gurukul.name}</h3>
                       <div
                         className="text-gray-600 mb-4 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: gurukul.description }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }}
                       />
                       <div className="flex items-center justify-between mb-6 text-sm text-gray-500">
                         <div className="flex items-center space-x-2">

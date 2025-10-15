@@ -17,6 +17,7 @@ import { getGurukuls } from '../../lib/api/gurukuls'
 import { Batch, Gurukul } from '../../types'
 import { usePermissions } from '../../hooks/usePermissions'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
+import { sanitizeHtml } from '../../utils/sanitize'
 import BatchModal from './BatchModal'
 import StudentAssignmentModal from './StudentAssignmentModal'
 import CourseAssignmentModal from './CourseAssignmentModal'
@@ -309,7 +310,7 @@ const BatchManagement: React.FC = () => {
                 {batch.description && (
                   <div
                     className="text-sm text-gray-600"
-                    dangerouslySetInnerHTML={{ __html: batch.description }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(batch.description) }}
                   />
                 )}
 

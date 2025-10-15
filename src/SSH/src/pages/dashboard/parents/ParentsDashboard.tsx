@@ -20,6 +20,7 @@ import {
   AcademicCapIcon,
   CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
+import { sanitizeHtml } from '../../../utils/sanitize'
 import { User, MapPin, X } from 'lucide-react'
 import AddChildModal from '../../../components/parents/AddChildModal'
 import ChatBotTrigger from '../../../components/chat/ChatBotTrigger'
@@ -1469,7 +1470,7 @@ function HomeTab({
                     </div>
                     <div
                       className="text-xs text-gray-600 mb-3"
-                      dangerouslySetInnerHTML={{ __html: course.description }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                     />
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center">

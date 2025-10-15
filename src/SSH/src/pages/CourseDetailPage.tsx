@@ -24,6 +24,7 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../components/chat/ChatBotTrigger'
+import { sanitizeHtml } from '../utils/sanitize'
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useWebsiteAuth()
@@ -197,7 +198,7 @@ export default function CourseDetailPage() {
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">{course.title}</h1>
                   <div
                     className="text-xl text-gray-600 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: course.description }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                   />
                 </div>
                 <div className="flex items-center space-x-6 text-sm text-gray-600">
@@ -224,7 +225,7 @@ export default function CourseDetailPage() {
                         <h3 className="font-semibold text-gray-900">{course.gurukul.name}</h3>
                         <div
                           className="text-sm text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: course.gurukul.description }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.gurukul.description) }}
                         />
                       </div>
                     </div>
@@ -335,7 +336,7 @@ export default function CourseDetailPage() {
                         <CheckCircleIcon className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                         <span
                           className="text-gray-700"
-                          dangerouslySetInnerHTML={{ __html: outcome }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(outcome) }}
                         />
                       </div>
                     ))}

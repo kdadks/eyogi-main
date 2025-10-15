@@ -4,6 +4,7 @@ import { getPageBySlug } from '../../lib/api/pages'
 import { Page } from '../../types'
 import { Card, CardContent } from '../ui/Card'
 import Footer from '../layout/Footer'
+import { sanitizeRichHtml } from '../../utils/sanitize'
 
 interface LegalPageProps {
   slug?: string // Optional prop for direct slug passing
@@ -189,7 +190,7 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
                       lineHeight: '1.7',
                       fontSize: '16px',
                     }}
-                    dangerouslySetInnerHTML={{ __html: String(page.content.html) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(String(page.content.html)) }}
                   />
                 ) : (
                   <div
@@ -266,7 +267,7 @@ export function LegalPageEmbed({ slug }: { slug: string }) {
         {page.content && typeof page.content === 'object' && page.content.html ? (
           <div
             style={{ lineHeight: '1.6' }}
-            dangerouslySetInnerHTML={{ __html: String(page.content.html) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(String(page.content.html)) }}
           />
         ) : (
           <div className="whitespace-pre-wrap leading-relaxed">{String(page.content)}</div>

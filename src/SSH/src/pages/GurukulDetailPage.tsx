@@ -10,6 +10,7 @@ import { getGurukul } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
 import { formatCurrency, getAgeGroupLabel, getLevelColor, generateCourseUrl } from '../lib/utils'
 import { DEFAULT_IMAGES } from '../lib/constants/images'
+import { sanitizeHtml } from '../utils/sanitize'
 import {
   BookOpenIcon,
   UserGroupIcon,
@@ -154,7 +155,7 @@ export default function GurukulDetailPage() {
                   </h1>
                   <div
                     className="text-xl text-gray-600 leading-relaxed mb-6"
-                    dangerouslySetInnerHTML={{ __html: gurukul.description }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }}
                   />
                 </div>
                 <div className="flex items-center space-x-8 text-sm text-gray-600">
@@ -266,7 +267,7 @@ export default function GurukulDetailPage() {
                       <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
                       <div
                         className="text-gray-600 mb-4 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: course.description }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                       />
                       <div className="space-y-2 mb-4 text-sm text-gray-500">
                         <div className="flex items-center">

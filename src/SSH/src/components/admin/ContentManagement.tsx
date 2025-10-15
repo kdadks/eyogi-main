@@ -7,7 +7,7 @@ import { Page } from '../../types'
 import { getPages, createPage, updatePage, deletePage } from '../../lib/api/pages'
 import { getCurrentUser } from '../../lib/auth'
 import { Button } from '../ui/Button'
-
+import { sanitizeRichHtml } from '../../utils/sanitize'
 import { Input } from '../ui/Input'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { toSentenceCase } from '../../lib/utils'
@@ -705,7 +705,7 @@ export default function ContentManagement() {
                           lineHeight: '1.6',
                           fontSize: '14px',
                         }}
-                        dangerouslySetInnerHTML={{ __html: String(viewingPage.content.html) }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(String(viewingPage.content.html)) }}
                       />
                     ) : (
                       <div className="whitespace-pre-wrap text-sm leading-relaxed">

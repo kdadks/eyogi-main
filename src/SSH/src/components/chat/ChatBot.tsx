@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { ChatService } from '@/lib/ai/ChatService'
 import { formatDateTime } from '@/lib/utils'
+import { sanitizeHtml } from '@/utils/sanitize'
 import toast from 'react-hot-toast'
 import {
   XMarkIcon,
@@ -325,13 +326,15 @@ export default function ChatBot({ isOpen, onClose, initialMessage }: ChatBotProp
                       {message.type === 'bot' ? (
                         <div
                           dangerouslySetInnerHTML={{
-                            __html: message.content
-                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                              .replace(
-                                /\[([^\]]+)\]\(([^)]+)\)/g,
-                                '<a href="$2" class="text-blue-600 hover:text-blue-800 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>',
-                              )
-                              .replace(/\n/g, '<br>'),
+                            __html: sanitizeHtml(
+                              message.content
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(
+                                  /\[([^\]]+)\]\(([^)]+)\)/g,
+                                  '<a href="$2" class="text-blue-600 hover:text-blue-800 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>',
+                                )
+                                .replace(/\n/g, '<br>'),
+                            ),
                           }}
                         />
                       ) : (
