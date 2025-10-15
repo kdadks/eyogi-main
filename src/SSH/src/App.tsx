@@ -62,14 +62,10 @@ function App() {
   // Load cache testing utilities in development
   useEffect(() => {
     if (import.meta.env.DEV) {
-      // Import both testing utilities
-      Promise.all([import('./lib/testCaching'), import('./lib/quickCacheTest')])
-        .then(([testingModule]) => {
-          testingModule.initCacheTestingUtils()
-          // quickCacheTest is auto-initialized
-        })
+      // Import cache testing utility
+      import('./lib/quickCacheTest')
         .catch(() => {
-          // Silently fail if utilities can't load
+          // Silently fail if utility can't load
         })
     }
   }, [])

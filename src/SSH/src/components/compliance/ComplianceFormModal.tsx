@@ -43,12 +43,6 @@ export default function ComplianceFormModal({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [fileErrors, setFileErrors] = useState<string[]>([])
 
-  useEffect(() => {
-    if (isOpen && complianceItemId) {
-      loadForm()
-    }
-  }, [isOpen, complianceItemId, loadForm])
-
   const loadForm = useCallback(async () => {
     try {
       setLoading(true)
@@ -64,6 +58,12 @@ export default function ComplianceFormModal({
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (isOpen && complianceItemId) {
+      loadForm()
+    }
+  }, [isOpen, complianceItemId, loadForm])
 
   const initializeFormData = (fields: ComplianceFormField[]) => {
     const initialData: FormData = {}
