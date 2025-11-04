@@ -5,7 +5,7 @@ import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User, Home } from 'luc
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
-import logoImage from '/eyogiTextLess.png'
+import logoImage from '/Images/SSH_Logo.png'
 import fallbackLogo from '/Images/Logo.png'
 interface NavLink {
   name: string

@@ -92,8 +92,8 @@ export default function Header() {
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3 group">
               <div className="relative">
                 <img
-                  src="/Images/Logo.png"
-                  alt="eYogi Gurukul logo"
+                  src="/Images/SSH_Logo.png"
+                  alt="SSH University logo"
                   className="h-8 w-8 sm:h-12 sm:w-12 object-contain rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
