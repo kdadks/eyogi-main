@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getPublishedPages } from '../../lib/api/pages'
-import { Page } from '../../types'
+import { getGurukuls } from '../../lib/api/gurukuls'
+import { Page, Gurukul } from '../../types'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const [legalPages, setLegalPages] = useState<Page[]>([])
+  const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const navigate = useNavigate()
 
   const handleLinkClick = (href: string) => {
@@ -15,54 +17,59 @@ export default function Footer() {
   }
 
   useEffect(() => {
-    const loadLegalPages = async () => {
+    const loadData = async () => {
       try {
-        const pages = await getPublishedPages('legal')
+        const [pages, gurukulData] = await Promise.all([getPublishedPages('legal'), getGurukuls()])
         setLegalPages(pages)
+        setGurukuls(gurukulData)
       } catch (error) {
-        console.error('Failed to load legal pages:', error)
+        console.error('Failed to load footer data:', error)
       }
     }
 
-    loadLegalPages()
+    loadData()
   }, [])
 
-  const staticFooterSections = [
-    {
+  // Build footer sections dynamically
+  const footerSections = []
+
+  // Gurukuls section (dynamic)
+  if (gurukuls.length > 0) {
+    footerSections.push({
       title: 'Gurukuls',
-      links: [
-        { name: 'Hinduism Gurukul', href: '/gurukuls/hinduism' },
-        { name: 'Mantra Gurukul', href: '/gurukuls/mantra' },
-        { name: 'Philosophy Gurukul', href: '/gurukuls/philosophy' },
-        { name: 'Sanskrit Gurukul', href: '/gurukuls/sanskrit' },
-        { name: 'Yoga & Wellness', href: '/gurukuls/yoga-wellness' },
-      ],
-    },
-    {
-      title: 'Learning',
-      links: [
-        { name: 'All Courses', href: '/courses' },
-        { name: 'Elementary (4-7)', href: '/courses?level=elementary' },
-        { name: 'Basic (8-11)', href: '/courses?level=basic' },
-        { name: 'Intermediate (12-15)', href: '/courses?level=intermediate' },
-        { name: 'Advanced (16-19)', href: '/courses?level=advanced' },
-      ],
-    },
-    {
-      title: 'Support',
-      links: [
-        { name: 'Contact Us', href: '/contact' },
-        { name: 'About Us', href: '/about' },
-      ],
-    },
-  ]
+      links: gurukuls
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map((gurukul) => ({
+          name: gurukul.name,
+          href: `/gurukuls/${gurukul.slug}`,
+        })),
+    })
+  }
 
-  // Dynamic footer sections with legal pages from database
-  const dynamicFooterSections = []
+  // Learning section (static)
+  footerSections.push({
+    title: 'Learning',
+    links: [
+      { name: 'All Courses', href: '/courses' },
+      { name: 'Elementary (4-7)', href: '/courses?level=elementary' },
+      { name: 'Basic (8-11)', href: '/courses?level=basic' },
+      { name: 'Intermediate (12-15)', href: '/courses?level=intermediate' },
+      { name: 'Advanced (16-19)', href: '/courses?level=advanced' },
+    ],
+  })
 
-  // Only add Legal section if we have pages to show
+  // Support section (static)
+  footerSections.push({
+    title: 'Support',
+    links: [
+      { name: 'Contact Us', href: '/contact' },
+      { name: 'About Us', href: '/about' },
+    ],
+  })
+
+  // Legal section (dynamic)
   if (legalPages.length > 0) {
-    dynamicFooterSections.push({
+    footerSections.push({
       title: 'Legal',
       links: legalPages.map((page) => ({
         name: page.title,
@@ -70,8 +77,6 @@ export default function Footer() {
       })),
     })
   }
-
-  const footerSections = [...staticFooterSections, ...dynamicFooterSections]
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
