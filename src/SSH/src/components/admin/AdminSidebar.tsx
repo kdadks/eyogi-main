@@ -167,20 +167,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <div
         className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             {/* Logo */}
             <div className="relative">
               <img
-                src="/ssh-app/eyogiTextLess.png"
-                alt="eYogi Gurukul"
-                className="h-10 w-10 lg:h-12 lg:w-12 rounded-full border-2 border-white/20"
+                src="/ssh-app/Images/SSH_Logo.png"
+                alt="SSH University"
+                className="h-10 w-10 lg:h-12 lg:w-12 object-contain"
               />
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400/20 to-red-500/20"></div>
             </div>
             {/* Title */}
             <div className="hidden sm:block">
@@ -198,7 +198,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-        <nav className="mt-6 px-4">
+
+        {/* Scrollable Navigation */}
+        <nav className="flex-1 overflow-y-auto px-4 py-6">
           <div className="space-y-1">
             {filteredNavigation.map((item) => (
               <NavLink
@@ -219,8 +221,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
             ))}
           </div>
         </nav>
-        {/* User info */}
-        <div className="absolute bottom-0 w-full p-4 border-t border-gray-200">
+        {/* Fixed Footer - User info */}
+        <div className="flex-shrink-0 w-full p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="flex-shrink-0">
