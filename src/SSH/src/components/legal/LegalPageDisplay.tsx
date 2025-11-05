@@ -3,7 +3,7 @@ import { useParams, Navigate } from 'react-router-dom'
 import { getPageBySlug } from '../../lib/api/pages'
 import { Page } from '../../types'
 import { Card, CardContent } from '../ui/Card'
-import Footer from '../layout/Footer'
+
 import { sanitizeRichHtml } from '../../utils/sanitize'
 
 interface LegalPageProps {
@@ -112,7 +112,6 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
             </Card>
           </div>
         </div>
-        <Footer />
       </div>
     )
   }
@@ -153,7 +152,6 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
             </Card>
           </div>
         </div>
-        <Footer />
       </div>
     )
   }
@@ -190,7 +188,9 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
                       lineHeight: '1.7',
                       fontSize: '16px',
                     }}
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(String(page.content.html)) }}
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeRichHtml(String(page.content.html)),
+                    }}
                   />
                 ) : (
                   <div
@@ -217,7 +217,6 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
           </Card>
         </div>
       </div>
-      <Footer />
     </div>
   )
 }

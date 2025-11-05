@@ -5,6 +5,7 @@ import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User, Home } from 'luc
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
+import RollingText from '../ui/RollingText'
 import logoImage from '/Images/SSH_Logo.png'
 import fallbackLogo from '/Images/Logo.png'
 interface NavLink {
@@ -383,6 +384,11 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Ticker - appears below header on all pages */}
+      <div className="fixed top-16 lg:top-20 left-0 right-0 z-40">
+        <RollingText text="🕉️ SSH University - Spirituality and Science of Hinduism - Discover Ancient Wisdom Through Modern Learning 🕉️" />
       </div>
     </motion.header>
   )

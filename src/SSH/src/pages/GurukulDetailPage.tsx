@@ -138,7 +138,7 @@ export default function GurukulDetailPage() {
             : []
         }
       />
-      <div className="min-h-screen bg-gray-50 page-with-header">
+      <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
         <section className="bg-gradient-to-r from-orange-50 to-red-50">
           <div className="container-max section-padding">

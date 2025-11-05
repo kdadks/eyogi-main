@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
-import Footer from '../components/layout/Footer'
-import RollingText from '../components/ui/RollingText'
+
 import { Course, Gurukul } from '../types'
 import { getCourses } from '../lib/api/courses'
 import { getGurukuls } from '../lib/api/gurukuls'
@@ -20,6 +19,7 @@ import {
   CurrencyEuroIcon,
 } from '@heroicons/react/24/outline'
 export default function CoursesPage() {
+  const [searchParams] = useSearchParams()
   const [courses, setCourses] = useState<Course[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,6 +27,13 @@ export default function CoursesPage() {
   const [selectedGurukul, setSelectedGurukul] = useState('')
   const [selectedLevel, setSelectedLevel] = useState('')
   const [ageGroup, setAgeGroup] = useState('')
+
+  // Set initial level from URL query parameter
+  useEffect(() => {
+    const levelParam = searchParams.get('level')
+    setSelectedLevel(levelParam || '')
+  }, [searchParams])
+
   useEffect(() => {
     loadData()
   }, [])
@@ -115,8 +122,6 @@ export default function CoursesPage() {
         ]}
       />
       <div>
-        {/* Rolling Text Banner */}
-        <RollingText text="🕉️ Discover Ancient Hindu Wisdom Through Expert-Led Online Courses 🕉️" />
         <div className="min-h-screen bg-gray-50">
           {/* Header */}
           <div className="bg-white shadow-sm">
@@ -263,7 +268,6 @@ export default function CoursesPage() {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   )
 }

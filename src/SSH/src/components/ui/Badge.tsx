@@ -9,7 +9,7 @@ interface BadgeProps {
   children: React.ReactNode
 }
 export function Badge({ variant = 'default', size = 'md', className, children }: BadgeProps) {
-  const baseClasses = 'inline-flex items-center font-medium rounded-full break-words text-center'
+  const baseClasses = 'inline-flex items-center font-medium rounded-md break-words text-center'
   const variants = {
     default: 'bg-gray-100 text-gray-800',
     secondary: 'bg-gray-200 text-gray-700',
@@ -21,9 +21,20 @@ export function Badge({ variant = 'default', size = 'md', className, children }:
   }
   const sizes = {
     sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-1 text-sm sm:px-3 sm:py-1.5 sm:text-base max-w-xs sm:max-w-none',
+    md: 'px-2.5 py-1 text-xs sm:px-3 sm:py-1 sm:text-sm max-w-xs sm:max-w-none',
   }
+
+  // Convert children to sentence case (capitalize first letter only)
+  const formatText = (text: React.ReactNode): React.ReactNode => {
+    if (typeof text === 'string') {
+      return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+    }
+    return text
+  }
+
   return (
-    <span className={cn(baseClasses, variants[variant], sizes[size], className)}>{children}</span>
+    <span className={cn(baseClasses, variants[variant], sizes[size], className)}>
+      {formatText(children)}
+    </span>
   )
 }

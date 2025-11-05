@@ -4,8 +4,7 @@ import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
-import Footer from '../components/layout/Footer'
-import RollingText from '../components/ui/RollingText'
+
 import { DEFAULT_IMAGES } from '../lib/constants/images'
 import {
   AcademicCapIcon,
@@ -119,8 +118,6 @@ export default function AboutPage() {
         ]}
       />
       <div>
-        {/* Rolling Text Banner */}
-        <RollingText text="🕉️ About eYogi Gurukul - Bridging Ancient Hindu Wisdom with Modern Learning 🕉️" />
         <div className="min-h-screen bg-gray-50">
           {/* Hero Section */}
           <section className="bg-gradient-to-r from-orange-50 to-red-50">
@@ -330,7 +327,6 @@ export default function AboutPage() {
           </section>
         </div>
       </div>
-      <Footer />
     </>
   )
 }

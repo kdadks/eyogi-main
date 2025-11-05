@@ -8,8 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Gurukul } from '../types'
 import { getGurukuls } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
-import Footer from '../components/layout/Footer'
-import RollingText from '../components/ui/RollingText'
+
 import { DEFAULT_IMAGES } from '../lib/constants/images'
 import { sanitizeHtml } from '../utils/sanitize'
 import {
@@ -103,8 +102,6 @@ export default function GurukulPage() {
         ]}
       />
       <div>
-        {/* Rolling Text Banner */}
-        <RollingText text="🕉️ Explore Traditional Hindu Gurukuls - Where Ancient Wisdom Meets Modern Learning 🕉️" />
         <div className="min-h-screen bg-gray-50">
           {/* Hero Section (with Quick Navigation) */}
           <section className="bg-gradient-to-r from-orange-50 to-red-50">
@@ -276,7 +273,6 @@ export default function GurukulPage() {
           </section>
         </div>
       </div>
-      <Footer />
     </>
   )
 }

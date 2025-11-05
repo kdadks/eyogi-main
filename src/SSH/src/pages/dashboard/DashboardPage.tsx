@@ -7,7 +7,7 @@ export default function DashboardPage() {
   const { user: websiteUser, loading: websiteLoading } = useWebsiteAuth()
   if (authLoading || websiteLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center page-with-header">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="spinner w-8 h-8 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>

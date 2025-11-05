@@ -1,12 +1,18 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getPublishedPages } from '../../lib/api/pages'
 import { Page } from '../../types'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const [legalPages, setLegalPages] = useState<Page[]>([])
+  const navigate = useNavigate()
+
+  const handleLinkClick = (href: string) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    navigate(href)
+  }
 
   useEffect(() => {
     const loadLegalPages = async () => {
@@ -45,11 +51,8 @@ export default function Footer() {
     {
       title: 'Support',
       links: [
-        { name: 'Help Center', href: '/help' },
         { name: 'Contact Us', href: '/contact' },
-        { name: 'FAQ', href: '/faq' },
-        { name: 'Community', href: '/community' },
-        { name: 'Blog', href: '/blog' },
+        { name: 'About Us', href: '/about' },
       ],
     },
   ]
@@ -134,6 +137,10 @@ export default function Footer() {
                   <li key={link.name}>
                     <Link
                       to={link.href}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleLinkClick(link.href)
+                      }}
                       className="text-gray-300 hover:text-white text-sm transition-colors"
                     >
                       {link.name}

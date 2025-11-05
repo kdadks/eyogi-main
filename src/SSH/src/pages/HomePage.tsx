@@ -5,7 +5,7 @@ import { generateOrganizationSchema, generateWebsiteSchema } from '../components
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
-import RollingText from '../components/ui/RollingText'
+
 import {
   AcademicCapIcon,
   BookOpenIcon,
@@ -14,7 +14,7 @@ import {
   ArrowRightIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
-import Footer from '../components/layout/Footer'
+
 import { getGurukulsWithStats } from '../lib/api/gurukuls'
 import { Gurukul } from '../types'
 import { sanitizeHtml } from '../utils/sanitize'
@@ -138,8 +138,6 @@ export default function HomePage() {
         structuredData={structuredData}
       />
       <div>
-        {/* Rolling Text Banner */}
-        <RollingText text="🕉️ Spirituality and Science of Hinduism University - Discover Ancient Wisdom Through Modern Learning 🕉️" />
         {/* Hero Section */}
         <section
           id="hero"
@@ -420,7 +418,6 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-      <Footer />
     </>
   )
 }

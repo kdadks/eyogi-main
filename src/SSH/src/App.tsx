@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 // Layout Components
 import { GlossyHeader } from './components/layout/GlossyHeader'
+import Footer from './components/layout/Footer'
 import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
 import AuthRedirect from './components/auth/AuthRedirect'
 // SSH Website Components
@@ -63,10 +64,9 @@ function App() {
   useEffect(() => {
     if (import.meta.env.DEV) {
       // Import cache testing utility
-      import('./lib/quickCacheTest')
-        .catch(() => {
-          // Silently fail if utility can't load
-        })
+      import('./lib/quickCacheTest').catch(() => {
+        // Silently fail if utility can't load
+      })
     }
   }, [])
 
@@ -79,7 +79,7 @@ function App() {
       {/* Only show GlossyHeader for non-admin routes */}
       {!isAdminRoute && <GlossyHeader onOpenAuthModal={openAuthModal} />}
       {/* Main content with top padding only for non-admin routes */}
-      <main className={isAdminRoute ? '' : 'pt-16 lg:pt-20'}>
+      <main className={isAdminRoute ? '' : 'pt-28 lg:pt-32'}>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* SSH Website Pages */}
@@ -181,6 +181,8 @@ function App() {
           </Routes>
         </Suspense>
       </main>
+      {/* Footer for non-dashboard pages */}
+      {!isAdminRoute && !location.pathname.startsWith('/dashboard') && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

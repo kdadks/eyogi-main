@@ -225,13 +225,13 @@ export default function CourseDetailPage() {
             : []
         }
       />
-      <div className="min-h-screen bg-gray-50 page-with-header">
+      <div className="bg-gray-50 pb-12">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-orange-50 to-red-50">
-          <div className="container-max section-padding">
+          <div className="max-w-[1200px] mx-auto py-12 px-6 sm:px-8 lg:px-10">
             <div className="grid lg:grid-cols-3 gap-12">
               <div className="lg:col-span-2 space-y-6">
-                <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-6">
                   <Link to="/courses" className="text-orange-600 hover:text-orange-700">
                     ← Back to Courses
                   </Link>
@@ -239,13 +239,15 @@ export default function CourseDetailPage() {
                   <span className="text-sm text-gray-500">{course.course_number}</span>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">{course.title}</h1>
+                  <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                    {course.title}
+                  </h1>
                   <div
-                    className="text-xl text-gray-600 leading-relaxed"
+                    className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                   />
                 </div>
-                <div className="flex items-center space-x-6 text-sm text-gray-600">
+                <div className="flex flex-wrap items-center gap-4 text-sm sm:text-base text-gray-600">
                   <div className="flex items-center">
                     <UserGroupIcon className="h-5 w-5 mr-2" />
                     <span>Ages {getAgeGroupLabel(course.age_group_min, course.age_group_max)}</span>
@@ -367,7 +369,7 @@ export default function CourseDetailPage() {
           </div>
         </div>
         {/* Course Content */}
-        <div className="container-max section-padding">
+        <div className="container-max py-0 pb-8 px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
               {/* Learning Outcomes */}

@@ -323,100 +323,223 @@ export const updateCertificateAssignment = async (
   id: string,
   updates: Partial<CreateCertificateAssignmentData>,
 ) => {
-  try {
-    // Validate that either gurukul_id or course_id is provided (but not both)
-    if (updates.gurukul_id && updates.course_id) {
-      throw new Error('Cannot assign to both gurukul and course simultaneously')
-    }
-    const { data, error } = await supabaseAdmin
-      .from('certificate_assignments')
-      .update({
-        template_id: updates.template_id,
-        gurukul_id: updates.gurukul_id || null,
-        course_id: updates.course_id || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select(
-        `
-        *,
-        template:certificate_templates(*),
-        gurukul:gurukuls(*),
-        course:courses(*),
-        creator:profiles(*)
-      `,
-      )
-      .single()
-    if (error) {
-      throw error
-    }
-    return data as CertificateAssignment
-  } catch (_error) {
-    throw _error
+  // Validate that either gurukul_id or course_id is provided (but not both)
+  if (updates.gurukul_id && updates.course_id) {
+    throw new Error('Cannot assign to both gurukul and course simultaneously')
   }
+  const { data, error } = await supabaseAdmin
+    .from('certificate_assignments')
+    .update({
+      template_id: updates.template_id,
+      gurukul_id: updates.gurukul_id || null,
+      course_id: updates.course_id || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select(
+      `
+      *,
+      template:certificate_templates(*),
+      gurukul:gurukuls(*),
+      course:courses(*),
+      creator:profiles(*)
+    `,
+    )
+    .single()
+  if (error) {
+    throw error
+  }
+  return data as CertificateAssignment
 }
 // Delete assignment
 export const deleteCertificateAssignment = async (id: string) => {
-  try {
-    const { error } = await supabaseAdmin.from('certificate_assignments').delete().eq('id', id)
-    if (error) {
-      throw error
-    }
-    return true
-  } catch (_error) {
-    throw _error
+  const { error } = await supabaseAdmin.from('certificate_assignments').delete().eq('id', id)
+  if (error) {
+    throw error
   }
+  return true
 }
 // Get available gurukuls for assignment
 export const getAvailableGurukuls = async () => {
-  try {
-    const gurukuls = await getGurukuls()
-    return gurukuls.map((g) => ({
-      id: g.id,
-      name: g.name,
-      status: g.is_active ? 'active' : 'inactive',
-    }))
-  } catch (_error) {
-    throw _error
-  }
+  const gurukuls = await getGurukuls()
+  return gurukuls.map((g) => ({
+    id: g.id,
+    name: g.name,
+    status: g.is_active ? 'active' : 'inactive',
+  }))
 }
 // Get available courses for assignment
 export const getAvailableCourses = async (gurukulId?: string) => {
-  try {
-    const filters = gurukulId ? { gurukul_id: gurukulId } : undefined
-    const courses = await getCourses(filters)
-    return courses.map((c) => ({
-      id: c.id,
-      title: c.title,
-      gurukul_id: c.gurukul_id,
-      status: 'active', // Assuming all returned courses are active
-    }))
-  } catch (_error) {
-    throw _error
-  }
+  const filters = gurukulId ? { gurukul_id: gurukulId } : undefined
+  const courses = await getCourses(filters)
+  return courses.map((c) => ({
+    id: c.id,
+    title: c.title,
+    gurukul_id: c.gurukul_id,
+    status: 'active', // Assuming all returned courses are active
+  }))
 }
 
 // Get available teachers for assignment
 export const getAvailableTeachers = async () => {
+  const { data: teachers, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, email, role')
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .order('full_name')
+
+  if (error) {
+    throw error
+  }
+
+  return teachers.map((teacher) => ({
+    id: teacher.id,
+    name: teacher.full_name,
+    email: teacher.email,
+    status: 'active',
+  }))
+}
+
+interface EnrollmentData {
+  id: string
+  status: string
+  certificate_issued: boolean
+  student_id: string
+  profiles: {
+    full_name: string
+    email: string
+  }
+}
+
+interface CourseWithEnrollments {
+  id: string
+  title: string
+  description?: string
+  enrollments: EnrollmentData[]
+  [key: string]: unknown
+}
+
+interface BatchStudent {
+  id: string
+  student_id: string
+  profiles: {
+    full_name: string
+    email: string
+  }
+}
+
+interface BatchData {
+  id: string
+  name: string
+  status: string
+  certificates_issued?: boolean
+  course: {
+    id: string
+    title: string
+  }
+  batch_students: BatchStudent[]
+  [key: string]: unknown
+}
+
+/**
+ * Get enhanced certificate assignment data for teachers with course and batch statistics
+ */
+export async function getTeacherCertificateManagementData(teacherId: string) {
   try {
-    const { data: teachers, error } = await supabaseAdmin
-      .from('profiles')
-      .select('id, full_name, email, role')
-      .eq('role', 'teacher')
-      .eq('is_active', true)
-      .order('full_name')
+    // Get basic assignments
+    const assignments = await getTeacherCertificateAssignments(teacherId)
 
-    if (error) {
-      throw error
+    // Get teacher's courses with enrollment statistics
+    const { data: coursesData } = await supabaseAdmin
+      .from('courses')
+      .select(
+        `
+        *,
+        enrollments(
+          id,
+          status,
+          certificate_issued,
+          student_id,
+          profiles(full_name, email)
+        )
+      `,
+      )
+      .eq('teacher_id', teacherId)
+
+    // Get teacher's batches with completion status
+    const { data: batchesData } = await supabaseAdmin
+      .from('batches')
+      .select(
+        `
+        *,
+        course:courses(id, title),
+        batch_students(
+          id,
+          student_id,
+          profiles(full_name, email)
+        )
+      `,
+      )
+      .eq('teacher_id', teacherId)
+
+    // Calculate statistics for each course
+    const coursesWithStats = ((coursesData as CourseWithEnrollments[]) || []).map((course) => {
+      const enrollments = course.enrollments || []
+      const completed = enrollments.filter((e) => e.status === 'completed')
+      const certificatesIssued = enrollments.filter((e) => e.certificate_issued)
+      const pendingCertificates = completed.filter((e) => !e.certificate_issued)
+
+      return {
+        ...course,
+        stats: {
+          totalEnrolled: enrollments.length,
+          completed: completed.length,
+          certificatesIssued: certificatesIssued.length,
+          pendingCertificates: pendingCertificates.length,
+          completionRate:
+            enrollments.length > 0 ? (completed.length / enrollments.length) * 100 : 0,
+        },
+      }
+    })
+
+    // Calculate statistics for each batch
+    const batchesWithStats = ((batchesData as BatchData[]) || []).map((batch) => {
+      const students = batch.batch_students || []
+
+      return {
+        ...batch,
+        stats: {
+          totalStudents: students.length,
+          certificatesIssued: batch.certificates_issued || false,
+          canIssueCertificates: batch.status === 'completed' && !batch.certificates_issued,
+        },
+      }
+    })
+
+    // Get available templates for this teacher
+    const availableTemplates = assignments.map((assignment) => assignment.template).filter(Boolean)
+
+    return {
+      assignments,
+      courses: coursesWithStats,
+      batches: batchesWithStats,
+      templates: availableTemplates,
+      summary: {
+        totalCourses: coursesWithStats.length,
+        totalBatches: batchesWithStats.length,
+        totalTemplates: availableTemplates.length,
+        totalPendingCertificates: coursesWithStats.reduce(
+          (sum, course) => sum + course.stats.pendingCertificates,
+          0,
+        ),
+        batchesReadyForCertificates: batchesWithStats.filter(
+          (batch) => batch.stats.canIssueCertificates,
+        ).length,
+      },
     }
-
-    return teachers.map((teacher) => ({
-      id: teacher.id,
-      name: teacher.full_name,
-      email: teacher.email,
-      status: 'active',
-    }))
-  } catch (_error) {
-    throw _error
+  } catch (error) {
+    console.error('Error getting teacher certificate management data:', error)
+    throw new Error('Failed to load certificate management data')
   }
 }

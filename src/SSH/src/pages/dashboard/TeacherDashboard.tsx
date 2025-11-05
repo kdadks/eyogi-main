@@ -16,7 +16,6 @@ import { getTeacherCourses, createCourse } from '@/lib/api/courses'
 import { sanitizeHtml } from '../../utils/sanitize'
 import {
   getTeacherEnrollments,
-  enrollInCourse,
   enrollStudentByTeacher,
   getPendingEnrollments,
   approveEnrollment,
@@ -66,7 +65,6 @@ import {
   CheckCircleIcon,
   ClockIcon,
   XCircleIcon,
-  XMarkIcon,
   EyeIcon,
   ChartBarIcon,
   BookOpenIcon,
@@ -176,6 +174,7 @@ export default function TeacherDashboard() {
   const [selectedBatchForCertificate, setSelectedBatchForCertificate] = useState<string | null>(
     null,
   )
+
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false)
   const [selectedStudentForEnrollment, setSelectedStudentForEnrollment] =
@@ -1764,8 +1763,42 @@ export default function TeacherDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Batch Certificate Management</h2>
-                  <p className="text-gray-600">Issue certificates to completed batches</p>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Certificate Management Center
+                  </h2>
+                  <p className="text-gray-600">
+                    Issue certificates to students in your courses and batches
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      // Collect all eligible enrollments across all courses
+                      const allEligible = enrollments
+                        .filter((enrollment) => enrollment.status === 'completed')
+                        .filter((enrollment) => {
+                          // Check if certificate already exists for this enrollment
+                          return !certificates.some(
+                            (cert) =>
+                              cert.student_id === enrollment.student_id &&
+                              cert.course_id === enrollment.course_id,
+                          )
+                        })
+                        .map((enrollment) => enrollment.id)
+
+                      if (allEligible.length === 0) {
+                        toast.error('No eligible students found for certificate issuance')
+                        return
+                      }
+
+                      setBulkEligibleEnrollments(allEligible)
+                      setShowBulkTemplateModal(true)
+                    }}
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                  >
+                    <TrophyIcon className="h-4 w-4 mr-2" />
+                    Bulk Issue Certificates
+                  </Button>
                 </div>
               </div>
 
@@ -1806,6 +1839,238 @@ export default function TeacherDashboard() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Course-Based Certificate Management */}
+              <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <BookOpenIcon className="h-6 w-6 text-blue-600" />
+                      <h3 className="text-lg font-semibold">Course-Based Certificate Issuance</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Issue certificates to completed students by course
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {courses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BookOpenIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No courses available
+                      </h3>
+                      <p className="text-gray-600">
+                        Create courses first to issue certificates to students.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {courses.map((course) => {
+                        const courseEnrollments = enrollments.filter(
+                          (e) => e.course_id === course.id,
+                        )
+                        const completedEnrollments = courseEnrollments.filter(
+                          (e) => e.status === 'completed',
+                        )
+                        const certificatesNotIssued = completedEnrollments.filter(
+                          (e) =>
+                            !certificates.some(
+                              (cert) =>
+                                cert.student_id === e.student_id && cert.course_id === e.course_id,
+                            ),
+                        )
+
+                        return (
+                          <div
+                            key={course.id}
+                            className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:shadow-lg transition-all duration-300"
+                          >
+                            <div className="flex items-start space-x-4 mb-4">
+                              <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <BookOpenIcon className="h-6 w-6 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 truncate">
+                                  {course.title}
+                                </h4>
+                                <div
+                                  className="text-sm text-gray-600 line-clamp-2"
+                                  dangerouslySetInnerHTML={{
+                                    __html: sanitizeHtml(course.description || ''),
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Total Enrolled:</span>
+                                <span className="font-medium text-gray-900">
+                                  {courseEnrollments.length}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Completed:</span>
+                                <span className="font-medium text-green-700">
+                                  {completedEnrollments.length}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Certificates Pending:</span>
+                                <span className="font-medium text-orange-600">
+                                  {certificatesNotIssued.length}
+                                </span>
+                              </div>
+                            </div>
+
+                            {certificatesNotIssued.length > 0 ? (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const eligibleIds = certificatesNotIssued.map((e) => e.id)
+                                  setBulkEligibleEnrollments(eligibleIds)
+                                  setShowBulkTemplateModal(true)
+                                }}
+                                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+                              >
+                                <TrophyIcon className="h-4 w-4 mr-2" />
+                                Issue {certificatesNotIssued.length} Certificate
+                                {certificatesNotIssued.length !== 1 ? 's' : ''}
+                              </Button>
+                            ) : completedEnrollments.length > 0 ? (
+                              <div className="text-center py-2">
+                                <span className="text-sm text-green-600 font-medium">
+                                  ✓ All certificates issued
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-center py-2">
+                                <span className="text-sm text-gray-500">No completed students</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Batch-Based Certificate Management */}
+              <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <UserGroupIcon className="h-6 w-6 text-purple-600" />
+                      <h3 className="text-lg font-semibold">Batch-Based Certificate Issuance</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">Issue certificates to entire batches</p>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {batches.length === 0 ? (
+                    <div className="text-center py-8">
+                      <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No batches created</h3>
+                      <p className="text-gray-600">
+                        Create batches first to manage group certificate issuance.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {batches.map((batch) => {
+                        const isCompleted = batch.status === 'completed'
+                        const certificatesIssued = batch.certificates_issued
+
+                        return (
+                          <div
+                            key={batch.id}
+                            className={`p-6 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                              certificatesIssued
+                                ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
+                                : isCompleted
+                                  ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'
+                                  : 'bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-start space-x-4 mb-4">
+                              <div
+                                className={`h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                  certificatesIssued
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                                    : isCompleted
+                                      ? 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                      : 'bg-gradient-to-r from-gray-400 to-slate-500'
+                                }`}
+                              >
+                                {certificatesIssued ? (
+                                  <TrophyIcon className="h-6 w-6 text-white" />
+                                ) : (
+                                  <UserGroupIcon className="h-6 w-6 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 truncate">
+                                  {batch.name}
+                                </h4>
+                                <p className="text-sm text-gray-600">
+                                  Course: {batch.course?.title || 'No course assigned'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Status:{' '}
+                                  {batch.status
+                                    .replace(/_/g, ' ')
+                                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 mb-4">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Students:</span>
+                                <span className="font-medium text-gray-900">
+                                  {batch.student_count || 0}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Progress:</span>
+                                <span className="font-medium text-blue-700">
+                                  {batch.progress_percentage || 0}%
+                                </span>
+                              </div>
+                            </div>
+
+                            {certificatesIssued ? (
+                              <div className="text-center py-2">
+                                <span className="text-sm text-green-600 font-medium">
+                                  ✓ Certificates issued
+                                </span>
+                              </div>
+                            ) : isCompleted ? (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedBatchForCertificate(batch.id)
+                                  setShowBatchCertificateModal(true)
+                                }}
+                                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+                              >
+                                <TrophyIcon className="h-4 w-4 mr-2" />
+                                Issue Batch Certificates
+                              </Button>
+                            ) : (
+                              <div className="text-center py-2">
+                                <span className="text-sm text-gray-500">Batch not completed</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Students Ready for Certificates */}
               {completedBatchStudents.length > 0 ? (
@@ -3322,15 +3587,17 @@ export default function TeacherDashboard() {
                         return (
                           <div
                             key={assignment.id}
-                            onClick={() => setSelectedTemplate(assignment.template_id)}
-                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                               isSelected
                                 ? 'border-purple-500 bg-purple-50'
                                 : 'border-gray-200 hover:border-purple-300 hover:bg-purple-25'
                             }`}
                           >
                             <div className="flex items-start justify-between">
-                              <div className="flex-1">
+                              <div
+                                className="flex-1 cursor-pointer"
+                                onClick={() => setSelectedTemplate(assignment.template_id)}
+                              >
                                 <div className="flex items-center space-x-3 mb-2">
                                   <div
                                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
@@ -3347,9 +3614,17 @@ export default function TeacherDashboard() {
                                     {assignment.template?.name || 'Certificate Template'}
                                   </h4>
                                 </div>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600 mb-3">
                                   {assignment.template?.type || 'Student'} Certificate
                                 </p>
+                                <div className="text-xs text-gray-500">
+                                  <p>
+                                    Assigned to:{' '}
+                                    {assignment.course?.title ||
+                                      assignment.gurukul?.name ||
+                                      'Direct assignment'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -3584,7 +3859,7 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
   student,
   teacherCourses,
   existingEnrollments,
-  teacherId,
+  teacherId, // eslint-disable-line @typescript-eslint/no-unused-vars
   certificates,
   onClose,
   onEnrollmentChange,
@@ -4302,6 +4577,7 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
     loadStats()
   }, [loadStats])
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDeleteBatch = async (batchId: string) => {
     if (!canAccess('batches', 'delete')) {
       toast.error('You do not have permission to delete batches')
