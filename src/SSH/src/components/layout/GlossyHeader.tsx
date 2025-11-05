@@ -125,14 +125,13 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                 <img
                   src={logoImage}
                   alt="eYogi Gurukul"
-                  className="h-10 w-10 lg:h-12 lg:w-12 rounded-full border-2 border-white/20"
+                  className="h-10 w-10 lg:h-12 lg:w-12 object-contain"
                   onError={(e) => {
                     // Fallback to Logo.png if eyogiTextLess.png fails
                     const target = e.target as HTMLImageElement
                     target.src = fallbackLogo
                   }}
                 />
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400/20 to-red-500/20"></div>
               </div>
               <div className="hidden sm:block">
                 <div className="flex flex-col">

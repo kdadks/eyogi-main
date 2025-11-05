@@ -11,6 +11,46 @@ import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '@/utils/sanitize'
+
+/**
+ * Parse HTML content from ReactQuill to extract learning outcomes
+ * Handles both HTML lists and plain text input
+ */
+function parseHtmlToOutcomes(htmlContent: string): string[] {
+  if (!htmlContent || htmlContent.trim() === '') return []
+
+  // If content contains HTML list tags, parse them
+  if (
+    htmlContent.includes('<ul>') ||
+    htmlContent.includes('<ol>') ||
+    htmlContent.includes('<li>')
+  ) {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = sanitizeHtml(htmlContent)
+
+    const listItems = tempDiv.querySelectorAll('li')
+    if (listItems.length > 0) {
+      return Array.from(listItems)
+        .map((li) => li.textContent?.trim())
+        .filter((text): text is string => !!text)
+    }
+  }
+
+  // Fall back to splitting by newlines for plain text
+  return htmlContent
+    .split('\n')
+    .map((line) => line.replace(/<[^>]*>/g, '').trim()) // Strip any HTML tags
+    .filter((line) => line !== '')
+}
+
+/**
+ * Convert learning outcomes array to HTML for ReactQuill display
+ */
+function outcomesToHtml(outcomes: string[]): string {
+  if (!outcomes || outcomes.length === 0) return ''
+  return outcomes.join('\n')
+}
+
 interface CourseFormData {
   gurukul_id: string
   course_number: string
@@ -569,7 +609,9 @@ export default function CourseManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
-                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.description) }} />
+                  <div
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.description) }}
+                  />
                 </div>
               </div>
               {/* Detailed Description */}
@@ -579,7 +621,11 @@ export default function CourseManagement() {
                     Detailed Description
                   </label>
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.detailed_description) }} />
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(viewingCourse.detailed_description),
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -842,15 +888,24 @@ export default function CourseManagement() {
                   Learning Outcomes
                 </label>
                 <ReactQuill
-                  value={formData.learning_outcomes.join('\n')}
+                  value={outcomesToHtml(formData.learning_outcomes)}
                   onChange={(value) =>
                     setFormData({
                       ...formData,
-                      learning_outcomes: value.split('\n').filter((line) => line.trim() !== ''),
+                      learning_outcomes: parseHtmlToOutcomes(value),
                     })
                   }
-                  placeholder="Enter each outcome on a new line"
+                  placeholder="Enter each outcome on a new line or create a bulleted list"
                   className="bg-white"
+                  modules={{
+                    toolbar: [
+                      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      [{ indent: '-1' }, { indent: '+1' }],
+                      ['clean'],
+                    ],
+                  }}
                 />
               </div>
               {/* Action Buttons */}
@@ -1094,15 +1149,24 @@ export default function CourseManagement() {
                   Learning Outcomes
                 </label>
                 <ReactQuill
-                  value={formData.learning_outcomes.join('\n')}
+                  value={outcomesToHtml(formData.learning_outcomes)}
                   onChange={(value) =>
                     setFormData({
                       ...formData,
-                      learning_outcomes: value.split('\n').filter((line) => line.trim() !== ''),
+                      learning_outcomes: parseHtmlToOutcomes(value),
                     })
                   }
-                  placeholder="Enter each outcome on a new line"
+                  placeholder="Enter each outcome on a new line or create a bulleted list"
                   className="bg-white"
+                  modules={{
+                    toolbar: [
+                      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      [{ indent: '-1' }, { indent: '+1' }],
+                      ['clean'],
+                    ],
+                  }}
                 />
               </div>
               {/* Action Buttons */}

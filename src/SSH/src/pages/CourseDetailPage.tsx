@@ -25,6 +25,50 @@ import {
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../components/chat/ChatBotTrigger'
 import { sanitizeHtml } from '../utils/sanitize'
+
+/**
+ * Parse learning outcomes to handle both HTML lists and plain text
+ * If an outcome contains HTML list tags, extract individual list items
+ * Otherwise, return the outcome as-is
+ */
+function parseLearningOutcomes(outcomes: string[]): string[] {
+  const parsedOutcomes: string[] = []
+
+  outcomes.forEach((outcome) => {
+    // Check if outcome contains HTML list tags
+    if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = sanitizeHtml(outcome)
+
+      // Extract all list items
+      const listItems = tempDiv.querySelectorAll('li')
+      if (listItems.length > 0) {
+        listItems.forEach((li) => {
+          const text = li.textContent?.trim()
+          if (text) {
+            parsedOutcomes.push(text)
+          }
+        })
+      } else {
+        // If no list items found, strip HTML tags and add as plain text
+        const textContent = tempDiv.textContent?.trim()
+        if (textContent) {
+          parsedOutcomes.push(textContent)
+        }
+      }
+    } else {
+      // Plain text outcome
+      const trimmed = outcome.trim()
+      if (trimmed) {
+        parsedOutcomes.push(trimmed)
+      }
+    }
+  })
+
+  return parsedOutcomes
+}
+
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useWebsiteAuth()
@@ -225,7 +269,9 @@ export default function CourseDetailPage() {
                         <h3 className="font-semibold text-gray-900">{course.gurukul.name}</h3>
                         <div
                           className="text-sm text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.gurukul.description) }}
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(course.gurukul.description),
+                          }}
                         />
                       </div>
                     </div>
@@ -331,13 +377,10 @@ export default function CourseDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4">
-                    {course.learning_outcomes.map((outcome, index) => (
+                    {parseLearningOutcomes(course.learning_outcomes).map((outcome, index) => (
                       <div key={index} className="flex items-start space-x-3">
                         <CheckCircleIcon className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span
-                          className="text-gray-700"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(outcome) }}
-                        />
+                        <span className="text-gray-700">{outcome}</span>
                       </div>
                     ))}
                   </div>
