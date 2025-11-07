@@ -23,6 +23,17 @@ const uploadRouter = {
       console.log('File URL:', file.url)
       return { uploadedBy: metadata.uploadedBy }
     }),
+
+  avatarUploader: f({ image: { maxFileSize: '2MB' } })
+    .middleware(async () => {
+      console.log('Avatar upload middleware - processing request')
+      return { uploadType: 'avatar' }
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log('Avatar upload complete')
+      console.log('File URL:', file.url)
+      return { uploadType: metadata.uploadType, avatarUrl: file.url }
+    }),
 }
 
 // Create route handlers

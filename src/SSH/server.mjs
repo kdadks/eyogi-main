@@ -52,6 +52,18 @@ const uploadRouter = {
       console.log('File URL:', file.url)
       return { uploadedBy: metadata.uploadedBy }
     }),
+
+  avatarUploader: f({ image: { maxFileSize: '2MB' } })
+    .middleware(async ({ req }) => {
+      console.log('Avatar upload middleware - processing request')
+      return { uploadType: 'avatar' }
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log('Avatar upload complete')
+      console.log('File URL:', file.url)
+      return { uploadType: metadata.uploadType, avatarUrl: file.url }
+    }),
+
   watermarkUploader: f({ image: { maxFileSize: '16MB', maxFileCount: 1 } })
     .middleware(async ({ req }) => {
       console.log('UploadThing watermark middleware - processing request')
