@@ -15,26 +15,13 @@ import {
 import { getUserProfile, updateUserProfile } from '../../lib/api/users'
 import { getComplianceStats, getUserComplianceStatus } from '../../lib/api/compliance'
 import { getTeacherCourseAssignments } from '../../lib/api/courseAssignments'
-import { genUploader } from 'uploadthing/client'
+import { uploadFilesToUploadThing } from '../../lib/uploadthing-client'
 import type { Database } from '../../types/database'
 import type { Course, CourseAssignment } from '../../types'
 import type { ComplianceStats, ComplianceChecklistItem } from '../../types/compliance'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import toast from 'react-hot-toast'
-
-// Create UploadThing uploader for avatars
-const getUploadThingUrl = () => {
-  if (import.meta.env.PROD) {
-    // In production, the SSH app is deployed at /ssh-app, but the API is at root level
-    return 'https://eyogi-main.vercel.app/ssh-app/api/uploadthing'
-  }
-  return 'http://localhost:3001/api/uploadthing'
-}
-
-const { uploadFiles } = genUploader({
-  url: getUploadThingUrl(),
-})
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -113,8 +100,8 @@ export default function TeacherDetailView() {
     try {
       setUploadingPhoto(true)
 
-      // Upload to UploadThing using imageUploader endpoint (same as media management)
-      const uploadResults = await uploadFiles('imageUploader', { files: [file] })
+      // Upload to UploadThing using the same method as Media Management
+      const uploadResults = await uploadFilesToUploadThing([file])
 
       if (!uploadResults || uploadResults.length === 0) {
         throw new Error('Upload failed - no results returned')
@@ -122,7 +109,7 @@ export default function TeacherDetailView() {
 
       const uploadResult = uploadResults[0]
 
-      // Get the file URL (try ufsUrl first, fallback to url)
+      // Get the file URL
       const publicUrl = uploadResult.url
 
       if (!publicUrl) {

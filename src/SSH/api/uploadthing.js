@@ -3,6 +3,13 @@
 
 import { createRouteHandler, createUploadthing, UTApi } from 'uploadthing/server'
 
+// Disable body parsing for UploadThing
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
 // Create UploadThing instance
 const f = createUploadthing()
 
@@ -84,6 +91,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Get the request body as raw buffer for UploadThing
+    let body = undefined
+    if (req.method === 'POST' || req.method === 'PUT') {
+      // Vercel already parsed the body, check if it's available
+      body = req.body ? JSON.stringify(req.body) : undefined
+    }
+
     // Create a proper Request object for UploadThing
     const protocol = req.headers['x-forwarded-proto'] || 'https'
     const host = req.headers.host
@@ -91,8 +105,8 @@ export default async function handler(req, res) {
 
     const request = new Request(fullUrl, {
       method: req.method || 'GET',
-      headers: req.headers,
-      body: req.method === 'POST' ? JSON.stringify(req.body) : undefined,
+      headers: new Headers(req.headers),
+      body: body,
     })
 
     const response = await handlers(request)
