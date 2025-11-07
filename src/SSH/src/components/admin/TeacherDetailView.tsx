@@ -26,7 +26,8 @@ import toast from 'react-hot-toast'
 // Create UploadThing uploader for avatars
 const getUploadThingUrl = () => {
   if (import.meta.env.PROD) {
-    return 'https://eyogi-main.vercel.app/api/uploadthing'
+    // In production, the SSH app is deployed at /ssh-app, but the API is at root level
+    return 'https://eyogi-main.vercel.app/ssh-app/api/uploadthing'
   }
   return 'http://localhost:3001/api/uploadthing'
 }
