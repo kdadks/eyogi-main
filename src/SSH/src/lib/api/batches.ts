@@ -661,10 +661,24 @@ export async function getBatchStats(): Promise<{
 
     const stats = (data || []).reduce(
       (acc, batch) => {
-        if (batch.is_active) {
-          acc.total++
-          acc[batch.status as keyof typeof acc]++
+        acc.total++
+
+        // Count by status
+        if (batch.status === 'active' || batch.status === 'in_progress') {
+          acc.active++
+        } else if (batch.status === 'completed') {
+          acc.completed++
+        } else if (batch.status === 'archived') {
+          acc.archived++
+        } else if (batch.status === 'inactive') {
+          acc.inactive++
         }
+
+        // Count in_progress separately if needed
+        if (batch.status === 'in_progress') {
+          acc.in_progress++
+        }
+
         return acc
       },
       { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 },

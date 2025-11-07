@@ -15,7 +15,8 @@ import {
 import { getUserProfile, updateUserProfile } from '../../lib/api/users'
 import { getComplianceStats, getUserComplianceStatus } from '../../lib/api/compliance'
 import { getTeacherCourseAssignments } from '../../lib/api/courseAssignments'
-import { uploadFilesToUploadThing } from '../../lib/uploadthing-client'
+import { uploadFilesToUploadThing, deleteFromUploadThing } from '../../lib/uploadthing-client'
+import { deleteMediaFile } from '../../lib/api/media'
 import type { Database } from '../../types/database'
 import type { Course, CourseAssignment } from '../../types'
 import type { ComplianceStats, ComplianceChecklistItem } from '../../types/compliance'
@@ -68,6 +69,8 @@ export default function TeacherDetailView() {
       setComplianceStats(stats)
       setComplianceItems(items)
       setAssignedCourses(courses)
+
+      console.log('Teacher avatar_url:', teacherData?.avatar_url)
     } catch (error) {
       console.error('Error loading teacher details:', error)
       toast.error('Failed to load teacher details')
@@ -112,6 +115,8 @@ export default function TeacherDetailView() {
       // Get the file URL
       const publicUrl = uploadResult.url
 
+      console.log('Avatar upload complete. URL:', publicUrl)
+
       if (!publicUrl) {
         throw new Error('Upload failed - no URL returned')
       }
@@ -121,6 +126,8 @@ export default function TeacherDetailView() {
 
       // Update local state
       setTeacher((prev) => (prev ? { ...prev, avatar_url: publicUrl } : null))
+
+      console.log('Avatar URL saved to profile:', publicUrl)
 
       toast.success('Photo uploaded successfully!')
 
@@ -141,6 +148,24 @@ export default function TeacherDetailView() {
 
     try {
       setUploadingPhoto(true)
+
+      const avatarUrl = teacher.avatar_url
+
+      // First, find the media file record by URL
+      console.log('Looking for media file with URL:', avatarUrl)
+      const { data: mediaFiles } = await import('../../lib/supabase').then((mod) =>
+        mod.supabaseAdmin.from('media_files').select('id').eq('file_url', avatarUrl).single(),
+      )
+
+      // Delete from media_files table if found
+      if (mediaFiles?.id) {
+        console.log('Deleting media file record:', mediaFiles.id)
+        await deleteMediaFile(mediaFiles.id)
+      } else {
+        // If not in media_files table, just delete from UploadThing
+        console.log('Media file not found in database, deleting from UploadThing only')
+        await deleteFromUploadThing(avatarUrl)
+      }
 
       // Remove avatar URL from profile
       await updateUserProfile(teacherId, { avatar_url: null })
@@ -227,7 +252,9 @@ export default function TeacherDetailView() {
               <button
                 onClick={handleAvatarClick}
                 disabled={uploadingPhoto}
-                className="h-24 w-24 rounded-full flex items-center justify-center text-white text-3xl font-semibold flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden relative"
+                className={`h-24 w-24 rounded-full overflow-hidden relative cursor-pointer border-2 border-gray-200 hover:border-gray-300 transition-colors ${
+                  !teacher.avatar_url ? 'bg-gradient-to-r from-orange-400 to-red-400' : 'bg-white'
+                }`}
                 title="Click to upload photo"
               >
                 {teacher.avatar_url ? (
@@ -235,17 +262,17 @@ export default function TeacherDetailView() {
                     src={teacher.avatar_url}
                     alt={teacher.full_name || 'Teacher'}
                     className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      console.error('Image failed to load:', teacher.avatar_url, e)
+                    }}
+                    onLoad={() => console.log('Image loaded successfully:', teacher.avatar_url)}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center">
+                  <span className="text-white text-3xl font-semibold">
                     {teacher.full_name?.[0]?.toUpperCase() || 'T'}
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
-                  <span className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                    {uploadingPhoto ? 'Uploading...' : teacher.avatar_url ? 'Change' : 'Upload'}
                   </span>
-                </div>
+                )}
               </button>
               {teacher.avatar_url && !uploadingPhoto && (
                 <button
