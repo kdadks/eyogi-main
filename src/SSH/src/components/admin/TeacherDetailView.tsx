@@ -113,8 +113,8 @@ export default function TeacherDetailView() {
     try {
       setUploadingPhoto(true)
 
-      // Upload to UploadThing using avatarUploader endpoint
-      const uploadResults = await uploadFiles('avatarUploader', { files: [file] })
+      // Upload to UploadThing using imageUploader endpoint (same as media management)
+      const uploadResults = await uploadFiles('imageUploader', { files: [file] })
 
       if (!uploadResults || uploadResults.length === 0) {
         throw new Error('Upload failed - no results returned')
