@@ -39,6 +39,8 @@ import LegalPageDisplay from './components/legal/LegalPageDisplay'
 import CertificateViewer from './components/certificates/CertificateViewer'
 import BatchManagement from './components/admin/BatchManagement'
 import StudentManagement from './components/admin/StudentManagement'
+import TeacherManagement from './components/admin/TeacherManagement'
+import TeacherDetailView from './components/admin/TeacherDetailView'
 import TeacherStudentManagement from './components/teacher/TeacherStudentManagement'
 import ComplianceManagement from './components/admin/ComplianceManagement'
 import InvoiceManagement from './components/admin/InvoiceManagement'
@@ -167,6 +169,8 @@ function App() {
               <Route path="analytics" element={<SiteAnalytics />} />
               <Route path="batches" element={<BatchManagement />} />
               <Route path="students" element={<StudentManagement />} />
+              <Route path="teachers" element={<TeacherManagement />} />
+              <Route path="teachers/:teacherId" element={<TeacherDetailView />} />
               <Route path="compliance" element={<ComplianceManagement />} />
               <Route path="invoice" element={<InvoiceManagement />} />
               <Route path="payment" element={<PaymentManagement />} />

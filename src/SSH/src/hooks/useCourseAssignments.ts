@@ -10,45 +10,53 @@ export function useCourseAssignments(teacherId?: string) {
     try {
       setLoading(true)
       setError(null)
-      // First, get the assignments
+
+      // Use a single query with joins to get all data at once
       let query = supabaseAdmin
         .from('course_assignments')
-        .select('*')
+        .select(
+          `
+          *,
+          courses(*)
+        `,
+        )
         .eq('is_active', true)
         .order('assigned_at', { ascending: false })
+
       // Filter by teacher if specified
       if (teacherId) {
         query = query.eq('teacher_id', teacherId)
       }
-      const { data, error } = await query
-      if (error) {
+
+      const { data: assignmentsData, error: assignmentsError } = await query
+
+      if (assignmentsError) {
+        console.error('Error loading assignments:', assignmentsError)
         setError('Failed to load course assignments')
         toast.error('Failed to load course assignments')
         return
       }
-      // Now fetch related data for each assignment
-      const assignmentsWithRelations = []
-      for (const assignment of data || []) {
-        // Fetch course data
-        const { data: course } = await supabaseAdmin
-          .from('courses')
-          .select('*')
-          .eq('id', assignment.course_id)
-          .single()
-        // Fetch teacher data by teacher_id
-        const { data: teacher } = await supabaseAdmin
-          .from('profiles')
-          .select('*')
-          .eq('teacher_id', assignment.teacher_id)
-          .single()
-        // Assignment relations loaded
-        assignmentsWithRelations.push({
-          ...assignment,
-          course,
-          teacher,
-        })
-      }
-      setAssignments(assignmentsWithRelations)
+
+      // Get unique teacher_ids
+      const teacherIds = [...new Set(assignmentsData?.map((a) => a.teacher_id).filter(Boolean))]
+
+      // Fetch all teachers in one query
+      const { data: teachersData } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .in('teacher_id', teacherIds)
+
+      // Create a map for quick lookup
+      const teacherMap = new Map(teachersData?.map((t) => [t.teacher_id, t]) || [])
+
+      // Combine the data
+      const assignmentsWithRelations = assignmentsData?.map((assignment) => ({
+        ...assignment,
+        course: assignment.courses,
+        teacher: teacherMap.get(assignment.teacher_id),
+      }))
+
+      setAssignments(assignmentsWithRelations || [])
     } catch {
       setError('Failed to load course assignments')
     } finally {

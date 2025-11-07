@@ -51,6 +51,47 @@ function outcomesToHtml(outcomes: string[]): string {
   return outcomes.join('\n')
 }
 
+/**
+ * Parse learning outcomes for display - extracts list items from HTML
+ */
+function parseLearningOutcomesForDisplay(outcomes: string[]): string[] {
+  const parsedOutcomes: string[] = []
+
+  outcomes.forEach((outcome) => {
+    // Check if outcome contains HTML list tags
+    if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = sanitizeHtml(outcome)
+
+      // Extract all list items
+      const listItems = tempDiv.querySelectorAll('li')
+      if (listItems.length > 0) {
+        listItems.forEach((li) => {
+          const text = li.textContent?.trim()
+          if (text) {
+            parsedOutcomes.push(text)
+          }
+        })
+      } else {
+        // If no list items found, strip HTML tags and add as plain text
+        const textContent = tempDiv.textContent?.trim()
+        if (textContent) {
+          parsedOutcomes.push(textContent)
+        }
+      }
+    } else {
+      // Plain text outcome
+      const trimmed = outcome.trim()
+      if (trimmed) {
+        parsedOutcomes.push(trimmed)
+      }
+    }
+  })
+
+  return parsedOutcomes
+}
+
 interface CourseFormData {
   gurukul_id: string
   course_number: string
@@ -610,6 +651,7 @@ export default function CourseManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
                   <div
+                    className="prose prose-sm max-w-none prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.description) }}
                   />
                 </div>
@@ -622,6 +664,7 @@ export default function CourseManagement() {
                   </label>
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
                     <div
+                      className="prose prose-sm max-w-none prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4"
                       dangerouslySetInnerHTML={{
                         __html: sanitizeHtml(viewingCourse.detailed_description),
                       }}
@@ -647,13 +690,18 @@ export default function CourseManagement() {
                     Learning Outcomes
                   </label>
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                    <ul className="space-y-2">
-                      {viewingCourse.learning_outcomes.map((outcome, index) => (
-                        <li key={index} className="flex items-start gap-2 text-gray-900">
-                          <span className="text-blue-500 mt-1 text-sm">•</span>
-                          <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(outcome) }} />
-                        </li>
-                      ))}
+                    <ul style={{ listStyleType: 'disc', paddingLeft: '24px' }}>
+                      {parseLearningOutcomesForDisplay(viewingCourse.learning_outcomes).map(
+                        (outcome, index) => (
+                          <li
+                            key={index}
+                            className="text-gray-900 mb-2"
+                            style={{ display: 'list-item', listStylePosition: 'outside' }}
+                          >
+                            {outcome}
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </div>
                 </div>

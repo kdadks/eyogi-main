@@ -188,7 +188,7 @@ export const ourFileRouter = {
     }),
 
   // Profile avatar uploader (simplified)
-  avatarUploader: f({ image: { maxFileSize: '4MB' } })
+  avatarUploader: f({ image: { maxFileSize: '2MB' } })
     .middleware(async ({ req }) => {
       const user = await auth(req)
       return { userId: user.id, uploadType: 'avatar' }

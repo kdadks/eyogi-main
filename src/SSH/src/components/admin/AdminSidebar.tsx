@@ -59,6 +59,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       permission: { resource: 'users', action: 'read' },
     },
     {
+      name: 'Teachers',
+      href: '/admin/teachers',
+      icon: UserGroupIcon,
+      permission: { resource: 'users', action: 'read' },
+    },
+    {
       name: 'Courses',
       href: '/admin/courses',
       icon: BookOpenIcon,

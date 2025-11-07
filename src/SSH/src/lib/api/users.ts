@@ -51,6 +51,27 @@ export async function getAllStudents(): Promise<Profile[]> {
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
 }
+
+export async function getAllTeachers(): Promise<Profile[]> {
+  const cacheKey = createCacheKey('users', 'teachers')
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('role', 'teacher')
+        .order('full_name', { ascending: true })
+      if (error) {
+        return []
+      }
+      return data || []
+    },
+    CACHE_DURATIONS.USER_PROFILE, // 5 minutes
+  )
+}
+
 export async function updateUserRole(userId: string, newRole: Profile['role']): Promise<Profile> {
   const updateData: Partial<Profile> = {
     role: newRole,

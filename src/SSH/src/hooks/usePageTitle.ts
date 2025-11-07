@@ -11,6 +11,7 @@ const routeTitles: RouteTitle[] = [
   { path: '/admin/dashboard', title: 'Dashboard' },
   { path: '/admin/users', title: 'User Management' },
   { path: '/admin/students', title: 'Student Management' },
+  { path: '/admin/teachers', title: 'Teacher Management' },
   { path: '/admin/courses', title: 'Course Management' },
   { path: '/admin/course-assignments', title: 'Course Assignment Management' },
   { path: '/admin/enrollments', title: 'Enrollment Management' },

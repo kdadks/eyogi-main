@@ -7,6 +7,7 @@ export async function getCourses(filters?: {
   level?: string
   age_group?: number
   search?: string
+  teacher_id?: string
 }): Promise<Course[]> {
   try {
     // Create cache key based on filters
@@ -15,6 +16,7 @@ export async function getCourses(filters?: {
       filters?.gurukul_id || 'all',
       filters?.level || 'all',
       filters?.search || 'all',
+      filters?.teacher_id || 'all',
     )
 
     // Use cache for queries without search (search should be fresh)
@@ -28,6 +30,9 @@ export async function getCourses(filters?: {
           }
           if (filters?.level) {
             query = query.eq('level', filters.level)
+          }
+          if (filters?.teacher_id) {
+            query = query.eq('teacher_id', filters.teacher_id)
           }
           const { data, error } = await query.order('created_at', { ascending: false })
           if (error) {
@@ -46,6 +51,9 @@ export async function getCourses(filters?: {
     }
     if (filters?.level) {
       query = query.eq('level', filters.level)
+    }
+    if (filters?.teacher_id) {
+      query = query.eq('teacher_id', filters.teacher_id)
     }
     if (filters?.search) {
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
