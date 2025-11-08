@@ -522,48 +522,45 @@ export default function StudentDashboard() {
   }
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-6 lg:pt-8">
-        {/* Enhanced Modern Header */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-0">
+        {/* Enhanced Modern Header - Mobile Optimized */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-6 lg:top-8 z-40 shadow-lg"
+          className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40 shadow-lg"
         >
-          <div className="container-max py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-8">
+          <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-8">
+            <div className="flex items-center justify-between gap-3 sm:gap-4">
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0"
+              >
+                <BookOpenIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-white" />
+              </motion.div>
+              <div className="flex-1 min-w-0">
                 <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                  className="h-16 w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-center gap-2 mb-1"
                 >
-                  <BookOpenIcon className="h-8 w-8 text-white" />
+                  <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent truncate">
+                    Welcome back, {user?.full_name || 'Student'}!
+                  </h1>
                 </motion.div>
-                <div>
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex items-center gap-3 mb-2"
-                  >
-                    <TimeIcon className="h-6 w-6 text-amber-500" />
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
-                      {greeting}, {user?.full_name?.split(' ')[0] || 'Student'}! 👋
-                    </h1>
-                  </motion.div>
-                  <motion.p
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-gray-600 text-lg"
-                  >
-                    Ready to continue your amazing learning journey?
-                  </motion.p>
-                </div>
+                <motion.p
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-xs sm:text-sm text-gray-600 font-medium truncate"
+                >
+                  Continue your amazing learning journey
+                </motion.p>
               </div>
-              <div className="flex items-center gap-8">
+              <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -574,17 +571,17 @@ export default function StudentDashboard() {
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-3 bg-white/50 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                    className="p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group"
                     onClick={() => setShowAchievements(!showAchievements)}
                     title="View your achievements and progress"
                   >
-                    <TrophyIcon className="h-6 w-6 text-amber-600 group-hover:text-amber-700 transition-colors" />
+                    <TrophyIcon className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 group-hover:text-amber-700 transition-colors" />
                   </motion.div>
                   {achievements.length > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-6 w-6 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-white"
+                      className="absolute -top-1 -right-1 h-5 w-5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-white"
                     >
                       {achievements.length}
                     </motion.span>
@@ -598,13 +595,15 @@ export default function StudentDashboard() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-16 right-0 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+                        className="fixed sm:absolute top-16 left-0 sm:left-auto sm:right-0 right-0 w-full sm:w-96 mx-2 sm:mx-0 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden"
                       >
-                        <div className="p-4 border-b border-gray-100">
-                          <div className="flex items-center justify-between">
+                        <div className="p-2 sm:p-4 border-b border-gray-100">
+                          <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <TrophyIcon className="h-6 w-6 text-amber-600" />
-                              <h3 className="text-lg font-semibold text-gray-900">Achievements</h3>
+                              <TrophyIcon className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 flex-shrink-0" />
+                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                Achievements
+                              </h3>
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge className="bg-amber-100 text-amber-800">
@@ -623,10 +622,12 @@ export default function StudentDashboard() {
                         </div>
                         <div className="max-h-80 overflow-y-auto">
                           {achievements.length === 0 ? (
-                            <div className="p-6 text-center">
-                              <TrophyIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                              <p className="text-gray-500 font-medium mb-1">No achievements yet</p>
-                              <p className="text-sm text-gray-400">
+                            <div className="p-4 sm:p-6 text-center">
+                              <TrophyIcon className="h-8 w-8 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3" />
+                              <p className="text-sm sm:text-base text-gray-500 font-medium mb-1">
+                                No achievements yet
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-400">
                                 Complete courses and earn certificates to unlock achievements!
                               </p>
                             </div>
@@ -636,26 +637,26 @@ export default function StudentDashboard() {
                                 key={achievement.id}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                                className="p-2 sm:p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
                                 onClick={() => {
                                   achievement.action()
                                   setShowAchievements(false)
                                 }}
                               >
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-2 sm:gap-3">
                                   <div
-                                    className={`flex-shrink-0 p-2 rounded-lg ${achievement.bgColor} border ${achievement.borderColor}`}
+                                    className={`flex-shrink-0 p-1 sm:p-2 rounded-lg ${achievement.bgColor} border ${achievement.borderColor}`}
                                   >
-                                    <achievement.icon className={`h-5 w-5 ${achievement.color}`} />
+                                    <achievement.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <p className="text-sm font-semibold text-gray-900 truncate">
+                                    <div className="flex items-center justify-between mb-1 gap-2">
+                                      <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                                         {achievement.title}
                                       </p>
-                                      <div className="flex items-center gap-1">
+                                      <div className="flex items-center gap-1 flex-shrink-0">
                                         <StarIcon className="h-3 w-3 text-amber-500" />
-                                        <span className="text-xs font-medium text-amber-600">
+                                        <span className="text-xs font-medium text-amber-600 whitespace-nowrap">
                                           +{achievement.points} XP
                                         </span>
                                       </div>
@@ -715,12 +716,12 @@ export default function StudentDashboard() {
                 </motion.div>
               </div>
             </div>
-            {/* Enhanced Navigation Pills */}
+            {/* Enhanced Navigation Pills - Mobile Optimized */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              className="mt-8 flex gap-4 bg-white/50 backdrop-blur-sm p-3 rounded-2xl w-fit border border-white/20 shadow-lg"
+              className="mt-4 sm:mt-8 flex gap-2 sm:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl w-full sm:w-fit overflow-x-auto border border-white/20 shadow-lg"
             >
               {tabs.map((tab, index) => (
                 <motion.button
@@ -744,14 +745,15 @@ export default function StudentDashboard() {
                     // Scroll to top of page
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
-                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
+                  title={tab.name}
+                  className={`relative flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
                   }`}
                 >
-                  <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-white' : ''}`} />
-                  <span>{tab.name}</span>
+                  <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">{tab.name}</span>
                   {tab.badge && (
                     <motion.span
                       initial={{ scale: 0 }}
@@ -766,7 +768,7 @@ export default function StudentDashboard() {
             </motion.div>
           </div>
         </motion.div>
-        <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-10 max-w-7xl mx-auto">
           <AnimatePresence mode="wait">
             {/* Dashboard Tab */}
             {activeTab === 'home' && (
@@ -776,10 +778,10 @@ export default function StudentDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.4 }}
-                className="space-y-8"
+                className="w-full space-y-8"
               >
                 {/* Enhanced Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                   {[
                     {
                       title: 'Active Courses',
@@ -859,26 +861,28 @@ export default function StudentDashboard() {
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
+                        <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-4 sm:p-6 lg:p-8">
                           <div
                             className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                           />
                           <div className="relative">
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-3">
-                                <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="space-y-2 sm:space-y-3 min-w-0">
+                                <p className="text-gray-600 text-xs sm:text-sm font-semibold uppercase tracking-wider">
                                   {stat.title}
                                 </p>
                                 <motion.p
                                   initial={{ scale: 0.8 }}
                                   animate={{ scale: 1 }}
                                   transition={{ delay: stat.delay + 0.2 }}
-                                  className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                                  className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
                                 >
                                   {stat.value}
                                   {stat.suffix || ''}
                                 </motion.p>
-                                <p className="text-sm text-gray-500">{stat.description}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 truncate">
+                                  {stat.description}
+                                </p>
                               </div>
                               <motion.div
                                 initial={{ scale: 0, rotate: -180 }}
@@ -889,9 +893,9 @@ export default function StudentDashboard() {
                                   stiffness: 200,
                                 }}
                                 whileHover={{ scale: 1.2, rotate: 10 }}
-                                className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                                className={`h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 bg-gradient-to-r ${stat.gradient} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300 flex-shrink-0`}
                               >
-                                <stat.icon className="h-8 w-8 text-white" />
+                                <stat.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                               </motion.div>
                             </div>
                           </div>
@@ -906,14 +910,16 @@ export default function StudentDashboard() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.6 }}
-                    className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl shadow-lg p-6 border border-orange-200"
+                    className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 border border-orange-200"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <QueueListIcon className="h-8 w-8 text-orange-600" />
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">Your Learning Groups</h3>
-                          <p className="text-sm text-gray-600">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <QueueListIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-orange-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 truncate">
+                            Your Learning Groups
+                          </h3>
+                          <p className="text-xs text-gray-600 truncate">
                             You're part of {batchProgress.length} batch
                             {batchProgress.length !== 1 ? 'es' : ''}
                           </p>
@@ -921,9 +927,9 @@ export default function StudentDashboard() {
                       </div>
                       <button
                         onClick={() => setActiveTab('batches')}
-                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors cursor-pointer"
+                        className="bg-orange-600 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg hover:bg-orange-700 transition-colors cursor-pointer text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
                       >
-                        View All Batches
+                        View All
                       </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -973,23 +979,23 @@ export default function StudentDashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6, duration: 0.6 }}
-                  className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/20"
+                  className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl p-4 sm:p-6 lg:p-8 border border-white/20"
                 >
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h3 className="text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                       📈 Learning Progress Overview
                     </h3>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-xs sm:text-sm text-gray-500">
                       Overall completion: {Math.round(stats.completionRate)}%
                     </div>
                   </div>
                   {/* Overall Progress Bar */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                      <span className="text-xs sm:text-sm font-medium text-gray-700">
                         Overall Learning Progress
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-xs sm:text-sm text-gray-500">
                         {Math.round(stats.completionRate)}%
                       </span>
                     </div>
@@ -1074,20 +1080,20 @@ export default function StudentDashboard() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 1.4, duration: 0.5 }}
-                        className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                        className="text-center p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
                       >
-                        <div className="text-2xl font-bold text-blue-600 mb-1">
+                        <div className="text-lg sm:text-xl font-bold text-blue-600 mb-1">
                           {stats.activeCourses}/5
                         </div>
-                        <div className="text-sm text-gray-600">Active Courses Goal</div>
+                        <div className="text-xs sm:text-sm text-gray-600">Active Courses Goal</div>
                       </motion.div>
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 1.5, duration: 0.5 }}
-                        className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200"
+                        className="text-center p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200"
                       >
-                        <div className="text-2xl font-bold text-green-600 mb-1">
+                        <div className="text-lg sm:text-xl font-bold text-green-600 mb-1">
                           {stats.learningStreak}/
                           {(() => {
                             // Dynamic streak goal based on level
@@ -1096,18 +1102,20 @@ export default function StudentDashboard() {
                             return 30 // Advanced
                           })()}
                         </div>
-                        <div className="text-sm text-gray-600">{stats.level} Streak Goal</div>
+                        <div className="text-xs sm:text-sm text-gray-600">
+                          {stats.level} Streak Goal
+                        </div>
                       </motion.div>
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 1.6, duration: 0.5 }}
-                        className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200"
+                        className="text-center p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200"
                       >
-                        <div className="text-2xl font-bold text-purple-600 mb-1">
+                        <div className="text-lg sm:text-xl font-bold text-purple-600 mb-1">
                           {stats.certificatesEarned}/10
                         </div>
-                        <div className="text-sm text-gray-600">Certificates Goal</div>
+                        <div className="text-xs sm:text-sm text-gray-600">Certificates Goal</div>
                       </motion.div>
                     </div>
                   </div>
@@ -1202,32 +1210,36 @@ export default function StudentDashboard() {
               transition={{ duration: 0.4 }}
               className="space-y-8"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                   My Learning Journey 📚
                 </h2>
-                <p className="text-xl text-gray-600">Track your progress and continue learning</p>
+                <p className="text-base sm:text-lg text-gray-600 mt-2">
+                  Track your progress and continue learning
+                </p>
               </div>
               {/* Course Progress Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {enrollments
                   .filter((e) => e.status === 'approved')
                   .map((enrollment) => (
                     <div
                       key={enrollment.id}
-                      className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 hover:shadow-xl transition-all duration-300"
+                      className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 border border-white/20 hover:shadow-xl transition-all duration-300"
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                      <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+                        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 line-clamp-2">
                           {enrollment.course?.title}
                         </h3>
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">
                           Active
                         </span>
                       </div>
-                      <p className="text-gray-600 text-sm mb-4">{enrollment.course?.description}</p>
+                      <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">
+                        {enrollment.course?.description}
+                      </p>
                       <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-xs sm:text-sm">
                           <span>Progress</span>
                           <span className="font-semibold">
                             {Math.round(
@@ -1260,7 +1272,9 @@ export default function StudentDashboard() {
               </div>
               {/* Course Suggestions */}
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-gray-900">Recommended Courses for You 🎯</h3>
+                <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
+                  Recommended Courses for You 🎯
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {availableCourses
                     .filter((course) => !enrollments.some((e) => e.course?.id === course.id))
@@ -1327,17 +1341,19 @@ export default function StudentDashboard() {
               transition={{ duration: 0.4 }}
               className="space-y-8"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="text-center mb-4 sm:mb-6 lg:mb-8">
+                <h2 className="text-base sm:text-lg lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   My Enrollments 📋
                 </h2>
-                <p className="text-xl text-gray-600">Track your enrollment status and history</p>
+                <p className="text-xs sm:text-sm text-gray-600 mt-2">
+                  Track your enrollment status and history
+                </p>
               </div>
               {/* Search and Filter Controls */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 border border-white/20">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Search Courses
                     </label>
                     <input
@@ -1485,42 +1501,42 @@ export default function StudentDashboard() {
               transition={{ duration: 0.4 }}
               className="space-y-8"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
                   My Achievements 🏆
                 </h2>
-                <p className="text-xl text-gray-600">
+                <p className="text-base sm:text-lg text-gray-600 mt-2">
                   Your earned certificates and accomplishments
                 </p>
               </div>
               {/* Certificate Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {certificates.map((certificate) => (
                   <div
                     key={certificate.id}
-                    className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-lg p-6 border border-yellow-200"
+                    className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border border-yellow-200"
                   >
                     <div className="text-center">
-                      <TrophyIcon className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      <TrophyIcon className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-yellow-600 mx-auto mb-3 sm:mb-4" />
+                      <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
                         {certificate.course?.title}
                       </h3>
-                      <p className="text-gray-600 text-sm mb-4">
+                      <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
                         Completed:{' '}
                         {new Date(
                           certificate.issued_at || new Date().toISOString(),
                         ).toLocaleDateString()}
                       </p>
-                      <div className="space-y-2">
+                      <div className="space-y-1 sm:space-y-2">
                         <p className="text-xs text-gray-500">Verification Code</p>
-                        <p className="font-mono text-sm bg-white/50 px-2 py-1 rounded">
+                        <p className="font-mono text-xs sm:text-sm bg-white/50 px-2 py-1 rounded break-all">
                           {certificate.verification_code}
                         </p>
                       </div>
                       {certificate.file_url && (
                         <button
                           onClick={() => window.open(certificate.file_url!, '_blank')}
-                          className="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer"
+                          className="mt-3 sm:mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base min-h-[44px] sm:min-h-auto"
                         >
                           <svg
                             className="w-4 h-4"
@@ -1601,7 +1617,9 @@ export default function StudentDashboard() {
                       {batchData.batch.description && (
                         <div
                           className="text-sm text-gray-600 mb-3 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(batchData.batch.description) }}
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(batchData.batch.description),
+                          }}
                         />
                       )}
                     </div>

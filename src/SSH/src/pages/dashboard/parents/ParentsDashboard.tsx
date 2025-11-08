@@ -714,7 +714,7 @@ export default function ParentsDashboard() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="text-center bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20"
+          className="text-center bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/20"
         >
           <motion.div
             animate={{ rotate: 360 }}
@@ -734,7 +734,7 @@ export default function ParentsDashboard() {
     )
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-6 lg:pt-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-0">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -762,80 +762,72 @@ export default function ParentsDashboard() {
           }}
         />
       </div>
-      {/* Enhanced Modern Header */}
+      {/* Enhanced Modern Header - Mobile Optimized */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-6 lg:top-8 z-40 shadow-lg"
+        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40 shadow-lg"
       >
-        <div className="container-max py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-8">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0"
+            >
+              <UsersIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-white" />
+            </motion.div>
+            <div className="flex-1 min-w-0">
               <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="h-16 w-16 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center gap-2 mb-1"
               >
-                <UsersIcon className="h-8 w-8 text-white" />
+                <TimeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
+                <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-700 bg-clip-text text-transparent truncate">
+                  {greeting}, {user?.full_name || 'Parent'}!
+                </h1>
               </motion.div>
-              <div>
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="flex items-center gap-3 mb-2"
-                >
-                  <TimeIcon className="h-6 w-6 text-yellow-500" />
-                  <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-700 bg-clip-text text-transparent">
-                    {greeting}, {user?.full_name || 'Parent'}!
-                  </h1>
-                </motion.div>
-                <motion.p
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-gray-600 font-medium"
-                >
-                  Managing your family's learning journey
-                </motion.p>
-              </div>
+              <motion.p
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-xs sm:text-sm text-gray-600 font-medium truncate"
+              >
+                Managing your family's learning journey
+              </motion.p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <motion.button
                 onClick={() => {
                   setIsProfileModalOpen(true)
                 }}
-                className="p-3 rounded-xl bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 text-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
+                className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 text-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <CogIcon className="h-5 w-5" />
+                <CogIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </motion.button>
-              <div className="flex items-center space-x-3">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5, type: 'spring' }}
-                  className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg"
-                >
-                  {user?.full_name?.[0] || 'P'}
-                </motion.div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-gray-900">{user?.full_name}</p>
-                  <p className="text-xs text-gray-600">Parent Account</p>
-                </div>
-              </div>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: 'spring' }}
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold shadow-lg text-xs sm:text-sm"
+              >
+                {user?.full_name?.[0] || 'P'}
+              </motion.div>
             </div>
           </div>
 
-          {/* Enhanced Navigation Pills */}
+          {/* Enhanced Navigation Pills - Mobile Optimized */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-8 flex gap-4 bg-white/50 backdrop-blur-sm p-3 rounded-2xl w-fit border border-white/20 shadow-lg"
+            className="mt-3 sm:mt-4 lg:mt-8 flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl overflow-x-auto scrollbar-hide w-full border border-white/20 shadow-lg"
           >
             {tabs
               .filter((tab) => tab.available)
@@ -860,14 +852,15 @@ export default function ParentsDashboard() {
                     // Scroll to top of page
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
-                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
+                  title={tab.name}
+                  className={`relative flex items-center justify-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-lg lg:rounded-xl font-semibold text-xs sm:text-sm lg:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg transform scale-105'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
                   }`}
                 >
-                  <tab.icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-white' : ''}`} />
-                  <span>{tab.name}</span>
+                  <tab.icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 lg:h-5 lg:w-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">{tab.name}</span>
                   {tab.badge && (
                     <motion.span
                       initial={{ scale: 0 }}
@@ -883,7 +876,7 @@ export default function ParentsDashboard() {
         </div>
       </motion.div>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-10 max-w-7xl mx-auto">
         {/* Tab Content */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -892,6 +885,7 @@ export default function ParentsDashboard() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
+            className="w-full"
           >
             {activeTab === 'home' && (
               <HomeTab
@@ -1161,7 +1155,7 @@ function HomeTab({
     <div className="space-y-6">
       {/* Stats Grid - Only show if there are permitted stats cards */}
       {statCards.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {/* Reduced from gap-6 to gap-4 */}
           {statCards.map((stat) => (
             <motion.div
@@ -1178,35 +1172,37 @@ function HomeTab({
               whileTap={{ scale: 0.95 }}
               className="group"
             >
-              <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-8">
+              <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-8">
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                 />
                 {stat.comingSoon && (
-                  <div className="absolute top-3 right-3">
-                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full">
                       Coming Soon
                     </span>
                   </div>
                 )}
                 <div className="relative">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-3">
-                      <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                  <div className="flex items-start sm:items-center justify-between gap-2">
+                    <div className="space-y-2 sm:space-y-3 min-w-0">
+                      <p className="text-gray-600 text-xs sm:text-sm font-semibold uppercase tracking-wider">
                         {stat.title}
                       </p>
                       <motion.p
                         initial={{ scale: 0.8 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: stat.delay + 0.2 }}
-                        className={`text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent ${
+                        className={`text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent ${
                           stat.comingSoon ? 'opacity-50' : ''
                         }`}
                       >
                         {stat.value}
                         {stat.suffix || ''}
                       </motion.p>
-                      <p className="text-sm text-gray-500">{stat.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">
+                        {stat.description}
+                      </p>
                     </div>
                     <motion.div
                       initial={{ scale: 0, rotate: -180 }}
@@ -1217,9 +1213,9 @@ function HomeTab({
                         stiffness: 200,
                       }}
                       whileHover={{ scale: 1.2, rotate: 10 }}
-                      className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                      className={`h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 bg-gradient-to-r ${stat.gradient} rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300 flex-shrink-0`}
                     >
-                      <stat.icon className="h-8 w-8 text-white" />
+                      <stat.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                     </motion.div>
                   </div>
                 </div>
@@ -1230,7 +1226,7 @@ function HomeTab({
       )}
       {/* Recent Activity & Quick Actions */}
       {(canAccess('certificates', 'read') || canAccess('students', 'update')) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {/* Recent Activity */}
           {canAccess('certificates', 'read') && (
             <motion.div
@@ -1516,10 +1512,10 @@ function ChildrenTab({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">My Children</h2>
+        <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">My Children</h2>
         <motion.button
           onClick={onAddChild}
-          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 cursor-pointer"
+          className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 cursor-pointer text-sm sm:text-base min-h-[44px]"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -1527,12 +1523,12 @@ function ChildrenTab({
           <span>Add Child</span>
         </motion.button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         {children.map((child, index) => (
           <motion.div
             key={child.student_id}
-            className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-xl p-6"
+            className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-4 sm:p-6"
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.1 * index }}
@@ -1541,15 +1537,20 @@ function ChildrenTab({
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-600/10 opacity-50" />
             <div className="relative">
               {/* Edit/Delete buttons */}
-              <div className="absolute top-0 right-0 flex space-x-2">
+              <div className="absolute top-0 right-0 flex gap-1">
                 <motion.button
                   onClick={() => onEditChild(child.student_id)}
-                  className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer text-sm sm:text-base"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Edit Child"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3 h-3 sm:w-4 sm:h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1560,12 +1561,17 @@ function ChildrenTab({
                 </motion.button>
                 <motion.button
                   onClick={() => onDeleteChild(child.student_id)}
-                  className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer text-sm sm:text-base"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Delete Child"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3 h-3 sm:w-4 sm:h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1575,27 +1581,29 @@ function ChildrenTab({
                   </svg>
                 </motion.button>
               </div>
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center text-white text-sm sm:text-base lg:text-lg font-bold shadow-lg flex-shrink-0">
                   {child.full_name.charAt(0)}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-lg">{child.full_name}</h3>
-                  <p className="text-sm text-gray-600">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg truncate">
+                    {child.full_name}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     {child.grade} • Age {child.age}
                   </p>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Overall Progress */}
                 <div>
-                  <div className="flex justify-between text-sm mb-2">
+                  <div className="flex justify-between text-xs sm:text-sm mb-2">
                     <span className="text-gray-600 font-medium">Overall Progress</span>
                     <span className="text-gray-900 font-semibold">{child.overall_progress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                     <div
-                      className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-green-400 to-blue-500 h-2 sm:h-3 rounded-full transition-all duration-300"
                       style={{ width: `${child.overall_progress}%` }}
                     />
                   </div>
@@ -1775,8 +1783,10 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Course Enrollments</h2>
-        <div className="text-sm text-gray-600">
+        <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">
+          Course Enrollments
+        </h2>
+        <div className="text-xs sm:text-sm text-gray-600">
           {allEnrollments.length} enrollment{allEnrollments.length !== 1 ? 's' : ''} total
         </div>
       </div>
@@ -1848,7 +1858,7 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
 function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStats }) {
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Progress Reports</h2>
+      <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">Progress Reports</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Reduced from gap-6 to gap-4 */}
         <motion.div
@@ -1864,8 +1874,10 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Progress</h3>
           <div className="text-center opacity-50">
-            <div className="text-4xl font-bold text-gray-900 mb-2">{stats.weeklyProgress}%</div>
-            <p className="text-gray-600">Average completion this week</p>
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+              {stats.weeklyProgress}%
+            </div>
+            <p className="text-xs sm:text-sm text-gray-600">Average completion this week</p>
           </div>
         </motion.div>
         <motion.div

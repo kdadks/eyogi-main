@@ -740,20 +740,22 @@ export default function TeacherDashboard() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="text-center bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20"
+          className="text-center bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl border border-white/20"
         >
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            className="w-16 h-16 mx-auto mb-6 border-4 border-blue-200 border-t-blue-600 rounded-full"
+            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto mb-4 sm:mb-6 border-4 border-blue-200 border-t-blue-600 rounded-full"
           />
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Loading Dashboard</h3>
-            <p className="text-gray-600">Preparing your teaching workspace...</p>
+            <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-2">
+              Loading Dashboard
+            </h3>
+            <p className="text-xs sm:text-sm text-gray-600">Preparing your teaching workspace...</p>
           </motion.div>
         </motion.div>
       </div>
@@ -767,34 +769,34 @@ export default function TeacherDashboard() {
   }
   const { greeting, icon: TimeIcon } = getTimeOfDay()
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-6 lg:pt-8">
-      {/* Enhanced Modern Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-0">
+      {/* Enhanced Modern Header - Mobile Optimized */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-6 lg:top-8 z-40 shadow-lg"
+        className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40 shadow-lg"
       >
-        <div className="container-max py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+        <div className="container-max py-3 sm:py-4 lg:py-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-8 min-w-0">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="h-16 w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl"
+                className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0"
               >
-                <AcademicCapIcon className="h-8 w-8 text-white" />
+                <AcademicCapIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-white" />
               </motion.div>
-              <div>
+              <div className="min-w-0">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="flex items-center gap-3 mb-2"
+                  className="flex items-center gap-2 mb-1 sm:mb-2 min-w-0"
                 >
-                  <TimeIcon className="h-6 w-6 text-amber-500" />
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+                  <TimeIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-amber-500 flex-shrink-0" />
+                  <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent truncate">
                     {greeting}, {user?.full_name?.split(' ')[0] || 'Teacher'}! 👋
                   </h1>
                 </motion.div>
@@ -802,13 +804,13 @@ export default function TeacherDashboard() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-gray-600 text-lg"
+                  className="text-gray-600 text-xs sm:text-sm lg:text-base hidden sm:block"
                 >
-                  Ready to inspire minds and shape futures today?
+                  Ready to inspire minds today?
                 </motion.p>
               </div>
             </div>
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-8 flex-shrink-0">
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -977,116 +979,120 @@ export default function TeacherDashboard() {
               </motion.div>
             </div>
           </div>
-          {/* Enhanced Navigation Pills */}
+          {/* Enhanced Navigation Pills - Mobile Optimized */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-8 flex gap-4 bg-white/50 backdrop-blur-sm p-3 rounded-2xl w-fit border border-white/20 shadow-lg"
+            className="mt-4 sm:mt-6 lg:mt-8 w-full overflow-x-auto scrollbar-hide"
           >
-            {[
-              {
-                id: 'overview',
-                name: 'Dashboard',
-                icon: ChartBarIcon,
-                badge: null,
-                permission: { resource: 'dashboard', action: 'read' },
-              },
-              {
-                id: 'courses',
-                name: 'My Courses',
-                icon: BookOpenIcon,
-                badge: stats.totalCourses > 0 ? stats.totalCourses : null,
-                permission: { resource: 'courses', action: 'view' },
-              },
-              {
-                id: 'students',
-                name: 'Students',
-                icon: UserGroupIcon,
-                badge: stats.pendingApprovals > 0 ? stats.pendingApprovals : null,
-                permission: { resource: 'users', action: 'view' },
-              },
-              {
-                id: 'certificates',
-                name: 'Certificates',
-                icon: DocumentTextIcon,
-                badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null,
-                permission: { resource: 'certificates', action: 'read' },
-              },
-              {
-                id: 'analytics',
-                name: 'Analytics',
-                icon: ArrowTrendingUpIcon,
-                badge: null,
-                permission: { resource: 'analytics', action: 'read' },
-              },
-              {
-                id: 'batches',
-                name: 'Batch Management',
-                icon: QueueListIcon,
-                badge: null,
-                permission: { resource: 'batches', action: 'read' },
-              },
-              {
-                id: 'settings',
-                name: 'Profile',
-                icon: Cog6ToothIcon,
-                badge: null,
-                permission: { resource: 'settings', action: 'view' },
-              },
-            ]
-              .filter((tab) => {
-                const hasPermission = canAccess(tab.permission.resource, tab.permission.action)
-                console.log(
-                  `Teacher tab "${tab.name}" - ${tab.permission.resource}.${tab.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
-                )
-                return hasPermission
-              })
-              .map((tab, index) => (
-                <motion.button
-                  key={tab.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9 + index * 0.1 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setActiveView(
-                      tab.id as
-                        | 'overview'
-                        | 'courses'
-                        | 'students'
-                        | 'certificates'
-                        | 'batches'
-                        | 'analytics'
-                        | 'settings',
-                    )
-                    // Scroll to top of page
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  className={`relative flex items-center space-x-3 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
-                    activeView === tab.id
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
-                  }`}
-                >
-                  <tab.icon className={`h-5 w-5 ${activeView === tab.id ? 'text-white' : ''}`} />
-                  <span>{tab.name}</span>
-                  {tab.badge && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
-                    >
-                      {tab.badge}
-                    </motion.span>
-                  )}
-                </motion.button>
-              ))}
+            <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min">
+              {[
+                {
+                  id: 'overview',
+                  name: 'Dashboard',
+                  icon: ChartBarIcon,
+                  badge: null,
+                  permission: { resource: 'dashboard', action: 'read' },
+                },
+                {
+                  id: 'courses',
+                  name: 'My Courses',
+                  icon: BookOpenIcon,
+                  badge: stats.totalCourses > 0 ? stats.totalCourses : null,
+                  permission: { resource: 'courses', action: 'view' },
+                },
+                {
+                  id: 'students',
+                  name: 'Students',
+                  icon: UserGroupIcon,
+                  badge: stats.pendingApprovals > 0 ? stats.pendingApprovals : null,
+                  permission: { resource: 'users', action: 'view' },
+                },
+                {
+                  id: 'certificates',
+                  name: 'Certificates',
+                  icon: DocumentTextIcon,
+                  badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null,
+                  permission: { resource: 'certificates', action: 'read' },
+                },
+                {
+                  id: 'analytics',
+                  name: 'Analytics',
+                  icon: ArrowTrendingUpIcon,
+                  badge: null,
+                  permission: { resource: 'analytics', action: 'read' },
+                },
+                {
+                  id: 'batches',
+                  name: 'Batch Management',
+                  icon: QueueListIcon,
+                  badge: null,
+                  permission: { resource: 'batches', action: 'read' },
+                },
+                {
+                  id: 'settings',
+                  name: 'Profile',
+                  icon: Cog6ToothIcon,
+                  badge: null,
+                  permission: { resource: 'settings', action: 'view' },
+                },
+              ]
+                .filter((tab) => {
+                  const hasPermission = canAccess(tab.permission.resource, tab.permission.action)
+                  console.log(
+                    `Teacher tab "${tab.name}" - ${tab.permission.resource}.${tab.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+                  )
+                  return hasPermission
+                })
+                .map((tab, index) => (
+                  <motion.button
+                    key={tab.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 + index * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setActiveView(
+                        tab.id as
+                          | 'overview'
+                          | 'courses'
+                          | 'students'
+                          | 'certificates'
+                          | 'batches'
+                          | 'analytics'
+                          | 'settings',
+                      )
+                      // Scroll to top of page
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                    className={`relative flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm lg:text-base transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
+                      activeView === tab.id
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
+                    }`}
+                  >
+                    <tab.icon
+                      className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${activeView === tab.id ? 'text-white' : ''}`}
+                    />
+                    <span className="hidden sm:inline">{tab.name}</span>
+                    {tab.badge && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        {tab.badge}
+                      </motion.span>
+                    )}
+                  </motion.button>
+                ))}
+            </div>
           </motion.div>
         </div>
       </motion.div>
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-10 max-w-7xl mx-auto">
         <AnimatePresence mode="wait">
           {/* Enhanced Overview */}
           {activeView === 'overview' && (
@@ -1099,7 +1105,7 @@ export default function TeacherDashboard() {
               className="flex flex-col gap-12"
             >
               {/* Enhanced Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-8">
                 {[
                   {
                     title: 'Total Courses',
@@ -1167,17 +1173,17 @@ export default function TeacherDashboard() {
                         <div
                           className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                         />
-                        <CardContent className="p-8 relative">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-3">
-                              <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                        <CardContent className="p-4 sm:p-6 lg:p-8 relative">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="space-y-2 sm:space-y-3 min-w-0">
+                              <p className="text-gray-600 text-xs sm:text-sm font-semibold uppercase tracking-wider">
                                 {stat.title}
                               </p>
                               <motion.p
                                 initial={{ scale: 0.8 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: stat.delay + 0.2 }}
-                                className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                                className="text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
                               >
                                 {typeof stat.value === 'string'
                                   ? stat.value
@@ -1193,16 +1199,16 @@ export default function TeacherDashboard() {
                                 stiffness: 200,
                               }}
                               whileHover={{ scale: 1.2, rotate: 10 }}
-                              className={`h-16 w-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                              className={`h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 bg-gradient-to-r ${stat.gradient} rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300 flex-shrink-0`}
                             >
-                              <stat.icon className="h-8 w-8 text-white" />
+                              <stat.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                             </motion.div>
                           </div>
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: '100%' }}
                             transition={{ delay: stat.delay + 0.5, duration: 1 }}
-                            className="mt-6"
+                            className="mt-3 sm:mt-4 lg:mt-6"
                           >
                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                               <motion.div
@@ -1226,18 +1232,18 @@ export default function TeacherDashboard() {
               >
                 <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-2xl overflow-hidden">
                   <CardHeader>
-                    <div className="flex items-center space-x-2">
-                      <SparklesIcon className="h-6 w-6 text-blue-600" />
-                      <h2 className="text-xl font-bold">Quick Actions</h2>
+                    <div className="flex items-center gap-2">
+                      <SparklesIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+                      <h2 className="text-base sm:text-lg lg:text-xl font-bold">Quick Actions</h2>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                       {quickActions.map((action, index) => (
                         <div
                           key={index}
                           onClick={action.action}
-                          className={`relative p-6 rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg ${action.color} text-white group`}
+                          className={`relative p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg ${action.color} text-white group min-h-[100px] sm:min-h-[120px]`}
                         >
                           {action.highlight && (
                             <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
@@ -1249,22 +1255,24 @@ export default function TeacherDashboard() {
                               {action.badge}
                             </div>
                           )}
-                          <action.icon className="h-8 w-8 mb-3 group-hover:scale-110 transition-transform" />
-                          <h3 className="font-semibold mb-1">{action.title}</h3>
-                          <p className="text-sm opacity-90">{action.description}</p>
+                          <action.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mb-2 sm:mb-3 group-hover:scale-110 transition-transform" />
+                          <h3 className="text-sm sm:text-base font-semibold mb-1">
+                            {action.title}
+                          </h3>
+                          <p className="text-xs sm:text-sm opacity-90">{action.description}</p>
                         </div>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
               </motion.div>
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
                 {/* Recent Activity */}
                 <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
                   <CardHeader>
-                    <div className="flex items-center space-x-2">
-                      <FireIcon className="h-6 w-6 text-orange-600" />
-                      <h2 className="text-xl font-bold">Recent Activity</h2>
+                    <div className="flex items-center gap-2">
+                      <FireIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 flex-shrink-0" />
+                      <h2 className="text-base sm:text-lg lg:text-xl font-bold">Recent Activity</h2>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -1345,8 +1353,12 @@ export default function TeacherDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">My Courses</h2>
-                  <p className="text-gray-600">Manage and create your educational content</p>
+                  <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">
+                    My Courses
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Manage and create your educational content
+                  </p>
                 </div>
                 <Button
                   onClick={() => setShowCreateCourse(true)}
@@ -1374,7 +1386,7 @@ export default function TeacherDashboard() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-6">
                   {courses.map((course) => {
                     const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
                     // Count unique students enrolled in this course
@@ -1389,25 +1401,25 @@ export default function TeacherDashboard() {
                         key={course.id}
                         className="border-0 shadow-xl bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group"
                       >
-                        <div className="h-20 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
+                        <div className="h-12 sm:h-16 lg:h-20 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
                           <div className="absolute inset-0 bg-black/20"></div>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <p className="text-white text-lg font-semibold">
+                            <p className="text-white text-xs sm:text-sm lg:text-base font-semibold">
                               {course.course_number}
                             </p>
                           </div>
                           {pendingCertificates > 0 && (
-                            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
-                              {pendingCertificates} Certificates
+                            <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full animate-pulse">
+                              {pendingCertificates}
                             </div>
                           )}
                         </div>
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-bold text-lg group-hover:text-blue-600 transition-colors">
+                        <CardContent className="p-3 sm:p-4 lg:p-6">
+                          <div className="flex items-center justify-between mb-2 gap-1">
+                            <h3 className="font-bold text-sm sm:text-base lg:text-lg group-hover:text-blue-600 transition-colors line-clamp-1">
                               {course.title}
                             </h3>
-                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded border border-blue-200">
+                            <span className="px-1.5 sm:px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded border border-blue-200 whitespace-nowrap">
                               {course.level
                                 ? course.level.charAt(0).toUpperCase() +
                                   course.level.slice(1).toLowerCase()
@@ -1415,24 +1427,24 @@ export default function TeacherDashboard() {
                             </span>
                           </div>
                           <div
-                            className="text-gray-600 text-sm mb-4 line-clamp-2"
+                            className="text-gray-600 text-xs sm:text-sm mb-3 lg:mb-4 line-clamp-2"
                             dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                           />
-                          <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                            <div className="flex items-center space-x-2">
-                              <UsersIcon className="h-4 w-4 text-gray-400" />
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 lg:mb-4 text-xs sm:text-sm">
+                            <div className="flex items-center gap-1">
+                              <UsersIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                               <span>{uniqueStudentCount} students</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <ClockIcon className="h-4 w-4 text-gray-400" />
-                              <span>{course.duration_weeks} weeks</span>
+                            <div className="flex items-center gap-1">
+                              <ClockIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                              <span>{course.duration_weeks} w</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <CurrencyEuroIcon className="h-4 w-4 text-gray-400" />
-                              <span>{formatCurrency(course.price)}</span>
+                            <div className="flex items-center gap-1">
+                              <CurrencyEuroIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                              <span className="truncate">{formatCurrency(course.price)}</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <TrophyIcon className="h-4 w-4 text-gray-400" />
+                            <div className="flex items-center gap-1">
+                              <TrophyIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                               <span>
                                 {
                                   courseEnrollments.filter((e) =>
@@ -1498,52 +1510,60 @@ export default function TeacherDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Student & Batch Enrollment</h2>
-                  <p className="text-gray-600">
+                  <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">
+                    Student & Batch Enrollment
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Manage registered students and enroll them in batches
                   </p>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                 <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                  <CardContent className="p-6 text-center">
-                    <UserGroupIcon className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-blue-900">{allStudents.length}</div>
-                    <div className="text-sm text-blue-700">Registered Students</div>
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <UserGroupIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-blue-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-blue-900">
+                      {allStudents.length}
+                    </div>
+                    <div className="text-xs sm:text-sm text-blue-700">Registered</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                  <CardContent className="p-6 text-center">
-                    <CheckCircleIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-green-900">{stats.totalEnrolled}</div>
-                    <div className="text-sm text-green-700">Total Enrolled</div>
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <CheckCircleIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-green-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-900">
+                      {stats.totalEnrolled}
+                    </div>
+                    <div className="text-xs sm:text-sm text-green-700">Enrolled</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
-                  <CardContent className="p-6 text-center">
-                    <ClockIcon className="h-10 w-10 text-yellow-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-yellow-900">
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <ClockIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-yellow-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-yellow-900">
                       {stats.pendingApprovals}
                     </div>
-                    <div className="text-sm text-yellow-700">Pending Approvals</div>
+                    <div className="text-xs sm:text-sm text-yellow-700">Pending</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-200">
-                  <CardContent className="p-6 text-center">
-                    <TrophyIcon className="h-10 w-10 text-indigo-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-indigo-900">
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <TrophyIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-indigo-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-indigo-900">
                       {enrollments.filter((e) => e.status === 'completed').length}
                     </div>
-                    <div className="text-sm text-indigo-700">Completed</div>
+                    <div className="text-xs sm:text-sm text-indigo-700">Completed</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                  <CardContent className="p-6 text-center">
-                    <UserIcon className="h-10 w-10 text-purple-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-purple-900">{stats.totalBatches}</div>
-                    <div className="text-sm text-purple-700">Active Batches</div>
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <UserIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-purple-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-900">
+                      {stats.totalBatches}
+                    </div>
+                    <div className="text-xs sm:text-sm text-purple-700">Batches</div>
                   </CardContent>
                 </Card>
               </div>
@@ -1763,14 +1783,14 @@ export default function TeacherDashboard() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">
                     Certificate Management Center
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Issue certificates to students in your courses and batches
                   </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <Button
                     onClick={() => {
                       // Collect all eligible enrollments across all courses
@@ -1794,39 +1814,42 @@ export default function TeacherDashboard() {
                       setBulkEligibleEnrollments(allEligible)
                       setShowBulkTemplateModal(true)
                     }}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                   >
-                    <TrophyIcon className="h-4 w-4 mr-2" />
-                    Bulk Issue Certificates
+                    <TrophyIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Bulk Issue Certificates</span>
+                    <span className="sm:hidden">Bulk</span>
                   </Button>
                 </div>
               </div>
 
               {/* Certificate Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                 <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                  <CardContent className="p-6 text-center">
-                    <UserGroupIcon className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-blue-900">{stats.completedBatches}</div>
-                    <div className="text-sm text-blue-700">Completed Batches</div>
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <UserGroupIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-blue-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-blue-900">
+                      {stats.completedBatches}
+                    </div>
+                    <div className="text-xs sm:text-sm text-blue-700">Completed Batches</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-                  <CardContent className="p-6 text-center">
-                    <ClockIcon className="h-10 w-10 text-orange-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-orange-900">
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <ClockIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-orange-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-orange-900">
                       {stats.batchesReadyForCertificates}
                     </div>
-                    <div className="text-sm text-orange-700">Students Ready for Certificates</div>
+                    <div className="text-xs sm:text-sm text-orange-700">Ready for Certificates</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                  <CardContent className="p-6 text-center">
-                    <TrophyIcon className="h-10 w-10 text-green-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-green-900">
+                  <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
+                    <TrophyIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-green-600 mx-auto mb-2 sm:mb-3" />
+                    <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-900">
                       {stats.certificatesIssued}
                     </div>
-                    <div className="text-sm text-green-700">Total Certificates Issued</div>
+                    <div className="text-xs sm:text-sm text-green-700">Total Issued</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
@@ -2227,17 +2250,17 @@ export default function TeacherDashboard() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="text-center space-y-6"
+                className="text-center space-y-3 sm:space-y-4 lg:space-y-6"
               >
-                <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <h2 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   Teaching Analytics
                 </h2>
-                <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 max-w-2xl mx-auto">
                   Track your performance and student engagement with detailed insights
                 </p>
               </motion.div>
               {/* Enhanced Performance Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8">
                 {[
                   {
                     title: 'Rating System',
@@ -2289,17 +2312,17 @@ export default function TeacherDashboard() {
                       <div
                         className={`absolute inset-0 bg-gradient-to-br ${metric.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                       />
-                      <CardContent className="p-8 relative">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-3">
-                            <p className="text-gray-600 text-sm font-semibold uppercase tracking-wider">
+                      <CardContent className="p-4 sm:p-6 lg:p-8 relative">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="space-y-2 sm:space-y-3 min-w-0">
+                            <p className="text-gray-600 text-xs sm:text-sm font-semibold uppercase tracking-wider">
                               {metric.title}
                             </p>
                             <motion.p
                               initial={{ scale: 0.8 }}
                               animate={{ scale: 1 }}
                               transition={{ delay: metric.delay + 0.2 }}
-                              className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+                              className="text-lg sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
                             >
                               {typeof metric.value === 'string'
                                 ? metric.value
@@ -2315,18 +2338,18 @@ export default function TeacherDashboard() {
                               stiffness: 200,
                             }}
                             whileHover={{ scale: 1.2, rotate: 10 }}
-                            className={`h-16 w-16 bg-gradient-to-r ${metric.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                            className={`h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 bg-gradient-to-r ${metric.gradient} rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300 flex-shrink-0`}
                           >
-                            <metric.icon className="h-8 w-8 text-white" />
+                            <metric.icon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-white" />
                           </motion.div>
                         </div>
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: '100%' }}
                           transition={{ delay: metric.delay + 0.5, duration: 1 }}
-                          className="mt-6"
+                          className="mt-3 sm:mt-4 lg:mt-6"
                         >
-                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-1 sm:h-1.5 lg:h-2 bg-gray-200 rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: '85%' }}
@@ -2347,13 +2370,15 @@ export default function TeacherDashboard() {
                 transition={{ delay: 0.6, duration: 0.6 }}
                 className="space-y-16"
               >
-                <div className="text-center space-y-6">
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="text-center space-y-2 sm:space-y-3 lg:space-y-6">
+                  <h3 className="text-base sm:text-lg lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     Course Performance Overview
                   </h3>
-                  <p className="text-gray-600">Detailed insights into each of your courses</p>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Detailed insights into each of your courses
+                  </p>
                 </div>
-                <div className="grid gap-8">
+                <div className="grid gap-3 sm:gap-4 lg:gap-8">
                   {courses.map((course, index) => {
                     const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
                     const completionRate =
@@ -2375,18 +2400,22 @@ export default function TeacherDashboard() {
                       >
                         <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden relative">
                           <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-purple-50/50 to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          <CardContent className="p-8 relative">
-                            <div className="flex items-center justify-between mb-6">
-                              <div className="space-y-1">
-                                <h4 className="text-xl font-bold text-gray-900">{course.title}</h4>
-                                <p className="text-gray-600">Course #{course.course_number}</p>
+                          <CardContent className="p-4 sm:p-6 lg:p-8 relative">
+                            <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
+                              <div className="space-y-1 min-w-0">
+                                <h4 className="text-sm sm:text-base lg:text-xl font-bold text-gray-900 truncate">
+                                  {course.title}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-600">
+                                  Course #{course.course_number}
+                                </p>
                               </div>
                               <motion.div
                                 whileHover={{ scale: 1.1 }}
-                                className="flex items-center space-x-2"
+                                className="flex items-center gap-1 flex-shrink-0"
                               >
                                 <Badge
-                                  className={`text-sm font-medium px-4 py-2 ${
+                                  className={`text-xs sm:text-sm font-medium px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 whitespace-nowrap ${
                                     completionRate >= 80
                                       ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                                       : completionRate >= 60
@@ -2394,11 +2423,11 @@ export default function TeacherDashboard() {
                                         : 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
                                   }`}
                                 >
-                                  {completionRate}% completion
+                                  {completionRate}%
                                 </Badge>
                               </motion.div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-6">
                               {[
                                 { label: 'Enrolled', value: courseEnrollments.length, icon: '👥' },
                                 {
@@ -2420,13 +2449,15 @@ export default function TeacherDashboard() {
                                   initial={{ opacity: 0, scale: 0.8 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   transition={{ delay: 0.8 + index * 0.1 + statIndex * 0.05 }}
-                                  className="bg-white/60 backdrop-blur-sm rounded-xl p-4 text-center border border-white/30 hover:border-white/50 transition-all duration-300"
+                                  className="bg-white/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 text-center border border-white/30 hover:border-white/50 transition-all duration-300"
                                 >
-                                  <div className="text-2xl mb-2">{stat.icon}</div>
-                                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                                  <div className="text-base sm:text-lg lg:text-2xl mb-1">
+                                    {stat.icon}
+                                  </div>
+                                  <div className="text-sm sm:text-base lg:text-2xl font-bold text-gray-900 mb-0.5">
                                     {stat.value}
                                   </div>
-                                  <div className="text-sm text-gray-600 font-medium">
+                                  <div className="text-xs text-gray-600 font-medium hidden sm:block">
                                     {stat.label}
                                   </div>
                                 </motion.div>
@@ -2437,17 +2468,17 @@ export default function TeacherDashboard() {
                               initial={{ width: 0 }}
                               animate={{ width: '100%' }}
                               transition={{ delay: 1 + index * 0.1, duration: 1 }}
-                              className="mt-6"
+                              className="mt-4 sm:mt-6 lg:mt-8"
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">
-                                  Overall Progress
+                              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                <span className="text-xs sm:text-sm font-medium text-gray-700">
+                                  Progress
                                 </span>
-                                <span className="text-sm font-bold text-gray-900">
+                                <span className="text-xs sm:text-sm font-bold text-gray-900">
                                   {completionRate}%
                                 </span>
                               </div>
-                              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="h-1.5 sm:h-2 lg:h-3 bg-gray-200 rounded-full overflow-hidden">
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{ width: `${completionRate}%` }}
@@ -2482,30 +2513,32 @@ export default function TeacherDashboard() {
               transition={{ duration: 0.4 }}
               className="space-y-8"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-600 to-slate-600 bg-clip-text text-transparent">
+              <div className="text-center mb-6 sm:mb-8 lg:mb-10">
+                <h2 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-600 to-slate-600 bg-clip-text text-transparent">
                   Account Settings ⚙️
                 </h2>
-                <p className="text-xl text-gray-600">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-2">
                   Manage your account preferences and information
                 </p>
               </div>
               {/* Account Settings Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <Cog6ToothIcon className="h-8 w-8 text-gray-600" />
-                    <h3 className="text-xl font-semibold text-gray-900">Account Information</h3>
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 border border-white/20">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+                    <Cog6ToothIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-gray-600 flex-shrink-0" />
+                    <h3 className="text-sm sm:text-base lg:text-xl font-semibold text-gray-900">
+                      Account Information
+                    </h3>
                   </div>
                   <button
                     onClick={() => setIsProfileModalOpen(true)}
-                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
                   >
                     <span>✏️</span>
-                    <span>Edit Profile</span>
+                    <span>Edit</span>
                   </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* Personal Information */}
                   <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">

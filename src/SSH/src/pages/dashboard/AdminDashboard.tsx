@@ -247,21 +247,21 @@ export default function AdminDashboard() {
     }
   }
   return (
-    <div className="min-h-screen bg-gray-50 flex page-with-header">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row page-with-header">
       {/* Sidebar */}
       <div
-        className={`${sidebarOpen ? 'w-64' : 'w-16'} bg-white shadow-lg transition-all duration-300 flex flex-col`}
+        className={`${sidebarOpen ? 'w-full md:w-64' : 'hidden md:flex md:w-16'} bg-white shadow-lg transition-all duration-300 flex flex-col fixed md:relative z-50 md:z-0 h-screen md:h-auto`}
       >
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-3 md:p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             {sidebarOpen && (
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">eY</span>
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 md:h-8 md:w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xs md:text-sm">eY</span>
                 </div>
-                <div>
-                  <h2 className="font-bold text-gray-900">Admin Panel</h2>
+                <div className="hidden md:block">
+                  <h2 className="font-bold text-sm md:text-base text-gray-900">Admin Panel</h2>
                   <p className="text-xs text-gray-500">eYogi Gurukul</p>
                 </div>
               </div>
@@ -279,11 +279,11 @@ export default function AdminDashboard() {
           </div>
         </div>
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-3 md:p-4 space-y-1 md:space-y-2 overflow-y-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() =>
+              onClick={() => {
                 setActiveTab(
                   tab.id as
                     | 'overview'
@@ -296,16 +296,17 @@ export default function AdminDashboard() {
                     | 'certificates'
                     | 'content',
                 )
-              }
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer ${
+                setSidebarOpen(false)
+              }}
+              className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer text-sm md:text-base ${
                 activeTab === tab.id
                   ? 'bg-orange-50 text-orange-700 border-r-2 border-orange-500'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <tab.icon
-                  className={`h-5 w-5 ${activeTab === tab.id ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'}`}
+                  className={`h-4 w-4 md:h-5 md:w-5 ${activeTab === tab.id ? 'text-orange-600' : 'text-gray-400 group-hover:text-gray-600'}`}
                 />
                 {tab.badge && (
                   <span className="absolute -top-2 -right-2 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -314,9 +315,9 @@ export default function AdminDashboard() {
                 )}
               </div>
               {sidebarOpen && (
-                <div className="flex-1">
-                  <div className="font-medium">{tab.name}</div>
-                  <div className="text-xs text-gray-500">{tab.description}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm">{tab.name}</div>
+                  <div className="text-xs text-gray-500 hidden lg:block">{tab.description}</div>
                 </div>
               )}
             </button>
@@ -324,26 +325,35 @@ export default function AdminDashboard() {
         </nav>
         {/* Sidebar Footer */}
         {sidebarOpen && (
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">
+          <div className="p-3 md:p-4 border-t border-gray-200">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-7 w-7 md:h-8 md:w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs md:text-sm font-bold">
                   {user?.email?.charAt(0) || 'A'}
                 </span>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{user?.email || 'Admin'}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-900 truncate">
+                  {user?.email || 'Admin'}
+                </p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
-              <button className="p-1 rounded-md hover:bg-gray-100 cursor-pointer">
+              <button className="p-1 rounded-md hover:bg-gray-100 cursor-pointer flex-shrink-0">
                 <Cog6ToothIcon className="h-4 w-4 text-gray-400" />
               </button>
             </div>
           </div>
         )}
       </div>
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 md:hidden z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden w-full">
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -438,26 +448,26 @@ export default function AdminDashboard() {
         </header>
         {/* Quick Actions Bar - Only show on overview */}
         {activeTab === 'overview' && (
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
+          <div className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 md:py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-3 md:mb-4">
+              <h2 className="text-base md:text-lg font-semibold text-gray-900">Quick Actions</h2>
+              <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm text-gray-500">
                 <ArrowTrendingUpIcon className="h-4 w-4" />
                 <span>Streamline your workflow</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
               {quickActions.map((action) => (
                 <button
                   key={action.id}
                   onClick={action.action}
-                  className={`${action.color} text-white p-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg cursor-pointer`}
+                  className={`${action.color} text-white p-3 sm:p-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg cursor-pointer`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <action.icon className="h-6 w-6" />
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                    <action.icon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
                     <div className="text-left">
-                      <p className="font-semibold">{action.title}</p>
-                      <p className="text-sm opacity-90">{action.description}</p>
+                      <p className="text-sm sm:text-base font-semibold">{action.title}</p>
+                      <p className="text-xs sm:text-sm opacity-90">{action.description}</p>
                     </div>
                   </div>
                 </button>
@@ -466,7 +476,7 @@ export default function AdminDashboard() {
           </div>
         )}
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <ActiveComponent />
           </div>
