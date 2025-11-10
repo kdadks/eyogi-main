@@ -1073,3 +1073,57 @@ async function updateBatchOverallProgress(batchId: string): Promise<void> {
     throw error
   }
 }
+
+// Individual Student Progress Management
+export async function updateStudentProgress(
+  batchId: string,
+  studentId: string,
+  progressPercentage: number,
+  notes?: string,
+): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin
+      .from('batch_students')
+      .update({
+        progress_percentage: Math.min(100, Math.max(0, progressPercentage)),
+        progress_notes: notes,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('batch_id', batchId)
+      .eq('student_id', studentId)
+      .eq('is_active', true)
+
+    if (error) {
+      console.error('Error updating student progress:', error)
+      throw new Error('Failed to update student progress')
+    }
+  } catch (error) {
+    console.error('Error in updateStudentProgress:', error)
+    throw error
+  }
+}
+
+export async function getStudentProgressInBatch(
+  batchId: string,
+  studentId: string,
+): Promise<{ progress_percentage: number; progress_notes: string | null } | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('batch_students')
+      .select('progress_percentage, progress_notes')
+      .eq('batch_id', batchId)
+      .eq('student_id', studentId)
+      .eq('is_active', true)
+      .single()
+
+    if (error) {
+      console.error('Error fetching student progress:', error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error in getStudentProgressInBatch:', error)
+    return null
+  }
+}

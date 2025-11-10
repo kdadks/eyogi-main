@@ -48,6 +48,8 @@ import {
   removeStudentFromBatch,
   updateBatch,
   assignCourseToBatch,
+  updateStudentProgress,
+  getStudentProgressInBatch,
 } from '@/lib/api/batches'
 import { Batch, BatchStudentWithInfo } from '@/types'
 import { getCountryName, getStateName } from '@/lib/address-utils'
@@ -920,7 +922,7 @@ export default function TeacherDashboard() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute top-16 right-0 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+                      className="fixed sm:absolute top-16 right-0 left-0 sm:left-auto w-full sm:w-96 bg-white rounded-xl sm:rounded-xl rounded-t-none sm:rounded-t-xl shadow-2xl border border-gray-200 z-50 max-h-[80vh] sm:max-h-96 overflow-hidden mx-0 sm:mx-auto"
                     >
                       <div className="p-4 border-b border-gray-100">
                         <div className="flex items-center justify-between">
@@ -1060,9 +1062,12 @@ export default function TeacherDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-4 sm:mt-6 lg:mt-8 w-full overflow-x-auto scrollbar-hide"
+            className="mt-4 sm:mt-6 lg:mt-8 w-full relative"
           >
-            <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min">
+            {/* Scroll indicator for mobile */}
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none sm:hidden z-10 rounded-r-lg" />
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
+              <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min">
               {[
                 {
                   id: 'overview',
@@ -1164,6 +1169,7 @@ export default function TeacherDashboard() {
                     )}
                   </motion.button>
                 ))}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -1536,6 +1542,10 @@ export default function TeacherDashboard() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => {
+                                  // Scroll to top when viewing course details
+                                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                                }}
                                 className="w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                               >
                                 <EyeIcon className="h-4 w-4 mr-1" />
@@ -1595,9 +1605,21 @@ export default function TeacherDashboard() {
                 </div>
               </div>
 
-              {/* Stats */}
+              {/* Stats - Clickable drill-down cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                <Card
+                  className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  onClick={() => {
+                    setTimeout(() => {
+                      const registeredSection = document.querySelector('[data-section="registered-students"]')
+                      if (registeredSection) {
+                        const yOffset = -150
+                        const y = registeredSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                        window.scrollTo({ top: y, behavior: 'smooth' })
+                      }
+                    }, 100)
+                  }}
+                >
                   <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
                     <UserGroupIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-blue-600 mx-auto mb-2 sm:mb-3" />
                     <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-blue-900">
@@ -1606,7 +1628,19 @@ export default function TeacherDashboard() {
                     <div className="text-xs sm:text-sm text-blue-700">Registered</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                <Card
+                  className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  onClick={() => {
+                    setTimeout(() => {
+                      const enrolledSection = document.querySelector('[data-section="enrolled-students"]')
+                      if (enrolledSection) {
+                        const yOffset = -150
+                        const y = enrolledSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                        window.scrollTo({ top: y, behavior: 'smooth' })
+                      }
+                    }, 100)
+                  }}
+                >
                   <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
                     <CheckCircleIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-green-600 mx-auto mb-2 sm:mb-3" />
                     <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-900">
@@ -1615,7 +1649,19 @@ export default function TeacherDashboard() {
                     <div className="text-xs sm:text-sm text-green-700">Enrolled</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
+                <Card
+                  className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
+                  onClick={() => {
+                    setTimeout(() => {
+                      const pendingSection = document.querySelector('[data-section="pending-approvals"]')
+                      if (pendingSection) {
+                        const yOffset = -150
+                        const y = pendingSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                        window.scrollTo({ top: y, behavior: 'smooth' })
+                      }
+                    }, 100)
+                  }}
+                >
                   <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
                     <ClockIcon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-yellow-600 mx-auto mb-2 sm:mb-3" />
                     <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-yellow-900">
@@ -1646,7 +1692,10 @@ export default function TeacherDashboard() {
 
               {/* Pending Enrollment Approvals */}
               {pendingEnrollments.length > 0 && (
-                <Card className="border-0 shadow-xl bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
+                <Card
+                  data-section="pending-approvals"
+                  className="border-0 shadow-xl bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 scroll-mt-32"
+                >
                   <CardHeader>
                     <div className="flex items-center space-x-2">
                       <ClockIcon className="h-6 w-6 text-yellow-600" />
@@ -1725,8 +1774,129 @@ export default function TeacherDashboard() {
                 </Card>
               )}
 
+              {/* Enrolled Students */}
+              <Card
+                data-section="enrolled-students"
+                className="border-0 shadow-xl bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 scroll-mt-32"
+              >
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                    <h3 className="text-lg font-semibold text-green-900">
+                      Enrolled Students
+                    </h3>
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      {stats.totalEnrolled} enrolled
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {stats.totalEnrolled === 0 ? (
+                    <div className="text-center py-12">
+                      <CheckCircleIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No enrolled students
+                      </h3>
+                      <p className="text-gray-600">
+                        Students who are actively enrolled in courses will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {allStudents
+                        .map((student) => {
+                          const studentEnrollments = enrollments.filter(
+                            (e) => e.student_id === student.id && (e.status === 'approved' || e.status === 'completed'),
+                          )
+                          return { student, studentEnrollments }
+                        })
+                        .filter(({ studentEnrollments }) => studentEnrollments.length > 0)
+                        .map(({ student, studentEnrollments }) => {
+                          const activeEnrollments = studentEnrollments.filter(
+                            (e) => e.status === 'approved',
+                          )
+                          const completedEnrollments = studentEnrollments.filter(
+                            (e) => e.status === 'completed',
+                          )
+
+                          return (
+                            <div
+                              key={student.id}
+                              className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-200 flex flex-col h-full"
+                            >
+                              <div className="flex items-center space-x-3 mb-3">
+                                <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                  <span className="text-white font-bold">
+                                    {student.full_name?.charAt(0) || 'S'}
+                                  </span>
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium text-green-900">{student.full_name}</p>
+                                  <p className="text-sm text-green-700">{student.student_id}</p>
+                                </div>
+                              </div>
+                              <div className="text-xs text-green-600 mb-3 space-y-1">
+                                <div>Email: {student.email}</div>
+                                <div className="flex items-center space-x-1">
+                                  <CheckCircleIcon className="h-3 w-3" />
+                                  <span>Active: {activeEnrollments.length}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <TrophyIcon className="h-3 w-3" />
+                                  <span>Completed: {completedEnrollments.length}</span>
+                                </div>
+                              </div>
+                              <div className="space-y-2 mb-3 flex-1">
+                                <p className="text-xs font-semibold text-green-800">Enrolled Courses:</p>
+                                <div className="space-y-1">
+                                  {studentEnrollments.slice(0, 3).map((enrollment) => (
+                                    <div
+                                      key={enrollment.id}
+                                      className="text-xs bg-white/60 rounded px-2 py-1 flex items-center justify-between"
+                                    >
+                                      <span className="truncate flex-1">
+                                        {enrollment.course?.title || 'Unknown Course'}
+                                      </span>
+                                      <Badge
+                                        className={
+                                          enrollment.status === 'completed'
+                                            ? 'bg-indigo-100 text-indigo-800 border-indigo-200 ml-1'
+                                            : 'bg-green-100 text-green-800 border-green-200 ml-1'
+                                        }
+                                      >
+                                        {enrollment.status === 'completed' ? 'Done' : 'Active'}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                  {studentEnrollments.length > 3 && (
+                                    <p className="text-xs text-green-700 italic">
+                                      +{studentEnrollments.length - 3} more
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEnrollmentModal(student)}
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold mt-auto"
+                              >
+                                <UserIcon className="h-4 w-4 mr-1" />
+                                Manage Enrollments
+                              </Button>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Registered Students */}
-              <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+              <Card
+                data-section="registered-students"
+                className="border-0 shadow-xl bg-white/70 backdrop-blur-sm scroll-mt-32"
+              >
                 <CardHeader>
                   <div className="flex items-center space-x-2">
                     <UserGroupIcon className="h-6 w-6 text-blue-600" />
@@ -2729,23 +2899,23 @@ export default function TeacherDashboard() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-6xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 sm:p-4 text-white">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold flex items-center">
-                    <SparklesIcon className="h-5 w-5 mr-2" />
-                    Create New Course
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold flex items-center">
+                    <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+                    <span className="truncate">Create New Course</span>
                   </h2>
-                  <p className="text-blue-100 text-sm mt-1">
+                  <p className="text-blue-100 text-xs sm:text-sm mt-1 hidden sm:block">
                     Design your next educational masterpiece
                   </p>
                 </div>
@@ -2758,9 +2928,9 @@ export default function TeacherDashboard() {
                     setTags([''])
                     setDetailedDescription('')
                   }}
-                  className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+                  className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 ml-2 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
-                  <XCircleIcon className="h-6 w-6" />
+                  <XCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
             </div>
@@ -5639,7 +5809,9 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                   </div>
                 ) : (
                   <div className="bg-white border rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    {/* Mobile-friendly scrollable table */}
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -5650,6 +5822,9 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Email
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Progress
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
@@ -5682,6 +5857,46 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                               {student.student?.email || 'Not provided'}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={student.progress_percentage || 0}
+                                  onChange={async (e) => {
+                                    const newProgress = Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
+                                    try {
+                                      await updateStudentProgress(
+                                        selectedBatchForView.id,
+                                        student.student_id,
+                                        newProgress
+                                      )
+                                      // Update local state
+                                      setBatchStudents(prev =>
+                                        prev.map(s =>
+                                          s.student_id === student.student_id
+                                            ? { ...s, progress_percentage: newProgress }
+                                            : s
+                                        )
+                                      )
+                                      toast.success('Progress updated successfully')
+                                    } catch (error) {
+                                      console.error('Error updating progress:', error)
+                                      toast.error('Failed to update progress')
+                                    }
+                                  }}
+                                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-600">%</span>
+                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${student.progress_percentage || 0}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Active
                               </span>
@@ -5690,6 +5905,7 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>

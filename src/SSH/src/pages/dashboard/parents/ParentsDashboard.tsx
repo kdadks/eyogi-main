@@ -406,7 +406,7 @@ export default function ParentsDashboard() {
           const achievements: Achievement[] = []
 
           return {
-            student_id: profile.id,
+            student_id: profile.student_id || profile.id, // Use EYG-prefixed student_id, fallback to profile.id
             full_name: profile.full_name || 'Unknown',
             age: age,
             grade: profile.grade || 'Not Set', // Use grade from database
@@ -827,7 +827,12 @@ export default function ParentsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-3 sm:mt-4 lg:mt-8 flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl overflow-x-auto scrollbar-hide w-full border border-white/20 shadow-lg"
+            className="mt-3 sm:mt-4 lg:mt-8 w-full relative"
+          >
+            {/* Scroll indicator for mobile */}
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none sm:hidden z-10 rounded-r-lg" />
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
+              <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min"
           >
             {tabs
               .filter((tab) => tab.available)
@@ -872,6 +877,8 @@ export default function ParentsDashboard() {
                   )}
                 </motion.button>
               ))}
+              </div>
+            </div>
           </motion.div>
         </div>
       </motion.div>
@@ -1170,9 +1177,9 @@ function HomeTab({
               }}
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.95 }}
-              className="group"
+              className="group h-full"
             >
-              <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-8">
+              <div className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-8 h-full flex flex-col">
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                 />
@@ -1183,8 +1190,8 @@ function HomeTab({
                     </span>
                   </div>
                 )}
-                <div className="relative">
-                  <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="relative flex-1 flex flex-col">
+                  <div className="flex items-start sm:items-center justify-between gap-2 flex-1">
                     <div className="space-y-2 sm:space-y-3 min-w-0">
                       <p className="text-gray-600 text-xs sm:text-sm font-semibold uppercase tracking-wider">
                         {stat.title}
@@ -1435,55 +1442,57 @@ function HomeTab({
               : courses.slice(0, 6).map((course: AvailableCourse, index: number) => (
                   <motion.div
                     key={course.id}
-                    className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300"
+                    className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.1 * index }}
                     whileHover={{ y: -2 }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 text-sm mb-1">{course.title}</h4>
-                        <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                            course.difficulty === 'Beginner'
-                              ? 'bg-green-100 text-green-800'
-                              : course.difficulty === 'Intermediate'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {course.difficulty}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-gray-900">
-                          {formatCurrency(course.price)}
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">{course.title}</h4>
+                          <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
+                          <span
+                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                              course.difficulty === 'Beginner'
+                                ? 'bg-green-100 text-green-800'
+                                : course.difficulty === 'Intermediate'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {course.difficulty}
+                          </span>
                         </div>
-                        <div className="text-xs text-gray-600">{course.duration}</div>
-                      </div>
-                    </div>
-                    <div
-                      className="text-xs text-gray-600 mb-3"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
-                    />
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="flex text-yellow-400">
-                          {[...Array(5)].map((_, i) => (
-                            <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                            </svg>
-                          ))}
+                        <div className="text-right ml-2 flex-shrink-0">
+                          <div className="text-sm font-bold text-gray-900">
+                            {formatCurrency(course.price)}
+                          </div>
+                          <div className="text-xs text-gray-600">{course.duration}</div>
                         </div>
-                        <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
                       </div>
-                      <span className="text-xs text-gray-600">{course.instructor}</span>
+                      <div
+                        className="text-xs text-gray-600 mb-3 line-clamp-3 flex-1"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
+                      />
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <div className="flex text-yellow-400">
+                            {[...Array(5)].map((_, i) => (
+                              <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
+                        </div>
+                        <span className="text-xs text-gray-600 truncate ml-2">{course.instructor}</span>
+                      </div>
                     </div>
                     <motion.button
                       onClick={() => onCourseEnrollment(course)}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer mt-auto"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -1528,25 +1537,26 @@ function ChildrenTab({
         {children.map((child, index) => (
           <motion.div
             key={child.student_id}
-            className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-4 sm:p-6"
+            className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden relative rounded-lg sm:rounded-xl p-4 sm:p-6 flex flex-col h-full"
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.1 * index }}
             whileHover={{ scale: 1.02, y: -2 }}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-600/10 opacity-50" />
-            <div className="relative">
-              {/* Edit/Delete buttons */}
-              <div className="absolute top-0 right-0 flex gap-1">
+            <div className="relative flex-1 flex flex-col">
+              {/* Edit/Delete buttons - Mobile-friendly touch targets (min 44x44px) */}
+              <div className="absolute top-0 right-0 flex gap-2">
                 <motion.button
                   onClick={() => onEditChild(child.student_id)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer text-sm sm:text-base"
+                  className="min-w-[44px] min-h-[44px] w-11 h-11 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Edit Child"
+                  aria-label="Edit Child"
                 >
                   <svg
-                    className="w-3 h-3 sm:w-4 sm:h-4"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1561,13 +1571,14 @@ function ChildrenTab({
                 </motion.button>
                 <motion.button
                   onClick={() => onDeleteChild(child.student_id)}
-                  className="w-7 h-7 sm:w-8 sm:h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer text-sm sm:text-base"
+                  className="min-w-[44px] min-h-[44px] w-11 h-11 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Delete Child"
+                  aria-label="Delete Child"
                 >
                   <svg
-                    className="w-3 h-3 sm:w-4 sm:h-4"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1585,13 +1596,18 @@ function ChildrenTab({
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center text-white text-sm sm:text-base lg:text-lg font-bold shadow-lg flex-shrink-0">
                   {child.full_name.charAt(0)}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-gray-900 text-sm sm:text-base lg:text-lg truncate">
                     {child.full_name}
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600">
                     {child.grade} • Age {child.age}
                   </p>
+                  {child.student_id && (
+                    <p className="text-xs sm:text-sm text-purple-600 font-medium mt-0.5">
+                      ID: {child.student_id}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-3 sm:space-y-4">

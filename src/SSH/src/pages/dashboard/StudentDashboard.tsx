@@ -595,7 +595,7 @@ export default function StudentDashboard() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed sm:absolute top-16 left-0 sm:left-auto sm:right-0 right-0 w-full sm:w-96 mx-2 sm:mx-0 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+                        className="fixed sm:absolute top-16 left-0 sm:left-auto sm:right-0 right-0 w-full sm:w-96 bg-white rounded-xl sm:rounded-xl rounded-t-none sm:rounded-t-xl shadow-2xl border border-gray-200 z-50 max-h-[80vh] sm:max-h-96 overflow-hidden"
                       >
                         <div className="p-2 sm:p-4 border-b border-gray-100">
                           <div className="flex items-center justify-between gap-2">
@@ -717,12 +717,17 @@ export default function StudentDashboard() {
               </div>
             </div>
             {/* Enhanced Navigation Pills - Mobile Optimized */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="mt-4 sm:mt-8 flex gap-2 sm:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl w-full sm:w-fit overflow-x-auto border border-white/20 shadow-lg"
-            >
+            <div className="mt-4 sm:mt-8 w-full relative">
+              {/* Scroll indicator for mobile */}
+              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none sm:hidden z-10 rounded-r-lg" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400"
+              >
+                <div className="flex gap-2 sm:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/20 shadow-lg min-w-min"
+              >
               {tabs.map((tab, index) => (
                 <motion.button
                   key={tab.id}
@@ -765,7 +770,9 @@ export default function StudentDashboard() {
                   )}
                 </motion.button>
               ))}
-            </motion.div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </motion.div>
         <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-10 max-w-7xl mx-auto">
