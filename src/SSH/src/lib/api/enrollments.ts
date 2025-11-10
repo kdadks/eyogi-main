@@ -172,8 +172,8 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
           .select(
             `
         *,
-        courses!inner (*),
-        student:profiles!enrollments_student_id_fkey (*)
+        course:course_id (*),
+        student:student_id (*)
       `,
           )
           .in('course_id', courseIds)
@@ -184,8 +184,14 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
           return []
         }
 
-        // Map the data to match the Enrollment interface
-        return (data || []) as Enrollment[]
+        // Map and transform the data to match the Enrollment interface
+        const mappedData = (data || []).map((item: Record<string, any>) => ({
+          ...item,
+          course: item.course || undefined,
+          student: item.student,
+        }))
+
+        return mappedData as unknown as Enrollment[]
       } catch (error) {
         console.error('Error in getTeacherEnrollments:', error)
         return []
@@ -441,14 +447,32 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
     cacheKey,
     async () => {
       try {
-        // First get the course IDs assigned to this teacher
-        const { data: assignments } = await supabaseAdmin
+        // First get the teacher's teacher_id from profile
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('teacher_id')
+          .eq('id', teacherId)
+          .single()
+
+        if (!profile?.teacher_id) {
+          console.log('No teacher_id found for profile:', teacherId)
+          return []
+        }
+
+        // Get the course IDs assigned to this teacher
+        const { data: assignments, error: assignmentError } = await supabaseAdmin
           .from('course_assignments')
           .select('course_id')
-          .eq('teacher_id', teacherId)
+          .eq('teacher_id', profile.teacher_id)
           .eq('is_active', true)
 
+        if (assignmentError) {
+          console.error('Error fetching course assignments:', assignmentError)
+          return []
+        }
+
         if (!assignments || assignments.length === 0) {
+          console.log('No active course assignments found for teacher_id:', profile.teacher_id)
           return []
         }
 
@@ -459,8 +483,8 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
           .select(
             `
         *,
-        courses!inner (*),
-        student:profiles!enrollments_student_id_fkey (*)
+        course:course_id (*),
+        student:student_id (*)
       `,
           )
           .in('course_id', courseIds)
@@ -472,7 +496,16 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
           return []
         }
 
-        return data || []
+        // Map and transform the data to match Enrollment interface
+        const mappedData = (data || []).map((item: Record<string, any>) => ({
+          ...item,
+          course: item.course || undefined,
+          student: item.student,
+        }))
+
+        console.log(`Found ${mappedData.length} pending enrollments for teacher ${teacherId}`)
+        console.log('Pending enrollments data:', mappedData)
+        return mappedData as unknown as Enrollment[]
       } catch (error) {
         console.error('Error in getPendingEnrollments:', error)
         return []

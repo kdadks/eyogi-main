@@ -22,12 +22,14 @@ import {
   rejectEnrollment,
   getStudentsEnrolledInCourse,
 } from '@/lib/api/enrollments'
+import { queryCache } from '@/lib/cache'
 import {
   bulkIssueCertificates,
   issueCertificateWithTemplate,
   issueBatchCertificates,
   getCertificatesFromTable,
 } from '@/lib/api/certificates'
+import { generateCertificatePreview } from '@/lib/pdf/certificateGenerator'
 import {
   getTeacherCertificateAssignments,
   CertificateAssignment,
@@ -90,6 +92,8 @@ import {
   TagIcon,
   PhotoIcon,
   AdjustmentsHorizontalIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
@@ -136,6 +140,7 @@ interface ProfileWithAddress {
   zip_code?: string
   country?: string
 }
+
 export default function TeacherDashboard() {
   const { user, canAccess } = useWebsiteAuth()
   const [courses, setCourses] = useState<Course[]>([])
@@ -174,6 +179,10 @@ export default function TeacherDashboard() {
   const [selectedBatchForCertificate, setSelectedBatchForCertificate] = useState<string | null>(
     null,
   )
+  const [showTemplatePreviewModal, setShowTemplatePreviewModal] = useState(false)
+  const [currentTemplateIndex, setCurrentTemplateIndex] = useState(0)
+  const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false)
@@ -247,8 +256,64 @@ export default function TeacherDashboard() {
       loadDashboardData()
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Generate certificate preview when modal opens or template changes
+  useEffect(() => {
+    if (!showTemplatePreviewModal) return
+
+    const generatePreview = async () => {
+      console.log(
+        'generatePreview called. showTemplatePreviewModal:',
+        showTemplatePreviewModal,
+        'certificateAssignments length:',
+        certificateAssignments.length,
+        'currentTemplateIndex:',
+        currentTemplateIndex,
+      )
+      if (
+        certificateAssignments.length > currentTemplateIndex &&
+        certificateAssignments[currentTemplateIndex]
+      ) {
+        setLoadingPreview(true)
+        try {
+          console.log('Generating preview with data...')
+          const sampleData = {
+            studentName: 'Sample Student Name',
+            studentId: 'STU-001',
+            courseName: 'Sample Course',
+            courseId: 'COURSE-001',
+            gurukulName: 'Sample Gurukul',
+            completionDate: new Date().toISOString(),
+            certificateNumber: 'CERT-2024-001',
+            verificationCode: 'VERIFY123',
+          }
+          const currentTemplate = certificateAssignments[currentTemplateIndex].template
+          console.log('Sample data:', sampleData)
+          console.log('Current template:', currentTemplate)
+          const preview = await generateCertificatePreview(sampleData, currentTemplate)
+          console.log(
+            'Preview generated successfully, type:',
+            typeof preview,
+            'length:',
+            preview?.length,
+          )
+          setTemplatePreviewUrl(preview)
+        } catch (error) {
+          console.error('Failed to generate preview:', error)
+          setTemplatePreviewUrl(null)
+        } finally {
+          setLoadingPreview(false)
+        }
+      }
+    }
+    generatePreview()
+  }, [showTemplatePreviewModal, currentTemplateIndex, certificateAssignments])
   const loadDashboardData = async () => {
     try {
+      // Invalidate enrollment caches to ensure fresh data
+      queryCache.invalidatePattern('enrollments:.*')
+      console.log('Starting dashboard data load...')
+
       const [
         coursesData,
         enrollmentsData,
@@ -270,11 +335,24 @@ export default function TeacherDashboard() {
         getCompletedBatchStudents(user!.id),
         getCertificatesFromTable(),
       ])
+      console.log('Dashboard data loaded:', {
+        coursesData: coursesData.length,
+        assignmentsData: assignmentsData.length,
+      })
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setPendingEnrollments(pendingEnrollmentsData)
+
+      // Debug logging
+      console.log('Dashboard Data Loaded:', {
+        totalEnrollments: enrollmentsData.length,
+        pendingEnrollments: pendingEnrollmentsData.length,
+        courses: coursesData.length,
+      })
+
       setGurukuls(gurukulData)
       setCertificateAssignments(assignmentsData)
+      console.log('Certificate assignments loaded:', assignmentsData.length, assignmentsData)
       setBatches(batchesData)
       setAllStudents(studentsData as ProfileWithAddress[])
       setCompletedBatchStudents(completedBatchStudentsData)
@@ -612,17 +690,15 @@ export default function TeacherDashboard() {
   // Notification data aggregation
   const notifications = [
     // Pending enrollment approvals
-    ...enrollments
-      .filter((e) => e.status === 'pending')
-      .map((enrollment) => ({
-        id: enrollment.id,
-        type: 'enrollment' as const,
-        title: 'New enrollment pending approval',
-        message: `${enrollment.student?.full_name || 'Student'} enrolled in ${enrollment.course?.title || 'course'}`,
-        timestamp: new Date(enrollment.created_at),
-        action: () => setActiveView('students'),
-        actionText: 'Review',
-      })),
+    ...pendingEnrollments.map((enrollment) => ({
+      id: enrollment.id,
+      type: 'enrollment' as const,
+      title: 'New enrollment pending approval',
+      message: `${enrollment.student?.full_name || 'Student'} enrolled in ${enrollment.course?.title || 'course'}`,
+      timestamp: new Date(enrollment.created_at),
+      action: () => setActiveView('students'),
+      actionText: 'Review',
+    })),
     // Pending certificates to issue
     ...enrollments
       .filter((e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id))
@@ -1852,7 +1928,20 @@ export default function TeacherDashboard() {
                     <div className="text-xs sm:text-sm text-green-700">Total Issued</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                <Card
+                  className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    console.log(
+                      'Available Templates card clicked. certificateAssignments:',
+                      certificateAssignments.length,
+                    )
+                    if (certificateAssignments.length > 0) {
+                      console.log('Opening template preview modal...')
+                      setCurrentTemplateIndex(0)
+                      setShowTemplatePreviewModal(true)
+                    }
+                  }}
+                >
                   <CardContent className="p-6 text-center">
                     <DocumentTextIcon className="h-10 w-10 text-purple-600 mx-auto mb-3" />
                     <div className="text-3xl font-bold text-purple-900">
@@ -3826,6 +3915,163 @@ export default function TeacherDashboard() {
         </div>
       )}
 
+      {/* Template Preview Modal */}
+      {showTemplatePreviewModal && certificateAssignments.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-x-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Certificate Template Preview</h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Template {currentTemplateIndex + 1} of {certificateAssignments.length}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowTemplatePreviewModal(false)
+                    setCurrentTemplateIndex(0)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 flex-grow overflow-y-auto">
+              {certificateAssignments[currentTemplateIndex] && (
+                <div className="space-y-4">
+                  {/* Template Info */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Template Name
+                        </p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {certificateAssignments[currentTemplateIndex].template?.name || 'Unknown'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Certificate Type
+                        </p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {certificateAssignments[currentTemplateIndex].template?.type ||
+                            'Certificate'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Assigned To</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {certificateAssignments[currentTemplateIndex].course?.title ||
+                            certificateAssignments[currentTemplateIndex].gurukul?.name ||
+                            'Direct Assignment'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                        <p className="text-lg font-semibold text-green-600">Active</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Certificate Template Preview */}
+                  <div className="bg-white border-4 border-gray-300 rounded-lg p-0 overflow-hidden">
+                    {loadingPreview ? (
+                      <div
+                        className="w-full bg-gray-50 flex items-center justify-center"
+                        style={{ minHeight: '600px' }}
+                      >
+                        <div className="text-center">
+                          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                          <p className="text-gray-600">Generating preview...</p>
+                        </div>
+                      </div>
+                    ) : templatePreviewUrl ? (
+                      <img
+                        src={templatePreviewUrl}
+                        alt="Certificate Preview"
+                        className="w-full h-auto rounded-lg"
+                        style={{ minHeight: '600px', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <div
+                        className="w-full bg-gray-50 flex items-center justify-center"
+                        style={{ minHeight: '600px' }}
+                      >
+                        <div className="text-center">
+                          <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-600">No preview available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation and Actions Footer */}
+            <div className="p-6 border-t border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentTemplateIndex > 0) {
+                        setCurrentTemplateIndex(currentTemplateIndex - 1)
+                      }
+                    }}
+                    disabled={currentTemplateIndex === 0}
+                  >
+                    <ChevronLeftIcon className="h-4 w-4 mr-2" />
+                    Previous
+                  </Button>
+
+                  {/* Template dots/indicators */}
+                  <div className="flex items-center gap-1">
+                    {certificateAssignments.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentTemplateIndex(index)}
+                        className={`h-2 rounded-full transition-all ${
+                          index === currentTemplateIndex ? 'bg-purple-600 w-6' : 'bg-gray-300 w-2'
+                        }`}
+                        title={`Template ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (currentTemplateIndex < certificateAssignments.length - 1) {
+                        setCurrentTemplateIndex(currentTemplateIndex + 1)
+                      }
+                    }}
+                    disabled={currentTemplateIndex === certificateAssignments.length - 1}
+                  >
+                    Next
+                    <ChevronRightIcon className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowTemplatePreviewModal(false)
+                    setCurrentTemplateIndex(0)
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enrollment Management Modal */}
       {showEnrollmentModal && selectedStudentForEnrollment && (
         <EnrollmentManagementModal
@@ -3833,7 +4079,10 @@ export default function TeacherDashboard() {
           student={selectedStudentForEnrollment}
           teacherCourses={courses}
           existingEnrollments={enrollments.filter(
-            (e) => e.student_id === selectedStudentForEnrollment.id,
+            (e) => e.student_id === selectedStudentForEnrollment.id && e.status !== 'pending',
+          )}
+          pendingEnrollments={enrollments.filter(
+            (e) => e.student_id === selectedStudentForEnrollment.id && e.status === 'pending',
           )}
           teacherId={user?.id || ''}
           certificates={certificates}
@@ -3881,6 +4130,7 @@ interface EnrollmentManagementModalProps {
   student: ProfileWithAddress
   teacherCourses: Course[]
   existingEnrollments: Enrollment[]
+  pendingEnrollments: Enrollment[]
   teacherId: string
   certificates: Certificate[]
   onClose: () => void
@@ -3892,6 +4142,7 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
   student,
   teacherCourses,
   existingEnrollments,
+  pendingEnrollments,
   teacherId, // eslint-disable-line @typescript-eslint/no-unused-vars
   certificates,
   onClose,
@@ -3911,10 +4162,17 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
       return
     }
 
-    // Check if student is already enrolled in this course
+    // Check if student is already enrolled in this course (approved or completed)
     const alreadyEnrolled = existingEnrollments.some((e) => e.course_id === selectedCourseId)
     if (alreadyEnrolled) {
       toast.error('Student is already enrolled in this course')
+      return
+    }
+
+    // Check if student has a pending enrollment in this course
+    const hasPendingEnrollment = pendingEnrollments.some((e) => e.course_id === selectedCourseId)
+    if (hasPendingEnrollment) {
+      toast.error('Student already has a pending enrollment in this course')
       return
     }
 
@@ -3932,9 +4190,11 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
     }
   }
 
-  // Get courses student is not enrolled in
+  // Get courses student is not enrolled in (excluding both approved and pending)
   const availableCourses = teacherCourses.filter(
-    (course) => !existingEnrollments.some((e) => e.course_id === course.id),
+    (course) =>
+      !existingEnrollments.some((e) => e.course_id === course.id) &&
+      !pendingEnrollments.some((e) => e.course_id === course.id),
   )
 
   if (!isOpen) return null
@@ -3958,6 +4218,42 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
         </div>
 
         <div className="p-6">
+          {/* Pending Enrollments */}
+          {pendingEnrollments.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-yellow-900 mb-4 flex items-center">
+                <ClockIcon className="h-5 w-5 mr-2 text-yellow-600" />
+                Pending Enrollments
+              </h3>
+              <div className="space-y-3">
+                {pendingEnrollments.map((enrollment) => {
+                  const course = teacherCourses.find((c) => c.id === enrollment.course_id)
+                  return (
+                    <div
+                      key={enrollment.id}
+                      className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200"
+                    >
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {course?.title || 'Unknown Course'}
+                        </h4>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <span>
+                            Status:{' '}
+                            <span className="capitalize text-yellow-600 font-medium">Pending</span>
+                          </span>
+                          <span>
+                            Requested: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Existing Enrollments */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Current Enrollments</h3>

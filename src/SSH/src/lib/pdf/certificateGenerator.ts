@@ -1,5 +1,12 @@
 import jsPDF from 'jspdf'
+import * as pdfjsLib from 'pdfjs-dist'
 import { CertificateTemplate } from '@/types'
+
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
+}
 export interface CertificateData {
   studentName: string
   studentId: string
@@ -62,24 +69,68 @@ export class CertificateGenerator {
     })
   }
   async generateCertificate(data: CertificateData, template?: CertificateTemplate): Promise<Blob> {
-    // Set up the certificate layout with decorative elements
-    this.setupCertificate()
-    // Add header with logos
-    await this.addHeader(template)
-    // Add main certificate content
-    this.addCertificateContent(data, template)
-    // Add decorative elements
-    this.addDecorativeElements()
-    // Add signatures
-    await this.addSignatures(template)
-    // Add footer with verification details
-    this.addFooter(data)
-    // Return as blob for download
-    return this.pdf.output('blob')
+    try {
+      // Set up the certificate layout with decorative elements
+      this.setupCertificate()
+      // Add header with logos
+      await this.addHeader(template)
+      // Add main certificate content
+      this.addCertificateContent(data, template)
+      // Add decorative elements
+      this.addDecorativeElements()
+      // Add signatures
+      await this.addSignatures(template)
+      // Add footer with verification details
+      this.addFooter(data)
+      // Return as blob for download
+      return this.pdf.output('blob')
+    } catch (error) {
+      console.error('Error in generateCertificate:', error)
+      throw error
+    }
   }
-  async generatePreview(data: CertificateData): Promise<string> {
-    await this.generateCertificate(data)
-    return this.pdf.output('dataurlstring')
+  async generatePreview(data: CertificateData, template?: CertificateTemplate): Promise<string> {
+    await this.generateCertificate(data, template)
+    const dataUrl = this.pdf.output('dataurlstring')
+
+    // Convert PDF to PNG image using PDF.js
+    try {
+      const imageUrl = await this.convertPdfToImage(dataUrl)
+      return imageUrl
+    } catch {
+      return dataUrl
+    }
+  }
+
+  private async convertPdfToImage(pdfDataUrl: string): Promise<string> {
+    // Load the PDF
+    const pdf = await pdfjsLib.getDocument(pdfDataUrl).promise
+
+    // Get first page
+    const page = await pdf.getPage(1)
+
+    // Get page viewport
+    const scale = 2 // Higher scale = higher quality
+    const viewport = page.getViewport({ scale })
+
+    // Create canvas
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Failed to get canvas context')
+
+    // Render page to canvas
+    const renderContext = {
+      canvasContext: context,
+      viewport: viewport,
+      canvas: canvas,
+    }
+    await page.render(renderContext).promise
+
+    // Convert canvas to PNG data URL
+    const imageUrl = canvas.toDataURL('image/png')
+    return imageUrl
   }
   private setupCertificate() {
     const { width, height } = this.design.layout
@@ -391,7 +442,10 @@ export async function generateCertificatePDF(
   const generator = new CertificateGenerator()
   return await generator.generateCertificate(data, template)
 }
-export async function generateCertificatePreview(data: CertificateData): Promise<string> {
+export async function generateCertificatePreview(
+  data: CertificateData,
+  template?: CertificateTemplate,
+): Promise<string> {
   const generator = new CertificateGenerator()
-  return await generator.generatePreview(data)
+  return await generator.generatePreview(data, template)
 }

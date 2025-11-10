@@ -213,7 +213,7 @@ export default function CoursesPage() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredCourses.map((course) => (
-                  <Card key={course.id} className="card-hover overflow-hidden">
+                  <Card key={course.id} className="card-hover overflow-hidden flex flex-col">
                     <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 flex items-center justify-center">
                       <div className="text-center">
                         <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -224,7 +224,7 @@ export default function CoursesPage() {
                         <p className="text-sm font-medium text-gray-700">{course.gurukul?.name}</p>
                       </div>
                     </div>
-                    <CardContent className="p-6">
+                    <CardContent className="p-6 flex flex-col flex-grow">
                       <div className="flex items-start justify-between mb-2">
                         <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
                         <span className="text-sm text-gray-500">{course.course_number}</span>
@@ -250,7 +250,7 @@ export default function CoursesPage() {
                           <span>{formatCurrency(course.price)}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mt-auto">
                         <div className="text-sm text-gray-500">
                           {course.delivery_method === 'remote' && '🌐 Online'}
                           {course.delivery_method === 'physical' && '🏫 In-person'}

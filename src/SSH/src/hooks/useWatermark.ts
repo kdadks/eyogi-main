@@ -80,7 +80,11 @@ export function useWatermark(): UseWatermarkReturn {
         // Convert file to ArrayBuffer and send to server
         const arrayBuffer = await file.arrayBuffer()
 
-        const response = await fetch('http://localhost:3001/api/watermark/preview', {
+        const watermarkUrl = import.meta.env.PROD
+          ? 'https://eyogi-main.vercel.app/api/watermark/preview'
+          : '/api/watermark/preview'
+
+        const response = await fetch(watermarkUrl, {
           method: 'POST',
           headers: {
             'Content-Type': file.type,

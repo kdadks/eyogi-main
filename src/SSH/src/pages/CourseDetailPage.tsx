@@ -102,6 +102,12 @@ export default function CourseDetailPage() {
       loadCourseData()
     }
   }, [id, loadCourseData])
+
+  useEffect(() => {
+    // Scroll to top when component mounts or course ID changes
+    window.scrollTo(0, 0)
+  }, [id])
+
   const handleEnroll = async () => {
     if (!user) {
       toast.error('Please sign in to enroll in courses')

@@ -430,8 +430,12 @@ export async function watermarkMediaFiles(
 
         const imageBuffer = await response.arrayBuffer()
 
-        // Send to server for watermarking
-        const watermarkResponse = await fetch('http://localhost:3001/api/watermark/preview', {
+        // Send to server for watermarking (production only)
+        const watermarkUrl = import.meta.env.PROD
+          ? 'https://eyogi-main.vercel.app/api/watermark/preview'
+          : '/api/watermark/preview'
+
+        const watermarkResponse = await fetch(watermarkUrl, {
           method: 'POST',
           headers: {
             'Content-Type': mediaFile.mime_type,
