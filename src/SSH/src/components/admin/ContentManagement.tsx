@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import { SafeReactQuill } from '../ui/SafeReactQuill'
 import { toast } from 'sonner'
 import { EyeIcon, PencilIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Page } from '../../types'
@@ -477,7 +476,8 @@ export default function ContentManagement() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                  <ReactQuill
+                  <SafeReactQuill
+                    key="create-editor"
                     value={formData.content}
                     onChange={handleContentChange}
                     placeholder="Enter page content..."
@@ -596,7 +596,8 @@ export default function ContentManagement() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                  <ReactQuill
+                  <SafeReactQuill
+                    key={editingPage ? `edit-${editingPage.id}` : 'edit-new'}
                     value={formData.content}
                     onChange={handleContentChange}
                     placeholder="Enter page content..."

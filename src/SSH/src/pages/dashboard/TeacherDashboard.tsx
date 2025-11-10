@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+import { SafeReactQuill } from '../../components/ui/SafeReactQuill'
 import MediaSelectorButton from '@/components/MediaSelectorButton'
 import MediaSelector from '@/components/MediaSelector'
 import { Course, Enrollment, Certificate } from '@/types'
@@ -3028,9 +3029,8 @@ export default function TeacherDashboard() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Detailed Description
                       </label>
-                      <ReactQuill
+                      <SafeReactQuill
                         key="course-description-editor"
-                        ref={quillRef}
                         value={detailedDescription}
                         onChange={setDetailedDescription}
                         modules={quillModules}

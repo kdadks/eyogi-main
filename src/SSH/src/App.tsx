@@ -1,50 +1,54 @@
-import React, { Suspense, useState, useEffect } from 'react'
+import React, { Suspense, useState, useEffect, lazy } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-// Layout Components
+
+// Layout Components (keep these eager loaded as they're used everywhere)
 import { GlossyHeader } from './components/layout/GlossyHeader'
 import Footer from './components/layout/Footer'
 import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
 import AuthRedirect from './components/auth/AuthRedirect'
-// SSH Website Components
-import HomePage from './pages/HomePage'
-import AboutPage from './pages/AboutPage'
-import ContactPage from './pages/ContactPage'
-import CoursesPage from './pages/CoursesPage'
-import GurukulPage from './pages/GurukulPage'
-// Dashboard Components
-import StudentDashboard from './pages/dashboard/StudentDashboard'
-import TeacherDashboard from './pages/dashboard/TeacherDashboard'
-import DashboardPage from './pages/dashboard/DashboardPage'
-import ParentsDashboard from './pages/dashboard/parents/ParentsDashboard'
-// Admin Components
-import AdminLogin from './components/auth/AdminLogin'
-import AdminLayout from './components/admin/AdminLayout'
-import AdminDashboard from './components/admin/AdminDashboard'
-import AdminUserManagementNew from './components/admin/AdminUserManagementNew'
-import AdminPermissionManagement from './components/admin/AdminPermissionManagement'
-import CourseManagement from './components/admin/CourseManagement'
-import CourseAssignmentManagement from './components/admin/CourseAssignmentManagement'
-import EnrollmentManagement from './components/admin/EnrollmentManagement'
-import GurukulManagement from './components/admin/GurukulManagement'
-import SiteAnalytics from './components/admin/SiteAnalytics'
-import CertificateManagement from './components/admin/CertificateManagement'
-import ContentManagement from './components/admin/ContentManagement'
-import MediaManagement from './components/admin/MediaManagement'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
-import GurukulDetailPage from './pages/GurukulDetailPage'
-import CourseDetailPage from './pages/CourseDetailPage'
-import LegalPageDisplay from './components/legal/LegalPageDisplay'
-import CertificateViewer from './components/certificates/CertificateViewer'
-import BatchManagement from './components/admin/BatchManagement'
-import StudentManagement from './components/admin/StudentManagement'
-import TeacherManagement from './components/admin/TeacherManagement'
-import TeacherDetailView from './components/admin/TeacherDetailView'
-import TeacherStudentManagement from './components/teacher/TeacherStudentManagement'
-import ComplianceManagement from './components/admin/ComplianceManagement'
-import InvoiceManagement from './components/admin/InvoiceManagement'
-import PaymentManagement from './components/admin/PaymentManagement'
+
+// Lazy load SSH Website Components
+const HomePage = lazy(() => import('./pages/HomePage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
+const CoursesPage = lazy(() => import('./pages/CoursesPage'))
+const GurukulPage = lazy(() => import('./pages/GurukulPage'))
+const GurukulDetailPage = lazy(() => import('./pages/GurukulDetailPage'))
+const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'))
+const LegalPageDisplay = lazy(() => import('./components/legal/LegalPageDisplay'))
+const CertificateViewer = lazy(() => import('./components/certificates/CertificateViewer'))
+
+// Lazy load Dashboard Components
+const StudentDashboard = lazy(() => import('./pages/dashboard/StudentDashboard'))
+const TeacherDashboard = lazy(() => import('./pages/dashboard/TeacherDashboard'))
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'))
+const ParentsDashboard = lazy(() => import('./pages/dashboard/parents/ParentsDashboard'))
+const TeacherStudentManagement = lazy(() => import('./components/teacher/TeacherStudentManagement'))
+
+// Lazy load Admin Components
+const AdminLogin = lazy(() => import('./components/auth/AdminLogin'))
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'))
+const AdminUserManagementNew = lazy(() => import('./components/admin/AdminUserManagementNew'))
+const AdminPermissionManagement = lazy(() => import('./components/admin/AdminPermissionManagement'))
+const CourseManagement = lazy(() => import('./components/admin/CourseManagement'))
+const CourseAssignmentManagement = lazy(() => import('./components/admin/CourseAssignmentManagement'))
+const EnrollmentManagement = lazy(() => import('./components/admin/EnrollmentManagement'))
+const GurukulManagement = lazy(() => import('./components/admin/GurukulManagement'))
+const SiteAnalytics = lazy(() => import('./components/admin/SiteAnalytics'))
+const CertificateManagement = lazy(() => import('./components/admin/CertificateManagement'))
+const ContentManagement = lazy(() => import('./components/admin/ContentManagement'))
+const MediaManagement = lazy(() => import('./components/admin/MediaManagement'))
+const BatchManagement = lazy(() => import('./components/admin/BatchManagement'))
+const StudentManagement = lazy(() => import('./components/admin/StudentManagement'))
+const TeacherManagement = lazy(() => import('./components/admin/TeacherManagement'))
+const TeacherDetailView = lazy(() => import('./components/admin/TeacherDetailView'))
+const ComplianceManagement = lazy(() => import('./components/admin/ComplianceManagement'))
+const InvoiceManagement = lazy(() => import('./components/admin/InvoiceManagement'))
+const PaymentManagement = lazy(() => import('./components/admin/PaymentManagement'))
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">

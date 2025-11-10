@@ -30,29 +30,55 @@ if (import.meta.env.PROD || import.meta.env.VITE_FORCE_SESSION_MANAGEMENT) {
 }
 // Keep essential error handlers for production monitoring
 window.addEventListener('error', (event) => {
+  console.error('Global error caught:', event.error || event.message)
   if (event.message.includes('prototype')) {
     // Prototype error detected
   }
+  if (event.message.includes('createContext')) {
+    console.error('React context error - possible duplicate React instance')
+  }
 })
-window.addEventListener('unhandledrejection', () => {
-  // Unhandled promise rejection
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason)
 })
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <BrowserRouter
-      basename="/ssh-app"
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <AuthProvider>
-        <WebsiteAuthProvider>
-          <PermissionProvider>
-            <App />
-          </PermissionProvider>
-        </WebsiteAuthProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
-)
+
+const rootElement = document.getElementById('root')
+if (!rootElement) {
+  throw new Error('Failed to find the root element')
+}
+
+try {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <BrowserRouter
+        basename="/ssh-app"
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <AuthProvider>
+          <WebsiteAuthProvider>
+            <PermissionProvider>
+              <App />
+            </PermissionProvider>
+          </WebsiteAuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </React.StrictMode>,
+  )
+} catch (error) {
+  console.error('Failed to render application:', error)
+  rootElement.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(to bottom right, #fff7ed, #ffffff, #fef2f2); font-family: system-ui, -apple-system, sans-serif;">
+      <div style="text-align: center; padding: 2rem;">
+        <h1 style="color: #dc2626; margin-bottom: 1rem;">Application Failed to Load</h1>
+        <p style="color: #6b7280; margin-bottom: 1.5rem;">Please try refreshing the page. If the problem persists, contact support.</p>
+        <button onclick="window.location.reload()" style="background: #ea580c; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
+          Refresh Page
+        </button>
+      </div>
+    </div>
+  `
+}

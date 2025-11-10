@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import { SafeReactQuill } from '../ui/SafeReactQuill'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, Syllabus } from '@/types'
@@ -786,9 +785,9 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description *
                   </label>
-                  <ReactQuill
+                  <SafeReactQuill
                     value={formData.description}
-                    onChange={(value) => setFormData({ ...formData, description: value })}
+                    onChange={(value: string) => setFormData({ ...formData, description: value })}
                     placeholder="Course description"
                     className="bg-white"
                   />
@@ -935,9 +934,9 @@ export default function CourseManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Learning Outcomes
                 </label>
-                <ReactQuill
+                <SafeReactQuill
                   value={outcomesToHtml(formData.learning_outcomes)}
-                  onChange={(value) =>
+                  onChange={(value: string) =>
                     setFormData({
                       ...formData,
                       learning_outcomes: parseHtmlToOutcomes(value),
@@ -1027,9 +1026,9 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description *
                   </label>
-                  <ReactQuill
+                  <SafeReactQuill
                     value={formData.description}
-                    onChange={(value) => setFormData({ ...formData, description: value })}
+                    onChange={(value: string) => setFormData({ ...formData, description: value })}
                     placeholder="Course description"
                     className="bg-white"
                   />
@@ -1196,9 +1195,9 @@ export default function CourseManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Learning Outcomes
                 </label>
-                <ReactQuill
+                <SafeReactQuill
                   value={outcomesToHtml(formData.learning_outcomes)}
-                  onChange={(value) =>
+                  onChange={(value: string) =>
                     setFormData({
                       ...formData,
                       learning_outcomes: parseHtmlToOutcomes(value),
