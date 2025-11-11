@@ -45,45 +45,45 @@ export default function HomePage() {
     {
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: 'Hindu Education & Vedic Learning Platform - eYogi Gurukul',
+      name: 'SSH University - Harmonizing Ancient Wisdom with Modern Education',
       description:
-        'Discover authentic Hindu traditions, Vedic philosophy, Sanskrit, mantras, and yoga through expert-led online courses. Join our global community of Sanatan Dharma learners.',
-      url: 'https://eyogi-gurukul.vercel.app',
+        'SSH University harmonizes ancient wisdom with modern education through integrated academic programs that nurture intellect and inner awareness.',
+      url: 'https://ssh-university.vercel.app',
       mainEntity: {
         '@type': 'EducationalOrganization',
-        name: 'eYogi Gurukul',
+        name: 'SSH University',
       },
       about: [
-        { '@type': 'Thing', name: 'Hindu Religion' },
-        { '@type': 'Thing', name: 'Hinduism' },
-        { '@type': 'Thing', name: 'Vedic Philosophy' },
-        { '@type': 'Thing', name: 'Sanatan Dharma' },
-        { '@type': 'Thing', name: 'Hindu Culture' },
-        { '@type': 'Thing', name: 'Indian Hindu Culture' },
+        { '@type': 'Thing', name: 'Ancient Wisdom' },
+        { '@type': 'Thing', name: 'Modern Education' },
+        { '@type': 'Thing', name: 'Integrated Learning' },
+        { '@type': 'Thing', name: 'Conscious Leadership' },
+        { '@type': 'Thing', name: 'Ethical Education' },
+        { '@type': 'Thing', name: 'Transformative Learning' },
       ],
     },
   ]
   const features = [
     {
       icon: AcademicCapIcon,
-      title: 'Expert Teachers',
-      description: 'Learn from qualified instructors with deep knowledge of Vedic traditions',
+      title: 'Integrated Programs',
+      description: 'Academic excellence combined with ethical reflection and purposeful innovation',
     },
     {
       icon: BookOpenIcon,
-      title: 'Comprehensive Curriculum',
+      title: 'Ancient & Modern Wisdom',
       description:
-        'Structured courses covering all aspects of ancient wisdom and modern applications',
+        'Rigorous modern scholarship blended with the depth of traditional insight',
     },
     {
       icon: UserGroupIcon,
-      title: 'Community Learning',
-      description: 'Join a global community of learners on the path of spiritual growth',
+      title: 'Conscious Community',
+      description: 'A global learning ecosystem that cultivates balance, compassion, and consciousness',
     },
     {
       icon: StarIcon,
-      title: 'Certified Programs',
-      description: 'Earn certificates upon completion of courses and showcase your achievements',
+      title: 'Transformative Education',
+      description: 'Nurturing graduates who are professionally capable and socially conscious',
     },
   ]
   const testimonials = [
@@ -112,27 +112,25 @@ export default function HomePage() {
   return (
     <>
       <SEOHead
-        title="Hindu Education & Vedic Learning Platform"
-        description="Learn authentic Hindu traditions, Vedic philosophy, Sanskrit, mantras, and yoga through comprehensive online courses. Discover Sanatan Dharma wisdom with expert teachers in our traditional Gurukul system."
+        title="SSH University - Harmonizing Ancient Wisdom with Modern Education"
+        description="SSH University harmonizes ancient wisdom with modern education through integrated academic programs. Join our transformative learning community that nurtures intellect, inner awareness, and conscious leadership for a balanced approach to knowledge and life."
         keywords={[
-          'Hindu Education Online',
-          'Vedic Learning Platform',
-          'Sanatan Dharma Courses',
-          'Hindu Philosophy Online',
-          'Sanskrit Learning Online',
-          'Hindu Culture Education',
-          'Indian Hindu Traditions',
-          'Vedic Wisdom Courses',
-          'Hindu Gurukul Online',
-          'Traditional Hindu Education',
-          'Authentic Hindu Teaching',
-          'Hindu Heritage Learning',
-          'Vedic Studies Online',
-          'Hindu Spiritual Education',
-          'Dharma Education Platform',
-          'Hindu Values Learning',
-          'Vedic Knowledge Online',
-          'Hindu Religion Courses',
+          'SSH University',
+          'Ancient Wisdom Modern Education',
+          'Integrated Academic Programs',
+          'Conscious Leadership Development',
+          'Ethical Education University',
+          'Transformative Learning Community',
+          'Intellect Inner Awareness',
+          'Balanced Knowledge Approach',
+          'Timeless Wisdom Contemporary',
+          'Academic Excellence Ethics',
+          'Global Education Mission',
+          'Purposeful Innovation Learning',
+          'Collective Well-being Education',
+          'Seva Satya Samskara University',
+          'Spiritual Heritage Modern',
+          'Indian Education Innovation',
         ]}
         canonicalUrl="/"
         structuredData={structuredData}
@@ -161,24 +159,20 @@ export default function HomePage() {
                       variant="info"
                       className="text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2 hero-badge"
                     >
-                      🕉️ Authentic Hindu Education & Vedic Learning
+                      🕉️ SSH University - Ancient Wisdom Meets Modern Education
                     </Badge>
                   </div>
                   <h1
                     className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight px-2 sm:px-0"
                     itemProp="headline"
                   >
-                    Learn Authentic <span className="gradient-text">Hindu Heritage</span> & Vedic
-                    Wisdom
+                    Harmonizing <span className="gradient-text">Ancient Wisdom</span> & Modern Education
                   </h1>
                   <p
                     className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed px-2 sm:px-0"
                     itemProp="description"
                   >
-                    Discover authentic Hindu religion, Vedic philosophy, Sanskrit, mantras, and yoga
-                    through our comprehensive Sanatan Dharma education platform. Learn traditional
-                    Hindu culture from expert teachers in our modern Gurukul system designed for all
-                    ages.
+                    SSH University is a forward-looking centre of learning that harmonises ancient wisdom with modern education. Inspired by the ethos of eYogi Gurukul, we nurture both intellect and inner awareness through integrated academic programs that blend contemporary disciplines with timeless ethical foundations.
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:gap-4 px-4 sm:px-0 sm:flex-row justify-center lg:justify-start">
@@ -187,7 +181,7 @@ export default function HomePage() {
                       size="lg"
                       className="w-full sm:w-auto min-h-[50px] text-base font-semibold px-6 py-3"
                     >
-                      Explore Courses
+                      Explore Programs
                       <ArrowRightIcon className="ml-2 h-5 w-5" />
                     </Button>
                   </ScrollLink>
@@ -197,7 +191,7 @@ export default function HomePage() {
                       size="lg"
                       className="w-full sm:w-auto min-h-[50px] text-base font-semibold px-6 py-3"
                     >
-                      Browse Gurukuls
+                      Browse Academic Centers
                     </Button>
                   </ScrollLink>
                 </div>
@@ -260,12 +254,10 @@ export default function HomePage() {
           <div className="container-max">
             <div className="text-center mb-12 lg:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                Why Choose eYogi Gurukul for Hindu Education?
+                Why Choose SSH University for Integrated Education?
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                We bridge the gap between ancient Hindu wisdom and modern learning technology,
-                making authentic Vedic knowledge and Sanatan Dharma accessible to everyone,
-                everywhere.
+                We harmonize ancient wisdom with modern education, creating transformative learning experiences that nurture both intellect and inner awareness for a balanced, conscious approach to knowledge and life.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
@@ -288,11 +280,12 @@ export default function HomePage() {
           <div className="container-max">
             <div className="text-center mb-12 lg:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                Explore Our Traditional Hindu Gurukuls
+                Explore Our Academic Centers
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                Each Hindu Gurukul specializes in different aspects of Vedic knowledge and Sanatan
-                Dharma, offering comprehensive Hindu education paths for students of all ages.
+                Each academic center specializes in different aspects of integrated learning and wisdom,
+                offering comprehensive educational paths that blend contemporary disciplines with
+                traditional insight for students of all backgrounds.
               </p>
             </div>
             {loading ? (
@@ -336,12 +329,12 @@ export default function HomePage() {
                         dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }}
                       />
                       <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
-                        <span>{gurukul.courses} Hindu Courses</span>
-                        <span>{gurukul.students} Vedic Students</span>
+                        <span>{gurukul.courses} Integrated Programs</span>
+                        <span>{gurukul.students} Conscious Learners</span>
                       </div>
                       <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
                         <Button variant="primary" className="w-full min-h-[44px]">
-                          Explore Hindu Gurukul
+                          Explore Academic Center
                         </Button>
                       </ScrollLink>
                     </CardContent>
@@ -356,10 +349,10 @@ export default function HomePage() {
           <div className="container-max">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                What Our Hindu Education Students Say
+                What Our Integrated Learners Say
               </h2>
               <p className="text-xl text-gray-600">
-                Hear from our global community of Hindu and Vedic learning students
+                Hear from our global community of students embracing ancient wisdom and modern education
               </p>
             </div>
             <div className="grid md:grid-cols-3 gap-8">
@@ -389,11 +382,10 @@ export default function HomePage() {
         <section id="contact" className="section-padding gradient-bg text-white">
           <div className="container-max text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 px-4">
-              Begin Your Hindu Education Journey Today
+              Begin Your Transformative Journey Today
             </h2>
             <p className="text-base sm:text-lg lg:text-xl mb-6 lg:mb-8 opacity-90 max-w-2xl mx-auto px-4 leading-relaxed">
-              Join thousands of students worldwide in discovering the timeless wisdom of Hindu
-              traditions and Vedic philosophy through our comprehensive Sanatan Dharma courses.
+              Join thousands of learners worldwide in harmonizing ancient wisdom with modern education through our integrated academic programs that nurture both intellect and inner awareness.
             </p>
             <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row justify-center max-w-sm sm:max-w-none mx-auto px-4">
               <ScrollLink to="/auth/signup" className="w-full sm:w-auto">
@@ -402,7 +394,7 @@ export default function HomePage() {
                   size="lg"
                   className="bg-white text-orange-600 hover:bg-gray-100 w-full sm:w-auto min-h-[50px] font-semibold text-base px-6 py-3"
                 >
-                  Start Hindu Learning Free
+                  Start Learning Free
                 </Button>
               </ScrollLink>
               <ScrollLink to="/courses" className="w-full sm:w-auto">
@@ -411,7 +403,7 @@ export default function HomePage() {
                   size="lg"
                   className="border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-orange-600 w-full sm:w-auto min-h-[50px] font-semibold text-base px-6 py-3"
                 >
-                  Browse Hindu Courses
+                  Browse Programs
                 </Button>
               </ScrollLink>
             </div>

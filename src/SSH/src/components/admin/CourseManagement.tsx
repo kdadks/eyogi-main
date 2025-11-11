@@ -197,12 +197,17 @@ export default function CourseManagement() {
   }, [filterCourses])
   const loadData = async () => {
     try {
+      setLoading(true)
       const [coursesData, gurukulData] = await Promise.all([getCourses(), getGurukuls()])
 
       setCourses(coursesData)
       setGurukuls(gurukulData)
-    } catch {
+    } catch (error) {
+      console.error('Failed to load course data:', error)
       toast.error('Failed to load course data')
+      // Set empty arrays to prevent UI from hanging
+      setCourses([])
+      setGurukuls([])
     } finally {
       setLoading(false)
     }

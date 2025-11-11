@@ -18,41 +18,41 @@ export default function AboutPage() {
   const values = [
     {
       icon: HeartIcon,
-      title: 'Authentic Wisdom',
+      title: 'Seva (Service)',
       description:
-        'We preserve and share the authentic teachings of Sanatana Dharma with respect and accuracy.',
+        'Embodying the principle of selfless service in every aspect of teaching, learning, and leadership.',
     },
     {
       icon: GlobeAltIcon,
-      title: 'Global Harmony',
+      title: 'Satya (Truth)',
       description:
-        'Building bridges between ancient wisdom and modern life to create peace and understanding.',
+        'Pursuing truth through rigorous scholarship while honoring the timeless wisdom of ancient traditions.',
     },
     {
       icon: UserGroupIcon,
-      title: 'Inclusive Learning',
+      title: 'Samskara (Character)',
       description:
-        'Welcoming learners from all backgrounds to explore and benefit from Vedic knowledge.',
+        'Cultivating ethical reflection and purposeful innovation to develop strong moral character.',
     },
     {
       icon: AcademicCapIcon,
-      title: 'Excellence in Education',
+      title: 'Integrated Excellence',
       description:
-        'Providing high-quality, structured learning experiences with certified instructors.',
+        'Combining academic rigor with spiritual depth to nurture graduates who are both professionally capable and socially conscious.',
     },
   ]
   const team = [
     {
-      name: 'Dr. Rajesh Sharma',
-      role: 'Founder & Chief Academic Officer',
+      name: 'Hanumantha Rao',
+      role: 'Chancellor',
       image: DEFAULT_IMAGES.TEAM_MEMBER,
       bio: 'PhD in Sanskrit Studies with 20+ years of teaching experience in Vedic philosophy.',
     },
     {
-      name: 'Priya Patel',
-      role: 'Director of Curriculum',
+      name: 'Kumar Prashant Srivastav',
+      role: 'President',
       image: DEFAULT_IMAGES.TEAM_MEMBER,
-      bio: 'Master in Hindu Philosophy, specializing in age-appropriate spiritual education.',
+      bio: 'Reowned IT Leader and deep routed into education stream across multiple channels.',
     },
     {
       name: 'Arjun Kumar',
@@ -70,49 +70,50 @@ export default function AboutPage() {
   return (
     <>
       <SEOHead
-        title="About eYogi Gurukul - Hindu Education & Vedic Learning Mission"
-        description="Discover eYogi Gurukul's mission to connect ancient Hindu wisdom with modern learning. Learn about our authentic Vedic education approach, expert teachers, and global community of Sanatan Dharma learners."
+        title="About SSH University - Harmonizing Ancient Wisdom with Modern Education"
+        description="Discover SSH University's mission to harmonize ancient wisdom with modern education. Learn about our integrated academic programs, ethical values, and commitment to nurturing conscious leaders who balance intellect with inner awareness."
         keywords={[
-          'About eYogi Gurukul',
-          'Hindu Education Mission',
-          'Vedic Learning Philosophy',
-          'Sanatan Dharma Education',
-          'Hindu Culture Preservation',
-          'Vedic Wisdom Sharing',
-          'Traditional Hindu Education',
-          'Authentic Hindu Teaching',
-          'Hindu Heritage Mission',
-          'Vedic Knowledge Preservation',
-          'Hindu Spiritual Education',
-          'Dharma Education Mission',
-          'Hindu Values Teaching',
-          'Indian Hindu Culture Education',
-          'Vedic Tradition Learning',
+          'About SSH University',
+          'Ancient Wisdom Modern Education',
+          'Integrated Learning Programs',
+          'Ethical Education Mission',
+          'Conscious Leadership Development',
+          'Seva Satya Samskara',
+          'Spiritual Heritage Education',
+          'Global University Mission',
+          'Timeless Wisdom Contemporary',
+          'Academic Excellence Ethics',
+          'Transformative Education India',
+          'Balanced Learning Approach',
+          'Inner Awareness Education',
+          'Purposeful Innovation Learning',
+          'Collective Well-being Education',
         ]}
         canonicalUrl="/about"
         structuredData={[
           generateBreadcrumbSchema([
             { name: 'Home', url: '/' },
-            { name: 'About Hindu Education', url: '/about' },
+            { name: 'About SSH University', url: '/about' },
           ]),
           {
             '@context': 'https://schema.org',
             '@type': 'AboutPage',
-            name: 'About eYogi Gurukul - Hindu Education Mission',
+            name: 'About SSH University - Harmonizing Ancient Wisdom with Modern Education',
             description:
-              "Learn about eYogi Gurukul's mission to preserve and share authentic Hindu wisdom through modern educational technology.",
-            url: 'https://eyogi-gurukul.vercel.app/about',
+              "Learn about SSH University's mission to harmonize ancient wisdom with modern education, creating conscious leaders through integrated learning programs.",
+            url: 'https://ssh-university.vercel.app/about',
             mainEntity: {
               '@type': 'EducationalOrganization',
-              name: 'eYogi Gurukul',
+              name: 'SSH University',
               mission:
-                'To connect ancient Hindu wisdom with modern learning technology, creating eYogis who bridge spiritual science with contemporary life.',
+                'To harmonize ancient wisdom with modern education, nurturing students who balance intellect with inner awareness through integrated academic programs.',
             },
             about: [
-              { '@type': 'Thing', name: 'Hindu Education' },
-              { '@type': 'Thing', name: 'Vedic Learning' },
-              { '@type': 'Thing', name: 'Sanatan Dharma' },
-              { '@type': 'Thing', name: 'Hindu Culture Preservation' },
+              { '@type': 'Thing', name: 'Ancient Wisdom' },
+              { '@type': 'Thing', name: 'Modern Education' },
+              { '@type': 'Thing', name: 'Integrated Learning' },
+              { '@type': 'Thing', name: 'Ethical Education' },
+              { '@type': 'Thing', name: 'Conscious Leadership' },
             ],
           },
         ]}
@@ -124,17 +125,14 @@ export default function AboutPage() {
             <div className="container-max section-padding">
               <div className="text-center max-w-4xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                  About <span className="gradient-text">eYogi Gurukul</span>
+                  About <span className="gradient-text">SSH University</span>
                 </h1>
                 <p className="text-xl text-gray-600 leading-relaxed mb-8">
-                  The "e" in "eYogi Gurukul" connects the ancient Vedic practices of meditation and
-                  Spirituality of Hinduism to the modern world of science and globalization. We are
-                  dedicated to preserving and sharing the timeless wisdom of Sanatana Dharma through
-                  innovative online education.
+                  SSH University is a forward-looking centre of learning that harmonises ancient wisdom with modern education. Inspired by the ethos of eYogi Gurukul, we believe that true education nurtures both intellect and inner awareness. Our vibrant learning ecosystem encourages academic excellence, ethical reflection, and purposeful innovation — empowering students to think critically while remaining grounded in timeless human values.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link to="/courses">
-                    <Button size="lg">Explore Our Courses</Button>
+                    <Button size="lg">Explore Our Programs</Button>
                   </Link>
                   <Link to="/contact">
                     <Button variant="outline" size="lg">
@@ -152,24 +150,19 @@ export default function AboutPage() {
                 <div>
                   <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Mission</h2>
                   <p className="text-lg text-gray-600 mb-6">
-                    An "eYogi" is a practitioner of meditation and Spirituality who connects the
-                    ancient science and Spirituality of Sanatana Dharma (Eternal Laws that govern
-                    the inner world) to the modern world. eYogis respect other cultures and embrace
-                    integration to build peace and harmony in the world.
+                    At SSH University, we unite the best of both worlds: the rigour of modern scholarship and the depth of traditional insight. Our faculty, students, and partners work together to explore knowledge that not only advances society but also cultivates balance, compassion, and consciousness. Rooted in the spiritual and cultural heritage of India yet open to global perspectives, SSH University stands as a place where ambition meets awareness, and learning becomes a journey of self-realisation and service.
                   </p>
                   <p className="text-lg text-gray-600 mb-8">
-                    We believe that ancient wisdom has profound relevance in today's world, offering
-                    solutions to modern challenges through time-tested principles of dharma,
-                    meditation, and spiritual growth.
+                    We design integrated academic programmes that blend contemporary disciplines with the ethical, spiritual, and philosophical foundations of timeless wisdom. Our mission is to cultivate an environment of inquiry, inclusivity, and inner growth, where curiosity and mindfulness coexist.
                   </p>
                   <div className="flex items-center space-x-4">
                     <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                       <BookOpenIcon className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Bridging Ancient & Modern</h3>
+                      <h3 className="font-semibold text-gray-900">Integrated Learning</h3>
                       <p className="text-gray-600">
-                        Connecting timeless wisdom with contemporary life
+                        Blending modern scholarship with ancient wisdom
                       </p>
                     </div>
                   </div>
@@ -177,7 +170,7 @@ export default function AboutPage() {
                 <div className="relative">
                   <img
                     src="/ssh-app/Images/Logo.png"
-                    alt="eYogi Gurukul logo - Ancient wisdom meets modern learning"
+                    alt="SSH University logo - Ancient wisdom meets modern learning"
                     className="rounded-2xl shadow-2xl object-contain bg-white p-6 logo-pop"
                   />
                 </div>
@@ -262,37 +255,34 @@ export default function AboutPage() {
                   Our Vision for the Future
                 </h2>
                 <p className="text-lg text-gray-600 mb-8">
-                  We envision a world where ancient wisdom and modern knowledge work together to
-                  create a more peaceful, harmonious, and spiritually aware global community.
-                  Through education, we aim to bridge cultural divides and foster understanding
-                  between different traditions and ways of life.
+                  To be a transformative global university where the wisdom of ancient traditions and the innovation of modern science come together — inspiring learners to lead with integrity, wisdom, and compassion, and to create a world guided by knowledge, balance, and collective well-being.
                 </p>
                 <div className="grid md:grid-cols-3 gap-8 mt-12">
                   <div className="text-center">
                     <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                       <GlobeAltIcon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="font-semibold mb-2">Global Reach</h3>
+                    <h3 className="font-semibold mb-2">Global Impact</h3>
                     <p className="text-gray-600 text-sm">
-                      Making Vedic wisdom accessible to learners worldwide
+                      Creating positive change through integrated learning and sustainable innovation
                     </p>
                   </div>
                   <div className="text-center">
                     <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                       <StarIcon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="font-semibold mb-2">Excellence</h3>
+                    <h3 className="font-semibold mb-2">Conscious Leadership</h3>
                     <p className="text-gray-600 text-sm">
-                      Maintaining the highest standards in spiritual education
+                      Developing leaders who balance ambition with awareness and service
                     </p>
                   </div>
                   <div className="text-center">
                     <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                       <HeartIcon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="font-semibold mb-2">Compassion</h3>
+                    <h3 className="font-semibold mb-2">Collective Well-being</h3>
                     <p className="text-gray-600 text-sm">
-                      Teaching with love, respect, and understanding
+                      Fostering harmony between individual growth and planetary consciousness
                     </p>
                   </div>
                 </div>
@@ -304,8 +294,7 @@ export default function AboutPage() {
             <div className="container-max text-center">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h2>
               <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-                Become part of a global community dedicated to learning, growing, and sharing the
-                timeless wisdom of Vedic traditions.
+                Become part of a transformative learning community dedicated to harmonizing ancient wisdom with modern education. Join us in our mission to create leaders who balance intellect with inner awareness.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth/signup">
@@ -314,12 +303,12 @@ export default function AboutPage() {
                     size="lg"
                     className="bg-white text-orange-600 hover:bg-gray-100"
                   >
-                    Start Learning Today
+                    Start Your Journey
                   </Button>
                 </Link>
                 <Link to="/gurukuls">
                   <Button variant="primary" size="lg">
-                    Explore Gurukuls
+                    Explore Programs
                   </Button>
                 </Link>
               </div>
