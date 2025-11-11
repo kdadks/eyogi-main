@@ -465,3 +465,66 @@ export interface PageAnalytics {
   // Extended properties for UI
   user?: User
 }
+
+// Attendance Management Interfaces
+export interface AttendanceRecord {
+  id: string
+  batch_id: string
+  student_id: string
+  class_date: string // ISO date string (YYYY-MM-DD)
+  status: 'present' | 'absent' | 'late' | 'excused'
+  marked_by: string
+  marked_at: string
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  student?: User
+  batch?: Batch
+  marked_by_user?: User
+  session?: AttendanceSession
+}
+
+export interface AttendanceSession {
+  id: string
+  batch_id: string
+  class_date: string // ISO date string (YYYY-MM-DD)
+  session_number: number
+  topic?: string | null
+  notes?: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  // Extended properties for UI
+  batch?: Batch
+  created_by_user?: User
+  attendance_records?: AttendanceRecord[]
+}
+
+export interface AttendanceStats {
+  total_classes: number
+  present: number
+  absent: number
+  late: number
+  excused: number
+  attendance_percentage: number
+}
+
+export interface StudentAttendanceSummary {
+  student_id: string
+  student_name: string
+  student_email: string
+  batch_id: string
+  batch_name: string
+  stats: AttendanceStats
+  recent_records: AttendanceRecord[]
+}
+
+export interface BatchAttendanceSummary {
+  batch_id: string
+  batch_name: string
+  total_students: number
+  total_sessions: number
+  average_attendance_percentage: number
+  student_summaries: StudentAttendanceSummary[]
+}

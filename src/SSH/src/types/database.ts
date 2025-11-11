@@ -466,6 +466,79 @@ export interface Database {
           updated_at?: string
         }
       }
+      attendance_records: {
+        Row: {
+          id: string
+          batch_id: string
+          student_id: string
+          class_date: string
+          status: 'present' | 'absent' | 'late' | 'excused'
+          marked_by: string
+          marked_at: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          batch_id: string
+          student_id: string
+          class_date: string
+          status: 'present' | 'absent' | 'late' | 'excused'
+          marked_by: string
+          marked_at?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          batch_id?: string
+          student_id?: string
+          class_date?: string
+          status?: 'present' | 'absent' | 'late' | 'excused'
+          marked_by?: string
+          marked_at?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      attendance_sessions: {
+        Row: {
+          id: string
+          batch_id: string
+          class_date: string
+          session_number: number
+          topic: string | null
+          notes: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          batch_id: string
+          class_date: string
+          session_number: number
+          topic?: string | null
+          notes?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          batch_id?: string
+          class_date?: string
+          session_number?: number
+          topic?: string | null
+          notes?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -482,6 +555,7 @@ export interface Database {
       enrollment_status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled'
       payment_status: 'pending' | 'paid' | 'failed' | 'refunded'
       delivery_method: 'physical' | 'remote' | 'hybrid'
+      attendance_status: 'present' | 'absent' | 'late' | 'excused'
     }
   }
 }

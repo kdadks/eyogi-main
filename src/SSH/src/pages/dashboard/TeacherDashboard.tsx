@@ -62,6 +62,7 @@ import { z } from 'zod'
 import toast from 'react-hot-toast'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
 import DashboardComplianceSection from '../../components/compliance/DashboardComplianceSection'
+import AttendanceManagement from '../../components/admin/AttendanceManagement'
 import {
   PlusIcon,
   AcademicCapIcon,
@@ -74,7 +75,7 @@ import {
   ChartBarIcon,
   BookOpenIcon,
   BellIcon,
-  // CalendarIcon, // Imported but intentionally unused for future use
+  CalendarDaysIcon,
   TrophyIcon,
   SparklesIcon,
   ArrowTrendingUpIcon,
@@ -158,7 +159,14 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true)
   const [showCreateCourse, setShowCreateCourse] = useState(false)
   const [activeView, setActiveView] = useState<
-    'overview' | 'courses' | 'students' | 'certificates' | 'batches' | 'analytics' | 'settings'
+    | 'overview'
+    | 'courses'
+    | 'students'
+    | 'certificates'
+    | 'batches'
+    | 'analytics'
+    | 'attendance'
+    | 'settings'
   >('overview')
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
   const [prerequisites, setPrerequisites] = useState<string[]>([''])
@@ -1113,6 +1121,13 @@ export default function TeacherDashboard() {
                   permission: { resource: 'batches', action: 'read' },
                 },
                 {
+                  id: 'attendance',
+                  name: 'Attendance',
+                  icon: CalendarDaysIcon,
+                  badge: null,
+                  permission: { resource: 'batches', action: 'read' },
+                },
+                {
                   id: 'settings',
                   name: 'Profile',
                   icon: Cog6ToothIcon,
@@ -1144,6 +1159,7 @@ export default function TeacherDashboard() {
                           | 'certificates'
                           | 'batches'
                           | 'analytics'
+                          | 'attendance'
                           | 'settings',
                       )
                       // Scroll to top of page
@@ -2760,6 +2776,19 @@ export default function TeacherDashboard() {
                   })}
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+
+          {/* Attendance Tab */}
+          {activeView === 'attendance' && (
+            <motion.div
+              key="attendance"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <AttendanceManagement />
             </motion.div>
           )}
 

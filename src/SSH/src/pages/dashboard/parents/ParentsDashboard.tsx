@@ -27,6 +27,8 @@ import ChatBotTrigger from '../../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../../components/profile/ProfileEditModal'
 import AddressForm from '../../../components/forms/AddressForm'
 import DashboardComplianceSection from '../../../components/compliance/DashboardComplianceSection'
+import StudentAttendanceView from '../../../components/student/StudentAttendanceView'
+import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/Card'
 import { AddressFormData, getCountryName, getStateName } from '../../../lib/address-utils'
 import { enrollInCourse } from '../../../lib/api/enrollments'
 import { getCourses } from '../../../lib/api/courses'
@@ -178,7 +180,7 @@ export default function ParentsDashboard() {
   const { show: showConfirmDialog, Dialog: ConfirmDialogModal } = useConfirmDialog()
   const { user, canAccess } = useWebsiteAuth()
   const [activeTab, setActiveTab] = useState<
-    'home' | 'children' | 'enrollments' | 'progress' | 'settings' | 'analytics'
+    'home' | 'children' | 'enrollments' | 'progress' | 'attendance' | 'settings' | 'analytics'
   >('home')
   const [children, setChildren] = useState<Child[]>([])
   const [courses, setCourses] = useState<AvailableCourse[]>([])
@@ -189,6 +191,7 @@ export default function ParentsDashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<AvailableCourse | null>(null)
+  const [selectedChildForAttendance, setSelectedChildForAttendance] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null)
   const [stats, setStats] = useState<ParentStats>({
@@ -691,6 +694,14 @@ export default function ParentsDashboard() {
       available: canAccess('certificates', 'read'),
     },
     {
+      id: 'attendance',
+      name: 'Attendance',
+      icon: CalendarDaysIcon,
+      description: "View your children's attendance",
+      gradient: 'from-teal-500 to-cyan-600',
+      available: canAccess('batches', 'read'),
+    },
+    {
       id: 'analytics',
       name: 'Analytics',
       icon: TrophyIcon,
@@ -851,6 +862,7 @@ export default function ParentsDashboard() {
                         | 'children'
                         | 'enrollments'
                         | 'progress'
+                        | 'attendance'
                         | 'settings'
                         | 'analytics',
                     )
@@ -915,6 +927,32 @@ export default function ParentsDashboard() {
             )}
             {activeTab === 'enrollments' && <EnrollmentsTab children={children} />}
             {activeTab === 'progress' && <ProgressTab children={children} stats={stats} />}
+            {activeTab === 'attendance' && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Select Child</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <select
+                      value={selectedChildForAttendance || ''}
+                      onChange={(e) => setSelectedChildForAttendance(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a child...</option>
+                      {children.map((child) => (
+                        <option key={child.student_id} value={child.student_id}>
+                          {child.full_name || child.email}
+                        </option>
+                      ))}
+                    </select>
+                  </CardContent>
+                </Card>
+                {selectedChildForAttendance && (
+                  <StudentAttendanceView studentId={selectedChildForAttendance} />
+                )}
+              </div>
+            )}
             {activeTab === 'analytics' && <AnalyticsTab children={children} stats={stats} />}
             {activeTab === 'settings' && <SettingsTab user={user} parentProfile={parentProfile} />}
           </motion.div>

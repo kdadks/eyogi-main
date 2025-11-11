@@ -49,9 +49,11 @@ import {
   MoonIcon,
   PencilIcon,
   XCircleIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
+import StudentAttendanceView from '../../components/student/StudentAttendanceView'
 interface StudentStats {
   totalEnrollments: number
   completedCourses: number
@@ -74,6 +76,7 @@ export default function StudentDashboard() {
     | 'enrollments'
     | 'certificates'
     | 'batches'
+    | 'attendance'
     | 'profile'
     | 'analytics'
     | 'settings'
@@ -465,6 +468,14 @@ export default function StudentDashboard() {
       available: canAccess('batches', 'read'),
     },
     {
+      id: 'attendance',
+      name: 'Attendance',
+      icon: CalendarDaysIcon,
+      description: 'View your attendance records',
+      gradient: 'from-teal-500 to-cyan-600',
+      available: canAccess('batches', 'read'),
+    },
+    {
       id: 'profile',
       name: 'Profile',
       icon: UserIcon,
@@ -743,6 +754,8 @@ export default function StudentDashboard() {
                         | 'courses'
                         | 'enrollments'
                         | 'certificates'
+                        | 'batches'
+                        | 'attendance'
                         | 'profile'
                         | 'analytics'
                         | 'settings',
@@ -1877,6 +1890,18 @@ export default function StudentDashboard() {
                   appropriate permissions.
                 </p>
               </div>
+            </motion.div>
+          )}
+          {/* Attendance Tab */}
+          {activeTab === 'attendance' && (
+            <motion.div
+              key="attendance"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <StudentAttendanceView />
             </motion.div>
           )}
           {/* Settings Tab */}
