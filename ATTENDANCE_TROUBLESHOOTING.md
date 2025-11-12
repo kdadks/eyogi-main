@@ -27,6 +27,20 @@ const canCreate = profile?.role === 'teacher' || profile?.role === 'business_adm
 
 **File Modified**: `src/SSH/src/components/student/StudentAttendanceView.tsx` (lines 47-69)
 
+### Issue 3: Parent Dashboard - Child attendance not loading
+**Cause**: Parent Dashboard was passing the wrong student ID to the StudentAttendanceView component. It was using `profile.student_id` (EYG-prefixed ID like "EYG-001") instead of `profile.id` (UUID) which is what the `batch_students` table uses.
+
+**Fix Applied**: Changed the loadChildren function to use the profile UUID:
+```typescript
+// Before: Used student_id which could be EYG-prefixed
+student_id: profile.student_id || profile.id
+
+// After: Use profile.id (UUID) for database queries
+student_id: profile.id
+```
+
+**File Modified**: `src/SSH/src/pages/dashboard/parents/ParentsDashboard.tsx` (line 412)
+
 ## How to Debug Further
 
 ### 1. Check Browser Console
@@ -247,6 +261,12 @@ If issues persist after trying all troubleshooting steps:
 
 ---
 
-**Last Updated**: 2025-11-11
+**Last Updated**: 2025-11-12
 **Build Status**: ✅ Successful
 **Known Issues**: None (after fixes applied)
+
+## Summary of All Fixes
+
+1. **Teacher Dashboard**: Changed from `useSupabaseAuth()` to `useWebsiteAuth()` in AttendanceManagement component
+2. **Attendance Modal**: Changed from `useSupabaseAuth()` to `useWebsiteAuth()` in AttendanceMarkingModal component
+3. **Parent Dashboard**: Fixed child student_id to use `profile.id` (UUID) instead of `profile.student_id` (EYG-prefixed) for attendance queries

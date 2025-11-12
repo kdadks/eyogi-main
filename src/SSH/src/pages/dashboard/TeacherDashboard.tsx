@@ -63,6 +63,9 @@ import toast from 'react-hot-toast'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
 import DashboardComplianceSection from '../../components/compliance/DashboardComplianceSection'
 import AttendanceManagement from '../../components/admin/AttendanceManagement'
+import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge'
+import ConsentAuditModal from '../../components/consent/ConsentAuditModal'
+import { getStudentsConsent, getStudentConsent, StudentConsent } from '../../lib/api/consent'
 import {
   PlusIcon,
   AcademicCapIcon,
@@ -156,6 +159,10 @@ export default function TeacherDashboard() {
   const [batches, setBatches] = useState<Batch[]>([])
   const [allStudents, setAllStudents] = useState<ProfileWithAddress[]>([])
   const [completedBatchStudents, setCompletedBatchStudents] = useState<BatchStudentWithInfo[]>([])
+  const [studentConsents, setStudentConsents] = useState<Map<string, StudentConsent>>(new Map())
+  const [showConsentAudit, setShowConsentAudit] = useState(false)
+  const [selectedConsentForAudit, setSelectedConsentForAudit] = useState<StudentConsent | null>(null)
+  const [selectedStudentNameForAudit, setSelectedStudentNameForAudit] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [showCreateCourse, setShowCreateCourse] = useState(false)
   const [activeView, setActiveView] = useState<
@@ -368,6 +375,19 @@ export default function TeacherDashboard() {
       setAllStudents(studentsData as ProfileWithAddress[])
       setCompletedBatchStudents(completedBatchStudentsData)
       setCertificates(certificatesData)
+
+      // Load consent status for all students
+      if (studentsData && studentsData.length > 0) {
+        const studentIds = studentsData.map((s: any) => s.id)
+        const consents = await getStudentsConsent(studentIds)
+        const consentMap = new Map<string, StudentConsent>()
+        consents.forEach((consent) => {
+          if (consent) {
+            consentMap.set(consent.student_id, consent)
+          }
+        })
+        setStudentConsents(consentMap)
+      }
     } catch (error) {
       console.error('Dashboard load error:', error)
       toast.error('Failed to load dashboard data')
@@ -1964,6 +1984,25 @@ export default function TeacherDashboard() {
                                 Completed:{' '}
                                 {studentEnrollments.filter((e) => e.status === 'completed').length}
                               </div>
+                            </div>
+                            {/* Consent Status Badge */}
+                            <div className="mb-3">
+                              <ConsentStatusBadge
+                                consentGiven={studentConsents.get(student.id)?.consent_given || false}
+                                withdrawn={studentConsents.get(student.id)?.withdrawn || false}
+                                size="sm"
+                                showLabel={true}
+                                onClick={async () => {
+                                  const consent = await getStudentConsent(student.id)
+                                  if (consent) {
+                                    setSelectedConsentForAudit(consent)
+                                    setSelectedStudentNameForAudit(student.full_name || 'Unknown')
+                                    setShowConsentAudit(true)
+                                  } else {
+                                    toast.error('No consent record found for this student')
+                                  }
+                                }}
+                              />
                             </div>
                             <Button
                               size="sm"
@@ -4316,6 +4355,19 @@ export default function TeacherDashboard() {
           onUpdate={() => {
             // Refresh user data after profile update
             window.location.reload()
+          }}
+        />
+      )}
+
+      {/* Consent Audit Modal */}
+      {showConsentAudit && selectedConsentForAudit && (
+        <ConsentAuditModal
+          consent={selectedConsentForAudit}
+          studentName={selectedStudentNameForAudit}
+          onClose={() => {
+            setShowConsentAudit(false)
+            setSelectedConsentForAudit(null)
+            setSelectedStudentNameForAudit('')
           }}
         />
       )}

@@ -50,10 +50,15 @@ import {
   PencilIcon,
   XCircleIcon,
   CalendarDaysIcon,
+  ExclamationTriangleIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
 import StudentAttendanceView from '../../components/student/StudentAttendanceView'
+import ConsentModal from '../../components/consent/ConsentModal'
+import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge'
+import { getStudentConsent, StudentConsent } from '../../lib/api/consent'
 interface StudentStats {
   totalEnrollments: number
   completedCourses: number
@@ -104,6 +109,9 @@ export default function StudentDashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
   const achievementsRef = useRef<HTMLDivElement>(null)
+  // Consent
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const [studentConsent, setStudentConsent] = useState<StudentConsent | null>(null)
 
   // Close achievements panel when clicking outside or pressing Escape
   useEffect(() => {
@@ -167,6 +175,7 @@ export default function StudentDashboard() {
         batchesData,
         batchProgressData,
         courseProgressData,
+        consentData,
       ] = await Promise.all([
         getStudentEnrollments(user!.id),
         getStudentCertificates(user!.id),
@@ -174,7 +183,11 @@ export default function StudentDashboard() {
         getStudentBatches(user!.id),
         getStudentBatchProgress(user!.id),
         getStudentCourseProgress(user!.id),
+        getStudentConsent(user!.id),
       ])
+
+      // Set consent data
+      setStudentConsent(consentData)
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
       setAvailableCourses(coursesData)
@@ -1802,6 +1815,12 @@ export default function StudentDashboard() {
                         </p>
                       </div>
                       <div>
+                        <label className="text-sm font-medium text-gray-500">Student ID</label>
+                        <p className="text-gray-900 font-semibold text-purple-600">
+                          {studentProfile?.student_id || user?.student_id || 'Not assigned'}
+                        </p>
+                      </div>
+                      <div>
                         <label className="text-sm font-medium text-gray-500">Role</label>
                         <p className="text-gray-900">
                           {getUserRole()?.replace('_', ' ').toUpperCase() || 'Student'}
@@ -1969,6 +1988,12 @@ export default function StudentDashboard() {
                             : 'Not provided'}
                         </p>
                       </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Student ID</label>
+                        <p className="text-gray-900 font-semibold text-purple-600">
+                          {studentProfile?.student_id || user?.student_id || 'Not assigned'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   {/* Address Information */}
@@ -2012,6 +2037,71 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Consent Section */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-4">
+                    <DocumentTextIcon className="h-8 w-8 text-green-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Participation Consent</h3>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <ConsentStatusBadge
+                      consentGiven={studentConsent?.consent_given || false}
+                      withdrawn={studentConsent?.withdrawn || false}
+                      size="md"
+                    />
+                    <button
+                      onClick={() => setShowConsentModal(true)}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2 cursor-pointer"
+                    >
+                      <DocumentTextIcon className="h-4 w-4" />
+                      <span>
+                        {studentConsent?.consent_given && !studentConsent?.withdrawn
+                          ? 'View Consent'
+                          : 'Provide Consent'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {!studentConsent?.consent_given || studentConsent?.withdrawn ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                      <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-900">
+                          Consent Required
+                        </p>
+                        <p className="text-sm text-yellow-800 mt-1">
+                          Please provide consent to participate in eYogi Gurukul activities.
+                          This is required for full access to all features and programs.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Consent Given On
+                        </label>
+                        <p className="text-gray-900">
+                          {studentConsent.consent_date
+                            ? new Date(studentConsent.consent_date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })
+                            : 'Not available'}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        You have consented to participate in eYogi Gurukul activities. You can
+                        withdraw your consent at any time by clicking the button above.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2066,6 +2156,21 @@ export default function StudentDashboard() {
             // Dynamically refresh profile data after update
             await loadStudentProfile()
           }}
+        />
+      )}
+      {/* Consent Modal */}
+      {showConsentModal && user && (
+        <ConsentModal
+          studentId={user.id}
+          studentName={user.full_name || 'Student'}
+          consentedBy={user.id}
+          currentConsent={studentConsent}
+          onClose={() => setShowConsentModal(false)}
+          onSuccess={() => {
+            setShowConsentModal(false)
+            loadStudentData() // Reload to update consent status
+          }}
+          isParent={false}
         />
       )}
     </>

@@ -12,6 +12,9 @@ import { getCertificatesFromTable } from '@/lib/api/certificates'
 import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
+import ConsentStatusBadge from '../consent/ConsentStatusBadge'
+import ConsentAuditModal from '../consent/ConsentAuditModal'
+import { getStudentsConsent, getStudentConsent, StudentConsent } from '@/lib/api/consent'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import StudentBatchAssignmentModal from './StudentBatchAssignmentModal'
 import BulkBatchAssignmentModal from './BulkBatchAssignmentModal'
@@ -63,6 +66,10 @@ export default function StudentManagement() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [filteredStudents, setFilteredStudents] = useState<StudentWithEnrollments[]>([])
+  const [studentConsents, setStudentConsents] = useState<Map<string, StudentConsent>>(new Map())
+  const [showConsentAudit, setShowConsentAudit] = useState(false)
+  const [selectedConsentForAudit, setSelectedConsentForAudit] = useState<StudentConsent | null>(null)
+  const [selectedStudentNameForAudit, setSelectedStudentNameForAudit] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
   // Helper function to check if student has certificate for course
@@ -206,6 +213,19 @@ export default function StudentManagement() {
         }
       })
       setStudents(enrichedStudents as StudentWithEnrollments[])
+
+      // Load consent status for all students
+      if (studentsOnly.length > 0) {
+        const studentIds = studentsOnly.map((s) => s.id)
+        const consents = await getStudentsConsent(studentIds)
+        const consentMap = new Map<string, StudentConsent>()
+        consents.forEach((consent) => {
+          if (consent) {
+            consentMap.set(consent.student_id, consent)
+          }
+        })
+        setStudentConsents(consentMap)
+      }
     } catch {
       toast.error('Failed to load student data')
     } finally {
@@ -1180,6 +1200,9 @@ export default function StudentManagement() {
                         Progress
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Consent
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Joined
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1260,6 +1283,24 @@ export default function StudentManagement() {
                               %
                             </span>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <ConsentStatusBadge
+                            consentGiven={studentConsents.get(student.id)?.consent_given || false}
+                            withdrawn={studentConsents.get(student.id)?.withdrawn || false}
+                            size="sm"
+                            showLabel={false}
+                            onClick={async () => {
+                              const consent = await getStudentConsent(student.id)
+                              if (consent) {
+                                setSelectedConsentForAudit(consent)
+                                setSelectedStudentNameForAudit(student.full_name || 'Unknown')
+                                setShowConsentAudit(true)
+                              } else {
+                                toast.error('No consent record found for this student')
+                              }
+                            }}
+                          />
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {formatDate(student.created_at)}
@@ -1420,6 +1461,19 @@ export default function StudentManagement() {
         onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
         variant="danger"
       />
+
+      {/* Consent Audit Modal */}
+      {showConsentAudit && selectedConsentForAudit && (
+        <ConsentAuditModal
+          consent={selectedConsentForAudit}
+          studentName={selectedStudentNameForAudit}
+          onClose={() => {
+            setShowConsentAudit(false)
+            setSelectedConsentForAudit(null)
+            setSelectedStudentNameForAudit('')
+          }}
+        />
+      )}
     </div>
   )
 }

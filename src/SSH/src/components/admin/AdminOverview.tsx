@@ -4,6 +4,7 @@ import { getEnrollmentStats } from '@/lib/api/enrollments'
 import { getAllUsers } from '@/lib/api/users'
 import { getCourses } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
+import { getConsentStats } from '../../lib/api/consent'
 import {
   UserGroupIcon,
   BookOpenIcon,
@@ -23,6 +24,9 @@ interface DashboardStats {
   totalEnrollments: number
   pendingEnrollments: number
   completedEnrollments: number
+  consentGiven: number
+  consentNotGiven: number
+  consentWithdrawn: number
   recentActivity: Array<{
     type: string
     message: string
@@ -39,6 +43,9 @@ export default function AdminOverview() {
     totalEnrollments: 0,
     pendingEnrollments: 0,
     completedEnrollments: 0,
+    consentGiven: 0,
+    consentNotGiven: 0,
+    consentWithdrawn: 0,
     recentActivity: [],
   })
   const [loading, setLoading] = useState(true)
@@ -47,11 +54,12 @@ export default function AdminOverview() {
   }, [])
   const loadStats = async () => {
     try {
-      const [users, courses, gurukuls, enrollmentStats] = await Promise.all([
+      const [users, courses, gurukuls, enrollmentStats, consentStats] = await Promise.all([
         getAllUsers(),
         getCourses(),
         getGurukuls(),
         getEnrollmentStats(),
+        getConsentStats(),
       ])
       const students = users.filter((u) => u.role === 'student')
       const teachers = users.filter((u) => u.role === 'teacher')
@@ -64,6 +72,9 @@ export default function AdminOverview() {
         totalEnrollments: enrollmentStats.total,
         pendingEnrollments: enrollmentStats.pending,
         completedEnrollments: enrollmentStats.completed,
+        consentGiven: consentStats.consented,
+        consentNotGiven: consentStats.not_consented,
+        consentWithdrawn: consentStats.withdrawn,
         recentActivity: [
           {
             type: 'enrollment',
@@ -199,8 +210,44 @@ export default function AdminOverview() {
             </CardContent>
           </Card>
         </div>
-        {/* Recent Activity */}
-        <div>
+        {/* Recent Activity and Consent Stats */}
+        <div className="space-y-4">
+          {/* Consent Statistics */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold flex items-center">
+                <DocumentTextIcon className="h-5 w-5 mr-2" />
+                Student Consent Status
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center">
+                    <CheckCircleIcon className="h-5 w-5 text-green-600 mr-2" />
+                    <span className="font-medium text-green-800">Consented</span>
+                  </div>
+                  <span className="text-xl font-bold text-green-600">{stats.consentGiven}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                  <div className="flex items-center">
+                    <ClockIcon className="h-5 w-5 text-yellow-600 mr-2" />
+                    <span className="font-medium text-yellow-800">No Consent</span>
+                  </div>
+                  <span className="text-xl font-bold text-yellow-600">{stats.consentNotGiven}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                  <div className="flex items-center">
+                    <DocumentTextIcon className="h-5 w-5 text-red-600 mr-2" />
+                    <span className="font-medium text-red-800">Withdrawn</span>
+                  </div>
+                  <span className="text-xl font-bold text-red-600">{stats.consentWithdrawn}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
           <Card>
             <CardHeader>
               <h3 className="text-lg font-semibold">Recent Activity</h3>

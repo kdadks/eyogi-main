@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import ConsentReport from './ConsentReport'
 import {
   ChartBarIcon,
   UserGroupIcon,
@@ -14,6 +15,7 @@ import {
   MapPinIcon,
   LinkIcon,
   CalendarIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 interface AnalyticsData {
   totalUsers: number
@@ -63,7 +65,7 @@ export default function SiteAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState('7d')
-  const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content'>(
+  const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content' | 'consent'>(
     'overview',
   )
   useEffect(() => {
@@ -118,12 +120,86 @@ export default function SiteAnalytics() {
       </div>
     )
   }
+  // If consent tab is selected, show it even without analytics data
+  if (!analyticsData && activeTab === 'consent') {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Analytics & Reports</h2>
+            <p className="text-gray-600">Comprehensive insights and reports</p>
+          </div>
+        </div>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'overview', name: 'Overview', icon: ChartBarIcon },
+              { id: 'traffic', name: 'Traffic Sources', icon: LinkIcon },
+              { id: 'users', name: 'User Insights', icon: UserGroupIcon },
+              { id: 'content', name: 'Content Performance', icon: EyeIcon },
+              { id: 'consent', name: 'Consent Report', icon: DocumentTextIcon },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent')}
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <tab.icon className="h-5 w-5" />
+                <span>{tab.name}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+        <ConsentReport />
+      </div>
+    )
+  }
+
   if (!analyticsData) {
     return (
-      <div className="text-center py-12">
-        <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No analytics data available</h3>
-        <p className="text-gray-600">Analytics data will appear here once tracking is set up.</p>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Analytics & Reports</h2>
+            <p className="text-gray-600">Comprehensive insights and reports</p>
+          </div>
+        </div>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'overview', name: 'Overview', icon: ChartBarIcon },
+              { id: 'traffic', name: 'Traffic Sources', icon: LinkIcon },
+              { id: 'users', name: 'User Insights', icon: UserGroupIcon },
+              { id: 'content', name: 'Content Performance', icon: EyeIcon },
+              { id: 'consent', name: 'Consent Report', icon: DocumentTextIcon },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent')}
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <tab.icon className="h-5 w-5" />
+                <span>{tab.name}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="text-center py-12">
+          <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No analytics data available</h3>
+          <p className="text-gray-600">Analytics data will appear here once tracking is set up.</p>
+          <p className="text-sm text-gray-500 mt-4">Consent reports are available in the "Consent Report" tab.</p>
+        </div>
       </div>
     )
   }
@@ -161,10 +237,11 @@ export default function SiteAnalytics() {
             { id: 'traffic', name: 'Traffic Sources', icon: LinkIcon },
             { id: 'users', name: 'User Insights', icon: UserGroupIcon },
             { id: 'content', name: 'Content Performance', icon: EyeIcon },
+            { id: 'consent', name: 'Consent Report', icon: DocumentTextIcon },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content')}
+              onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent')}
               className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-orange-500 text-orange-600'
@@ -556,6 +633,9 @@ export default function SiteAnalytics() {
           </Card>
         </div>
       )}
+
+      {/* Consent Report Tab */}
+      {activeTab === 'consent' && <ConsentReport />}
     </div>
   )
 }

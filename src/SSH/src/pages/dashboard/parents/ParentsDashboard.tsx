@@ -19,6 +19,7 @@ import {
   MoonIcon,
   AcademicCapIcon,
   CalendarDaysIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '../../../utils/sanitize'
 import { User, MapPin, X } from 'lucide-react'
@@ -28,6 +29,8 @@ import ProfileEditModal from '../../../components/profile/ProfileEditModal'
 import AddressForm from '../../../components/forms/AddressForm'
 import DashboardComplianceSection from '../../../components/compliance/DashboardComplianceSection'
 import StudentAttendanceView from '../../../components/student/StudentAttendanceView'
+import ConsentModal from '../../../components/consent/ConsentModal'
+import ConsentStatusBadge from '../../../components/consent/ConsentStatusBadge'
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/Card'
 import { AddressFormData, getCountryName, getStateName } from '../../../lib/address-utils'
 import { enrollInCourse } from '../../../lib/api/enrollments'
@@ -42,6 +45,7 @@ import {
   updateChild,
   deleteChild,
 } from '../../../lib/api/children'
+import { getStudentConsent, StudentConsent } from '../../../lib/api/consent'
 import type { Database } from '../../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 // Extended profile interface that includes address fields from database
@@ -58,7 +62,8 @@ interface ProfileWithAddress {
   country?: string
 }
 interface Child {
-  student_id: string
+  student_id: string // Database UUID for queries (profile.id)
+  display_student_id?: string // EYG-prefixed ID for display (e.g., EYG-001)
   full_name: string
   age: number
   grade: string
@@ -192,6 +197,9 @@ export default function ParentsDashboard() {
   const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<AvailableCourse | null>(null)
   const [selectedChildForAttendance, setSelectedChildForAttendance] = useState<string | null>(null)
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const [selectedChildForConsent, setSelectedChildForConsent] = useState<Child | null>(null)
+  const [childConsents, setChildConsents] = useState<Map<string, StudentConsent>>(new Map())
   const [loading, setLoading] = useState(true)
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null)
   const [stats, setStats] = useState<ParentStats>({
@@ -409,7 +417,8 @@ export default function ParentsDashboard() {
           const achievements: Achievement[] = []
 
           return {
-            student_id: profile.student_id || profile.id, // Use EYG-prefixed student_id, fallback to profile.id
+            student_id: profile.id, // Use profile.id (UUID) for database queries like attendance
+            display_student_id: profile.student_id, // EYG-prefixed ID for display
             full_name: profile.full_name || 'Unknown',
             age: age,
             grade: profile.grade || 'Not Set', // Use grade from database
@@ -439,6 +448,18 @@ export default function ParentsDashboard() {
         }),
       )
       setChildren(convertedChildren)
+
+      // Load consent status for all children
+      const consents = await Promise.all(
+        convertedChildren.map((child) => getStudentConsent(child.student_id)),
+      )
+      const consentMap = new Map<string, StudentConsent>()
+      consents.forEach((consent) => {
+        if (consent) {
+          consentMap.set(consent.student_id, consent)
+        }
+      })
+      setChildConsents(consentMap)
     } catch {
       toast.error('Failed to load children')
     }
@@ -923,6 +944,11 @@ export default function ParentsDashboard() {
                 onAddChild={() => setShowAddChildModal(true)}
                 onEditChild={handleEditChild}
                 onDeleteChild={handleDeleteChild}
+                onManageConsent={(child) => {
+                  setSelectedChildForConsent(child)
+                  setShowConsentModal(true)
+                }}
+                childConsents={childConsents}
               />
             )}
             {activeTab === 'enrollments' && <EnrollmentsTab children={children} />}
@@ -1032,6 +1058,25 @@ export default function ParentsDashboard() {
             // Refresh user data after profile update
             window.location.reload()
           }}
+        />
+      )}
+      {/* Consent Modal */}
+      {showConsentModal && selectedChildForConsent && user && (
+        <ConsentModal
+          studentId={selectedChildForConsent.student_id}
+          studentName={selectedChildForConsent.full_name}
+          consentedBy={user.id}
+          currentConsent={childConsents.get(selectedChildForConsent.student_id) || null}
+          onClose={() => {
+            setShowConsentModal(false)
+            setSelectedChildForConsent(null)
+          }}
+          onSuccess={() => {
+            setShowConsentModal(false)
+            setSelectedChildForConsent(null)
+            loadChildren() // Reload to update consent status
+          }}
+          isParent={true}
         />
       )}
       {/* Child Selection Modal for Course Enrollment */}
@@ -1550,11 +1595,15 @@ function ChildrenTab({
   onAddChild,
   onEditChild,
   onDeleteChild,
+  onManageConsent,
+  childConsents,
 }: {
   children: Child[]
   onAddChild: () => void
   onEditChild: (childId: string) => void
   onDeleteChild: (childId: string) => void
+  onManageConsent: (child: Child) => void
+  childConsents: Map<string, StudentConsent>
 }) {
   return (
     <div className="space-y-6">
@@ -1629,6 +1678,16 @@ function ChildrenTab({
                     />
                   </svg>
                 </motion.button>
+                <motion.button
+                  onClick={() => onManageConsent(child)}
+                  className="min-w-[44px] min-h-[44px] w-11 h-11 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  title="Manage Consent"
+                  aria-label="Manage Consent"
+                >
+                  <DocumentTextIcon className="w-5 h-5" />
+                </motion.button>
               </div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center text-white text-sm sm:text-base lg:text-lg font-bold shadow-lg flex-shrink-0">
@@ -1641,11 +1700,18 @@ function ChildrenTab({
                   <p className="text-xs sm:text-sm text-gray-600">
                     {child.grade} • Age {child.age}
                   </p>
-                  {child.student_id && (
+                  {child.display_student_id && (
                     <p className="text-xs sm:text-sm text-purple-600 font-medium mt-0.5">
-                      ID: {child.student_id}
+                      ID: {child.display_student_id}
                     </p>
                   )}
+                  <div className="mt-2">
+                    <ConsentStatusBadge
+                      consentGiven={childConsents.get(child.student_id)?.consent_given || false}
+                      withdrawn={childConsents.get(child.student_id)?.withdrawn || false}
+                      size="sm"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="space-y-3 sm:space-y-4">

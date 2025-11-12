@@ -837,7 +837,7 @@ export async function getBatchProgress(batchId: string): Promise<BatchProgress[]
 // Get batch progress with course details for students
 export async function getStudentBatchProgress(studentId: string): Promise<StudentBatchProgress[]> {
   try {
-    // First get all batches the student is enrolled in
+    // First get all batches the student is enrolled in with their individual progress
     const { data: studentBatches, error: batchError } = await supabaseAdmin
       .from('batch_students')
       .select(
@@ -845,6 +845,8 @@ export async function getStudentBatchProgress(studentId: string): Promise<Studen
         batch_id,
         student_id,
         assigned_at,
+        progress_percentage,
+        progress_notes,
         batch:batches (
           id,
           name,
@@ -915,6 +917,9 @@ export async function getStudentBatchProgress(studentId: string): Promise<Studen
         ? studentBatch.batch[0]
         : studentBatch.batch
       if (batchData) {
+        // Use individual student progress from batch_students table, fallback to batch-level progress
+        const individualProgress = studentBatch.progress_percentage ?? batchData.progress_percentage ?? 0
+
         batchProgressData.push({
           batch: {
             id: batchData.id,
@@ -936,7 +941,7 @@ export async function getStudentBatchProgress(studentId: string): Promise<Studen
             : [],
           total_weeks: progress?.length || 0,
           completed_weeks: progress?.filter((p) => p.is_completed)?.length || 0,
-          progress_percentage: batchData.progress_percentage || 0,
+          progress_percentage: individualProgress, // Use individual student progress
         })
       }
     }
