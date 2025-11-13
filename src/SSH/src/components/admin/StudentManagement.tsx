@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import { User, Course, Enrollment, Gurukul, Certificate } from '@/types'
+import { User, Course, Enrollment, Gurukul, Certificate, StudentAttendanceSummary } from '@/types'
 import { getAllUsers, deleteUser } from '@/lib/api/users'
 import { getCourses } from '@/lib/api/courses'
-import { getAllEnrollments } from '@/lib/api/enrollments'
+import { getAllEnrollments, getStudentCourseProgress } from '@/lib/api/enrollments'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getCertificatesFromTable } from '@/lib/api/certificates'
 import { formatDate, toSentenceCase } from '@/lib/utils'
@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 import ConsentStatusBadge from '../consent/ConsentStatusBadge'
 import ConsentAuditModal from '../consent/ConsentAuditModal'
 import { getStudentsConsent, getStudentConsent, StudentConsent } from '@/lib/api/consent'
+import { getStudentAttendanceSummary } from '@/lib/api/attendance'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import StudentBatchAssignmentModal from './StudentBatchAssignmentModal'
 import BulkBatchAssignmentModal from './BulkBatchAssignmentModal'
@@ -48,6 +49,10 @@ interface StudentWithEnrollments extends User {
   parent_guardian_name?: string
   parent_guardian_email?: string
   parent_guardian_phone?: string
+  attendance_summaries?: StudentAttendanceSummary[]
+  overall_attendance_percentage?: number
+  course_progress?: { [courseId: string]: number }
+  average_course_progress?: number
 }
 interface StudentFormData {
   full_name: string
@@ -86,6 +91,7 @@ export default function StudentManagement() {
   const [userStatusFilter, setUserStatusFilter] = useState<string>('all')
   const [ageGroupFilter, setAgeGroupFilter] = useState<string>('all')
   const [gurukulFilter, setGurukulFilter] = useState<string>('all')
+  const [consentFilter, setConsentFilter] = useState<string>('all')
   // Student Details
   const [viewingStudent, setViewingStudent] = useState<StudentWithEnrollments | null>(null)
   const [editingStudent, setEditingStudent] = useState<StudentWithEnrollments | null>(null)
@@ -170,6 +176,20 @@ export default function StudentManagement() {
           student.enrollments.some((e) => e.course?.gurukul_id === gurukulFilter),
         )
       }
+      // Consent filter
+      if (consentFilter !== 'all') {
+        filtered = filtered.filter((student) => {
+          const consent = studentConsents.get(student.id)
+          if (consentFilter === 'given') {
+            return consent?.consent_given && !consent?.withdrawn
+          } else if (consentFilter === 'not_given') {
+            return !consent?.consent_given
+          } else if (consentFilter === 'withdrawn') {
+            return consent?.withdrawn
+          }
+          return true
+        })
+      }
       setFilteredStudents(filtered)
     }
     filterStudents()
@@ -181,6 +201,8 @@ export default function StudentManagement() {
     userStatusFilter,
     ageGroupFilter,
     gurukulFilter,
+    consentFilter,
+    studentConsents,
   ])
   // Removed duplicate filterStudents function
   const loadData = async () => {
@@ -198,20 +220,43 @@ export default function StudentManagement() {
       setCertificates(certificatesData)
       // Filter only students and enrich with enrollment data
       const studentsOnly = usersData.filter((user) => user.role === 'student')
-      const enrichedStudents = studentsOnly.map((student) => {
-        const studentEnrollments = enrollmentsData.filter((e) => e.student_id === student.id)
-        const completedCourses = studentEnrollments.filter((e) => e.status === 'completed').length
-        const pendingEnrollments = studentEnrollments.filter((e) => e.status === 'pending').length
-        const totalSpent = studentEnrollments.reduce((sum, e) => sum + (e.course?.price || 0), 0)
-        return {
-          ...student,
-          enrollments: studentEnrollments,
-          total_enrollments: studentEnrollments.length,
-          completed_courses: completedCourses,
-          pending_enrollments: pendingEnrollments,
-          total_spent: totalSpent,
-        }
-      })
+      const enrichedStudents = await Promise.all(
+        studentsOnly.map(async (student) => {
+          const studentEnrollments = enrollmentsData.filter((e) => e.student_id === student.id)
+          const completedCourses = studentEnrollments.filter((e) => e.status === 'completed').length
+          const pendingEnrollments = studentEnrollments.filter((e) => e.status === 'pending').length
+          const totalSpent = studentEnrollments.reduce((sum, e) => sum + (e.course?.price || 0), 0)
+
+          // Get attendance data for the student
+          const attendanceSummaries = await getStudentAttendanceSummary(student.id)
+          const overallAttendancePercentage =
+            attendanceSummaries.length > 0
+              ? attendanceSummaries.reduce((sum, s) => sum + s.stats.attendance_percentage, 0) /
+                attendanceSummaries.length
+              : 0
+
+          // Get course progress data for the student
+          const courseProgress = await getStudentCourseProgress(student.id)
+          const progressValues = Object.values(courseProgress)
+          const averageCourseProgress =
+            progressValues.length > 0
+              ? progressValues.reduce((sum, p) => sum + p, 0) / progressValues.length
+              : 0
+
+          return {
+            ...student,
+            enrollments: studentEnrollments,
+            total_enrollments: studentEnrollments.length,
+            completed_courses: completedCourses,
+            pending_enrollments: pendingEnrollments,
+            total_spent: totalSpent,
+            attendance_summaries: attendanceSummaries,
+            overall_attendance_percentage: overallAttendancePercentage,
+            course_progress: courseProgress,
+            average_course_progress: averageCourseProgress,
+          }
+        }),
+      )
       setStudents(enrichedStudents as StudentWithEnrollments[])
 
       // Load consent status for all students
@@ -514,7 +559,7 @@ export default function StudentManagement() {
       {/* Filters Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2">
               <div className="relative">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -585,6 +630,16 @@ export default function StudentManagement() {
               <option value="suspended">Suspended</option>
               <option value="pending_verification">Pending Verification</option>
             </select>
+            <select
+              value={consentFilter}
+              onChange={(e) => setConsentFilter(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+            >
+              <option value="all">All Consent Status</option>
+              <option value="given">Consent Given</option>
+              <option value="not_given">No Consent</option>
+              <option value="withdrawn">Withdrawn</option>
+            </select>
           </div>
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-gray-600">
@@ -604,6 +659,7 @@ export default function StudentManagement() {
                   setUserStatusFilter('all')
                   setAgeGroupFilter('all')
                   setGurukulFilter('all')
+                  setConsentFilter('all')
                 }}
               >
                 Clear Filters
@@ -1200,6 +1256,9 @@ export default function StudentManagement() {
                         Progress
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Attendance
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Consent
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1265,24 +1324,68 @@ export default function StudentManagement() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                              <div
-                                className="bg-green-500 h-2 rounded-full"
-                                style={{
-                                  width: `${student.total_enrollments > 0 ? (student.completed_courses / student.total_enrollments) * 100 : 0}%`,
-                                }}
-                              />
+                          <div className="space-y-2">
+                            {/* Course Completion Progress */}
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div
+                                  className="bg-blue-500 h-2 rounded-full"
+                                  style={{
+                                    width: `${student.total_enrollments > 0 ? (student.completed_courses / student.total_enrollments) * 100 : 0}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-600">
+                                {student.total_enrollments > 0
+                                  ? Math.round(
+                                      (student.completed_courses / student.total_enrollments) * 100,
+                                    )
+                                  : 0}
+                                % done
+                              </span>
                             </div>
-                            <span className="text-sm text-gray-600">
-                              {student.total_enrollments > 0
-                                ? Math.round(
-                                    (student.completed_courses / student.total_enrollments) * 100,
-                                  )
-                                : 0}
-                              %
-                            </span>
+                            {/* Average Course Progress */}
+                            {student.course_progress && Object.keys(student.course_progress).length > 0 && (
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className="bg-green-500 h-2 rounded-full"
+                                    style={{
+                                      width: `${student.average_course_progress || 0}%`,
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-xs text-gray-600">
+                                  {Math.round(student.average_course_progress || 0)}% avg
+                                </span>
+                              </div>
+                            )}
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {student.attendance_summaries && student.attendance_summaries.length > 0 ? (
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    (student.overall_attendance_percentage || 0) >= 75
+                                      ? 'bg-green-500'
+                                      : (student.overall_attendance_percentage || 0) >= 50
+                                        ? 'bg-yellow-500'
+                                        : 'bg-red-500'
+                                  }`}
+                                  style={{
+                                    width: `${student.overall_attendance_percentage || 0}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-sm text-gray-600">
+                                {Math.round(student.overall_attendance_percentage || 0)}%
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">No data</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <ConsentStatusBadge

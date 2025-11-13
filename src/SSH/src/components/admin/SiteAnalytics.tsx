@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import ConsentReport from './ConsentReport'
+import CacheManagement from './CacheManagement'
 import {
   ChartBarIcon,
   UserGroupIcon,
@@ -16,6 +17,7 @@ import {
   LinkIcon,
   CalendarIcon,
   DocumentTextIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
 interface AnalyticsData {
   totalUsers: number
@@ -65,7 +67,7 @@ export default function SiteAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState('7d')
-  const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content' | 'consent'>(
+  const [activeTab, setActiveTab] = useState<'overview' | 'traffic' | 'users' | 'content' | 'consent' | 'system'>(
     'overview',
   )
   useEffect(() => {
@@ -120,8 +122,8 @@ export default function SiteAnalytics() {
       </div>
     )
   }
-  // If consent tab is selected, show it even without analytics data
-  if (!analyticsData && activeTab === 'consent') {
+  // If consent or system tab is selected, show it even without analytics data
+  if (!analyticsData && (activeTab === 'consent' || activeTab === 'system')) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -139,10 +141,11 @@ export default function SiteAnalytics() {
               { id: 'users', name: 'User Insights', icon: UserGroupIcon },
               { id: 'content', name: 'Content Performance', icon: EyeIcon },
               { id: 'consent', name: 'Consent Report', icon: DocumentTextIcon },
+              { id: 'system', name: 'System & Cache', icon: Cog6ToothIcon },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent')}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent' | 'system')}
                 className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                   activeTab === tab.id
                     ? 'border-orange-500 text-orange-600'
@@ -155,7 +158,8 @@ export default function SiteAnalytics() {
             ))}
           </nav>
         </div>
-        <ConsentReport />
+        {activeTab === 'consent' && <ConsentReport />}
+        {activeTab === 'system' && <CacheManagement />}
       </div>
     )
   }
@@ -178,10 +182,11 @@ export default function SiteAnalytics() {
               { id: 'users', name: 'User Insights', icon: UserGroupIcon },
               { id: 'content', name: 'Content Performance', icon: EyeIcon },
               { id: 'consent', name: 'Consent Report', icon: DocumentTextIcon },
+              { id: 'system', name: 'System & Cache', icon: Cog6ToothIcon },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent')}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'traffic' | 'users' | 'content' | 'consent' | 'system')}
                 className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                   activeTab === tab.id
                     ? 'border-orange-500 text-orange-600'
@@ -636,6 +641,9 @@ export default function SiteAnalytics() {
 
       {/* Consent Report Tab */}
       {activeTab === 'consent' && <ConsentReport />}
+
+      {/* System & Cache Management Tab */}
+      {activeTab === 'system' && <CacheManagement />}
     </div>
   )
 }

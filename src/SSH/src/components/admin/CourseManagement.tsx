@@ -44,46 +44,184 @@ function parseHtmlToOutcomes(htmlContent: string): string[] {
 
 /**
  * Convert learning outcomes array to HTML for ReactQuill display
+ * Optimized to prevent UI hanging when loading complex HTML content
  */
 function outcomesToHtml(outcomes: string[]): string {
-  if (!outcomes || outcomes.length === 0) return ''
-  return outcomes.join('\n')
+  console.log('🔵 outcomesToHtml - START', { outcomesCount: outcomes?.length || 0 })
+
+  // Safety checks
+  if (!outcomes || !Array.isArray(outcomes) || outcomes.length === 0) {
+    console.log('🟡 outcomesToHtml - Empty or invalid outcomes, returning empty string')
+    return ''
+  }
+
+  try {
+    // Limit to prevent excessive processing
+    const MAX_OUTCOMES = 100
+    const outcomesToProcess = outcomes.slice(0, MAX_OUTCOMES)
+    const processedOutcomes: string[] = []
+
+    console.log('🔵 Processing', outcomesToProcess.length, 'outcomes')
+
+    outcomesToProcess.forEach((outcome, index) => {
+      try {
+        // Safety check for outcome
+        if (!outcome || typeof outcome !== 'string') {
+          console.log(`🟡 Outcome ${index} is invalid, skipping`)
+          return
+        }
+
+        console.log(`🔵 Processing outcome ${index}:`, outcome.substring(0, 100))
+
+        // If outcome contains HTML list tags, extract plain text
+        if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
+          console.log(`🔵 Outcome ${index} contains HTML, parsing...`)
+
+          // Sanitize first
+          const sanitized = sanitizeHtml(outcome)
+          if (!sanitized) {
+            console.log(`🟡 Outcome ${index} sanitization returned empty`)
+            return
+          }
+
+          // Create temporary DOM element to parse HTML
+          const tempDiv = document.createElement('div')
+          tempDiv.innerHTML = sanitized
+
+          // Extract text from list items
+          const listItems = tempDiv.querySelectorAll('li')
+          console.log(`🔵 Found ${listItems.length} list items in outcome ${index}`)
+
+          if (listItems.length > 0) {
+            listItems.forEach((li, liIndex) => {
+              const text = li.textContent?.trim()
+              if (text) {
+                console.log(`🔵 Extracted text from li ${liIndex}:`, text.substring(0, 50))
+                processedOutcomes.push(text)
+              }
+            })
+          } else {
+            // If no list items, get text content
+            const textContent = tempDiv.textContent?.trim()
+            if (textContent) {
+              console.log(`🔵 Extracted text content:`, textContent.substring(0, 50))
+              processedOutcomes.push(textContent)
+            }
+          }
+
+          // Clean up
+          tempDiv.remove()
+        } else {
+          // Plain text outcome - strip any remaining HTML tags
+          const cleanText = outcome.replace(/<[^>]*>/g, '').trim()
+          if (cleanText) {
+            console.log(`🔵 Plain text outcome ${index}:`, cleanText.substring(0, 50))
+            processedOutcomes.push(cleanText)
+          }
+        }
+
+        console.log(`🟢 Outcome ${index} processed successfully`)
+      } catch (error) {
+        console.error(`🔴 Error processing outcome ${index}:`, error)
+        // Fallback: try to extract plain text
+        try {
+          const text = outcome.replace(/<[^>]*>/g, '').trim()
+          if (text) {
+            processedOutcomes.push(text)
+          }
+        } catch (e) {
+          console.error(`🔴 Failed to process outcome ${index}:`, e)
+        }
+      }
+    })
+
+    // Join with newlines for ReactQuill
+    const result = processedOutcomes.join('\n')
+    console.log('🟢 outcomesToHtml - COMPLETED', {
+      processedCount: processedOutcomes.length,
+      resultLength: result.length,
+    })
+    return result
+  } catch (error) {
+    console.error('🔴 outcomesToHtml - FATAL ERROR:', error)
+    return ''
+  }
 }
 
 /**
  * Parse learning outcomes for display - extracts list items from HTML
+ * Optimized to prevent UI hanging on large or complex HTML content
  */
 function parseLearningOutcomesForDisplay(outcomes: string[]): string[] {
+  // Safety check
+  if (!outcomes || !Array.isArray(outcomes)) {
+    return []
+  }
+
   const parsedOutcomes: string[] = []
+  const MAX_OUTCOMES = 100 // Limit to prevent excessive processing
 
-  outcomes.forEach((outcome) => {
-    // Check if outcome contains HTML list tags
-    if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
-      // Create a temporary DOM element to parse HTML
-      const tempDiv = document.createElement('div')
-      tempDiv.innerHTML = sanitizeHtml(outcome)
+  // Limit processing to prevent hanging
+  const outcomesToProcess = outcomes.slice(0, MAX_OUTCOMES)
 
-      // Extract all list items
-      const listItems = tempDiv.querySelectorAll('li')
-      if (listItems.length > 0) {
-        listItems.forEach((li) => {
-          const text = li.textContent?.trim()
-          if (text) {
-            parsedOutcomes.push(text)
+  outcomesToProcess.forEach((outcome) => {
+    try {
+      // Safety check for outcome
+      if (!outcome || typeof outcome !== 'string') {
+        return
+      }
+
+      // Check if outcome contains HTML list tags
+      if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
+        // Sanitize BEFORE creating DOM element for better performance
+        const sanitized = sanitizeHtml(outcome)
+
+        // Skip if sanitization returned empty
+        if (!sanitized) {
+          return
+        }
+
+        // Create a temporary DOM element to parse HTML
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = sanitized
+
+        // Extract all list items
+        const listItems = tempDiv.querySelectorAll('li')
+        if (listItems.length > 0) {
+          listItems.forEach((li) => {
+            const text = li.textContent?.trim()
+            if (text) {
+              parsedOutcomes.push(text)
+            }
+          })
+        } else {
+          // If no list items found, strip HTML tags and add as plain text
+          const textContent = tempDiv.textContent?.trim()
+          if (textContent) {
+            parsedOutcomes.push(textContent)
           }
-        })
+        }
+
+        // Clean up
+        tempDiv.remove()
       } else {
-        // If no list items found, strip HTML tags and add as plain text
-        const textContent = tempDiv.textContent?.trim()
-        if (textContent) {
-          parsedOutcomes.push(textContent)
+        // Plain text outcome
+        const trimmed = outcome.trim()
+        if (trimmed) {
+          parsedOutcomes.push(trimmed)
         }
       }
-    } else {
-      // Plain text outcome
-      const trimmed = outcome.trim()
-      if (trimmed) {
-        parsedOutcomes.push(trimmed)
+    } catch (error) {
+      console.error('Error parsing learning outcome:', error)
+      // If parsing fails, try to add as plain text
+      try {
+        const text = outcome.replace(/<[^>]*>/g, '').trim()
+        if (text) {
+          parsedOutcomes.push(text)
+        }
+      } catch (e) {
+        // Skip this outcome if all else fails
+        console.error('Failed to process outcome:', e)
       }
     }
   })
@@ -158,6 +296,7 @@ export default function CourseManagement() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [formData, setFormData] = useState<CourseFormData>(initialFormData)
+  const [learningOutcomesEditorValue, setLearningOutcomesEditorValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
@@ -173,6 +312,39 @@ export default function CourseManagement() {
   useEffect(() => {
     loadData()
   }, [])
+
+  // Debug useEffect to track modal state changes
+  useEffect(() => {
+    if (showEditModal && editingCourse) {
+      console.log('🟣 EDIT MODAL OPENED - useEffect triggered')
+      console.log('🟣 Editing course:', {
+        id: editingCourse.id,
+        title: editingCourse.title,
+        learningOutcomesCount: editingCourse.learning_outcomes?.length || 0,
+      })
+      console.log('🟣 FormData learning outcomes count:', formData.learning_outcomes?.length || 0)
+    }
+  }, [showEditModal, editingCourse])
+
+  // Sync editor value when modals open/close
+  useEffect(() => {
+    if (showEditModal || showCreateModal) {
+      const htmlValue = outcomesToHtml(formData.learning_outcomes)
+      setLearningOutcomesEditorValue(htmlValue)
+    }
+  }, [showEditModal, showCreateModal])
+
+  // Handle learning outcomes change - update both editor value and formData
+  const handleLearningOutcomesChange = useCallback((value: string) => {
+    console.log('🟡 Learning outcomes editor changed')
+    setLearningOutcomesEditorValue(value)
+    const newOutcomes = parseHtmlToOutcomes(value)
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      learning_outcomes: newOutcomes,
+    }))
+  }, [])
+
   const filterCourses = useCallback(() => {
     let filtered = courses
 
@@ -290,6 +462,7 @@ export default function CourseManagement() {
       toast.success('Course created successfully')
       setShowCreateModal(false)
       setFormData(initialFormData)
+      setLearningOutcomesEditorValue('')
       await loadData()
     } catch (error) {
       toast.error(
@@ -300,43 +473,61 @@ export default function CourseManagement() {
     }
   }
   const handleEditCourse = (course: Course) => {
-    setEditingCourse(course)
-    setFormData({
-      gurukul_id: course.gurukul_id,
-      course_number: course.course_number,
-      title: course.title,
-      slug: course.slug,
-      description: course.description,
-      detailed_description: course.detailed_description || '',
-      level: course.level,
-      age_group_min: course.age_group_min,
-      age_group_max: course.age_group_max,
-      duration_weeks: course.duration_weeks,
-      duration_hours: course.duration_hours || undefined,
-      price: course.price,
-      currency: course.currency,
-      max_students: course.max_students,
-      min_students: course.min_students || undefined,
-      delivery_method: course.delivery_method,
-      prerequisites: course.prerequisites || '',
-      prerequisite_courses: course.prerequisite_courses || [],
-      prerequisite_skills: course.prerequisite_skills || [],
-      learning_outcomes: course.learning_outcomes || [],
-      includes_certificate: course.includes_certificate || false,
-      certificate_template_id: course.certificate_template_id || '',
-      image_url: course.image_url || '',
-      cover_image_url: course.cover_image_url || '',
-      video_preview_url: course.video_preview_url || '',
-      syllabus: course.syllabus,
-      resources: course.resources || [],
-      is_active: course.is_active,
-      featured: course.featured || false,
-      tags: course.tags || [],
-      meta_title: course.meta_title || '',
-      meta_description: course.meta_description || '',
-      teacher_id: course.teacher_id || '',
-    })
-    setShowEditModal(true)
+    console.log('🔵 handleEditCourse - START', { courseId: course.id, courseTitle: course.title })
+    console.log('🔵 Learning outcomes count:', course.learning_outcomes?.length || 0)
+    console.log('🔵 Learning outcomes sample:', course.learning_outcomes?.slice(0, 2))
+
+    try {
+      console.log('🔵 Setting editingCourse...')
+      setEditingCourse(course)
+
+      console.log('🔵 Preparing formData...')
+      const formDataToSet = {
+        gurukul_id: course.gurukul_id,
+        course_number: course.course_number,
+        title: course.title,
+        slug: course.slug,
+        description: course.description,
+        detailed_description: course.detailed_description || '',
+        level: course.level,
+        age_group_min: course.age_group_min,
+        age_group_max: course.age_group_max,
+        duration_weeks: course.duration_weeks,
+        duration_hours: course.duration_hours || undefined,
+        price: course.price,
+        currency: course.currency,
+        max_students: course.max_students,
+        min_students: course.min_students || undefined,
+        delivery_method: course.delivery_method,
+        prerequisites: course.prerequisites || '',
+        prerequisite_courses: course.prerequisite_courses || [],
+        prerequisite_skills: course.prerequisite_skills || [],
+        learning_outcomes: course.learning_outcomes || [],
+        includes_certificate: course.includes_certificate || false,
+        certificate_template_id: course.certificate_template_id || '',
+        image_url: course.image_url || '',
+        cover_image_url: course.cover_image_url || '',
+        video_preview_url: course.video_preview_url || '',
+        syllabus: course.syllabus,
+        resources: course.resources || [],
+        is_active: course.is_active,
+        featured: course.featured || false,
+        tags: course.tags || [],
+        meta_title: course.meta_title || '',
+        meta_description: course.meta_description || '',
+        teacher_id: course.teacher_id || '',
+      }
+
+      console.log('🔵 Setting formData...')
+      setFormData(formDataToSet)
+
+      console.log('🔵 Opening edit modal...')
+      setShowEditModal(true)
+
+      console.log('🟢 handleEditCourse - COMPLETED')
+    } catch (error) {
+      console.error('🔴 handleEditCourse - ERROR:', error)
+    }
   }
   const handleUpdateCourse = async () => {
     if (!editingCourse) return
@@ -385,6 +576,7 @@ export default function CourseManagement() {
       setShowEditModal(false)
       setEditingCourse(null)
       setFormData(initialFormData)
+      setLearningOutcomesEditorValue('')
       await loadData()
     } catch {
       toast.error('Failed to update course')
@@ -397,6 +589,7 @@ export default function CourseManagement() {
     setShowEditModal(false)
     setEditingCourse(null)
     setFormData(initialFormData)
+    setLearningOutcomesEditorValue('')
   }
   if (loading) {
     return (
@@ -694,19 +887,40 @@ export default function CourseManagement() {
                     Learning Outcomes
                   </label>
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                    <ul style={{ listStyleType: 'disc', paddingLeft: '24px' }}>
-                      {parseLearningOutcomesForDisplay(viewingCourse.learning_outcomes).map(
-                        (outcome, index) => (
-                          <li
-                            key={index}
-                            className="text-gray-900 mb-2"
-                            style={{ display: 'list-item', listStylePosition: 'outside' }}
-                          >
-                            {outcome}
-                          </li>
-                        ),
-                      )}
-                    </ul>
+                    {(() => {
+                      try {
+                        const parsedOutcomes = parseLearningOutcomesForDisplay(
+                          viewingCourse.learning_outcomes,
+                        )
+                        if (parsedOutcomes.length === 0) {
+                          return (
+                            <p className="text-gray-500 italic">
+                              No learning outcomes available
+                            </p>
+                          )
+                        }
+                        return (
+                          <ul style={{ listStyleType: 'disc', paddingLeft: '24px' }}>
+                            {parsedOutcomes.map((outcome, index) => (
+                              <li
+                                key={index}
+                                className="text-gray-900 mb-2"
+                                style={{ display: 'list-item', listStylePosition: 'outside' }}
+                              >
+                                {outcome}
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      } catch (error) {
+                        console.error('Failed to render learning outcomes:', error)
+                        return (
+                          <p className="text-red-500 italic">
+                            Error loading learning outcomes
+                          </p>
+                        )
+                      }
+                    })()}
                   </div>
                 </div>
               )}
@@ -940,13 +1154,8 @@ export default function CourseManagement() {
                   Learning Outcomes
                 </label>
                 <SafeReactQuill
-                  value={outcomesToHtml(formData.learning_outcomes)}
-                  onChange={(value: string) =>
-                    setFormData({
-                      ...formData,
-                      learning_outcomes: parseHtmlToOutcomes(value),
-                    })
-                  }
+                  value={learningOutcomesEditorValue}
+                  onChange={handleLearningOutcomesChange}
                   placeholder="Enter each outcome on a new line or create a bulleted list"
                   className="bg-white"
                   modules={{
@@ -1201,13 +1410,8 @@ export default function CourseManagement() {
                   Learning Outcomes
                 </label>
                 <SafeReactQuill
-                  value={outcomesToHtml(formData.learning_outcomes)}
-                  onChange={(value: string) =>
-                    setFormData({
-                      ...formData,
-                      learning_outcomes: parseHtmlToOutcomes(value),
-                    })
-                  }
+                  value={learningOutcomesEditorValue}
+                  onChange={handleLearningOutcomesChange}
                   placeholder="Enter each outcome on a new line or create a bulleted list"
                   className="bg-white"
                   modules={{
