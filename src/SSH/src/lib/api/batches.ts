@@ -19,27 +19,21 @@ export async function getBatches(filters?: {
 }): Promise<Batch[]> {
   try {
     let query = supabaseAdmin.from('batches').select(`
-        *,
-        gurukul:gurukuls (
-          id,
-          name,
-          slug,
-          description,
-          image_url
-        ),
-        teacher:profiles!batches_teacher_id_fkey (
-          id,
-          full_name,
-          email,
-          role
-        ),
-        creator:profiles!batches_created_by_fkey (
-          id,
-          full_name,
-          email,
-          role
-        )
-
+        id,
+        name,
+        description,
+        gurukul_id,
+        teacher_id,
+        created_by,
+        status,
+        is_active,
+        start_date,
+        end_date,
+        created_at,
+        updated_at,
+        gurukul:gurukuls (id, name, slug),
+        teacher:profiles!batches_teacher_id_fkey (id, full_name, email),
+        creator:profiles!batches_created_by_fkey (id, full_name, email)
       `)
 
     if (filters?.gurukul_id) {
@@ -66,62 +60,45 @@ export async function getBatches(filters?: {
       return []
     }
 
-    // Fetch counts and progress for each batch
-    const batchesWithData = await Promise.all(
-      data.map(async (batch) => {
-        try {
-          // Get student count
-          const { count: studentCount } = await supabaseAdmin
-            .from('batch_students')
-            .select('*', { count: 'exact', head: true })
-            .eq('batch_id', batch.id)
-            .eq('is_active', true)
+    // Get counts in parallel using batch IDs
+    const batchIds = data.map((b) => b.id)
 
-          // Get course data through batch_courses junction table
-          const { data: batchCoursesData } = await supabaseAdmin
-            .from('batch_courses')
-            .select(
-              `
-              courses (
-                id,
-                title,
-                level,
-                duration_weeks,
-                course_number
-              )
-            `,
-            )
-            .eq('batch_id', batch.id)
-            .eq('is_active', true)
+    // Fetch all student counts in one query
+    const { data: studentCounts } = await supabaseAdmin
+      .from('batch_students')
+      .select('batch_id')
+      .in('batch_id', batchIds)
+      .eq('is_active', true)
 
-          // Extract course data (assuming one course per batch for now)
-          const courseData =
-            batchCoursesData && batchCoursesData.length > 0 ? batchCoursesData[0].courses : null
+    // Fetch all course assignments in one query
+    const { data: coursesData } = await supabaseAdmin
+      .from('batch_courses')
+      .select('batch_id')
+      .in('batch_id', batchIds)
+      .eq('is_active', true)
 
-          // Get progress data
-          const progressData = await getBatchProgress(batch.id)
+    // Create maps for quick lookup
+    const studentCountMap = new Map<string, number>()
+    const courseCountMap = new Map<string, number>()
 
-          return {
-            ...batch,
-            student_count: studentCount || 0,
-            course_count: batchCoursesData?.length || 0,
-            course: courseData,
-            progress: progressData,
-          }
-        } catch (countError) {
-          console.error(`Error fetching data for batch ${batch.id}:`, countError)
-          return {
-            ...batch,
-            student_count: 0,
-            course_count: 0,
-            course: null,
-            progress: [],
-          }
-        }
-      }),
-    )
+    studentCounts?.forEach((item: { batch_id: string }) => {
+      studentCountMap.set(item.batch_id, (studentCountMap.get(item.batch_id) || 0) + 1)
+    })
 
-    return batchesWithData
+    coursesData?.forEach((item: { batch_id: string }) => {
+      courseCountMap.set(item.batch_id, (courseCountMap.get(item.batch_id) || 0) + 1)
+    })
+
+    // Map the data without fetching progress (too expensive for list view)
+    const batchesWithData = data.map((batch: { id: string } & Record<string, unknown>) => ({
+      ...batch,
+      student_count: studentCountMap.get(batch.id) || 0,
+      course_count: courseCountMap.get(batch.id) || 0,
+      course: null,
+      progress: [],
+    }))
+
+    return batchesWithData as unknown as Batch[]
   } catch (error) {
     console.error('Error in getBatches:', error)
     return []
@@ -647,44 +624,55 @@ export async function getBatchStats(): Promise<{
   in_progress: number
 }> {
   try {
-    const { data, error } = await supabaseAdmin.from('batches').select('status, is_active')
+    // Use parallel count queries for each status - much faster than fetching all rows
+    const [
+      { count: totalCount, error: totalError },
+      { count: activeCount },
+      { count: inProgressCount },
+      { count: completedCount },
+      { count: archivedCount },
+      { count: inactiveCount },
+    ] = await Promise.all([
+      supabaseAdmin.from('batches').select('id', { count: 'exact', head: true }),
+      supabaseAdmin
+        .from('batches')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active'),
+      supabaseAdmin
+        .from('batches')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'in_progress'),
+      supabaseAdmin
+        .from('batches')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'completed'),
+      supabaseAdmin
+        .from('batches')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'archived'),
+      supabaseAdmin
+        .from('batches')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'inactive'),
+    ])
 
-    if (error) {
+    if (totalError) {
       // Check if error is due to table not existing
-      if (error.code === '42P01' || error.message.includes('does not exist')) {
-        console.log('Batches table does not exist yet, returning zero stats')
+      if (totalError.code === '42P01' || totalError.message.includes('does not exist')) {
         return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 }
       }
-      console.error('Error fetching batch stats:', error)
+      console.error('Error fetching batch stats:', totalError)
       return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 }
     }
 
-    const stats = (data || []).reduce(
-      (acc, batch) => {
-        acc.total++
-
-        // Count by status
-        if (batch.status === 'active' || batch.status === 'in_progress') {
-          acc.active++
-        } else if (batch.status === 'completed') {
-          acc.completed++
-        } else if (batch.status === 'archived') {
-          acc.archived++
-        } else if (batch.status === 'inactive') {
-          acc.inactive++
-        }
-
-        // Count in_progress separately if needed
-        if (batch.status === 'in_progress') {
-          acc.in_progress++
-        }
-
-        return acc
-      },
-      { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 },
-    )
-
-    return stats
+    return {
+      total: totalCount || 0,
+      active: (activeCount || 0) + (inProgressCount || 0), // active includes in_progress
+      inactive: inactiveCount || 0,
+      completed: completedCount || 0,
+      archived: archivedCount || 0,
+      in_progress: inProgressCount || 0,
+    }
   } catch (error) {
     console.error('Error in getBatchStats:', error)
     return { total: 0, active: 0, inactive: 0, completed: 0, archived: 0, in_progress: 0 }
@@ -918,7 +906,8 @@ export async function getStudentBatchProgress(studentId: string): Promise<Studen
         : studentBatch.batch
       if (batchData) {
         // Use individual student progress from batch_students table, fallback to batch-level progress
-        const individualProgress = studentBatch.progress_percentage ?? batchData.progress_percentage ?? 0
+        const individualProgress =
+          studentBatch.progress_percentage ?? batchData.progress_percentage ?? 0
 
         batchProgressData.push({
           batch: {

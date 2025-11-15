@@ -69,8 +69,6 @@ export default function TeacherDetailView() {
       setComplianceStats(stats)
       setComplianceItems(items)
       setAssignedCourses(courses)
-
-      console.log('Teacher avatar_url:', teacherData?.avatar_url)
     } catch (error) {
       console.error('Error loading teacher details:', error)
       toast.error('Failed to load teacher details')
@@ -266,7 +264,6 @@ export default function TeacherDetailView() {
                     onError={(e) => {
                       console.error('Image failed to load:', teacher.avatar_url, e)
                     }}
-                    onLoad={() => console.log('Image loaded successfully:', teacher.avatar_url)}
                   />
                 ) : (
                   <span className="text-white text-3xl font-semibold">

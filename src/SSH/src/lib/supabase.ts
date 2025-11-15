@@ -65,18 +65,27 @@ interface CertificateData {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
-// Client for regular user operations
+
+/**
+ * CRITICAL: To avoid "Multiple GoTrueClient instances" warning:
+ *
+ * - Only the anon key client initializes auth (with persistSession: true)
+ * - The service role client uses MINIMAL auth config to skip GoTrueClient initialization
+ * - Both clients share the SAME browser storage key to avoid conflicts
+ */
+
+// Primary client - manages user authentication
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: false, // Disable token refresh since we use custom auth
-    persistSession: false, // Disable session persistence
-    detectSessionInUrl: false, // Disable URL detection to prevent conflicts
-    storageKey: 'eyogi-ssh-app-auth-v2', // Updated unique storage key
+    autoRefreshToken: true,
+    persistSession: true, // CRITICAL: Session must persist for login redirect to work
+    detectSessionInUrl: false,
+    storageKey: 'eyogi-ssh-app-auth',
   },
-  // Add network debugging and increased timeouts
   global: {
     headers: {
       'X-Client-Info': 'eyogi-ssh-app',
@@ -85,22 +94,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   db: {
     schema: 'public',
   },
-  // Increase timeouts
   realtime: {
     timeout: 60000,
   },
 })
-// Admin client with service role key (bypasses RLS) - NO AUTH PERSISTENCE
+
+// Admin client - service role for querying with bypass of RLS
+// Use the anon client if service role is not available
 export const supabaseAdmin = supabaseServiceRoleKey
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
+        // Minimal auth config - uses same storage as anon client to prevent conflicts
         autoRefreshToken: false,
         persistSession: false,
         detectSessionInUrl: false,
-        // No storageKey to prevent auth conflicts
+        storageKey: 'eyogi-ssh-app-auth', // Same storage key as anon client
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'eyogi-ssh-admin',
+        },
+      },
+      db: {
+        schema: 'public',
+      },
+      realtime: {
+        timeout: 60000,
       },
     })
   : supabase
+
 // Database types (generated from Supabase schema)
 export interface Database {
   public: {

@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect, lazy } from 'react'
+import React, { Suspense, useState, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 
@@ -35,7 +35,9 @@ const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'))
 const AdminUserManagementNew = lazy(() => import('./components/admin/AdminUserManagementNew'))
 const AdminPermissionManagement = lazy(() => import('./components/admin/AdminPermissionManagement'))
 const CourseManagement = lazy(() => import('./components/admin/CourseManagement'))
-const CourseAssignmentManagement = lazy(() => import('./components/admin/CourseAssignmentManagement'))
+const CourseAssignmentManagement = lazy(
+  () => import('./components/admin/CourseAssignmentManagement'),
+)
 const EnrollmentManagement = lazy(() => import('./components/admin/EnrollmentManagement'))
 const GurukulManagement = lazy(() => import('./components/admin/GurukulManagement'))
 const SiteAnalytics = lazy(() => import('./components/admin/SiteAnalytics'))
@@ -66,10 +68,10 @@ function App() {
   // Check if current path is admin route
   const isAdminRoute = location.pathname.startsWith('/admin')
 
-  // Load cache testing utilities in development
+  // Load cache testing utilities in PRODUCTION only
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      // Import cache testing utility
+    if (import.meta.env.PROD) {
+      // Import cache testing utility only in production
       import('./lib/quickCacheTest').catch(() => {
         // Silently fail if utility can't load
       })

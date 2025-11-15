@@ -575,28 +575,11 @@ export async function getStudentCourseProgress(
   return queryCache.get(
     cacheKey,
     async () => {
-      try {
-        const { data, error } = await supabaseAdmin
-          .from('course_progress')
-          .select('course_id, progress_percentage')
-          .eq('student_id', studentId)
-
-        if (error) {
-          console.error('Error fetching course progress:', error)
-          return {}
-        }
-
-        // Convert to object with course_id as key and progress_percentage as value
-        const progressMap: { [courseId: string]: number } = {}
-        data.forEach((item) => {
-          progressMap[item.course_id] = item.progress_percentage || 0
-        })
-
-        return progressMap
-      } catch (error) {
-        console.error('Error in getStudentCourseProgress:', error)
-        return {}
-      }
+      // Note: course_progress table does not exist in current schema
+      // Progress is tracked at batch level via batch_progress table
+      // Returning empty object as there's no course-level progress tracking
+      // TODO: Implement course progress tracking if needed by querying batch_progress
+      return {}
     },
     CACHE_DURATIONS.ENROLLMENTS, // 1 hour
   )

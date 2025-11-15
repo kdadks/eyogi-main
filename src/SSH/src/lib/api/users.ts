@@ -19,12 +19,12 @@ export async function getAllUsers(): Promise<Profile[]> {
     async () => {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, role, student_id, created_at, updated_at, age')
         .order('created_at', { ascending: false })
       if (error) {
         return []
       }
-      return data || []
+      return (data || []) as unknown as Profile[]
     },
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
@@ -38,7 +38,7 @@ export async function getAllStudents(): Promise<Profile[]> {
     async () => {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, role, student_id, created_at, updated_at, age')
         .eq('role', 'student')
         .not('student_id', 'is', null)
         .ilike('student_id', 'EYG%')
@@ -46,7 +46,7 @@ export async function getAllStudents(): Promise<Profile[]> {
       if (error) {
         return []
       }
-      return data || []
+      return (data || []) as unknown as Profile[]
     },
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
@@ -60,13 +60,13 @@ export async function getAllTeachers(): Promise<Profile[]> {
     async () => {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, role, student_id, created_at, updated_at, age')
         .eq('role', 'teacher')
         .order('full_name', { ascending: true })
       if (error) {
         return []
       }
-      return data || []
+      return (data || []) as unknown as Profile[]
     },
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
@@ -80,12 +80,12 @@ export async function updateUserRole(userId: string, newRole: Profile['role']): 
   // If changing to student, assign student ID
   if (newRole === 'student') {
     const year = new Date().getFullYear()
-    const { data: existingStudents } = await supabaseAdmin
+    const { count } = await supabaseAdmin
       .from('profiles')
-      .select('student_id')
+      .select('id', { count: 'exact', head: true })
       .eq('role', 'student')
       .not('student_id', 'is', null)
-    const nextNumber = (existingStudents?.length || 0) + 1
+    const nextNumber = (count || 0) + 1
     updateData.student_id = `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
   }
   // If changing from student, remove student ID

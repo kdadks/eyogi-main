@@ -44,6 +44,8 @@ export default function ComplianceManagement() {
   const [selectedItem, setSelectedItem] = useState<ComplianceItem | null>(null)
   const [showItemModal, setShowItemModal] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add')
+  const [itemsPage, setItemsPage] = useState(1)
+  const itemsPerPage = 15
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -62,27 +64,14 @@ export default function ComplianceManagement() {
     setLoading(true)
     setError(null)
     try {
-      console.log('🔄 Loading compliance data...')
-
       // Load each separately to isolate errors
       const statsData = await getComplianceAdminStats()
-      console.log('✅ Stats loaded:', statsData)
       setStats(statsData)
 
       const itemsData = await getComplianceItems()
-      console.log('✅ Items loaded:', itemsData?.length || 0, 'items')
-      if (itemsData && itemsData.length > 0) {
-        console.log('✅ Sample item created_by:', itemsData[0].created_by)
-        console.log('✅ Sample item type:', itemsData[0].type)
-        console.log(
-          '✅ All item types:',
-          itemsData.map((item) => item.type),
-        )
-      }
       setItems(itemsData)
 
       const submissionsData = await getComplianceSubmissions({})
-      console.log('✅ Submissions loaded:', submissionsData?.length || 0, 'submissions')
       setSubmissions(submissionsData)
     } catch (error) {
       console.error('❌ Error loading compliance data:', error)
@@ -434,56 +423,88 @@ export default function ComplianceManagement() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-3 border border-gray-200 rounded"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="font-medium text-gray-900 text-sm">{item.title}</h3>
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 font-medium">
-                              {item.target_role?.charAt(0).toUpperCase() +
-                                item.target_role?.slice(1).toLowerCase() || 'Unknown'}
-                            </span>
-                            {item.is_mandatory && (
-                              <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded border border-red-200 font-medium">
-                                Mandatory
+                    {items
+                      .slice((itemsPage - 1) * itemsPerPage, itemsPage * itemsPerPage)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 border border-gray-200 rounded"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="font-medium text-gray-900 text-sm">{item.title}</h3>
+                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 font-medium">
+                                {item.target_role?.charAt(0).toUpperCase() +
+                                  item.target_role?.slice(1).toLowerCase() || 'Unknown'}
                               </span>
+                              {item.is_mandatory && (
+                                <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded border border-red-200 font-medium">
+                                  Mandatory
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                            {item.due_date && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Due: {new Date(item.due_date).toLocaleDateString()}
+                              </p>
                             )}
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">{item.description}</p>
-                          {item.due_date && (
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              Due: {new Date(item.due_date).toLocaleDateString()}
-                            </p>
-                          )}
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              className="h-7 w-7 p-0 rounded border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                              onClick={() => handleViewItem(item)}
+                              title="View"
+                            >
+                              <EyeIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              className="h-7 w-7 p-0 rounded border border-gray-300 bg-white text-gray-700 hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-1"
+                              onClick={() => handleEditItem(item)}
+                              title="Edit"
+                            >
+                              <PencilIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              className="h-7 w-7 p-0 rounded border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                              onClick={() => handleDeleteClick(item)}
+                              title="Delete"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-1.5">
-                          <button
-                            className="h-7 w-7 p-0 rounded border border-gray-300 bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                            onClick={() => handleViewItem(item)}
-                            title="View"
+                      ))}
+                    {items.length > itemsPerPage && (
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                        <div className="text-xs text-gray-600">
+                          Showing {(itemsPage - 1) * itemsPerPage + 1} to{' '}
+                          {Math.min(itemsPage * itemsPerPage, items.length)} of {items.length}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setItemsPage(Math.max(1, itemsPage - 1))}
+                            disabled={itemsPage === 1}
                           >
-                            <EyeIcon className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            className="h-7 w-7 p-0 rounded border border-gray-300 bg-white text-gray-700 hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-1"
-                            onClick={() => handleEditItem(item)}
-                            title="Edit"
+                            ← Prev
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setItemsPage(
+                                Math.min(Math.ceil(items.length / itemsPerPage), itemsPage + 1),
+                              )
+                            }
+                            disabled={itemsPage === Math.ceil(items.length / itemsPerPage)}
                           >
-                            <PencilIcon className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            className="h-7 w-7 p-0 rounded border border-gray-300 bg-white text-gray-700 hover:bg-red-50 hover:border-red-300 transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                            onClick={() => handleDeleteClick(item)}
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-3.5 w-3.5" />
-                          </button>
+                            Next →
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -827,6 +848,8 @@ function SubmissionsTab({
   const [rejectionReason, setRejectionReason] = useState('')
   const [filter, setFilter] = useState<'all' | 'submitted' | 'approved' | 'rejected'>('all')
   const [reviewing, setReviewing] = useState(false)
+  const [submissionPage, setSubmissionPage] = useState(1)
+  const submissionsPerPage = 15
 
   const filteredSubmissions = submissions.filter((sub) => {
     if (filter === 'all') return true
@@ -937,116 +960,160 @@ function SubmissionsTab({
             </p>
           ) : (
             <div className="space-y-3">
-              {filteredSubmissions.map((submission) => (
-                <div
-                  key={submission.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {/* Header */}
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-semibold text-gray-900 text-sm">
-                          {submission.compliance_item?.title || 'Unknown Item'}
-                        </h4>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-sm font-medium ${
-                            submission.status === 'approved'
-                              ? 'bg-green-100 text-green-800'
-                              : submission.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {submission.status?.charAt(0).toUpperCase() +
-                            submission.status?.slice(1).toLowerCase()}
-                        </span>
-                      </div>
-
-                      {/* User Info */}
-                      <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
-                        <div className="flex items-center space-x-1">
-                          <UserGroupIcon className="h-3.5 w-3.5" />
-                          <span>{submission.user?.full_name || 'Unknown User'}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <ClockIcon className="h-3.5 w-3.5" />
-                          <span>
-                            {new Date(submission.submitted_at).toLocaleDateString()}{' '}
-                            {new Date(submission.submitted_at).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+              {filteredSubmissions
+                .slice(
+                  (submissionPage - 1) * submissionsPerPage,
+                  submissionPage * submissionsPerPage,
+                )
+                .map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        {/* Header */}
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-semibold text-gray-900 text-sm">
+                            {submission.compliance_item?.title || 'Unknown Item'}
+                          </h4>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-sm font-medium ${
+                              submission.status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : submission.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {submission.status?.charAt(0).toUpperCase() +
+                              submission.status?.slice(1).toLowerCase()}
                           </span>
                         </div>
-                      </div>
 
-                      {/* Form Data */}
-                      {submission.form_data && (
-                        <div className="mt-3 bg-gray-50 rounded p-3 border border-gray-200">
-                          <p className="text-xs font-medium text-gray-700 mb-2">
-                            Submission Details:
-                          </p>
-                          <div className="space-y-1">
-                            {Object.entries(submission.form_data).map(([key, value]) => (
-                              <div key={key} className="text-xs">
-                                <span className="text-gray-600">{key}:</span>{' '}
-                                <span className="text-gray-900 font-medium">
-                                  {typeof value === 'boolean'
-                                    ? value
-                                      ? 'Yes'
-                                      : 'No'
-                                    : String(value)}
-                                </span>
-                              </div>
-                            ))}
+                        {/* User Info */}
+                        <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
+                          <div className="flex items-center space-x-1">
+                            <UserGroupIcon className="h-3.5 w-3.5" />
+                            <span>{submission.user?.full_name || 'Unknown User'}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <ClockIcon className="h-3.5 w-3.5" />
+                            <span>
+                              {new Date(submission.submitted_at).toLocaleDateString()}{' '}
+                              {new Date(submission.submitted_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
                           </div>
                         </div>
-                      )}
 
-                      {/* Rejection Reason */}
-                      {submission.status === 'rejected' && submission.rejection_reason && (
-                        <div className="mt-3 bg-red-50 rounded p-3 border border-red-200">
-                          <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
-                          <p className="text-xs text-red-700">{submission.rejection_reason}</p>
-                        </div>
-                      )}
-
-                      {/* Review Info */}
-                      {(submission.status === 'approved' || submission.status === 'rejected') &&
-                        submission.reviewed_at && (
-                          <div className="mt-2 text-xs text-gray-500">
-                            Reviewed on {new Date(submission.reviewed_at).toLocaleDateString()}
-                            {submission.reviewer && ` by ${submission.reviewer.full_name}`}
+                        {/* Form Data */}
+                        {submission.form_data && (
+                          <div className="mt-3 bg-gray-50 rounded p-3 border border-gray-200">
+                            <p className="text-xs font-medium text-gray-700 mb-2">
+                              Submission Details:
+                            </p>
+                            <div className="space-y-1">
+                              {Object.entries(submission.form_data).map(([key, value]) => (
+                                <div key={key} className="text-xs">
+                                  <span className="text-gray-600">{key}:</span>{' '}
+                                  <span className="text-gray-900 font-medium">
+                                    {typeof value === 'boolean'
+                                      ? value
+                                        ? 'Yes'
+                                        : 'No'
+                                      : String(value)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
-                    </div>
 
-                    {/* Action Buttons */}
-                    {submission.status === 'submitted' && (
-                      <div className="flex flex-col space-y-2 ml-4">
-                        <Button
-                          size="sm"
-                          className="h-7 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleReview(submission, 'approve')}
-                        >
-                          <CheckCircleIcon className="h-3.5 w-3.5 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-3 text-xs border-red-300 text-red-600 hover:bg-red-50"
-                          onClick={() => handleReview(submission, 'reject')}
-                        >
-                          <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
-                          Reject
-                        </Button>
+                        {/* Rejection Reason */}
+                        {submission.status === 'rejected' && submission.rejection_reason && (
+                          <div className="mt-3 bg-red-50 rounded p-3 border border-red-200">
+                            <p className="text-xs font-medium text-red-800 mb-1">
+                              Rejection Reason:
+                            </p>
+                            <p className="text-xs text-red-700">{submission.rejection_reason}</p>
+                          </div>
+                        )}
+
+                        {/* Review Info */}
+                        {(submission.status === 'approved' || submission.status === 'rejected') &&
+                          submission.reviewed_at && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              Reviewed on {new Date(submission.reviewed_at).toLocaleDateString()}
+                              {submission.reviewer && ` by ${submission.reviewer.full_name}`}
+                            </div>
+                          )}
                       </div>
-                    )}
+
+                      {/* Action Buttons */}
+                      {submission.status === 'submitted' && (
+                        <div className="flex flex-col space-y-2 ml-4">
+                          <Button
+                            size="sm"
+                            className="h-7 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handleReview(submission, 'approve')}
+                          >
+                            <CheckCircleIcon className="h-3.5 w-3.5 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-3 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                            onClick={() => handleReview(submission, 'reject')}
+                          >
+                            <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              {filteredSubmissions.length > submissionsPerPage && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="text-xs text-gray-600">
+                    Showing {(submissionPage - 1) * submissionsPerPage + 1} to{' '}
+                    {Math.min(submissionPage * submissionsPerPage, filteredSubmissions.length)} of{' '}
+                    {filteredSubmissions.length}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSubmissionPage(Math.max(1, submissionPage - 1))}
+                      disabled={submissionPage === 1}
+                    >
+                      ← Prev
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        setSubmissionPage(
+                          Math.min(
+                            Math.ceil(filteredSubmissions.length / submissionsPerPage),
+                            submissionPage + 1,
+                          ),
+                        )
+                      }
+                      disabled={
+                        submissionPage ===
+                        Math.ceil(filteredSubmissions.length / submissionsPerPage)
+                      }
+                    >
+                      Next →
+                    </Button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </CardContent>

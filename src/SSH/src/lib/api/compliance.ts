@@ -28,10 +28,7 @@ export async function getComplianceItems(targetRole?: UserRole): Promise<Complia
         let query = supabaseAdmin
           .from('compliance_items')
           .select(
-            `
-        *,
-        form:compliance_forms(*)
-      `,
+            'id, title, description, target_role, type, has_form, is_mandatory, due_date, is_active, created_by, created_at, updated_at',
           )
           .eq('is_active', true)
           .order('created_at', { ascending: false })
@@ -43,7 +40,7 @@ export async function getComplianceItems(targetRole?: UserRole): Promise<Complia
         const { data, error } = await query
 
         if (error) throw error
-        return data || []
+        return (data || []) as unknown as ComplianceItem[]
       } catch (error) {
         console.error('Error fetching compliance items:', error)
         throw error
@@ -252,7 +249,9 @@ export async function getComplianceSubmissions(filters: {
       try {
         let query = supabaseAdmin
           .from('compliance_submissions')
-          .select('*')
+          .select(
+            'id, compliance_item_id, user_id, status, submitted_at, reviewed_at, reviewed_by, notes',
+          )
           .order('submitted_at', { ascending: false })
 
         if (filters.complianceItemId) {
@@ -276,41 +275,43 @@ export async function getComplianceSubmissions(filters: {
           return []
         }
 
-        // Fetch related data manually
+        // Fetch related data in parallel instead of sequentially
         const userIds = [...new Set(submissions.map((s) => s.user_id).filter(Boolean))]
         const itemIds = [...new Set(submissions.map((s) => s.compliance_item_id).filter(Boolean))]
         const submissionIds = submissions.map((s) => s.id)
 
-        // Get users
-        const { data: users } = await supabaseAdmin
-          .from('profiles')
-          .select('id, email, full_name')
-          .in('id', userIds)
+        // Parallel queries
+        const [usersResult, itemsResult, filesResult] = await Promise.all([
+          userIds.length > 0
+            ? supabaseAdmin.from('profiles').select('id, email, full_name').in('id', userIds)
+            : Promise.resolve({ data: [] }),
+          itemIds.length > 0
+            ? supabaseAdmin.from('compliance_items').select('id, title, type').in('id', itemIds)
+            : Promise.resolve({ data: [] }),
+          submissionIds.length > 0
+            ? supabaseAdmin
+                .from('compliance_files')
+                .select('id, submission_id, file_path, file_name')
+                .in('submission_id', submissionIds)
+            : Promise.resolve({ data: [] }),
+        ])
 
-        // Get compliance items
-        const { data: items } = await supabaseAdmin
-          .from('compliance_items')
-          .select('*')
-          .in('id', itemIds)
-
-        // Get files
-        const { data: files } = await supabaseAdmin
-          .from('compliance_files')
-          .select('*')
-          .in('submission_id', submissionIds)
+        const users = usersResult.data || []
+        const items = itemsResult.data || []
+        const files = filesResult.data || []
 
         // Combine data
         const enrichedSubmissions = submissions.map((submission) => ({
           ...submission,
-          user: users?.find((u) => u.id === submission.user_id) || null,
-          compliance_item: items?.find((i) => i.id === submission.compliance_item_id) || null,
-          files: files?.filter((f) => f.submission_id === submission.id) || [],
+          user: users.find((u) => u.id === submission.user_id) || null,
+          compliance_item: items.find((i) => i.id === submission.compliance_item_id) || null,
+          files: files.filter((f) => f.submission_id === submission.id) || [],
           reviewer: submission.reviewed_by
-            ? users?.find((u) => u.id === submission.reviewed_by) || null
+            ? users.find((u) => u.id === submission.reviewed_by) || null
             : null,
         }))
 
-        return enrichedSubmissions
+        return enrichedSubmissions as unknown as ComplianceSubmission[]
       } catch (error) {
         console.error('Error fetching compliance submissions:', error)
         throw error
@@ -645,17 +646,30 @@ export async function getComplianceAdminStats(): Promise<ComplianceAdminStats> {
     cacheKey,
     async () => {
       try {
-        const [items, submissions] = await Promise.all([
-          getComplianceItems(),
-          getComplianceSubmissions({}),
-        ])
+        // Use count queries instead of fetching all data
+        const [itemsResult, submissionsResult, pendingResult, approvedResult, rejectedResult] =
+          await Promise.all([
+            supabaseAdmin
+              .from('compliance_items')
+              .select('*', { count: 'exact', head: true })
+              .eq('is_active', true),
+            supabaseAdmin
+              .from('compliance_submissions')
+              .select('*', { count: 'exact', head: true }),
+            supabaseAdmin
+              .from('compliance_submissions')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'submitted'),
+            supabaseAdmin
+              .from('compliance_submissions')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'approved'),
+            supabaseAdmin
+              .from('compliance_submissions')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'rejected'),
+          ])
 
-        const totalSubmissions = submissions.length
-        const pendingReviews = submissions.filter((s) => s.status === 'submitted').length
-        const approvedSubmissions = submissions.filter((s) => s.status === 'approved').length
-        const rejectedSubmissions = submissions.filter((s) => s.status === 'rejected').length
-
-        // Calculate stats by role
         const roleStats = {
           teacher: {
             total_items: 0,
@@ -680,15 +694,12 @@ export async function getComplianceAdminStats(): Promise<ComplianceAdminStats> {
           },
         }
 
-        // This would need more complex queries to get accurate role-based stats
-        // For now, return basic stats
-
         return {
-          total_items: items.length,
-          total_submissions: totalSubmissions,
-          pending_reviews: pendingReviews,
-          approved_submissions: approvedSubmissions,
-          rejected_submissions: rejectedSubmissions,
+          total_items: itemsResult.count || 0,
+          total_submissions: submissionsResult.count || 0,
+          pending_reviews: pendingResult.count || 0,
+          approved_submissions: approvedResult.count || 0,
+          rejected_submissions: rejectedResult.count || 0,
           by_role: roleStats,
         }
       } catch (error) {

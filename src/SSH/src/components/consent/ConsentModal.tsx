@@ -60,9 +60,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
       })
 
       if (result) {
-        toast.success(
-          `Consent recorded successfully for ${studentName}`,
-        )
+        toast.success(`Consent recorded successfully for ${studentName}`)
         onSuccess()
       } else {
         toast.error('Failed to record consent. Please try again.')
@@ -96,7 +94,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
 
   if (showWithdraw) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="p-6 border-b border-gray-200 flex-shrink-0">
@@ -122,14 +120,13 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mb-6">
               <p className="text-gray-700 mb-4">
-                You are about to withdraw consent for {studentName} to participate in eYogi
-                Gurukul activities.
+                You are about to withdraw consent for {studentName} to participate in eYogi Gurukul
+                activities.
               </p>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-sm text-yellow-800">
-                  <strong>Important:</strong> Withdrawing consent may affect {studentName}'s
-                  ability to participate in certain activities and may impact their enrollment
-                  status.
+                  <strong>Important:</strong> Withdrawing consent may affect {studentName}'s ability
+                  to participate in certain activities and may impact their enrollment status.
                 </p>
               </div>
             </div>
@@ -151,11 +148,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
 
           {/* Footer */}
           <div className="p-6 border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
-            <Button
-              onClick={() => setShowWithdraw(false)}
-              variant="outline"
-              disabled={loading}
-            >
+            <Button onClick={() => setShowWithdraw(false)} variant="outline" disabled={loading}>
               Cancel
             </Button>
             <Button
@@ -173,7 +166,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col my-8">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
@@ -259,10 +252,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
                 <strong>Note:</strong> You can withdraw consent at any time by clicking the
                 "Withdraw Consent" button below. Withdrawing consent may affect participation in
                 eYogi activities. To withdraw your personal data, please send a formal request to{' '}
-                <a
-                  href="mailto:info@eyogigurukul.com"
-                  className="underline hover:text-yellow-900"
-                >
+                <a href="mailto:info@eyogigurukul.com" className="underline hover:text-yellow-900">
                   info@eyogigurukul.com
                 </a>
               </p>

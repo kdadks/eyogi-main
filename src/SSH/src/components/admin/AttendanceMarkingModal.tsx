@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Input } from '../ui/Input'
@@ -31,6 +31,16 @@ interface StudentAttendance {
   notes: string
 }
 
+interface BatchStudentRow {
+  student_id: string
+  student: Array<{
+    id: string
+    full_name: string
+    email: string
+    student_id: string
+  }>
+}
+
 const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
   batch,
   selectedDate,
@@ -46,11 +56,7 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
   const [sessionNotes, setSessionNotes] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    fetchBatchStudents()
-  }, [batch.id])
-
-  const fetchBatchStudents = async () => {
+  const fetchBatchStudents = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabaseAdmin
@@ -85,11 +91,11 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
       )
 
       const studentList: StudentAttendance[] =
-        data?.map((item: any) => ({
+        data?.map((item: BatchStudentRow) => ({
           student_id: item.student_id,
-          student_name: item.student?.full_name || 'Unknown',
-          student_email: item.student?.email || '',
-          student_number: item.student?.student_id || undefined,
+          student_name: item.student?.[0]?.full_name || 'Unknown',
+          student_email: item.student?.[0]?.email || '',
+          student_number: item.student?.[0]?.student_id || undefined,
           status: existingMap.get(item.student_id)?.status || 'present',
           notes: existingMap.get(item.student_id)?.notes || '',
         })) || []
@@ -101,18 +107,18 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [batch.id, selectedDate])
+
+  useEffect(() => {
+    fetchBatchStudents()
+  }, [fetchBatchStudents])
 
   const handleStatusChange = (studentId: string, status: StudentAttendance['status']) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.student_id === studentId ? { ...s, status } : s)),
-    )
+    setStudents((prev) => prev.map((s) => (s.student_id === studentId ? { ...s, status } : s)))
   }
 
   const handleNotesChange = (studentId: string, notes: string) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.student_id === studentId ? { ...s, notes } : s)),
-    )
+    setStudents((prev) => prev.map((s) => (s.student_id === studentId ? { ...s, notes } : s)))
   }
 
   const handleMarkAll = (status: StudentAttendance['status']) => {
@@ -220,7 +226,7 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
       <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
@@ -228,7 +234,8 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Mark Attendance</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {batch.name} - {new Date(selectedDate).toLocaleDateString('en-US', {
+                {batch.name} -{' '}
+                {new Date(selectedDate).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -368,7 +375,10 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
                         <button
                           key={status}
                           onClick={() =>
-                            handleStatusChange(student.student_id, status as StudentAttendance['status'])
+                            handleStatusChange(
+                              student.student_id,
+                              status as StudentAttendance['status'],
+                            )
                           }
                           className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all ${
                             student.status === status

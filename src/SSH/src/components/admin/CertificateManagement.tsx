@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Certificate, Enrollment, CertificateTemplate, Course, Gurukul } from '@/types'
 import {
-  getAllCertificates,
   issueCertificate,
   bulkIssueCertificates,
   getCertificatesFromTable,
@@ -120,7 +119,6 @@ export default function CertificateManagement() {
       }
 
       // Certificates already loaded above, no need to reload
-      console.log(`Loaded ${certificatesData.length} certificates for admin view`)
     } catch {
       toast.error('Failed to load certificate data')
     } finally {

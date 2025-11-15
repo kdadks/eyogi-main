@@ -10,12 +10,10 @@ import {
   ClockIcon,
   UserPlusIcon,
   BookOpenIcon as BookIcon,
-  CheckCircleIcon,
   QueueListIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
 import { getBatchStats } from '../../lib/api/batches'
-import { User, Course } from '../../types'
 interface DashboardStats {
   totalUsers: number
   totalCourses: number
@@ -55,7 +53,7 @@ const AdminDashboard: React.FC = () => {
   }, [])
   const loadDashboardStats = async () => {
     try {
-      // Make all queries in parallel for speed
+      // Optimized: Fetch counts only with head: true to avoid fetching actual data
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       const [
@@ -64,7 +62,6 @@ const AdminDashboard: React.FC = () => {
         totalEnrollmentsResult,
         totalCertificatesResult,
         recentEnrollmentsResult,
-        activeUsersResult,
         batchStatsResult,
       ] = await Promise.all([
         supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
@@ -75,7 +72,6 @@ const AdminDashboard: React.FC = () => {
           .from('enrollments')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', thirtyDaysAgo.toISOString()),
-        supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
         getBatchStats().catch(() => ({
           total: 0,
           active: 0,
@@ -90,7 +86,7 @@ const AdminDashboard: React.FC = () => {
         totalEnrollments: totalEnrollmentsResult.count || 0,
         totalCertificates: totalCertificatesResult.count || 0,
         recentEnrollments: recentEnrollmentsResult.count || 0,
-        activeUsers: activeUsersResult.count || 0,
+        activeUsers: totalUsersResult.count || 0,
         totalBatches: batchStatsResult.total || 0,
         activeBatches: batchStatsResult.active || 0,
       })
@@ -114,80 +110,34 @@ const AdminDashboard: React.FC = () => {
   const loadRecentActivities = async () => {
     try {
       const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 30) // Extended to 30 days for more activity data
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7) // 7 days for recent activities
 
-      console.log('Loading recent activities since:', sevenDaysAgo.toISOString())
+      // Optimized: Fetch only essential data without complex joins
+      const [recentUsers, recentCourses, recentBatches] = await Promise.all([
+        // Recent user registrations
+        supabaseAdmin
+          .from('profiles')
+          .select('id, full_name, role, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(3),
 
-      // Fetch recent activities from different tables
-      const [recentUsers, recentCourses, recentEnrollments, recentCertificates, recentBatches] =
-        await Promise.all([
-          // Recent user registrations
-          supabaseAdmin
-            .from('profiles')
-            .select('id, full_name, email, role, created_at')
-            .gte('created_at', sevenDaysAgo.toISOString())
-            .order('created_at', { ascending: false })
-            .limit(5),
+        // Recent course creations
+        supabaseAdmin
+          .from('courses')
+          .select('id, title, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(3),
 
-          // Recent course creations
-          supabaseAdmin
-            .from('courses')
-            .select('id, title, created_at')
-            .gte('created_at', sevenDaysAgo.toISOString())
-            .order('created_at', { ascending: false })
-            .limit(5),
-
-          // Recent enrollments
-          supabaseAdmin
-            .from('enrollments')
-            .select(
-              `
-            id,
-            enrolled_at,
-            student:profiles!enrollments_student_id_fkey (
-              full_name,
-              email
-            ),
-            course:courses!enrollments_course_id_fkey (
-              title
-            )
-          `,
-            )
-            .gte('enrolled_at', sevenDaysAgo.toISOString())
-            .order('enrolled_at', { ascending: false })
-            .limit(5),
-
-          // Recent certificates
-          supabaseAdmin
-            .from('certificates')
-            .select(
-              `
-            id,
-            issued_at,
-            student_id,
-            course_id
-          `,
-            )
-            .gte('issued_at', sevenDaysAgo.toISOString())
-            .order('issued_at', { ascending: false })
-            .limit(5),
-
-          // Recent batch creations
-          supabaseAdmin
-            .from('batches')
-            .select('id, name, created_at')
-            .gte('created_at', sevenDaysAgo.toISOString())
-            .order('created_at', { ascending: false })
-            .limit(5),
-        ])
-
-      console.log('Recent data fetched:', {
-        users: recentUsers.data?.length || 0,
-        courses: recentCourses.data?.length || 0,
-        enrollments: recentEnrollments.data?.length || 0,
-        certificates: recentCertificates.data?.length || 0,
-        batches: recentBatches.data?.length || 0,
-      })
+        // Recent batch creations
+        supabaseAdmin
+          .from('batches')
+          .select('id, name, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(3),
+      ])
 
       const activities: ActivityItem[] = []
 
@@ -221,40 +171,12 @@ const AdminDashboard: React.FC = () => {
         })
       }
 
-      // Add enrollments
-      if (recentEnrollments.data) {
-        recentEnrollments.data.forEach((enrollment: any) => {
-          const student = enrollment.student
-          const course = enrollment.course
-          if (student && course) {
-            activities.push({
-              id: `enrollment-${enrollment.id}`,
-              type: 'enrollment',
-              title: 'New Enrollment',
-              description: `${student.full_name} enrolled in "${course.title}"`,
-              timestamp: enrollment.enrolled_at,
-              icon: ClipboardDocumentListIcon,
-              iconColor: 'text-yellow-600',
-            })
-          } else {
-            console.log('Enrollment missing student or course data:', { student, course, enrollment })
-          }
-        })
-      }
-
-      // Add certificates - simplified query only gets IDs
-      // Skipping activity feed for certificates to avoid complex joins
-      if (recentCertificates.data && recentCertificates.data.length > 0) {
-        // Just count them for stats purposes
-        console.log(`${recentCertificates.data.length} certificates issued in last 7 days`)
-      }
-
       // Add batch creations
       if (recentBatches.data) {
         recentBatches.data.forEach((batch) => {
           activities.push({
             id: `batch-${batch.id}`,
-            type: 'course_creation', // Reusing type for consistency
+            type: 'course_creation',
             title: 'New Batch Created',
             description: `Batch "${batch.name}" was created`,
             timestamp: batch.created_at,
@@ -264,11 +186,10 @@ const AdminDashboard: React.FC = () => {
         })
       }
 
-      // Sort all activities by timestamp (most recent first) and take top 10
+      // Sort all activities by timestamp (most recent first) and take top 9
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
-      console.log('Final activities:', activities.length, activities)
-      setActivities(activities.slice(0, 10))
+      setActivities(activities.slice(0, 9))
     } catch (error) {
       console.error('Error loading recent activities:', error)
       setActivities([])

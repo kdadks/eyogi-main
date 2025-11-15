@@ -643,15 +643,6 @@ function MediaGridItem({
   const thumbnailUrl = getThumbnailUrl(file)
   const isImage = file.file_category === 'image'
 
-  console.log(
-    'MediaGridItem - File:',
-    file.original_name,
-    'URL:',
-    thumbnailUrl,
-    'Category:',
-    file.file_category,
-  )
-
   return (
     <div
       className={`relative group border-2 rounded-lg overflow-hidden transition-all ${
@@ -671,9 +662,6 @@ function MediaGridItem({
               src={thumbnailUrl}
               alt={file.alt_text || file.title || file.original_name}
               className="w-full h-full object-cover"
-              onLoad={() =>
-                console.log('✅ Image loaded successfully:', file.original_name, thumbnailUrl)
-              }
               onError={(e) => {
                 console.error('❌ Image failed to load:', file.original_name, thumbnailUrl, e)
                 e.currentTarget.style.display = 'none'

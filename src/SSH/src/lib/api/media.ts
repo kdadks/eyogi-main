@@ -1,4 +1,6 @@
 // Media Management API Functions
+import { supabaseAdmin } from '../supabase'
+import { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } from '../uploadthing-client'
 
 export interface MediaFile {
   id: string
@@ -47,8 +49,6 @@ export interface MediaResponse {
 // Fetch media files with filters
 export async function getMediaFiles(filters: MediaFilters = {}): Promise<MediaResponse> {
   try {
-    const { supabaseAdmin } = await import('../supabase')
-
     const page = filters.page || 1
     const limit = filters.limit || 20
 
@@ -108,8 +108,6 @@ export async function updateMediaFile(
   updates: Partial<Pick<MediaFile, 'title' | 'alt_text' | 'description' | 'tags' | 'is_public'>>,
 ): Promise<MediaFile> {
   try {
-    const { supabaseAdmin } = await import('../supabase')
-
     const updateData = {
       ...updates,
       updated_at: new Date().toISOString(),
@@ -141,9 +139,6 @@ export async function updateMediaFile(
 // Delete single media file
 export async function deleteMediaFile(id: string): Promise<void> {
   try {
-    const { supabaseAdmin } = await import('../supabase')
-    const { deleteFromUploadThing } = await import('../uploadthing-client')
-
     // First, get the media file to get its URL
     const { data: mediaFile, error: fetchError } = await supabaseAdmin
       .from('media_files')
@@ -186,9 +181,6 @@ export async function deleteMediaFile(id: string): Promise<void> {
 // Bulk delete media files
 export async function bulkDeleteMediaFiles(ids: string[]): Promise<void> {
   try {
-    const { supabaseAdmin } = await import('../supabase')
-    const { deleteFromUploadThing } = await import('../uploadthing-client')
-
     // First, get all media files to get their URLs
     const { data: mediaFiles, error: fetchError } = await supabaseAdmin
       .from('media_files')
@@ -238,8 +230,6 @@ export async function getMediaStats(): Promise<{
   total_size: number
 }> {
   try {
-    const { supabaseAdmin } = await import('../supabase')
-
     // Get total count
     const { count: total, error: countError } = await supabaseAdmin
       .from('media_files')
@@ -381,8 +371,6 @@ export async function watermarkMediaFiles(
   watermarkOptions: WatermarkOptions = {},
 ): Promise<WatermarkResult[]> {
   try {
-    const { supabaseAdmin } = await import('../supabase')
-
     // Process files in parallel for better performance
     const processFile = async (mediaId: string): Promise<WatermarkResult> => {
       try {

@@ -26,6 +26,8 @@ const BatchManagement: React.FC = () => {
   const [batches, setBatches] = useState<Batch[]>([])
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -56,6 +58,7 @@ const BatchManagement: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setCurrentPage(1)
     try {
       const [batchData, gurukulData, statsData] = await Promise.all([
         getBatches({
@@ -119,10 +122,12 @@ const BatchManagement: React.FC = () => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800'
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800'
       case 'inactive':
         return 'bg-gray-100 text-gray-800'
       case 'completed':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-purple-100 text-purple-800'
       case 'archived':
         return 'bg-yellow-100 text-yellow-800'
       default:
@@ -133,6 +138,14 @@ const BatchManagement: React.FC = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set'
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const formatStatus = (status: string) => {
+    if (!status) return 'Unknown'
+    return status
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
   }
 
   if (loading) {
@@ -290,108 +303,155 @@ const BatchManagement: React.FC = () => {
       </Card>
 
       {/* Batches Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {batches.map((batch) => (
-          <Card key={batch.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{batch.name}</CardTitle>
-                <Badge className={getStatusColor(batch.status)}>{batch.status}</Badge>
+      <div className="space-y-4">
+        {(() => {
+          const startIndex = (currentPage - 1) * itemsPerPage
+          const endIndex = startIndex + itemsPerPage
+          const paginatedBatches = batches.slice(startIndex, endIndex)
+          const totalPages = Math.ceil(batches.length / itemsPerPage)
+
+          return (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {paginatedBatches.map((batch) => (
+                  <Card key={batch.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{batch.name}</CardTitle>
+                        <Badge className={getStatusColor(batch.status)}>
+                          {formatStatus(batch.status)}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <AcademicCapIcon className="h-4 w-4 mr-2" />
+                          <span>{batch.gurukul?.name || 'Unknown Gurukul'}</span>
+                        </div>
+
+                        {batch.description && (
+                          <div
+                            className="text-sm text-gray-600"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(batch.description) }}
+                          />
+                        )}
+
+                        <div className="flex items-center text-sm text-gray-600">
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          <span>
+                            {batch.start_date ? formatDate(batch.start_date) : 'TBD'} -{' '}
+                            {batch.end_date ? formatDate(batch.end_date) : 'TBD'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div className="flex items-center">
+                            <UserGroupIcon className="h-4 w-4 mr-1" />
+                            <span>{batch.student_count || 0} students</span>
+                          </div>
+                          <div className="flex items-center">
+                            <BookOpenIcon className="h-4 w-4 mr-1" />
+                            <span>{batch.course_count || 0} courses</span>
+                          </div>
+                        </div>
+
+                        {batch.teacher && (
+                          <div className="text-sm text-gray-600">
+                            <strong>Teacher:</strong> {batch.teacher.full_name}
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {canUpdate && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditBatch(batch)}
+                              className="flex items-center space-x-1"
+                            >
+                              <PencilIcon className="h-3 w-3" />
+                              <span>Edit</span>
+                            </Button>
+                          )}
+
+                          {canAssignStudents && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStudentAssignment(batch)}
+                              className="flex items-center space-x-1"
+                            >
+                              <UserGroupIcon className="h-3 w-3" />
+                              <span>Students</span>
+                            </Button>
+                          )}
+
+                          {canAssignCourses && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCourseAssignment(batch)}
+                              className="flex items-center space-x-1"
+                            >
+                              <BookOpenIcon className="h-3 w-3" />
+                              <span>Courses</span>
+                            </Button>
+                          )}
+
+                          {canDelete && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteBatch(batch)}
+                              className="flex items-center space-x-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                            >
+                              <TrashIcon className="h-3 w-3" />
+                              <span>Delete</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </CardHeader>
 
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-gray-600">
-                  <AcademicCapIcon className="h-4 w-4 mr-2" />
-                  <span>{batch.gurukul?.name || 'Unknown Gurukul'}</span>
-                </div>
-
-                {batch.description && (
-                  <div
-                    className="text-sm text-gray-600"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(batch.description) }}
-                  />
-                )}
-
-                <div className="flex items-center text-sm text-gray-600">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  <span>
-                    {batch.start_date ? formatDate(batch.start_date) : 'TBD'} -{' '}
-                    {batch.end_date ? formatDate(batch.end_date) : 'TBD'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <UserGroupIcon className="h-4 w-4 mr-1" />
-                    <span>{batch.student_count || 0} students</span>
-                  </div>
-                  <div className="flex items-center">
-                    <BookOpenIcon className="h-4 w-4 mr-1" />
-                    <span>{batch.course_count || 0} courses</span>
-                  </div>
-                </div>
-
-                {batch.teacher && (
-                  <div className="text-sm text-gray-600">
-                    <strong>Teacher:</strong> {batch.teacher.full_name}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {canUpdate && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditBatch(batch)}
-                      className="flex items-center space-x-1"
-                    >
-                      <PencilIcon className="h-3 w-3" />
-                      <span>Edit</span>
-                    </Button>
-                  )}
-
-                  {canAssignStudents && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStudentAssignment(batch)}
-                      className="flex items-center space-x-1"
-                    >
-                      <UserGroupIcon className="h-3 w-3" />
-                      <span>Students</span>
-                    </Button>
-                  )}
-
-                  {canAssignCourses && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCourseAssignment(batch)}
-                      className="flex items-center space-x-1"
-                    >
-                      <BookOpenIcon className="h-3 w-3" />
-                      <span>Courses</span>
-                    </Button>
-                  )}
-
-                  {canDelete && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteBatch(batch)}
-                      className="flex items-center space-x-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                    >
-                      <TrashIcon className="h-3 w-3" />
-                      <span>Delete</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        Showing {startIndex + 1} to {Math.min(endIndex, batches.length)} of{' '}
+                        {batches.length} batches (Page {currentPage} of {totalPages})
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )
+        })()}
       </div>
 
       {batches.length === 0 && (

@@ -26,6 +26,8 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [viewingUser, setViewingUser] = useState<User | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -56,6 +58,7 @@ export default function UserManagement() {
       filtered = filtered.filter((user) => user.role === roleFilter)
     }
     setFilteredUsers(filtered)
+    setCurrentPage(1) // Reset to first page when filtering
   }, [users, searchTerm, roleFilter])
   useEffect(() => {
     filterUsers()
@@ -207,89 +210,148 @@ export default function UserManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                            <UserIcon className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.full_name || 'Unknown'}
+                  {filteredUsers
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                              <UserIcon className="h-5 w-5 text-white" />
                             </div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                            {user.age && (
-                              <div className="text-xs text-gray-400">Age: {user.age}</div>
-                            )}
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.full_name || 'Unknown'}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                              {user.age && (
+                                <div className="text-xs text-gray-400">Age: {user.age}</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {editingUser?.id === user.id ? (
-                          <div className="flex items-center space-x-2">
-                            <select
-                              value={editingUser.role}
-                              onChange={(e) =>
-                                setEditingUser({
-                                  ...editingUser,
-                                  role: e.target.value as User['role'],
-                                })
-                              }
-                              className="text-sm border border-gray-300 rounded px-2 py-1"
-                            >
-                              <option value="student">Student</option>
-                              <option value="teacher">Teacher</option>
-                              <option value="admin">Admin</option>
-                            </select>
+                        </td>
+                        <td className="px-6 py-4">
+                          {editingUser?.id === user.id ? (
+                            <div className="flex items-center space-x-2">
+                              <select
+                                value={editingUser.role}
+                                onChange={(e) =>
+                                  setEditingUser({
+                                    ...editingUser,
+                                    role: e.target.value as User['role'],
+                                  })
+                                }
+                                className="text-sm border border-gray-300 rounded px-2 py-1"
+                              >
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateRole(user.id, editingUser.role)}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                onClick={() => setEditingUser(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <Badge className={getRoleColor(user.role)} size="sm">
+                              {toSentenceCase(user.role)}
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {user.student_id || '-'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {formatDate(user.created_at)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
                             <Button
                               size="sm"
-                              onClick={() => handleUpdateRole(user.id, editingUser.role)}
+                              variant="ghost"
+                              onClick={() => {
+                                setViewingUser(user)
+                              }}
+                              title="View User Details"
                             >
-                              Save
+                              <EyeIcon className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="danger" onClick={() => setEditingUser(null)}>
-                              Cancel
+                            <Button size="sm" variant="ghost" onClick={() => setEditingUser(user)}>
+                              <PencilIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              <TrashIcon className="h-4 w-4" />
                             </Button>
                           </div>
-                        ) : (
-                          <Badge className={getRoleColor(user.role)} size="sm">
-                            {toSentenceCase(user.role)}
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{user.student_id || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {formatDate(user.created_at)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setViewingUser(user)
-                            }}
-                            title="View User Details"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingUser(user)}>
-                            <PencilIcon className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => handleDeleteUser(user.id)}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
+              {filteredUsers.length > itemsPerPage && (
+                <div className="flex items-center justify-between mt-4 px-6 py-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                    {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of{' '}
+                    {filteredUsers.length} users
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      {Array.from(
+                        { length: Math.ceil(filteredUsers.length / itemsPerPage) },
+                        (_, i) => i + 1,
+                      )
+                        .slice(
+                          Math.max(0, currentPage - 2),
+                          Math.min(Math.ceil(filteredUsers.length / itemsPerPage), currentPage + 2),
+                        )
+                        .map((page) => (
+                          <Button
+                            key={page}
+                            size="sm"
+                            variant={currentPage === page ? 'primary' : 'ghost'}
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        setCurrentPage(
+                          Math.min(Math.ceil(filteredUsers.length / itemsPerPage), currentPage + 1),
+                        )
+                      }
+                      disabled={currentPage === Math.ceil(filteredUsers.length / itemsPerPage)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

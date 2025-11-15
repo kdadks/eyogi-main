@@ -29,14 +29,25 @@ const AdminLogin: React.FC = () => {
         return
       }
 
+      // Get the session to ensure it's available
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        toast.error('Session not established')
+        return
+      }
+
       toast.success('Welcome to Admin Console')
 
       // Update auth context immediately
       await updateAuthState()
 
+      // Small delay to ensure state is updated
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       // Navigate to admin dashboard
       navigate('/admin/dashboard', { replace: true })
-    } catch {
+    } catch (error) {
+      console.error('Login error:', error)
       toast.error('An unexpected error occurred')
     } finally {
       setIsLoading(false)
