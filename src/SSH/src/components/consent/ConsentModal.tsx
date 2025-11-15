@@ -94,7 +94,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
 
   if (showWithdraw) {
     return (
-      <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
         <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="p-6 border-b border-gray-200 flex-shrink-0">
@@ -166,7 +166,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4 overflow-y-auto">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col my-8">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">

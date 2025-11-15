@@ -226,7 +226,7 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4 overflow-y-auto">
       <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">

@@ -5,6 +5,7 @@ Disallow: /auth/
 Disallow: /api/
 Disallow: /_next/
 Disallow: /admin/
+Disallow: /ssh-app/
 
 # Allow specific auth pages for SEO
 Allow: /auth/signin
