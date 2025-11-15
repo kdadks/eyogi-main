@@ -95,7 +95,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       permission: { resource: 'certificates', action: 'read' },
     },
     {
-      name: 'Content',
+      name: 'CMS',
       href: '/admin/content',
       icon: DocumentDuplicateIcon,
       permission: { resource: 'content', action: 'read' },

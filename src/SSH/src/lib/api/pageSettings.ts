@@ -48,6 +48,111 @@ export interface PageSettings {
   updated_at?: string
   created_by?: string
   updated_by?: string
+
+  // HomePage Hero Section
+  home_hero_section_description?: string
+  home_hero_badge_text?: string
+  home_hero_badge_icon?: string
+  home_hero_title?: string
+  home_hero_title_highlight?: string
+  home_hero_description?: string
+  home_hero_image_url?: string
+  home_hero_image_caption?: string
+  home_hero_background_type?: 'gradient' | 'image'
+  home_hero_background_color?: string
+  home_hero_background_image_url?: string
+  home_hero_button_1_text?: string
+  home_hero_button_1_link?: string
+  home_hero_button_1_variant?: string
+  home_hero_button_2_text?: string
+  home_hero_button_2_link?: string
+  home_hero_button_2_variant?: string
+  home_hero_stats?: Array<{
+    label: string
+    value: string
+    icon?: string
+    color?: string
+  }>
+  home_hero_image_display_type?: string
+  home_hero_image_border_radius?: number
+  home_hero_layout?: string
+  home_hero_title_font_size?: number
+  home_hero_title_color?: string
+  home_hero_description_font_size?: number
+  home_hero_description_color?: string
+
+  // HomePage Features Section
+  home_features_section_description?: string
+  home_features_visible?: boolean
+  home_features_title?: string
+  home_features_subtitle?: string
+  home_features_background_color?: string
+  home_features_box_1_title?: string
+  home_features_box_1_description?: string
+  home_features_box_1_image_url?: string
+  home_features_box_2_title?: string
+  home_features_box_2_description?: string
+  home_features_box_2_image_url?: string
+  home_features_box_3_title?: string
+  home_features_box_3_description?: string
+  home_features_box_3_image_url?: string
+  home_features_box_4_title?: string
+  home_features_box_4_description?: string
+  home_features_box_4_image_url?: string
+  home_features?: Array<{
+    title: string
+    description: string
+    icon: string
+    color?: string
+  }>
+
+  // HomePage Gurukuls Section
+  home_gurukuls_section_description?: string
+  home_gurukuls_visible?: boolean
+  home_gurukuls_title?: string
+  home_gurukuls_subtitle?: string
+  home_gurukuls_background_color?: string
+  home_gurukuls_item_type?: 'gurukuls' | 'courses'
+  home_gurukuls_display_type?: 'all' | 'selected' | 'count'
+  home_gurukuls_selected_ids?: string[]
+  home_gurukuls_limit?: number
+  home_gurukuls_columns_desktop?: number
+  home_gurukuls_columns_tablet?: number
+  home_gurukuls_columns_mobile?: number
+  home_gurukuls_show_stats?: boolean
+  home_gurukuls_button_text?: string
+  home_gurukuls_button_link?: string
+
+  // HomePage Testimonials Section
+  home_testimonials_section_description?: string
+  home_testimonials_visible?: boolean
+  home_testimonials_title?: string
+  home_testimonials_subtitle?: string
+  home_testimonials_background_color?: string
+  home_testimonials?: Array<{
+    name: string
+    role: string
+    content: string
+    rating: number
+    image?: string
+  }>
+  home_testimonials_columns_desktop?: number
+  home_testimonials_columns_tablet?: number
+
+  // HomePage CTA Section
+  home_cta_section_description?: string
+  home_cta_visible?: boolean
+  home_cta_title?: string
+  home_cta_description?: string
+  home_cta_background_type?: 'gradient' | 'image'
+  home_cta_background_color?: string
+  home_cta_background_image_url?: string
+  home_cta_button_1_text?: string
+  home_cta_button_1_link?: string
+  home_cta_button_1_variant?: string
+  home_cta_button_2_text?: string
+  home_cta_button_2_link?: string
+  home_cta_button_2_variant?: string
 }
 
 /**
@@ -253,6 +358,115 @@ export async function resetPageSettings(slug: string, userId?: string): Promise<
   const defaultSettings = defaults[slug] || {}
 
   return updatePageSettings(slug, defaultSettings, userId)
+}
+
+/**
+ * Get gurukuls for HomePage with CMS display settings
+ */
+export async function getHomePageGurukuls(settings: PageSettings) {
+  try {
+    let query = supabaseAdmin.from('gurukuls').select('*')
+
+    if (
+      settings.home_gurukuls_display_type === 'selected' &&
+      settings.home_gurukuls_selected_ids?.length
+    ) {
+      query = query.in('id', settings.home_gurukuls_selected_ids)
+    } else if (settings.home_gurukuls_display_type === 'count') {
+      query = query.limit(settings.home_gurukuls_limit || 6)
+    }
+    // 'all' displays all without limit
+
+    const { data, error } = await query.order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching home page gurukuls:', error)
+    return []
+  }
+}
+
+/**
+ * Add/remove gurukul from home page display
+ */
+export async function toggleGurukulInHome(
+  gurukulId: string,
+  add: boolean,
+  slug: string = 'home',
+  userId?: string,
+) {
+  try {
+    const settings = await getPageSettings(slug)
+    if (!settings) throw new Error('Page settings not found')
+
+    const selectedIds = settings.home_gurukuls_selected_ids || []
+    let updatedIds: string[]
+
+    if (add) {
+      updatedIds = [...new Set([...selectedIds, gurukulId])] // Avoid duplicates
+    } else {
+      updatedIds = selectedIds.filter((id) => id !== gurukulId)
+    }
+
+    return updatePageSettings(
+      slug,
+      {
+        home_gurukuls_selected_ids: updatedIds,
+        home_gurukuls_display_type: 'selected',
+      },
+      userId,
+    )
+  } catch (error) {
+    console.error('Error toggling gurukul in home page:', error)
+    throw error
+  }
+}
+
+/**
+ * Update home page feature items
+ */
+export async function updateHomeFeatures(
+  features: PageSettings['home_features'],
+  slug: string = 'home',
+  userId?: string,
+) {
+  return updatePageSettings(slug, { home_features: features }, userId)
+}
+
+/**
+ * Update home page testimonials
+ */
+export async function updateHomeTestimonials(
+  testimonials: PageSettings['home_testimonials'],
+  slug: string = 'home',
+  userId?: string,
+) {
+  return updatePageSettings(slug, { home_testimonials: testimonials }, userId)
+}
+
+/**
+ * Update home page hero stats
+ */
+export async function updateHomeHeroStats(
+  stats: PageSettings['home_hero_stats'],
+  slug: string = 'home',
+  userId?: string,
+) {
+  return updatePageSettings(slug, { home_hero_stats: stats }, userId)
+}
+
+/**
+ * Get formatted home page settings with dynamic sections
+ */
+export async function getFormattedHomePageSettings(slug: string = 'home') {
+  const settings = await getPageSettings(slug)
+  if (!settings) return null
+
+  return {
+    ...settings,
+    gurukuls: settings.home_gurukuls_visible ? await getHomePageGurukuls(settings) : [],
+  }
 }
 
 export { CACHE_DURATIONS }
