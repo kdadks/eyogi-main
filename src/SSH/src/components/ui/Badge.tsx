@@ -24,11 +24,8 @@ export function Badge({ variant = 'default', size = 'md', className, children }:
     md: 'px-2.5 py-1 text-xs sm:px-3 sm:py-1 sm:text-sm max-w-xs sm:max-w-none',
   }
 
-  // Convert children to sentence case (capitalize first letter only)
+  // Keep text as-is without transformation
   const formatText = (text: React.ReactNode): React.ReactNode => {
-    if (typeof text === 'string') {
-      return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
-    }
     return text
   }
 

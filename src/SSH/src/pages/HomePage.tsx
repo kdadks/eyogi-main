@@ -13,30 +13,87 @@ import {
   StarIcon,
   ArrowRightIcon,
   CheckCircleIcon,
+  LightBulbIcon,
+  SparklesIcon,
+  GlobeAltIcon,
+  HeartIcon,
 } from '@heroicons/react/24/outline'
 
 import { getGurukulsWithStats } from '../lib/api/gurukuls'
+import { getPageSettings } from '../lib/api/pageSettings'
 import { Gurukul } from '../types'
 import { sanitizeHtml } from '../utils/sanitize'
+
+// Icon mapping function
+const getIconComponent = (iconName?: string) => {
+  const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
+    AcademicCapIcon: AcademicCapIcon,
+    BookOpenIcon: BookOpenIcon,
+    UserGroupIcon: UserGroupIcon,
+    StarIcon: StarIcon,
+    LightBulbIcon: LightBulbIcon,
+    SparklesIcon: SparklesIcon,
+    GlobeAltIcon: GlobeAltIcon,
+    HeartIcon: HeartIcon,
+  }
+  return iconMap[iconName || 'AcademicCapIcon'] || AcademicCapIcon
+}
+
+interface PageSettings {
+  home_hero_badge_text?: string
+  home_hero_title?: string
+  home_hero_title_highlight?: string
+  home_hero_description?: string
+  home_hero_image_url?: string
+  home_features_title?: string
+  home_features_subtitle?: string
+  home_features_box_1_title?: string
+  home_features_box_1_description?: string
+  home_features_box_2_title?: string
+  home_features_box_2_description?: string
+  home_features_box_3_title?: string
+  home_features_box_3_description?: string
+  home_features_box_4_title?: string
+  home_features_box_4_description?: string
+  home_testimonials?: Array<{
+    name: string
+    role: string
+    content: string
+    rating: number
+    image?: string
+  }>
+  home_cta_title?: string
+  home_cta_description?: string
+  home_cta_button_1_text?: string
+  home_cta_button_1_link?: string
+  home_cta_button_2_text?: string
+  home_cta_button_2_link?: string
+}
+
 export default function HomePage() {
   const [gurukuls, setGurukuls] = useState<
     Array<Gurukul & { courses: number; students: number; image: string }>
   >([])
+  const [pageSettings, setPageSettings] = useState<PageSettings | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchGurukuls = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getGurukulsWithStats()
-        setGurukuls(data)
+        const [gurukulData, settingsData] = await Promise.all([
+          getGurukulsWithStats(),
+          getPageSettings('home'),
+        ])
+        setGurukuls(gurukulData)
+        setPageSettings(settingsData)
       } catch (error) {
-        console.error('Error fetching gurukuls:', error)
+        console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchGurukuls()
+    fetchData()
   }, [])
 
   const structuredData = [
@@ -63,52 +120,33 @@ export default function HomePage() {
       ],
     },
   ]
+
+  // Dynamic features from database
   const features = [
     {
-      icon: AcademicCapIcon,
-      title: 'Integrated Programs',
-      description: 'Academic excellence combined with ethical reflection and purposeful innovation',
+      icon: getIconComponent(pageSettings?.home_features_box_1_icon as string),
+      title: pageSettings?.home_features_box_1_title,
+      description: pageSettings?.home_features_box_1_description,
     },
     {
-      icon: BookOpenIcon,
-      title: 'Ancient & Modern Wisdom',
-      description:
-        'Rigorous modern scholarship blended with the depth of traditional insight',
+      icon: getIconComponent(pageSettings?.home_features_box_2_icon as string),
+      title: pageSettings?.home_features_box_2_title,
+      description: pageSettings?.home_features_box_2_description,
     },
     {
-      icon: UserGroupIcon,
-      title: 'Conscious Community',
-      description: 'A global learning ecosystem that cultivates balance, compassion, and consciousness',
+      icon: getIconComponent(pageSettings?.home_features_box_3_icon as string),
+      title: pageSettings?.home_features_box_3_title,
+      description: pageSettings?.home_features_box_3_description,
     },
     {
-      icon: StarIcon,
-      title: 'Transformative Education',
-      description: 'Nurturing graduates who are professionally capable and socially conscious',
+      icon: getIconComponent(pageSettings?.home_features_box_4_icon as string),
+      title: pageSettings?.home_features_box_4_title,
+      description: pageSettings?.home_features_box_4_description,
     },
   ]
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Student, Philosophy Gurukul',
-      content:
-        "The depth of knowledge and the way it's presented makes ancient wisdom accessible to modern minds.",
-      rating: 5,
-    },
-    {
-      name: 'Raj Patel',
-      role: 'Parent',
-      content:
-        'My daughter has learned so much about our culture and traditions. The teachers are excellent.',
-      rating: 5,
-    },
-    {
-      name: 'Maria Garcia',
-      role: 'Student, Yoga Gurukul',
-      content:
-        'The holistic approach to wellness has transformed my daily practice and understanding.',
-      rating: 5,
-    },
-  ]
+
+  // Dynamic testimonials from database
+  const testimonials = pageSettings?.home_testimonials || []
   return (
     <>
       <SEOHead
@@ -159,41 +197,52 @@ export default function HomePage() {
                       variant="info"
                       className="text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2 hero-badge"
                     >
-                      🕉️ SSH University - Ancient Wisdom Meets Modern Education
+                      {pageSettings?.home_hero_badge_text}
                     </Badge>
                   </div>
                   <h1
                     className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight px-2 sm:px-0"
                     itemProp="headline"
                   >
-                    Harmonizing <span className="gradient-text">Ancient Wisdom</span> & Modern Education
+                    {pageSettings?.home_hero_title}{' '}
+                    <span className="gradient-text">{pageSettings?.home_hero_title_highlight}</span>
                   </h1>
                   <p
                     className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed px-2 sm:px-0"
                     itemProp="description"
                   >
-                    SSH University is a forward-looking centre of learning that harmonises ancient wisdom with modern education. Inspired by the ethos of eYogi Gurukul, we nurture both intellect and inner awareness through integrated academic programs that blend contemporary disciplines with timeless ethical foundations.
+                    {pageSettings?.home_hero_description}
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:gap-4 px-4 sm:px-0 sm:flex-row justify-center lg:justify-start">
-                  <ScrollLink to="/courses" className="w-full sm:w-auto">
-                    <Button
-                      size="lg"
-                      className="w-full sm:w-auto min-h-[50px] text-base font-semibold px-6 py-3"
+                  {pageSettings?.home_hero_button_1_text && (
+                    <ScrollLink
+                      to={pageSettings?.home_hero_button_1_link}
+                      className="w-full sm:w-auto"
                     >
-                      Explore Programs
-                      <ArrowRightIcon className="ml-2 h-5 w-5" />
-                    </Button>
-                  </ScrollLink>
-                  <ScrollLink to="/gurukuls" className="w-full sm:w-auto">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full sm:w-auto min-h-[50px] text-base font-semibold px-6 py-3"
+                      <Button
+                        size="lg"
+                        className="w-full sm:w-auto min-h-[50px] text-base font-semibold px-6 py-3"
+                      >
+                        {pageSettings?.home_hero_button_1_text}
+                        <ArrowRightIcon className="ml-2 h-5 w-5" />
+                      </Button>
+                    </ScrollLink>
+                  )}
+                  {pageSettings?.home_hero_button_2_text && (
+                    <ScrollLink
+                      to={pageSettings?.home_hero_button_2_link}
+                      className="w-full sm:w-auto"
                     >
-                      Browse Academic Centers
-                    </Button>
-                  </ScrollLink>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full sm:w-auto min-h-[50px] text-base font-semibold px-6 py-3"
+                      >
+                        {pageSettings?.home_hero_button_2_text}
+                      </Button>
+                    </ScrollLink>
+                  )}
                 </div>
                 <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row sm:items-center sm:space-x-6 lg:space-x-8 text-sm text-gray-600 justify-center lg:justify-start px-2 sm:px-0">
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
@@ -221,30 +270,47 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="relative order-first lg:order-last overflow-visible">
-                <div className="aspect-square max-w-sm mx-auto lg:max-w-none rounded-2xl overflow-hidden shadow-2xl bg-white/30 backdrop-blur-lg border border-white/40 p-4 relative">
-                  {/* Glossy Shine Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent rounded-2xl"></div>
-                  <img
-                    src="/ssh-app/Images/Logo.png"
-                    alt="eYogi Gurukul logo"
-                    className="w-full h-full object-contain logo-pop relative z-10"
-                  />
-                </div>
-                <div className="absolute -bottom-4 left-2 sm:-left-4 lg:-bottom-6 lg:-left-6 bg-white/90 backdrop-blur-md rounded-lg shadow-xl p-3 lg:p-4 border border-white/30 hero-certificate-card">
-                  {/* Card Gloss Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent rounded-lg"></div>
-                  <div className="relative z-10 flex items-center space-x-2 lg:space-x-3">
-                    <div className="h-10 w-10 lg:h-12 lg:w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
-                      <AcademicCapIcon className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
+                {pageSettings?.home_hero_image_url && (
+                  <div>
+                    <div className="aspect-square max-w-sm mx-auto lg:max-w-none rounded-2xl overflow-hidden shadow-2xl bg-white/30 backdrop-blur-lg border border-white/40 p-4 relative">
+                      {/* Glossy Shine Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent rounded-2xl"></div>
+                      <img
+                        src={pageSettings.home_hero_image_url}
+                        alt={pageSettings.home_hero_image_caption || 'Hero image'}
+                        className="w-full h-full object-contain logo-pop relative z-10"
+                      />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 text-sm lg:text-base">
-                        Certified Hindu Education
-                      </p>
-                      <p className="text-xs lg:text-sm text-gray-600">Authentic Vedic Learning</p>
-                    </div>
+                    {pageSettings.home_hero_image_caption && (
+                      <div className="absolute -bottom-4 left-2 sm:-left-4 lg:-bottom-6 lg:-left-6 bg-white/90 backdrop-blur-md rounded-lg shadow-xl p-3 lg:p-4 border border-white/30 hero-certificate-card">
+                        {/* Card Gloss Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent rounded-lg"></div>
+                        <div className="relative z-10 flex gap-3 items-start">
+                          {pageSettings.home_hero_image_caption_icon && (
+                            <div className="flex-shrink-0 h-10 w-10 lg:h-12 lg:w-12 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
+                              {React.createElement(
+                                getIconComponent(pageSettings.home_hero_image_caption_icon),
+                                {
+                                  className: 'h-5 w-5 lg:h-6 lg:w-6 text-white',
+                                },
+                              )}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm lg:text-base">
+                              {pageSettings.home_hero_image_caption}
+                            </p>
+                            {pageSettings.home_hero_image_caption_description && (
+                              <p className="text-gray-600 text-xs lg:text-sm mt-1">
+                                {pageSettings.home_hero_image_caption_description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -254,10 +320,10 @@ export default function HomePage() {
           <div className="container-max">
             <div className="text-center mb-12 lg:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                Why Choose SSH University for Integrated Education?
+                {pageSettings?.home_features_title}
               </h2>
               <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                We harmonize ancient wisdom with modern education, creating transformative learning experiences that nurture both intellect and inner awareness for a balanced, conscious approach to knowledge and life.
+                {pageSettings?.home_features_subtitle}
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
@@ -279,81 +345,76 @@ export default function HomePage() {
         <section id="gurukuls" className="section-padding bg-gray-50">
           <div className="container-max">
             <div className="text-center mb-12 lg:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-                Explore Our Academic Centers
-              </h2>
-              <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                Each academic center specializes in different aspects of integrated learning and wisdom,
-                offering comprehensive educational paths that blend contemporary disciplines with
-                traditional insight for students of all backgrounds.
-              </p>
+              {pageSettings?.home_gurukuls_title && (
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+                  {pageSettings.home_gurukuls_title}
+                </h2>
+              )}
+              {pageSettings?.home_gurukuls_subtitle && (
+                <p
+                  className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtml(pageSettings.home_gurukuls_subtitle),
+                  }}
+                />
+              )}
             </div>
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-                {[...Array(5)].map((_, index) => (
-                  <Card
-                    key={index}
-                    className="card-hover overflow-hidden animate-pulse flex flex-col min-h-[400px]"
-                  >
-                    <div className="aspect-video overflow-hidden bg-gray-200"></div>
-                    <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
-                      <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded mb-4 flex-grow"></div>
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="h-3 bg-gray-200 rounded w-20"></div>
-                        <div className="h-3 bg-gray-200 rounded w-20"></div>
-                      </div>
-                      <div className="h-10 bg-gray-200 rounded"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-                {gurukuls.map((gurukul) => (
-                  <Card
-                    key={gurukul.id}
-                    className="card-hover overflow-hidden flex flex-col min-h-[400px]"
-                  >
-                    <div className="aspect-video overflow-hidden">
-                      <img
-                        src={gurukul.image}
-                        alt={`${gurukul.name} - Traditional Hindu education and Vedic learning center`}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                      />
-                    </div>
-                    <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
-                      <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
-                      <div
-                        className="text-gray-600 mb-4 text-sm lg:text-base flex-grow"
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }}
-                      />
-                      <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
-                        <span>{gurukul.courses} Integrated Programs</span>
-                        <span>{gurukul.students} Conscious Learners</span>
-                      </div>
-                      <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
-                        <Button variant="primary" className="w-full min-h-[44px]">
-                          Explore Academic Center
-                        </Button>
-                      </ScrollLink>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            {pageSettings?.home_gurukuls_selected_ids &&
+              pageSettings.home_gurukuls_selected_ids.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                  {gurukuls
+                    .filter((g) => pageSettings.home_gurukuls_selected_ids?.includes(g.id))
+                    .map((gurukul) => (
+                      <Card
+                        key={gurukul.id}
+                        className="card-hover overflow-hidden flex flex-col min-h-[400px]"
+                      >
+                        <div className="aspect-video overflow-hidden">
+                          <img
+                            src={gurukul.image}
+                            alt={`${gurukul.name} - Traditional Hindu education and Vedic learning center`}
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                          />
+                        </div>
+                        <CardContent className="p-4 lg:p-6 flex flex-col flex-grow">
+                          <h3 className="text-lg lg:text-xl font-semibold mb-2">{gurukul.name}</h3>
+                          <div
+                            className="text-gray-600 mb-4 text-sm lg:text-base flex-grow"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }}
+                          />
+                          <div className="flex justify-between items-center mb-4 text-xs lg:text-sm text-gray-500">
+                            <span>{gurukul.courses} Integrated Programs</span>
+                            <span>{gurukul.students} Conscious Learners</span>
+                          </div>
+                          <ScrollLink to={`/gurukuls/${gurukul.slug}`}>
+                            <Button variant="primary" className="w-full min-h-[44px]">
+                              Explore Academic Center
+                            </Button>
+                          </ScrollLink>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              )}
           </div>
         </section>
         {/* Testimonials Section */}
         <section id="about" className="section-padding bg-white">
           <div className="container-max">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                What Our Integrated Learners Say
-              </h2>
-              <p className="text-xl text-gray-600">
-                Hear from our global community of students embracing ancient wisdom and modern education
-              </p>
+              {pageSettings?.home_testimonials_title && (
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  {pageSettings.home_testimonials_title}
+                </h2>
+              )}
+              {pageSettings?.home_testimonials_subtitle && (
+                <p
+                  className="text-xl text-gray-600"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtml(pageSettings.home_testimonials_subtitle),
+                  }}
+                />
+              )}
             </div>
             <div className="grid md:grid-cols-3 gap-8">
               {testimonials.map((testimonial, index) => (
@@ -382,28 +443,28 @@ export default function HomePage() {
         <section id="contact" className="section-padding gradient-bg text-white">
           <div className="container-max text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 px-4">
-              Begin Your Transformative Journey Today
+              {pageSettings?.home_cta_title}
             </h2>
             <p className="text-base sm:text-lg lg:text-xl mb-6 lg:mb-8 opacity-90 max-w-2xl mx-auto px-4 leading-relaxed">
-              Join thousands of learners worldwide in harmonizing ancient wisdom with modern education through our integrated academic programs that nurture both intellect and inner awareness.
+              {pageSettings?.home_cta_description}
             </p>
             <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row justify-center max-w-sm sm:max-w-none mx-auto px-4">
-              <ScrollLink to="/auth/signup" className="w-full sm:w-auto">
+              <ScrollLink to={pageSettings?.home_cta_button_1_link} className="w-full sm:w-auto">
                 <Button
                   variant="secondary"
                   size="lg"
                   className="bg-white text-orange-600 hover:bg-gray-100 w-full sm:w-auto min-h-[50px] font-semibold text-base px-6 py-3"
                 >
-                  Start Learning Free
+                  {pageSettings?.home_cta_button_1_text}
                 </Button>
               </ScrollLink>
-              <ScrollLink to="/courses" className="w-full sm:w-auto">
+              <ScrollLink to={pageSettings?.home_cta_button_2_link} className="w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="lg"
                   className="border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-orange-600 w-full sm:w-auto min-h-[50px] font-semibold text-base px-6 py-3"
                 >
-                  Browse Programs
+                  {pageSettings?.home_cta_button_2_text}
                 </Button>
               </ScrollLink>
             </div>

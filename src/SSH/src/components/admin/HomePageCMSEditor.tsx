@@ -249,6 +249,9 @@ function HeroSection({
   updateSetting: <K extends keyof PageSettings>(key: K, value: PageSettings[K]) => void
 }) {
   const [showMediaSelector, setShowMediaSelector] = useState(false)
+  const [mediaFieldTarget, setMediaFieldTarget] = useState<
+    'hero_image' | 'background_image' | null
+  >(null)
 
   return (
     <>
@@ -413,7 +416,10 @@ function HeroSection({
               )}
               <div className="flex gap-2">
                 <Button
-                  onClick={() => setShowMediaSelector(true)}
+                  onClick={() => {
+                    setMediaFieldTarget('hero_image')
+                    setShowMediaSelector(true)
+                  }}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-1.5"
                 >
                   {settings.home_hero_image_url ? 'Change Image' : 'Select Image'}
@@ -429,11 +435,43 @@ function HeroSection({
               </div>
             </FormField>
 
-            <FormField label="Image Caption" description="Small text displayed below the image">
-              <textarea
+            <FormField label="Image Caption">
+              <input
+                type="text"
                 value={settings.home_hero_image_caption || ''}
                 onChange={(e) => updateSetting('home_hero_image_caption', e.target.value)}
-                placeholder="e.g., A description or caption for the hero image"
+                placeholder="e.g., Caption title"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </FormField>
+
+            <FormField label="Image Caption Icon">
+              <select
+                value={settings.home_hero_image_caption_icon || 'StarIcon'}
+                onChange={(e) => updateSetting('home_hero_image_caption_icon', e.target.value)}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="StarIcon">Star</option>
+                <option value="AcademicCapIcon">Academic Cap</option>
+                <option value="BookOpenIcon">Book Open</option>
+                <option value="UserGroupIcon">User Group</option>
+                <option value="LightBulbIcon">Light Bulb</option>
+                <option value="SparklesIcon">Sparkles</option>
+                <option value="GlobeAltIcon">Globe</option>
+                <option value="HeartIcon">Heart</option>
+              </select>
+            </FormField>
+
+            <FormField
+              label="Image Caption Description"
+              description="Small text displayed below the image"
+            >
+              <textarea
+                value={settings.home_hero_image_caption_description || ''}
+                onChange={(e) =>
+                  updateSetting('home_hero_image_caption_description', e.target.value)
+                }
+                placeholder="e.g., A description or details for the hero image"
                 rows={2}
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -444,10 +482,19 @@ function HeroSection({
 
       <ImageSelectorModal
         isOpen={showMediaSelector}
-        onClose={() => setShowMediaSelector(false)}
+        onClose={() => {
+          setShowMediaSelector(false)
+          setMediaFieldTarget(null)
+        }}
         onSelect={(media) => {
           if (media.length > 0) {
-            updateSetting('home_hero_background_image_url', media[0].file_url)
+            if (mediaFieldTarget === 'hero_image') {
+              updateSetting('home_hero_image_url', media[0].file_url)
+            } else if (mediaFieldTarget === 'background_image') {
+              updateSetting('home_hero_background_image_url', media[0].file_url)
+            }
+            setShowMediaSelector(false)
+            setMediaFieldTarget(null)
           }
         }}
       />
@@ -642,6 +689,32 @@ function FeatureBoxModal({
                 placeholder={`Feature ${boxNum} title`}
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </FormField>
+
+            {/* Icon Selection */}
+            <FormField label="Icon">
+              <select
+                value={
+                  (settings[`home_features_box_${boxNum}_icon` as keyof PageSettings] as string) ||
+                  'AcademicCapIcon'
+                }
+                onChange={(e) =>
+                  updateSetting(
+                    `home_features_box_${boxNum}_icon` as keyof PageSettings,
+                    e.target.value,
+                  )
+                }
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="AcademicCapIcon">Academic Cap</option>
+                <option value="BookOpenIcon">Book Open</option>
+                <option value="UserGroupIcon">User Group</option>
+                <option value="StarIcon">Star</option>
+                <option value="LightBulbIcon">Light Bulb</option>
+                <option value="SparklesIcon">Sparkles</option>
+                <option value="GlobeAltIcon">Globe</option>
+                <option value="HeartIcon">Heart</option>
+              </select>
             </FormField>
 
             {/* Description */}

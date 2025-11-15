@@ -132,6 +132,16 @@ export class QueryCache {
     queryFn: () => Promise<T>,
     ttl: number = CACHE_DURATIONS.ENROLLMENTS,
   ): Promise<T> {
+    // Skip caching in development - only cache in production
+    if (import.meta.env.DEV) {
+      try {
+        return await queryFn()
+      } catch (error) {
+        cacheMetrics.recordError()
+        throw error
+      }
+    }
+
     // Check if cache entry exists and is valid
     const cached = this.cache.get(key)
     const now = Date.now()

@@ -58,6 +58,8 @@ export interface PageSettings {
   home_hero_description?: string
   home_hero_image_url?: string
   home_hero_image_caption?: string
+  home_hero_image_caption_description?: string
+  home_hero_image_caption_icon?: string
   home_hero_background_type?: 'gradient' | 'image'
   home_hero_background_color?: string
   home_hero_background_image_url?: string
@@ -90,15 +92,19 @@ export interface PageSettings {
   home_features_box_1_title?: string
   home_features_box_1_description?: string
   home_features_box_1_image_url?: string
+  home_features_box_1_icon?: string
   home_features_box_2_title?: string
   home_features_box_2_description?: string
   home_features_box_2_image_url?: string
+  home_features_box_2_icon?: string
   home_features_box_3_title?: string
   home_features_box_3_description?: string
   home_features_box_3_image_url?: string
+  home_features_box_3_icon?: string
   home_features_box_4_title?: string
   home_features_box_4_description?: string
   home_features_box_4_image_url?: string
+  home_features_box_4_icon?: string
   home_features?: Array<{
     title: string
     description: string
@@ -171,11 +177,18 @@ export async function getPageSettings(slug: string): Promise<PageSettings | null
           .eq('page_slug', slug)
           .single()
 
+        if (error && error.code === 'PGRST116') {
+          // Record doesn't exist, return empty object
+          return { page_slug: slug, page_type: slug }
+        }
+
         if (error) {
+          console.error('Failed to fetch page settings:', error)
           return null
         }
         return data
-      } catch {
+      } catch (err) {
+        console.error('Error in getPageSettings:', err)
         return null
       }
     },
