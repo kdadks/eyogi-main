@@ -229,6 +229,35 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       if (createError) {
         return { error: `Failed to create account: ${createError.message || 'Unknown error'}` }
       }
+
+      // Send registration notification email (non-blocking)
+      // Email will be sent asynchronously without affecting user registration
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: userData.email.toLowerCase(),
+            fullName: userData.full_name,
+            role: userData.role,
+            status: 'active',
+          }),
+        })
+
+        if (!response.ok) {
+          console.warn('Failed to send registration email notification:', {
+            status: response.status,
+            statusText: response.statusText,
+          })
+          // Don't return error - let registration succeed even if email fails
+        }
+      } catch (emailError) {
+        console.warn('Error sending registration email:', emailError)
+        // Don't return error - email is optional notification
+      }
+
       return { error: null }
     } catch (error) {
       return {

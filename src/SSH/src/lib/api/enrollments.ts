@@ -206,6 +206,26 @@ export async function updateEnrollmentStatus(
   additionalData?: Partial<Enrollment>,
 ): Promise<Enrollment> {
   try {
+    // First, fetch enrollment details if status is being set to 'approved'
+    let enrollmentDetails: any = null
+    if (status === 'approved') {
+      const { data: fetchedData, error: fetchError } = await supabaseAdmin
+        .from('enrollments')
+        .select(
+          `
+          *,
+          student:student_id (email, full_name),
+          course:course_id (id, title, description)
+        `,
+        )
+        .eq('id', enrollmentId)
+        .single()
+
+      if (!fetchError && fetchedData) {
+        enrollmentDetails = fetchedData
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('enrollments')
       .update({
@@ -218,6 +238,63 @@ export async function updateEnrollmentStatus(
       .single()
     if (error) {
       throw new Error('Failed to update enrollment status')
+    }
+
+    // Send enrollment confirmation email if status is being approved (non-blocking)
+    if (status === 'approved' && enrollmentDetails) {
+      try {
+        if (
+          enrollmentDetails.student &&
+          typeof enrollmentDetails.student === 'object' &&
+          'email' in enrollmentDetails.student &&
+          'full_name' in enrollmentDetails.student
+        ) {
+          const studentEmail = (enrollmentDetails.student as { email: string; full_name: string })
+            .email
+          const studentFullName = (
+            enrollmentDetails.student as { email: string; full_name: string }
+          ).full_name
+          const courseName =
+            typeof enrollmentDetails.course === 'object' &&
+            enrollmentDetails.course &&
+            'title' in enrollmentDetails.course
+              ? (enrollmentDetails.course as { title: string }).title
+              : 'Your Course'
+          const courseDescription =
+            typeof enrollmentDetails.course === 'object' &&
+            enrollmentDetails.course &&
+            'description' in enrollmentDetails.course
+              ? (enrollmentDetails.course as { description?: string }).description
+              : undefined
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/enrollments/confirm`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                studentEmail,
+                studentFullName,
+                courseName,
+                courseDescription,
+              }),
+            },
+          )
+
+          if (!response.ok) {
+            console.warn('Failed to send enrollment confirmation email:', {
+              status: response.status,
+              statusText: response.statusText,
+            })
+            // Don't throw - enrollment was successful, just email failed
+          }
+        }
+      } catch (emailError) {
+        console.warn('Error sending enrollment confirmation email:', emailError)
+        // Don't throw - enrollment was successful, just email failed
+      }
     }
 
     // Invalidate enrollment caches
@@ -394,6 +471,25 @@ export async function getEnrollmentsByParent(parentId: string): Promise<Enrollme
 // Approve a pending enrollment
 export async function approveEnrollment(enrollmentId: string): Promise<void> {
   try {
+    // First, fetch the enrollment details to get student and course info
+    const { data: enrollmentData, error: fetchError } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        *,
+        student:student_id (email, full_name),
+        course:course_id (id, title, description)
+      `,
+      )
+      .eq('id', enrollmentId)
+      .single()
+
+    if (fetchError || !enrollmentData) {
+      console.error('Error fetching enrollment details:', fetchError)
+      throw new Error('Failed to fetch enrollment details')
+    }
+
+    // Update enrollment status
     const { error } = await supabaseAdmin
       .from('enrollments')
       .update({
@@ -406,6 +502,59 @@ export async function approveEnrollment(enrollmentId: string): Promise<void> {
     if (error) {
       console.error('Database error approving enrollment:', error)
       throw new Error('Failed to approve enrollment')
+    }
+
+    // Send enrollment confirmation email (non-blocking)
+    try {
+      if (
+        enrollmentData.student &&
+        typeof enrollmentData.student === 'object' &&
+        'email' in enrollmentData.student &&
+        'full_name' in enrollmentData.student
+      ) {
+        const studentEmail = (enrollmentData.student as { email: string; full_name: string }).email
+        const studentFullName = (enrollmentData.student as { email: string; full_name: string })
+          .full_name
+        const courseName =
+          typeof enrollmentData.course === 'object' &&
+          enrollmentData.course &&
+          'title' in enrollmentData.course
+            ? (enrollmentData.course as { title: string }).title
+            : 'Your Course'
+        const courseDescription =
+          typeof enrollmentData.course === 'object' &&
+          enrollmentData.course &&
+          'description' in enrollmentData.course
+            ? (enrollmentData.course as { description?: string }).description
+            : undefined
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/enrollments/confirm`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              studentEmail,
+              studentFullName,
+              courseName,
+              courseDescription,
+            }),
+          },
+        )
+
+        if (!response.ok) {
+          console.warn('Failed to send enrollment confirmation email:', {
+            status: response.status,
+            statusText: response.statusText,
+          })
+          // Don't throw - enrollment was successful, just email failed
+        }
+      }
+    } catch (emailError) {
+      console.warn('Error sending enrollment confirmation email:', emailError)
+      // Don't throw - enrollment was successful, just email failed
     }
 
     // Invalidate enrollment caches
