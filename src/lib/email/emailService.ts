@@ -457,3 +457,206 @@ function generateEnrollmentConfirmationEmailHTML(data: EnrollmentConfirmationEma
     </html>
   `
 }
+
+// Contact Form Email Interface
+interface ContactFormEmailData {
+  senderName: string
+  senderEmail: string
+  subject: string
+  message: string
+  submissionDate: string
+}
+
+export async function sendContactFormEmail(data: ContactFormEmailData): Promise<boolean> {
+  try {
+    const transporter = getTransporter()
+
+    if (!transporter) {
+      console.error('Email service is not configured')
+      return false
+    }
+
+    const recipientEmail = process.env.REGISTRATION_EMAIL_TO || process.env.SMTP_USER
+
+    if (!recipientEmail) {
+      console.error('REGISTRATION_EMAIL_TO or SMTP_USER not configured')
+      return false
+    }
+
+    const htmlContent = generateContactFormEmailHTML(data)
+
+    const mailOptions = {
+      from: `${process.env.SMTP_FROM_NAME || 'EYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      to: recipientEmail,
+      subject: `Contact Form: ${data.subject}`,
+      html: htmlContent,
+      replyTo: data.senderEmail, // Allow direct reply to sender
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+
+    console.log('Contact form email sent successfully:', {
+      messageId: info.messageId,
+      senderEmail: data.senderEmail,
+      subject: data.subject,
+      timestamp: new Date().toISOString(),
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error sending contact form email:', error)
+    return false
+  }
+}
+
+function generateContactFormEmailHTML(data: ContactFormEmailData): string {
+  const submissionDateTime = new Date(data.submissionDate).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'short',
+  })
+
+  // Sanitize message content to prevent XSS
+  const sanitizedMessage = data.message
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\n/g, '<br>')
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+          }
+          .header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+          }
+          .content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 0 0 8px 8px;
+          }
+          .detail-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          .detail-row:last-of-type {
+            border-bottom: none;
+          }
+          .detail-label {
+            font-weight: 600;
+            color: #6b7280;
+            min-width: 120px;
+          }
+          .detail-value {
+            color: #1f2937;
+            word-break: break-word;
+          }
+          .message-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f3f4f6;
+            border-left: 4px solid #f59e0b;
+            border-radius: 4px;
+          }
+          .message-box h3 {
+            margin: 0 0 10px 0;
+            color: #1f2937;
+          }
+          .message-content {
+            margin: 0;
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+          }
+          .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 12px;
+            text-align: center;
+          }
+          .reply-info {
+            background-color: #dbeafe;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #0c4a6e;
+            margin-top: 15px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>New Contact Form Submission</h1>
+            <p>A visitor has contacted you through the website</p>
+          </div>
+          <div class="content">
+            <h2 style="color: #1f2937; margin-top: 0;">Submission Details</h2>
+            
+            <div class="detail-row">
+              <span class="detail-label">Submitted:</span>
+              <span class="detail-value">${submissionDateTime}</span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">From:</span>
+              <span class="detail-value">${data.senderName}</span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value"><a href="mailto:${data.senderEmail}">${data.senderEmail}</a></span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">Subject:</span>
+              <span class="detail-value"><strong>${data.subject}</strong></span>
+            </div>
+
+            <div class="message-box">
+              <h3>Message:</h3>
+              <p class="message-content">${sanitizedMessage}</p>
+            </div>
+
+            <div class="reply-info">
+              <strong>💡 Tip:</strong> You can reply to this email directly to respond to ${data.senderName}.
+            </div>
+
+            <div class="footer">
+              <p>EYogi Gurukul Contact Form System</p>
+              <p>© 2025 EYogi Gurukul. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+}

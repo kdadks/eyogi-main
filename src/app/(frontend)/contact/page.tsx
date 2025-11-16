@@ -35,20 +35,29 @@ export default function ContactForm() {
         body: JSON.stringify(values),
       })
 
+      const data = await res.json()
+
       if (res.ok) {
+        toast({
+          title: 'Email Sent Successfully!',
+          description: data.message || 'Your message has been sent!',
+          variant: 'success',
+        })
+        form.reset()
       } else {
-        throw new Error('Failed to send message')
+        throw new Error(data.error || 'Failed to send message')
       }
     } catch (e) {
-      console.log(e)
-    } finally {
+      const errorMessage =
+        e instanceof Error ? e.message : 'An error occurred while sending your message'
+      console.error('Form submission error:', e)
       toast({
-        title: 'Email Sent Successfully!',
-        description: 'Your message has been sent!',
-        variant: 'success',
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
       })
+    } finally {
       setLoading(false)
-      form.reset()
     }
   }
 
