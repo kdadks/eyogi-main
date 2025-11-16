@@ -48,11 +48,16 @@ export async function checkCoursePrerequisites(
       },
       message: 'All prerequisites met',
     }
-    // Check if student is already enrolled in this course
+    // Check if student is already enrolled in this course (block if pending, approved, or completed)
     const existingEnrollment = studentEnrollments.find(
       (enrollment) => enrollment.course_id === courseId,
     )
-    if (existingEnrollment) {
+    if (
+      existingEnrollment &&
+      (existingEnrollment.status === 'pending' ||
+        existingEnrollment.status === 'approved' ||
+        existingEnrollment.status === 'completed')
+    ) {
       return {
         canEnroll: false,
         missingPrerequisites: {
@@ -134,12 +139,17 @@ async function checkPrerequisiteCourses(
         title: course.title,
         completion_status: 'not_enrolled' as const,
       })
+    } else if (enrollment.status === 'completed') {
+      // Prerequisite is met - already completed, don't add to missing courses
+      continue
+    } else if (enrollment.status === 'approved') {
+      // Prerequisite is being actively taken (approved/in-progress) - can still enroll
+      // Don't add to missing courses as this is acceptable
+      continue
     } else if (enrollment.status !== 'completed') {
       let completionStatus: 'pending' | 'in_progress' | 'not_completed'
       if (enrollment.status === 'pending') {
         completionStatus = 'pending'
-      } else if (enrollment.status === 'approved') {
-        completionStatus = 'in_progress'
       } else {
         completionStatus = 'not_completed'
       }

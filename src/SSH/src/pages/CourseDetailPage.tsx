@@ -22,6 +22,7 @@ import {
   AcademicCapIcon,
   CheckCircleIcon,
   BookOpenIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../components/chat/ChatBotTrigger'
 import { sanitizeHtml } from '../utils/sanitize'
@@ -323,15 +324,59 @@ export default function CourseDetailPage() {
                     {user ? (
                       user.role === 'student' || user.role === 'parent' ? (
                         <div className="space-y-4">
-                          {/* Prerequisites Checker - only for students */}
-                          {user.role === 'student' && (
-                            <PrerequisiteChecker
-                              courseId={course.id}
-                              studentId={user.id}
-                              onPrerequisiteCheck={setPrerequisiteResult}
-                              showFullDetails={false}
-                            />
-                          )}
+                          {/* Status Display for Students */}
+                          {user.role === 'student' &&
+                            prerequisiteResult &&
+                            !prerequisiteResult.canEnroll && (
+                              <div
+                                className={`p-4 rounded-lg border-2 flex items-center gap-3 ${
+                                  prerequisiteResult.message.includes('Already enrolled')
+                                    ? 'bg-blue-50 border-blue-300'
+                                    : 'bg-red-50 border-red-300'
+                                }`}
+                              >
+                                {prerequisiteResult.message.includes('Already enrolled') ? (
+                                  <CheckCircleIcon className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                                ) : (
+                                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0" />
+                                )}
+                                <div>
+                                  <p
+                                    className={`font-semibold ${
+                                      prerequisiteResult.message.includes('Already enrolled')
+                                        ? 'text-blue-900'
+                                        : 'text-red-900'
+                                    }`}
+                                  >
+                                    {prerequisiteResult.message.includes('Already enrolled')
+                                      ? 'Already Enrolled'
+                                      : 'Prerequisites Not Met'}
+                                  </p>
+                                  <p
+                                    className={`text-sm ${
+                                      prerequisiteResult.message.includes('Already enrolled')
+                                        ? 'text-blue-700'
+                                        : 'text-red-700'
+                                    }`}
+                                  >
+                                    {prerequisiteResult.message}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          {/* Prerequisites Checker - only for students who are not already enrolled */}
+                          {user.role === 'student' &&
+                            !(
+                              prerequisiteResult &&
+                              prerequisiteResult.message.includes('Already enrolled')
+                            ) && (
+                              <PrerequisiteChecker
+                                courseId={course.id}
+                                studentId={user.id}
+                                onPrerequisiteCheck={setPrerequisiteResult}
+                                showFullDetails={false}
+                              />
+                            )}
                           <Button
                             className="w-full"
                             onClick={handleEnroll}
@@ -344,7 +389,9 @@ export default function CourseDetailPage() {
                             {enrolledCount >= course.max_students
                               ? 'Course Full'
                               : prerequisiteResult && !prerequisiteResult.canEnroll
-                                ? 'Prerequisites Not Met'
+                                ? prerequisiteResult.message.includes('Already enrolled')
+                                  ? 'Already Enrolled'
+                                  : 'Prerequisites Not Met'
                                 : user.role === 'parent'
                                   ? 'Enroll Child'
                                   : 'Enroll Now'}

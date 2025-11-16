@@ -67,31 +67,63 @@ export const PrerequisiteChecker: React.FC<PrerequisiteCheckerProps> = ({
     <div className="space-y-4">
       {/* Main Status */}
       <div
-        className={`border rounded-lg p-4 ${
-          prerequisiteResult.canEnroll ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+        className={`border-2 rounded-lg p-4 relative overflow-hidden ${
+          prerequisiteResult.canEnroll
+            ? 'bg-green-50 border-green-400'
+            : prerequisiteResult.message.includes('Already enrolled')
+              ? 'bg-blue-50 border-blue-400'
+              : 'bg-red-50 border-red-400'
         }`}
       >
-        <div className="flex items-center">
-          {prerequisiteResult.canEnroll ? (
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          ) : (
-            <XCircle className="h-5 w-5 text-red-500" />
-          )}
-          <span
-            className={`ml-2 font-medium ${
-              prerequisiteResult.canEnroll ? 'text-green-700' : 'text-red-700'
-            }`}
-          >
-            {prerequisiteResult.canEnroll ? 'Ready to Enroll' : 'Prerequisites Not Met'}
-          </span>
-        </div>
-        <p
-          className={`mt-2 text-sm ${
-            prerequisiteResult.canEnroll ? 'text-green-600' : 'text-red-600'
+        {/* Top colored bar */}
+        <div
+          className={`absolute top-0 left-0 h-1 w-full ${
+            prerequisiteResult.canEnroll
+              ? 'bg-green-500'
+              : prerequisiteResult.message.includes('Already enrolled')
+                ? 'bg-blue-500'
+                : 'bg-red-500'
           }`}
-        >
-          {prerequisiteResult.message}
-        </p>
+        />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start flex-1">
+            {prerequisiteResult.canEnroll ? (
+              <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
+            ) : prerequisiteResult.message.includes('Already enrolled') ? (
+              <CheckCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <XCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            )}
+            <div className="ml-3">
+              <p
+                className={`font-semibold text-base ${
+                  prerequisiteResult.canEnroll
+                    ? 'text-green-900'
+                    : prerequisiteResult.message.includes('Already enrolled')
+                      ? 'text-blue-900'
+                      : 'text-red-900'
+                }`}
+              >
+                {prerequisiteResult.canEnroll
+                  ? 'Ready to Enroll'
+                  : prerequisiteResult.message.includes('Already enrolled')
+                    ? 'Already Enrolled'
+                    : 'Prerequisites Not Met'}
+              </p>
+              <p
+                className={`mt-1 text-sm ${
+                  prerequisiteResult.canEnroll
+                    ? 'text-green-700'
+                    : prerequisiteResult.message.includes('Already enrolled')
+                      ? 'text-blue-700'
+                      : 'text-red-700'
+                }`}
+              >
+                {prerequisiteResult.message}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
       {/* Detailed Prerequisites (if there are any) */}
       {showFullDetails &&

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { useRoleBasedUI } from '../../contexts/PermissionContext'
 import { Badge } from '../../components/ui/Badge'
@@ -14,6 +15,7 @@ import { getUserProfile } from '../../lib/api/users'
 import { getStudentBatches, getStudentBatchProgress } from '../../lib/api/batches'
 import { sanitizeHtml } from '../../utils/sanitize'
 import { getCountryName, getStateName } from '../../lib/address-utils'
+import { generateCourseUrl } from '../../lib/utils'
 import DashboardComplianceSection from '../../components/compliance/DashboardComplianceSection'
 import toast from 'react-hot-toast'
 import type { Database } from '../../lib/supabase'
@@ -52,6 +54,7 @@ import {
   CalendarDaysIcon,
   ExclamationTriangleIcon,
   DocumentTextIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
@@ -750,52 +753,51 @@ export default function StudentDashboard() {
                 transition={{ delay: 0.8 }}
                 className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400"
               >
-                <div className="flex gap-2 sm:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/20 shadow-lg min-w-min"
-              >
-              {tabs.map((tab, index) => (
-                <motion.button
-                  key={tab.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9 + index * 0.1 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setActiveTab(
-                      tab.id as
-                        | 'home'
-                        | 'courses'
-                        | 'enrollments'
-                        | 'certificates'
-                        | 'batches'
-                        | 'attendance'
-                        | 'profile'
-                        | 'analytics'
-                        | 'settings',
-                    )
-                    // Scroll to top of page
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  title={tab.name}
-                  className={`relative flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.name}</span>
-                  {tab.badge && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                <div className="flex gap-2 sm:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/20 shadow-lg min-w-min">
+                  {tabs.map((tab, index) => (
+                    <motion.button
+                      key={tab.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 + index * 0.1 }}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setActiveTab(
+                          tab.id as
+                            | 'home'
+                            | 'courses'
+                            | 'enrollments'
+                            | 'certificates'
+                            | 'batches'
+                            | 'attendance'
+                            | 'profile'
+                            | 'analytics'
+                            | 'settings',
+                        )
+                        // Scroll to top of page
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      title={tab.name}
+                      className={`relative flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
+                        activeTab === tab.id
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
+                      }`}
                     >
-                      {tab.badge}
-                    </motion.span>
-                  )}
-                </motion.button>
-              ))}
+                      <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span className="hidden sm:inline">{tab.name}</span>
+                      {tab.badge && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                        >
+                          {tab.badge}
+                        </motion.span>
+                      )}
+                    </motion.button>
+                  ))}
                 </div>
               </motion.div>
             </div>
@@ -1308,19 +1310,23 @@ export default function StudentDashboard() {
                 <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
                   Recommended Courses for You 🎯
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {availableCourses
                     .filter((course) => !enrollments.some((e) => e.course?.id === course.id))
                     .slice(0, 6)
                     .map((course) => (
                       <div
                         key={course.id}
-                        className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20 hover:shadow-xl transition-all duration-300"
+                        className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-3 sm:p-4 border border-white/20 hover:shadow-lg transition-all duration-300 flex flex-col h-full"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">{course.title}</h3>
+                        <div className="flex items-start justify-between mb-2 gap-2 flex-shrink-0">
+                          <Link to={generateCourseUrl(course)} className="hover:underline flex-1">
+                            <h3 className="text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-700 line-clamp-2 cursor-pointer transition-colors">
+                              {course.title}
+                            </h3>
+                          </Link>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${
+                            className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${
                               course.level === 'basic' || course.level === 'elementary'
                                 ? 'bg-green-100 text-green-800'
                                 : course.level === 'intermediate'
@@ -1332,19 +1338,19 @@ export default function StudentDashboard() {
                           </span>
                         </div>
                         <div
-                          className="text-gray-600 text-sm mb-4"
+                          className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2 flex-grow"
                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                         />
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">
-                            Duration: {course.duration_weeks} weeks
+                        <div className="flex items-center justify-between mt-auto pt-2">
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            {course.duration_weeks}w
                           </span>
                           <button
                             onClick={() => handleEnrollment(course.id)}
                             disabled={enrollingCourseId === course.id}
-                            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-lg text-sm hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex-shrink-0 ml-2"
                           >
-                            {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now'}
+                            {enrollingCourseId === course.id ? 'Enrolling...' : 'Enrol Now'}
                           </button>
                         </div>
                       </div>
@@ -1432,7 +1438,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
               {/* Enrollment Status Cards */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {enrollments
                   .filter((enrollment) => {
                     const matchesSearch =
@@ -1450,66 +1456,72 @@ export default function StudentDashboard() {
                   .map((enrollment) => (
                     <div
                       key={enrollment.id}
-                      className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-white/20"
+                      className={`rounded-lg shadow p-3 border-l-4 relative overflow-hidden ${
+                        enrollment.status === 'approved'
+                          ? 'bg-green-50 border-l-green-500'
+                          : enrollment.status === 'pending'
+                            ? 'bg-yellow-50 border-l-yellow-500'
+                            : enrollment.status === 'completed'
+                              ? 'bg-blue-50 border-l-blue-500'
+                              : 'bg-red-50 border-l-red-500'
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate">
                               {enrollment.course?.title || 'Course Title Not Available'}
                             </h3>
                             <span
-                              className={`text-xs px-2 py-1 rounded-full ${
+                              className={`text-xs px-1.5 py-0.5 rounded ${
                                 enrollment.course?.level === 'basic' ||
                                 enrollment.course?.level === 'elementary'
-                                  ? 'bg-green-100 text-green-800'
+                                  ? 'bg-green-100 text-green-700'
                                   : enrollment.course?.level === 'intermediate'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-red-100 text-red-800'
-                              }`}
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-red-100 text-red-700'
+                              } whitespace-nowrap`}
                             >
                               {enrollment.course?.level
                                 ? enrollment.course.level.charAt(0).toUpperCase() +
                                   enrollment.course.level.slice(1)
-                                : 'Unknown'}{' '}
-                              Level
+                                : 'Unknown'}
                             </span>
                           </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <span>
-                              Enrolled: {new Date(enrollment.created_at).toLocaleDateString()}
-                            </span>
-                            {enrollment.completed_at && (
-                              <>
-                                <span>•</span>
-                                <span>
-                                  Completed:{' '}
-                                  {new Date(enrollment.completed_at).toLocaleDateString()}
-                                </span>
-                              </>
-                            )}
+                          <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
+                            <span>{new Date(enrollment.created_at).toLocaleDateString()}</span>
                             {enrollment.course?.duration_weeks && (
                               <>
                                 <span>•</span>
-                                <span>Duration: {enrollment.course.duration_weeks} weeks</span>
+                                <span>{enrollment.course.duration_weeks}w</span>
                               </>
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        <div className="flex-shrink-0">
+                          <div
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${
                               enrollment.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-green-200 text-green-900'
                                 : enrollment.status === 'pending'
-                                  ? 'bg-yellow-100 text-yellow-800'
+                                  ? 'bg-yellow-200 text-yellow-900'
                                   : enrollment.status === 'completed'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-red-100 text-red-800'
+                                    ? 'bg-blue-200 text-blue-900'
+                                    : 'bg-red-200 text-red-900'
                             }`}
                           >
+                            {enrollment.status === 'approved' && (
+                              <CheckCircleIcon className="h-3 w-3" />
+                            )}
+                            {enrollment.status === 'pending' && <ClockIcon className="h-3 w-3" />}
+                            {enrollment.status === 'completed' && (
+                              <CheckCircleIcon className="h-3 w-3" />
+                            )}
+                            {enrollment.status === 'rejected' && (
+                              <XCircleIcon className="h-3 w-3" />
+                            )}
                             {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
-                          </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1816,7 +1828,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Student ID</label>
-                        <p className="text-gray-900 font-semibold text-purple-600">
+                        <p className="font-semibold text-purple-600">
                           {studentProfile?.student_id || user?.student_id || 'Not assigned'}
                         </p>
                       </div>
@@ -1990,7 +2002,7 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Student ID</label>
-                        <p className="text-gray-900 font-semibold text-purple-600">
+                        <p className="font-semibold text-purple-600">
                           {studentProfile?.student_id || user?.student_id || 'Not assigned'}
                         </p>
                       </div>
@@ -2071,12 +2083,10 @@ export default function StudentDashboard() {
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
                       <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-yellow-900">
-                          Consent Required
-                        </p>
+                        <p className="text-sm font-medium text-yellow-900">Consent Required</p>
                         <p className="text-sm text-yellow-800 mt-1">
-                          Please provide consent to participate in eYogi Gurukul activities.
-                          This is required for full access to all features and programs.
+                          Please provide consent to participate in eYogi Gurukul activities. This is
+                          required for full access to all features and programs.
                         </p>
                       </div>
                     </div>
