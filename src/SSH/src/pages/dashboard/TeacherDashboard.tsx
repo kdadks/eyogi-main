@@ -13,7 +13,7 @@ import MediaSelectorButton from '@/components/MediaSelectorButton'
 import MediaSelector from '@/components/MediaSelector'
 import { Course, Enrollment, Certificate } from '@/types'
 import { MediaFile } from '@/lib/api/media'
-import { getTeacherCourses, createCourse } from '@/lib/api/courses'
+import { getTeacherCourses, createCourse, checkSlugExists } from '@/lib/api/courses'
 import { sanitizeHtml } from '../../utils/sanitize'
 import {
   getTeacherEnrollments,
@@ -148,6 +148,17 @@ interface ProfileWithAddress {
   country?: string
 }
 
+const generateSlug = (text: string): string => {
+  if (!text) return ''
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export default function TeacherDashboard() {
   const { user, canAccess } = useWebsiteAuth()
   const [courses, setCourses] = useState<Course[]>([])
@@ -161,10 +172,13 @@ export default function TeacherDashboard() {
   const [completedBatchStudents, setCompletedBatchStudents] = useState<BatchStudentWithInfo[]>([])
   const [studentConsents, setStudentConsents] = useState<Map<string, StudentConsent>>(new Map())
   const [showConsentAudit, setShowConsentAudit] = useState(false)
-  const [selectedConsentForAudit, setSelectedConsentForAudit] = useState<StudentConsent | null>(null)
+  const [selectedConsentForAudit, setSelectedConsentForAudit] = useState<StudentConsent | null>(
+    null,
+  )
   const [selectedStudentNameForAudit, setSelectedStudentNameForAudit] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [showCreateCourse, setShowCreateCourse] = useState(false)
+  const [slugError, setSlugError] = useState<string>('')
   const [activeView, setActiveView] = useState<
     | 'overview'
     | 'courses'
@@ -251,8 +265,8 @@ export default function TeacherDashboard() {
     register,
     handleSubmit,
     reset,
-    // watch, // For future form monitoring
-    // setValue, // For programmatic form updates
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CourseForm>({
     resolver: zodResolver(courseSchema),
@@ -274,6 +288,23 @@ export default function TeacherDashboard() {
       loadDashboardData()
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Validate slug for uniqueness
+  useEffect(() => {
+    const validateSlug = async () => {
+      if (!watch('slug')) {
+        setSlugError('')
+        return
+      }
+
+      const isDuplicate = await checkSlugExists(watch('slug'))
+      setSlugError(isDuplicate ? 'This slug is already in use. Please choose a different one.' : '')
+    }
+
+    // Debounce slug validation
+    const timer = setTimeout(validateSlug, 500)
+    return () => clearTimeout(timer)
+  }, [watch('slug')])
 
   // Generate certificate preview when modal opens or template changes
   useEffect(() => {
@@ -1097,115 +1128,115 @@ export default function TeacherDashboard() {
             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none sm:hidden z-10 rounded-r-lg" />
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
               <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min">
-              {[
-                {
-                  id: 'overview',
-                  name: 'Dashboard',
-                  icon: ChartBarIcon,
-                  badge: null,
-                  permission: { resource: 'dashboard', action: 'read' },
-                },
-                {
-                  id: 'courses',
-                  name: 'My Courses',
-                  icon: BookOpenIcon,
-                  badge: stats.totalCourses > 0 ? stats.totalCourses : null,
-                  permission: { resource: 'courses', action: 'view' },
-                },
-                {
-                  id: 'students',
-                  name: 'Students',
-                  icon: UserGroupIcon,
-                  badge: stats.pendingApprovals > 0 ? stats.pendingApprovals : null,
-                  permission: { resource: 'users', action: 'view' },
-                },
-                {
-                  id: 'certificates',
-                  name: 'Certificates',
-                  icon: DocumentTextIcon,
-                  badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null,
-                  permission: { resource: 'certificates', action: 'read' },
-                },
-                {
-                  id: 'analytics',
-                  name: 'Analytics',
-                  icon: ArrowTrendingUpIcon,
-                  badge: null,
-                  permission: { resource: 'analytics', action: 'read' },
-                },
-                {
-                  id: 'batches',
-                  name: 'Batch Management',
-                  icon: QueueListIcon,
-                  badge: null,
-                  permission: { resource: 'batches', action: 'read' },
-                },
-                {
-                  id: 'attendance',
-                  name: 'Attendance',
-                  icon: CalendarDaysIcon,
-                  badge: null,
-                  permission: { resource: 'batches', action: 'read' },
-                },
-                {
-                  id: 'settings',
-                  name: 'Profile',
-                  icon: Cog6ToothIcon,
-                  badge: null,
-                  permission: { resource: 'settings', action: 'view' },
-                },
-              ]
-                .filter((tab) => {
-                  const hasPermission = canAccess(tab.permission.resource, tab.permission.action)
-                  console.log(
-                    `Teacher tab "${tab.name}" - ${tab.permission.resource}.${tab.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
-                  )
-                  return hasPermission
-                })
-                .map((tab, index) => (
-                  <motion.button
-                    key={tab.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 + index * 0.1 }}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setActiveView(
-                        tab.id as
-                          | 'overview'
-                          | 'courses'
-                          | 'students'
-                          | 'certificates'
-                          | 'batches'
-                          | 'analytics'
-                          | 'attendance'
-                          | 'settings',
-                      )
-                      // Scroll to top of page
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
-                    }}
-                    className={`relative flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm lg:text-base transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
-                      activeView === tab.id
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
-                    }`}
-                  >
-                    <tab.icon
-                      className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${activeView === tab.id ? 'text-white' : ''}`}
-                    />
-                    <span className="hidden sm:inline">{tab.name}</span>
-                    {tab.badge && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
-                      >
-                        {tab.badge}
-                      </motion.span>
-                    )}
-                  </motion.button>
-                ))}
+                {[
+                  {
+                    id: 'overview',
+                    name: 'Dashboard',
+                    icon: ChartBarIcon,
+                    badge: null,
+                    permission: { resource: 'dashboard', action: 'read' },
+                  },
+                  {
+                    id: 'courses',
+                    name: 'My Courses',
+                    icon: BookOpenIcon,
+                    badge: stats.totalCourses > 0 ? stats.totalCourses : null,
+                    permission: { resource: 'courses', action: 'view' },
+                  },
+                  {
+                    id: 'students',
+                    name: 'Students',
+                    icon: UserGroupIcon,
+                    badge: stats.pendingApprovals > 0 ? stats.pendingApprovals : null,
+                    permission: { resource: 'users', action: 'view' },
+                  },
+                  {
+                    id: 'certificates',
+                    name: 'Certificates',
+                    icon: DocumentTextIcon,
+                    badge: stats.pendingCertificates > 0 ? stats.pendingCertificates : null,
+                    permission: { resource: 'certificates', action: 'read' },
+                  },
+                  {
+                    id: 'analytics',
+                    name: 'Analytics',
+                    icon: ArrowTrendingUpIcon,
+                    badge: null,
+                    permission: { resource: 'analytics', action: 'read' },
+                  },
+                  {
+                    id: 'batches',
+                    name: 'Batch Management',
+                    icon: QueueListIcon,
+                    badge: null,
+                    permission: { resource: 'batches', action: 'read' },
+                  },
+                  {
+                    id: 'attendance',
+                    name: 'Attendance',
+                    icon: CalendarDaysIcon,
+                    badge: null,
+                    permission: { resource: 'batches', action: 'read' },
+                  },
+                  {
+                    id: 'settings',
+                    name: 'Profile',
+                    icon: Cog6ToothIcon,
+                    badge: null,
+                    permission: { resource: 'settings', action: 'view' },
+                  },
+                ]
+                  .filter((tab) => {
+                    const hasPermission = canAccess(tab.permission.resource, tab.permission.action)
+                    console.log(
+                      `Teacher tab "${tab.name}" - ${tab.permission.resource}.${tab.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
+                    )
+                    return hasPermission
+                  })
+                  .map((tab, index) => (
+                    <motion.button
+                      key={tab.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 + index * 0.1 }}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setActiveView(
+                          tab.id as
+                            | 'overview'
+                            | 'courses'
+                            | 'students'
+                            | 'certificates'
+                            | 'batches'
+                            | 'analytics'
+                            | 'attendance'
+                            | 'settings',
+                        )
+                        // Scroll to top of page
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={`relative flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm lg:text-base transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
+                        activeView === tab.id
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
+                      }`}
+                    >
+                      <tab.icon
+                        className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${activeView === tab.id ? 'text-white' : ''}`}
+                      />
+                      <span className="hidden sm:inline">{tab.name}</span>
+                      {tab.badge && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                        >
+                          {tab.badge}
+                        </motion.span>
+                      )}
+                    </motion.button>
+                  ))}
               </div>
             </div>
           </motion.div>
@@ -1648,10 +1679,15 @@ export default function TeacherDashboard() {
                   className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     setTimeout(() => {
-                      const registeredSection = document.querySelector('[data-section="registered-students"]')
+                      const registeredSection = document.querySelector(
+                        '[data-section="registered-students"]',
+                      )
                       if (registeredSection) {
                         const yOffset = -150
-                        const y = registeredSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                        const y =
+                          registeredSection.getBoundingClientRect().top +
+                          window.pageYOffset +
+                          yOffset
                         window.scrollTo({ top: y, behavior: 'smooth' })
                       }
                     }, 100)
@@ -1669,10 +1705,13 @@ export default function TeacherDashboard() {
                   className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     setTimeout(() => {
-                      const enrolledSection = document.querySelector('[data-section="enrolled-students"]')
+                      const enrolledSection = document.querySelector(
+                        '[data-section="enrolled-students"]',
+                      )
                       if (enrolledSection) {
                         const yOffset = -150
-                        const y = enrolledSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                        const y =
+                          enrolledSection.getBoundingClientRect().top + window.pageYOffset + yOffset
                         window.scrollTo({ top: y, behavior: 'smooth' })
                       }
                     }, 100)
@@ -1690,10 +1729,13 @@ export default function TeacherDashboard() {
                   className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
                   onClick={() => {
                     setTimeout(() => {
-                      const pendingSection = document.querySelector('[data-section="pending-approvals"]')
+                      const pendingSection = document.querySelector(
+                        '[data-section="pending-approvals"]',
+                      )
                       if (pendingSection) {
                         const yOffset = -150
-                        const y = pendingSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                        const y =
+                          pendingSection.getBoundingClientRect().top + window.pageYOffset + yOffset
                         window.scrollTo({ top: y, behavior: 'smooth' })
                       }
                     }, 100)
@@ -1819,9 +1861,7 @@ export default function TeacherDashboard() {
                 <CardHeader>
                   <div className="flex items-center space-x-2">
                     <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                    <h3 className="text-lg font-semibold text-green-900">
-                      Enrolled Students
-                    </h3>
+                    <h3 className="text-lg font-semibold text-green-900">Enrolled Students</h3>
                     <Badge className="bg-green-100 text-green-800 border-green-200">
                       {stats.totalEnrolled} enrolled
                     </Badge>
@@ -1843,7 +1883,9 @@ export default function TeacherDashboard() {
                       {allStudents
                         .map((student) => {
                           const studentEnrollments = enrollments.filter(
-                            (e) => e.student_id === student.id && (e.status === 'approved' || e.status === 'completed'),
+                            (e) =>
+                              e.student_id === student.id &&
+                              (e.status === 'approved' || e.status === 'completed'),
                           )
                           return { student, studentEnrollments }
                         })
@@ -1884,7 +1926,9 @@ export default function TeacherDashboard() {
                                 </div>
                               </div>
                               <div className="space-y-2 mb-3 flex-1">
-                                <p className="text-xs font-semibold text-green-800">Enrolled Courses:</p>
+                                <p className="text-xs font-semibold text-green-800">
+                                  Enrolled Courses:
+                                </p>
                                 <div className="space-y-1">
                                   {studentEnrollments.slice(0, 3).map((enrollment) => (
                                     <div
@@ -1988,7 +2032,9 @@ export default function TeacherDashboard() {
                             {/* Consent Status Badge */}
                             <div className="mb-3">
                               <ConsentStatusBadge
-                                consentGiven={studentConsents.get(student.id)?.consent_given || false}
+                                consentGiven={
+                                  studentConsents.get(student.id)?.consent_given || false
+                                }
                                 withdrawn={studentConsents.get(student.id)?.withdrawn || false}
                                 size="sm"
                                 showLabel={true}
@@ -3047,13 +3093,39 @@ export default function TeacherDashboard() {
                       error={errors.course_number?.message}
                       className="text-sm"
                     />
-                    <Input
-                      label="Slug (Optional)"
-                      placeholder="auto-generated"
-                      {...register('slug')}
-                      error={errors.slug?.message}
-                      className="text-sm"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Slug{' '}
+                        <span className="text-xs text-gray-500">(auto-generated from title)</span>
+                      </label>
+                      <Input
+                        value={
+                          !watch('slug') ? generateSlug(watch('title') || '') : watch('slug') || ''
+                        }
+                        onChange={(e) => setValue('slug', e.target.value)}
+                        placeholder="course-title"
+                        readOnly={!watch('title')}
+                        error={errors.slug?.message}
+                        className={`text-sm ${!watch('title') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      />
+                      {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
+                      {watch('title') && !slugError && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {!watch('slug')
+                            ? 'Auto-generated from title.'
+                            : 'You can edit or reset to auto-generate.'}
+                        </p>
+                      )}
+                      {watch('slug') && watch('title') && !slugError && (
+                        <button
+                          type="button"
+                          onClick={() => setValue('slug', '')}
+                          className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                        >
+                          Reset to auto-generate
+                        </button>
+                      )}
+                    </div>
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Level</label>
                       <select
@@ -5893,99 +5965,102 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                     {/* Mobile-friendly scrollable table */}
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Student Name
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Student ID
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Email
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Progress
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {batchStudents.map((student) => (
-                          <tr key={student.student_id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-8 w-8">
-                                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                    <span className="text-sm font-medium text-white">
-                                      {student.student?.full_name?.charAt(0) || 'S'}
-                                    </span>
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Student Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Student ID
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Progress
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {batchStudents.map((student) => (
+                            <tr key={student.student_id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-8 w-8">
+                                    <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                      <span className="text-sm font-medium text-white">
+                                        {student.student?.full_name?.charAt(0) || 'S'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="ml-3">
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {student.student?.full_name || 'Unknown'}
+                                    </p>
                                   </div>
                                 </div>
-                                <div className="ml-3">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {student.student?.full_name || 'Unknown'}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                              {student.student?.student_id || 'Not set'}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                              {student.student?.email || 'Not provided'}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={student.progress_percentage || 0}
-                                  onChange={async (e) => {
-                                    const newProgress = Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                                    try {
-                                      await updateStudentProgress(
-                                        selectedBatchForView.id,
-                                        student.student_id,
-                                        newProgress
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                {student.student?.student_id || 'Not set'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                {student.student?.email || 'Not provided'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={student.progress_percentage || 0}
+                                    onChange={async (e) => {
+                                      const newProgress = Math.min(
+                                        100,
+                                        Math.max(0, parseInt(e.target.value) || 0),
                                       )
-                                      // Update local state
-                                      setBatchStudents(prev =>
-                                        prev.map(s =>
-                                          s.student_id === student.student_id
-                                            ? { ...s, progress_percentage: newProgress }
-                                            : s
+                                      try {
+                                        await updateStudentProgress(
+                                          selectedBatchForView.id,
+                                          student.student_id,
+                                          newProgress,
                                         )
-                                      )
-                                      toast.success('Progress updated successfully')
-                                    } catch (error) {
-                                      console.error('Error updating progress:', error)
-                                      toast.error('Failed to update progress')
-                                    }
-                                  }}
-                                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <span className="text-sm text-gray-600">%</span>
-                                <div className="w-24 bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${student.progress_percentage || 0}%` }}
+                                        // Update local state
+                                        setBatchStudents((prev) =>
+                                          prev.map((s) =>
+                                            s.student_id === student.student_id
+                                              ? { ...s, progress_percentage: newProgress }
+                                              : s,
+                                          ),
+                                        )
+                                        toast.success('Progress updated successfully')
+                                      } catch (error) {
+                                        console.error('Error updating progress:', error)
+                                        toast.error('Failed to update progress')
+                                      }
+                                    }}
+                                    className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   />
+                                  <span className="text-sm text-gray-600">%</span>
+                                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${student.progress_percentage || 0}%` }}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Active
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Active
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}

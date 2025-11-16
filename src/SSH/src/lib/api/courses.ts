@@ -255,3 +255,32 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
     return []
   }
 }
+
+/**
+ * Check if a slug already exists in the courses table
+ * Optionally exclude a specific course ID (for edit mode)
+ */
+export async function checkSlugExists(slug: string, excludeCourseId?: string): Promise<boolean> {
+  try {
+    let query = supabaseAdmin
+      .from('courses')
+      .select('id', { count: 'exact', head: true })
+      .eq('slug', slug)
+
+    if (excludeCourseId) {
+      query = query.neq('id', excludeCourseId)
+    }
+
+    const { count, error } = await query
+
+    if (error) {
+      console.error('Error checking slug:', error)
+      return false
+    }
+
+    return (count || 0) > 0
+  } catch (error) {
+    console.error('Error checking slug:', error)
+    return false
+  }
+}

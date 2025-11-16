@@ -3,13 +3,33 @@ import { SafeReactQuill } from '../ui/SafeReactQuill'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, Syllabus } from '@/types'
-import { getCourses, createCourse, updateCourse, deleteCourse } from '@/lib/api/courses'
+import {
+  getCourses,
+  createCourse,
+  updateCourse,
+  deleteCourse,
+  checkSlugExists,
+} from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '@/utils/sanitize'
+
+/**
+ * Generate a slug from text
+ */
+function generateSlug(text: string): string {
+  if (!text) return ''
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 /**
  * Parse HTML content from ReactQuill to extract learning outcomes
@@ -46,6 +66,10 @@ function parseHtmlToOutcomes(htmlContent: string): string[] {
  * Convert learning outcomes array to HTML for ReactQuill display
  * Optimized to prevent UI hanging when loading complex HTML content
  */
+/**
+ * Convert learning outcomes array to HTML for ReactQuill display
+ * Recreates the bulleted list format that was originally used
+ */
 function outcomesToHtml(outcomes: string[]): string {
   console.log('🔵 outcomesToHtml - START', { outcomesCount: outcomes?.length || 0 })
 
@@ -56,89 +80,30 @@ function outcomesToHtml(outcomes: string[]): string {
   }
 
   try {
-    // Limit to prevent excessive processing
-    const MAX_OUTCOMES = 100
-    const outcomesToProcess = outcomes.slice(0, MAX_OUTCOMES)
-    const processedOutcomes: string[] = []
-
-    console.log('🔵 Processing', outcomesToProcess.length, 'outcomes')
-
-    outcomesToProcess.forEach((outcome, index) => {
-      try {
-        // Safety check for outcome
-        if (!outcome || typeof outcome !== 'string') {
-          console.log(`🟡 Outcome ${index} is invalid, skipping`)
-          return
-        }
-
-        console.log(`🔵 Processing outcome ${index}:`, outcome.substring(0, 100))
-
-        // If outcome contains HTML list tags, extract plain text
-        if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
-          console.log(`🔵 Outcome ${index} contains HTML, parsing...`)
-
-          // Sanitize first
-          const sanitized = sanitizeHtml(outcome)
-          if (!sanitized) {
-            console.log(`🟡 Outcome ${index} sanitization returned empty`)
-            return
-          }
-
-          // Create temporary DOM element to parse HTML
-          const tempDiv = document.createElement('div')
-          tempDiv.innerHTML = sanitized
-
-          // Extract text from list items
-          const listItems = tempDiv.querySelectorAll('li')
-          console.log(`🔵 Found ${listItems.length} list items in outcome ${index}`)
-
-          if (listItems.length > 0) {
-            listItems.forEach((li, liIndex) => {
-              const text = li.textContent?.trim()
-              if (text) {
-                console.log(`🔵 Extracted text from li ${liIndex}:`, text.substring(0, 50))
-                processedOutcomes.push(text)
-              }
-            })
-          } else {
-            // If no list items, get text content
-            const textContent = tempDiv.textContent?.trim()
-            if (textContent) {
-              console.log(`🔵 Extracted text content:`, textContent.substring(0, 50))
-              processedOutcomes.push(textContent)
-            }
-          }
-
-          // Clean up
-          tempDiv.remove()
-        } else {
-          // Plain text outcome - strip any remaining HTML tags
-          const cleanText = outcome.replace(/<[^>]*>/g, '').trim()
-          if (cleanText) {
-            console.log(`🔵 Plain text outcome ${index}:`, cleanText.substring(0, 50))
-            processedOutcomes.push(cleanText)
-          }
-        }
-
-        console.log(`🟢 Outcome ${index} processed successfully`)
-      } catch (error) {
-        console.error(`🔴 Error processing outcome ${index}:`, error)
-        // Fallback: try to extract plain text
-        try {
-          const text = outcome.replace(/<[^>]*>/g, '').trim()
-          if (text) {
-            processedOutcomes.push(text)
-          }
-        } catch (e) {
-          console.error(`🔴 Failed to process outcome ${index}:`, e)
-        }
-      }
+    // Filter out empty outcomes
+    const validOutcomes = outcomes.filter((outcome) => {
+      if (!outcome || typeof outcome !== 'string') return false
+      const cleanText = outcome.replace(/<[^>]*>/g, '').trim()
+      return cleanText.length > 0
     })
 
-    // Join with newlines for ReactQuill
-    const result = processedOutcomes.join('\n')
+    if (validOutcomes.length === 0) {
+      console.log('🟡 outcomesToHtml - No valid outcomes after filtering')
+      return ''
+    }
+
+    // Create a bulleted list (unordered list) with the outcomes
+    const listItems = validOutcomes
+      .map((outcome) => {
+        // Strip any HTML tags that might be in the outcome string
+        const cleanText = outcome.replace(/<[^>]*>/g, '').trim()
+        return `<li>${sanitizeHtml(cleanText)}</li>`
+      })
+      .join('')
+
+    const result = `<ul>${listItems}</ul>`
     console.log('🟢 outcomesToHtml - COMPLETED', {
-      processedCount: processedOutcomes.length,
+      validOutcomesCount: validOutcomes.length,
       resultLength: result.length,
     })
     return result
@@ -298,6 +263,7 @@ export default function CourseManagement() {
   const [formData, setFormData] = useState<CourseFormData>(initialFormData)
   const [learningOutcomesEditorValue, setLearningOutcomesEditorValue] = useState('')
   const [saving, setSaving] = useState(false)
+  const [slugError, setSlugError] = useState<string>('')
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -325,6 +291,23 @@ export default function CourseManagement() {
       console.log('🟣 FormData learning outcomes count:', formData.learning_outcomes?.length || 0)
     }
   }, [showEditModal, editingCourse])
+
+  // Validate slug for uniqueness
+  useEffect(() => {
+    const validateSlug = async () => {
+      if (!formData.slug) {
+        setSlugError('')
+        return
+      }
+
+      const isDuplicate = await checkSlugExists(formData.slug, editingCourse?.id)
+      setSlugError(isDuplicate ? 'This slug is already in use. Please choose a different one.' : '')
+    }
+
+    // Debounce slug validation
+    const timer = setTimeout(validateSlug, 500)
+    return () => clearTimeout(timer)
+  }, [formData.slug, editingCourse?.id])
 
   // Sync editor value when modals open/close
   useEffect(() => {
@@ -894,9 +877,7 @@ export default function CourseManagement() {
                         )
                         if (parsedOutcomes.length === 0) {
                           return (
-                            <p className="text-gray-500 italic">
-                              No learning outcomes available
-                            </p>
+                            <p className="text-gray-500 italic">No learning outcomes available</p>
                           )
                         }
                         return (
@@ -915,9 +896,7 @@ export default function CourseManagement() {
                       } catch (error) {
                         console.error('Failed to render learning outcomes:', error)
                         return (
-                          <p className="text-red-500 italic">
-                            Error loading learning outcomes
-                          </p>
+                          <p className="text-red-500 italic">Error loading learning outcomes</p>
                         )
                       }
                     })()}
@@ -999,6 +978,35 @@ export default function CourseManagement() {
                     placeholder="Course title"
                     required
                   />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Slug <span className="text-xs text-gray-500">(auto-generated from title)</span>
+                  </label>
+                  <Input
+                    value={!formData.slug ? generateSlug(formData.title) : formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="course-title"
+                    readOnly={!formData.title}
+                    className={!formData.title ? 'bg-gray-100 cursor-not-allowed' : ''}
+                  />
+                  {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
+                  {formData.title && !slugError && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {!formData.slug
+                        ? 'Auto-generated from title.'
+                        : 'You can edit or reset to auto-generate.'}
+                    </p>
+                  )}
+                  {formData.slug && formData.title && !slugError && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, slug: '' })}
+                      className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                    >
+                      Reset to auto-generate
+                    </button>
+                  )}
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1235,6 +1243,35 @@ export default function CourseManagement() {
                     placeholder="Course title"
                     required
                   />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Slug <span className="text-xs text-gray-500">(auto-generated from title)</span>
+                  </label>
+                  <Input
+                    value={!formData.slug ? generateSlug(formData.title) : formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="course-title"
+                    readOnly={!formData.title}
+                    className={!formData.title ? 'bg-gray-100 cursor-not-allowed' : ''}
+                  />
+                  {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
+                  {formData.title && !slugError && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {!formData.slug
+                        ? 'Auto-generated from title.'
+                        : 'You can edit or reset to auto-generate.'}
+                    </p>
+                  )}
+                  {formData.slug && formData.title && !slugError && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, slug: '' })}
+                      className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                    >
+                      Reset to auto-generate
+                    </button>
+                  )}
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
