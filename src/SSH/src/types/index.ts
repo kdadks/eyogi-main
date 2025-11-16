@@ -169,6 +169,7 @@ export interface CertificateTemplate {
         orientation?: 'portrait' | 'landscape'
         size?: 'a4' | 'letter'
       }
+      background_image?: string // Base64 background image
     }
     logos?: {
       eyogi_logo_url?: string
@@ -179,8 +180,10 @@ export interface CertificateTemplate {
     signatures?: {
       vice_chancellor_signature_url?: string
       vice_chancellor_signature_data?: string // Base64 image data
+      vice_chancellor_name?: string // Name label
       president_signature_url?: string
       president_signature_data?: string // Base64 image data
+      president_name?: string // Name label
     }
     seal?: {
       official_seal_url?: string

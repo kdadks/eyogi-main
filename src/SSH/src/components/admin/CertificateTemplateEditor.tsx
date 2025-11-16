@@ -42,6 +42,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
           orientation: 'landscape',
           size: 'a4',
         },
+        background_image: '',
       },
       logos: {
         eyogi_logo_url: '/eyogiLogo.png',
@@ -50,8 +51,10 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       signatures: {
         vice_chancellor_signature_url: '',
         vice_chancellor_signature_data: '',
+        vice_chancellor_name: 'Vice Chancellor',
         president_signature_url: '',
         president_signature_data: '',
+        president_name: 'President',
       },
       seal: {
         official_seal_url: '',
@@ -609,6 +612,92 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                       >
                         <PhotoIcon className="h-8 w-8 text-gray-400" />
                         <span className="text-sm text-gray-600">Upload Official Seal</span>
+                        <span className="text-xs text-gray-500">PNG, JPG up to 2MB</span>
+                      </label>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              {/* Issuer Names */}
+              <Card>
+                <CardHeader>
+                  <h4 className="text-lg font-medium">Issuer Names</h4>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Vice Chancellor Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.template_data?.signatures?.vice_chancellor_name || ''}
+                      onChange={(e) =>
+                        updateTemplateData(
+                          'template_data.signatures.vice_chancellor_name',
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Vice Chancellor"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      President Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.template_data?.signatures?.president_name || ''}
+                      onChange={(e) =>
+                        updateTemplateData(
+                          'template_data.signatures.president_name',
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="President"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              {/* Background Image */}
+              <Card>
+                <CardHeader>
+                  <h4 className="text-lg font-medium">Certificate Background</h4>
+                </CardHeader>
+                <CardContent>
+                  {formData.template_data?.design?.background_image ? (
+                    <div className="space-y-2">
+                      <img
+                        src={formData.template_data.design.background_image}
+                        alt="Background"
+                        className="w-full max-h-32 object-cover border rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage('template_data.design.background_image')}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Remove Background
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          handleImageUpload(e, 'template_data.design.background_image')
+                        }
+                        className="hidden"
+                        id="background-upload"
+                      />
+                      <label
+                        htmlFor="background-upload"
+                        className="cursor-pointer flex flex-col items-center gap-2"
+                      >
+                        <PhotoIcon className="h-8 w-8 text-gray-400" />
+                        <span className="text-sm text-gray-600">Upload Background Image</span>
                         <span className="text-xs text-gray-500">PNG, JPG up to 2MB</span>
                       </label>
                     </div>
