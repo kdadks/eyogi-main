@@ -3152,14 +3152,14 @@ export default function TeacherDashboard() {
                   </h3>
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Short Description
                       </label>
                       <textarea
                         {...register('description')}
-                        rows={2}
+                        rows={3}
                         className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
-                        placeholder="Brief overview for course listings"
+                        placeholder="Brief overview for course listings (plain text or formatted text)"
                       />
                       {errors.description && (
                         <p className="text-sm text-red-600">{errors.description.message}</p>
@@ -3175,9 +3175,9 @@ export default function TeacherDashboard() {
                         onChange={setDetailedDescription}
                         modules={quillModules}
                         formats={quillFormats}
-                        placeholder="Comprehensive course description with formatting..."
+                        placeholder="Comprehensive course description with formatting (rich text editor)..."
                         className="bg-white text-sm"
-                        style={{ minHeight: '150px' }}
+                        style={{ minHeight: '200px' }}
                       />
                     </div>
                   </div>

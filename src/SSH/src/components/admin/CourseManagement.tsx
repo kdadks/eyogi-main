@@ -117,13 +117,15 @@ function outcomesToHtml(outcomes: string[]): string {
  * Parse learning outcomes for display - extracts list items from HTML
  * Optimized to prevent UI hanging on large or complex HTML content
  */
-function parseLearningOutcomesForDisplay(outcomes: string[]): string[] {
+function parseLearningOutcomesForDisplay(
+  outcomes: string[],
+): Array<{ content: string; isHtml: boolean }> {
   // Safety check
   if (!outcomes || !Array.isArray(outcomes)) {
     return []
   }
 
-  const parsedOutcomes: string[] = []
+  const parsedOutcomes: Array<{ content: string; isHtml: boolean }> = []
   const MAX_OUTCOMES = 100 // Limit to prevent excessive processing
 
   // Limit processing to prevent hanging
@@ -136,58 +138,29 @@ function parseLearningOutcomesForDisplay(outcomes: string[]): string[] {
         return
       }
 
-      // Check if outcome contains HTML list tags
-      if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
-        // Sanitize BEFORE creating DOM element for better performance
-        const sanitized = sanitizeHtml(outcome)
+      const trimmed = outcome.trim()
+      if (!trimmed) return
 
-        // Skip if sanitization returned empty
-        if (!sanitized) {
-          return
-        }
-
-        // Create a temporary DOM element to parse HTML
-        const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = sanitized
-
-        // Extract all list items
-        const listItems = tempDiv.querySelectorAll('li')
-        if (listItems.length > 0) {
-          listItems.forEach((li) => {
-            const text = li.textContent?.trim()
-            if (text) {
-              parsedOutcomes.push(text)
-            }
-          })
-        } else {
-          // If no list items found, strip HTML tags and add as plain text
-          const textContent = tempDiv.textContent?.trim()
-          if (textContent) {
-            parsedOutcomes.push(textContent)
-          }
-        }
-
-        // Clean up
-        tempDiv.remove()
+      // Check if outcome contains HTML tags
+      if (
+        trimmed.includes('<ul>') ||
+        trimmed.includes('<ol>') ||
+        trimmed.includes('<li>') ||
+        trimmed.includes('<p>') ||
+        trimmed.includes('<h') ||
+        trimmed.includes('<strong>') ||
+        trimmed.includes('<em>') ||
+        trimmed.includes('<br>')
+      ) {
+        // It's HTML content, keep it as-is
+        parsedOutcomes.push({ content: trimmed, isHtml: true })
       } else {
-        // Plain text outcome
-        const trimmed = outcome.trim()
-        if (trimmed) {
-          parsedOutcomes.push(trimmed)
-        }
+        // It's plain text
+        parsedOutcomes.push({ content: trimmed, isHtml: false })
       }
-    } catch (error) {
-      console.error('Error parsing learning outcome:', error)
-      // If parsing fails, try to add as plain text
-      try {
-        const text = outcome.replace(/<[^>]*>/g, '').trim()
-        if (text) {
-          parsedOutcomes.push(text)
-        }
-      } catch (e) {
-        // Skip this outcome if all else fails
-        console.error('Failed to process outcome:', e)
-      }
+    } catch {
+      // Skip problematic outcomes
+      return
     }
   })
 
@@ -829,9 +802,16 @@ export default function CourseManagement() {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
+                <div
+                  className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px] whitespace-pre-wrap
+                  [&_p]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
+                  [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                  [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                  [&_a]:text-orange-600 [&_a]:hover:text-orange-700 [&_br]:block
+                  [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
+                  [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                >
                   <div
-                    className="prose prose-sm max-w-none prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.description) }}
                   />
                 </div>
@@ -842,9 +822,16 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Detailed Description
                   </label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px]">
+                  <div
+                    className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px] whitespace-pre-wrap
+                    [&_p]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
+                    [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                    [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                    [&_a]:text-orange-600 [&_a]:hover:text-orange-700 [&_br]:block
+                    [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
+                    [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                  >
                     <div
-                      className="prose prose-sm max-w-none prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4"
                       dangerouslySetInnerHTML={{
                         __html: sanitizeHtml(viewingCourse.detailed_description),
                       }}
@@ -882,13 +869,25 @@ export default function CourseManagement() {
                         }
                         return (
                           <ul style={{ listStyleType: 'disc', paddingLeft: '24px' }}>
-                            {parsedOutcomes.map((outcome, index) => (
+                            {parsedOutcomes.map((item, index) => (
                               <li
                                 key={index}
                                 className="text-gray-900 mb-2"
                                 style={{ display: 'list-item', listStylePosition: 'outside' }}
                               >
-                                {outcome}
+                                {item.isHtml ? (
+                                  <div
+                                    className="inline text-base
+                                      [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
+                                      [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                                      [&_strong]:font-bold [&_em]:italic [&_u]:underline"
+                                    dangerouslySetInnerHTML={{
+                                      __html: sanitizeHtml(item.content),
+                                    }}
+                                  />
+                                ) : (
+                                  item.content
+                                )}
                               </li>
                             ))}
                           </ul>

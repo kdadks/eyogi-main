@@ -28,42 +28,32 @@ import ChatBotTrigger from '../components/chat/ChatBotTrigger'
 import { sanitizeHtml } from '../utils/sanitize'
 
 /**
- * Parse learning outcomes to handle both HTML lists and plain text
- * If an outcome contains HTML list tags, extract individual list items
- * Otherwise, return the outcome as-is
+ * Parse learning outcomes to handle both HTML and plain text
+ * Returns both the processed content and a flag indicating if it's HTML
  */
-function parseLearningOutcomes(outcomes: string[]): string[] {
-  const parsedOutcomes: string[] = []
+function parseLearningOutcomes(outcomes: string[]): Array<{ content: string; isHtml: boolean }> {
+  const parsedOutcomes: Array<{ content: string; isHtml: boolean }> = []
 
   outcomes.forEach((outcome) => {
-    // Check if outcome contains HTML list tags
-    if (outcome.includes('<ul>') || outcome.includes('<ol>') || outcome.includes('<li>')) {
-      // Create a temporary DOM element to parse HTML
-      const tempDiv = document.createElement('div')
-      tempDiv.innerHTML = sanitizeHtml(outcome)
+    const trimmed = outcome.trim()
+    if (!trimmed) return
 
-      // Extract all list items
-      const listItems = tempDiv.querySelectorAll('li')
-      if (listItems.length > 0) {
-        listItems.forEach((li) => {
-          const text = li.textContent?.trim()
-          if (text) {
-            parsedOutcomes.push(text)
-          }
-        })
-      } else {
-        // If no list items found, strip HTML tags and add as plain text
-        const textContent = tempDiv.textContent?.trim()
-        if (textContent) {
-          parsedOutcomes.push(textContent)
-        }
-      }
+    // Check if outcome contains HTML tags
+    if (
+      trimmed.includes('<ul>') ||
+      trimmed.includes('<ol>') ||
+      trimmed.includes('<li>') ||
+      trimmed.includes('<p>') ||
+      trimmed.includes('<h') ||
+      trimmed.includes('<strong>') ||
+      trimmed.includes('<em>') ||
+      trimmed.includes('<br>')
+    ) {
+      // It's HTML content, keep it as-is
+      parsedOutcomes.push({ content: trimmed, isHtml: true })
     } else {
-      // Plain text outcome
-      const trimmed = outcome.trim()
-      if (trimmed) {
-        parsedOutcomes.push(trimmed)
-      }
+      // It's plain text
+      parsedOutcomes.push({ content: trimmed, isHtml: false })
     }
   })
 
@@ -250,7 +240,14 @@ export default function CourseDetailPage() {
                     {course.title}
                   </h1>
                   <div
-                    className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed"
+                    className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed whitespace-pre-wrap
+                      [&_p]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
+                      [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                      [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                      [&_a]:text-orange-600 [&_a]:hover:text-orange-700
+                      [&_blockquote]:ml-8 [&_blockquote]:pl-4 [&_blockquote_ul]:list-disc [&_blockquote_ol]:list-decimal
+                      [&_blockquote_li]:mb-1 [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
+                      [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                   />
                 </div>
@@ -425,6 +422,35 @@ export default function CourseDetailPage() {
         <div className="container-max py-0 pb-8 px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
+              {/* Detailed Description */}
+              {course.detailed_description && (
+                <Card>
+                  <CardHeader>
+                    <h2 className="text-2xl font-bold">About This Course</h2>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="text-base text-gray-700 leading-relaxed space-y-4
+                        [&_p]:mb-4 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-2
+                        [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-2
+                        [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6
+                        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-5
+                        [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mb-3 [&_h3]:mt-4
+                        [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                        [&_a]:text-orange-600 [&_a]:hover:text-orange-700 [&_a]:underline
+                        [&_blockquote]:border-l-4 [&_blockquote]:border-orange-500 [&_blockquote]:pl-4 [&_blockquote]:italic
+                        [&_code]:bg-gray-100 [&_code]:px-2 [&_code]:py-1 [&_code]:rounded [&_code]:font-mono
+                        [&_pre]:bg-gray-100 [&_pre]:p-4 [&_pre]:rounded [&_pre]:overflow-x-auto
+                        [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded [&_img]:my-4
+                        [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
+                        [&_.ql-indent-1_ul]:ml-4 [&_.ql-indent-2_ul]:ml-8 [&_.ql-indent-3_ul]:ml-12"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(course.detailed_description),
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
               {/* Learning Outcomes */}
               <Card>
                 <CardHeader>
@@ -432,10 +458,24 @@ export default function CourseDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4">
-                    {parseLearningOutcomes(course.learning_outcomes).map((outcome, index) => (
+                    {parseLearningOutcomes(course.learning_outcomes).map((item, index) => (
                       <div key={index} className="flex items-start space-x-3">
                         <CheckCircleIcon className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{outcome}</span>
+                        {item.isHtml ? (
+                          <div
+                            className="text-gray-700 flex-1 text-base whitespace-pre-wrap
+                              [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
+                              [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                              [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                              [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
+                              [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizeHtml(item.content),
+                            }}
+                          />
+                        ) : (
+                          <span className="text-gray-700">{item.content}</span>
+                        )}
                       </div>
                     ))}
                   </div>
