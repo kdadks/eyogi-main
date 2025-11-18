@@ -229,25 +229,94 @@ export async function updatePageSettings(
   userId?: string,
 ): Promise<PageSettings> {
   try {
+    // First, get the current settings to ensure the record exists
+    const { data: existingData, error: fetchError } = await supabaseAdmin
+      .from('page_settings')
+      .select('*')
+      .eq('page_slug', slug)
+
+    if (fetchError || !existingData || existingData.length === 0) {
+      throw new Error(`Page settings record not found for slug: ${slug}`)
+    }
+
+    // Filter updates to only include actual database columns
+    const dbUpdates: Record<string, any> = {}
+
+    // Copy base fields if they exist
+    const baseFields = [
+      'page_slug',
+      'page_type',
+      'hero_title',
+      'hero_subtitle',
+      'hero_description',
+      'hero_image_url',
+      'hero_background_color',
+      'hero_text_color',
+      'hero_cta_button_text',
+      'hero_cta_button_link',
+      'hero_cta_button_color',
+      'stats_visible',
+      'stats_items',
+      'features_visible',
+      'features_title',
+      'features_subtitle',
+      'features_items',
+      'cta_visible',
+      'cta_title',
+      'cta_description',
+      'cta_background_color',
+      'cta_buttons',
+      'section_order',
+      'theme_primary_color',
+      'theme_secondary_color',
+      'show_breadcrumbs',
+      'seo_title',
+      'seo_description',
+      'seo_keywords',
+      'about_page_content', // JSONB column for about page
+    ]
+
+    // Add home page fields (all prefixed with home_)
+    const homePageFields = Object.keys(updates).filter((key) => key.startsWith('home_'))
+
+    for (const field of baseFields) {
+      if (field in updates && updates[field as keyof PageSettings] !== undefined) {
+        dbUpdates[field] = updates[field as keyof PageSettings]
+      }
+    }
+
+    for (const field of homePageFields) {
+      if (updates[field as keyof PageSettings] !== undefined) {
+        dbUpdates[field] = updates[field as keyof PageSettings]
+      }
+    }
+
+    // Only include timestamp if explicitly provided
+    const updatePayload: Record<string, any> = { ...dbUpdates }
+    if (userId) {
+      updatePayload.updated_by = userId
+    }
+    updatePayload.updated_at = new Date().toISOString()
+
     const { data, error } = await supabaseAdmin
       .from('page_settings')
-      .update({
-        ...updates,
-        updated_by: userId,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('page_slug', slug)
       .select()
-      .single()
 
     if (error) {
+      console.error('Supabase update error:', { error, dbUpdates, updatePayload, slug })
       throw new Error(`Failed to update page settings: ${error.message}`)
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error('No page settings found to update')
     }
 
     // Invalidate cache
     queryCache.invalidatePattern(`page-settings:${slug}`)
 
-    return data
+    return data[0]
   } catch (error) {
     console.error('Error updating page settings:', error)
     throw error
@@ -270,16 +339,19 @@ export async function createPageSettings(
         updated_by: userId,
       })
       .select()
-      .single()
 
     if (error) {
       throw new Error(`Failed to create page settings: ${error.message}`)
     }
 
+    if (!data || data.length === 0) {
+      throw new Error('Failed to create page settings: no data returned')
+    }
+
     // Invalidate cache
     queryCache.invalidatePattern('page-settings:.*')
 
-    return data
+    return data[0]
   } catch (error) {
     console.error('Error creating page settings:', error)
     throw error

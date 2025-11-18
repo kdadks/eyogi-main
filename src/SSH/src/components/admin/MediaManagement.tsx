@@ -663,7 +663,7 @@ function MediaGridItem({
               alt={file.alt_text || file.title || file.original_name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                console.error('❌ Image failed to load:', file.original_name, thumbnailUrl, e)
+                // Silently handle image load failures - display fallback instead
                 e.currentTarget.style.display = 'none'
                 const fallback = e.currentTarget.nextElementSibling as HTMLElement
                 if (fallback) fallback.classList.remove('hidden')

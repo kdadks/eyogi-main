@@ -276,6 +276,16 @@ function HeroSection({
               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </FormField>
+
+          <FormField label="Title Highlight">
+            <input
+              type="text"
+              value={settings.home_hero_title_highlight || ''}
+              onChange={(e) => updateSetting('home_hero_title_highlight', e.target.value)}
+              placeholder="Highlighted part of title"
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </FormField>
         </div>
 
         <FormField label="Description" description="Hero section subtitle - HTML supported">
