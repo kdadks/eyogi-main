@@ -6,6 +6,7 @@ import {
 } from '../../lib/api/aboutPageCMS'
 import { Button } from '@/components/ui/Button'
 import MediaSelector from '../MediaSelector'
+import BackgroundStylingField from './BackgroundStylingField'
 import type { MediaFile } from '../../lib/api/media'
 
 interface Props {
@@ -309,6 +310,19 @@ function HeroSection({ settings, updateSetting }: SectionProps) {
             </FormField>
           </div>
         </div>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+          <BackgroundStylingField
+            bgType={(settings.hero_bg_type as 'color' | 'image') || 'color'}
+            bgColor={settings.hero_bg_color || '#fffbfa'}
+            bgImageUrl={settings.hero_bg_image_url}
+            onBgTypeChange={(type) => updateSetting('hero_bg_type', type)}
+            onBgColorChange={(color) => updateSetting('hero_bg_color', color)}
+            onBgImageChange={(url) => updateSetting('hero_bg_image_url', url)}
+            label="Hero Section"
+          />
+        </div>
       </SectionCard>
     </>
   )
@@ -419,6 +433,19 @@ function MissionSection({ settings, updateSetting }: SectionProps) {
               </select>
             </FormField>
           </div>
+        </div>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+          <BackgroundStylingField
+            bgType={(settings.mission_bg_type as 'color' | 'image') || 'color'}
+            bgColor={settings.mission_bg_color || '#ffffff'}
+            bgImageUrl={settings.mission_bg_image_url}
+            onBgTypeChange={(type) => updateSetting('mission_bg_type', type)}
+            onBgColorChange={(color) => updateSetting('mission_bg_color', color)}
+            onBgImageChange={(url) => updateSetting('mission_bg_image_url', url)}
+            label="Mission Section"
+          />
         </div>
       </SectionCard>
 
@@ -543,6 +570,20 @@ function StatsSection({ settings, updateSetting }: SectionProps) {
             ))}
           </div>
         </div>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+          <BackgroundStylingField
+            bgType={(settings.stats_bg_type as 'color' | 'image') || 'color'}
+            bgColor={settings.stats_bg_color || '#dc2626'}
+            bgImageUrl={settings.stats_bg_image_url}
+            onBgTypeChange={(type) => updateSetting('stats_bg_type', type)}
+            onBgColorChange={(color) => updateSetting('stats_bg_color', color)}
+            onBgImageChange={(url) => updateSetting('stats_bg_image_url', url)}
+            label="Stats Section"
+            previewClassName="gradient-bg"
+          />
+        </div>
       </SectionCard>
     </>
   )
@@ -661,6 +702,19 @@ function ValuesSection({ settings, updateSetting }: SectionProps) {
             ),
           )}
         </div>
+      </div>
+
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+        <BackgroundStylingField
+          bgType={(settings.values_bg_type as 'color' | 'image') || 'color'}
+          bgColor={settings.values_bg_color || '#ffffff'}
+          bgImageUrl={settings.values_bg_image_url}
+          onBgTypeChange={(type) => updateSetting('values_bg_type', type)}
+          onBgColorChange={(color) => updateSetting('values_bg_color', color)}
+          onBgImageChange={(url) => updateSetting('values_bg_image_url', url)}
+          label="Values Section"
+        />
       </div>
     </SectionCard>
   )
@@ -817,6 +871,19 @@ function TeamSection({ settings, updateSetting }: SectionProps) {
             )}
           </div>
         </div>
+
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+          <BackgroundStylingField
+            bgType={(settings.team_bg_type as 'color' | 'image') || 'color'}
+            bgColor={settings.team_bg_color || '#f3f4f6'}
+            bgImageUrl={settings.team_bg_image_url}
+            onBgTypeChange={(type) => updateSetting('team_bg_type', type)}
+            onBgColorChange={(color) => updateSetting('team_bg_color', color)}
+            onBgImageChange={(url) => updateSetting('team_bg_image_url', url)}
+            label="Team Section"
+          />
+        </div>
       </SectionCard>
 
       {/* Image Selector Modal */}
@@ -965,6 +1032,19 @@ function VisionSection({ settings, updateSetting }: SectionProps) {
           )}
         </div>
       </div>
+
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+        <BackgroundStylingField
+          bgType={(settings.vision_bg_type as 'color' | 'image') || 'color'}
+          bgColor={settings.vision_bg_color || '#ffffff'}
+          bgImageUrl={settings.vision_bg_image_url}
+          onBgTypeChange={(type) => updateSetting('vision_bg_type', type)}
+          onBgColorChange={(color) => updateSetting('vision_bg_color', color)}
+          onBgImageChange={(url) => updateSetting('vision_bg_image_url', url)}
+          label="Vision Section"
+        />
+      </div>
     </SectionCard>
   )
 }
@@ -1048,6 +1128,20 @@ function CTASection({ settings, updateSetting }: SectionProps) {
             />
           </FormField>
         </div>
+      </div>
+
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h3 className="font-semibold text-sm text-gray-900 mb-3">Background Settings</h3>
+        <BackgroundStylingField
+          bgType={(settings.cta_bg_type as 'color' | 'image') || 'color'}
+          bgColor={settings.cta_bg_color || '#dc2626'}
+          bgImageUrl={settings.cta_bg_image_url}
+          onBgTypeChange={(type) => updateSetting('cta_bg_type', type)}
+          onBgColorChange={(color) => updateSetting('cta_bg_color', color)}
+          onBgImageChange={(url) => updateSetting('cta_bg_image_url', url)}
+          label="CTA Section"
+          previewClassName="gradient-bg"
+        />
       </div>
     </SectionCard>
   )

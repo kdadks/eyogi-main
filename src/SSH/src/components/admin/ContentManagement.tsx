@@ -20,6 +20,7 @@ import { toSentenceCase } from '../../lib/utils'
 import PageCMSEditor from './PageCMSEditor'
 import HomePageCMSEditor from './HomePageCMSEditor'
 import AboutPageCMSEditor from './AboutPageCMSEditor'
+import ContactPageCMSEditor from './ContactPageCMSEditor'
 
 // Form data interface for creating/editing pages
 interface PageFormData {
@@ -52,7 +53,9 @@ export default function ContentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [activeTab, setActiveTab] = useState<'pages' | 'home-cms' | 'about-cms'>('pages')
+  const [activeTab, setActiveTab] = useState<'pages' | 'home-cms' | 'about-cms' | 'contact-cms'>(
+    'pages',
+  )
 
   // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -306,6 +309,17 @@ export default function ContentManagement() {
         >
           <PaintBrushIcon className="w-4 h-4" />
           About Page Editor
+        </button>
+        <button
+          onClick={() => setActiveTab('contact-cms')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'contact-cms'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <PaintBrushIcon className="w-4 h-4" />
+          Contact Page Editor
         </button>
       </div>
 
@@ -804,6 +818,9 @@ export default function ContentManagement() {
 
       {/* About Page CMS Editor Tab */}
       {activeTab === 'about-cms' && <AboutPageCMSEditor slug="about" />}
+
+      {/* Contact Page CMS Editor Tab */}
+      {activeTab === 'contact-cms' && <ContactPageCMSEditor slug="contact" />}
     </div>
   )
 }

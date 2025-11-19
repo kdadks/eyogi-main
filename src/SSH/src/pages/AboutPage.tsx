@@ -4,7 +4,7 @@ import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
-
+import { getBackgroundStyle } from '../utils/backgroundStyler'
 import {
   AcademicCapIcon,
   BookOpenIcon,
@@ -172,7 +172,14 @@ export default function AboutPage() {
       <div>
         <div className="min-h-screen bg-gray-50">
           {/* Hero Section */}
-          <section className="bg-gradient-to-r from-orange-50 to-red-50">
+          <section
+            className="bg-gradient-to-r from-orange-50 to-red-50"
+            style={getBackgroundStyle(
+              cmsData.hero_bg_type,
+              cmsData.hero_bg_color,
+              cmsData.hero_bg_image_url,
+            )}
+          >
             <div className="container-max section-padding">
               <div className="text-center max-w-4xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
@@ -201,7 +208,14 @@ export default function AboutPage() {
           </section>
 
           {/* Mission Section */}
-          <section className="section-padding bg-white">
+          <section
+            className="section-padding bg-white"
+            style={getBackgroundStyle(
+              cmsData.mission_bg_type,
+              cmsData.mission_bg_color,
+              cmsData.mission_bg_image_url,
+            )}
+          >
             <div className="container-max">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
@@ -246,7 +260,14 @@ export default function AboutPage() {
 
           {/* Stats Section */}
           {cmsData.stats_visible && (
-            <section className="section-padding gradient-bg text-white">
+            <section
+              className="section-padding gradient-bg text-white"
+              style={getBackgroundStyle(
+                cmsData.stats_bg_type,
+                cmsData.stats_bg_color,
+                cmsData.stats_bg_image_url,
+              )}
+            >
               <div className="container-max">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl md:text-4xl font-bold mb-4">{cmsData.stats_title}</h2>
@@ -265,7 +286,14 @@ export default function AboutPage() {
           )}
 
           {/* Values Section */}
-          <section className="section-padding bg-white">
+          <section
+            className="section-padding bg-white"
+            style={getBackgroundStyle(
+              cmsData.values_bg_type,
+              cmsData.values_bg_color,
+              cmsData.values_bg_image_url,
+            )}
+          >
             <div className="container-max">
               <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -294,7 +322,14 @@ export default function AboutPage() {
 
           {/* Team Section */}
           {cmsData.team_visible && (
-            <section className="section-padding">
+            <section
+              className="section-padding"
+              style={getBackgroundStyle(
+                cmsData.team_bg_type,
+                cmsData.team_bg_color,
+                cmsData.team_bg_image_url,
+              )}
+            >
               <div className="container-max">
                 <div className="text-center mb-16">
                   <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -327,7 +362,14 @@ export default function AboutPage() {
           )}
 
           {/* Vision Section */}
-          <section className="section-padding bg-white">
+          <section
+            className="section-padding bg-white"
+            style={getBackgroundStyle(
+              cmsData.vision_bg_type,
+              cmsData.vision_bg_color,
+              cmsData.vision_bg_image_url,
+            )}
+          >
             <div className="container-max">
               <div className="text-center max-w-4xl mx-auto">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
@@ -361,7 +403,14 @@ export default function AboutPage() {
 
           {/* CTA Section */}
           {(cmsData.cta_visible || cmsData.cta_title || cmsData.cta_description) && (
-            <section className="section-padding gradient-bg text-white">
+            <section
+              className="section-padding gradient-bg text-white"
+              style={getBackgroundStyle(
+                cmsData.cta_bg_type,
+                cmsData.cta_bg_color,
+                cmsData.cta_bg_image_url,
+              )}
+            >
               <div className="container-max text-center">
                 {cmsData.cta_title && (
                   <h2 className="text-3xl md:text-4xl font-bold mb-4">{cmsData.cta_title}</h2>

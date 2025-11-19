@@ -17,6 +17,9 @@ export interface AboutPageCMSSettings {
   hero_button_1_link?: string
   hero_button_2_text?: string
   hero_button_2_link?: string
+  hero_bg_type?: 'color' | 'image'
+  hero_bg_color?: string
+  hero_bg_image_url?: string
 
   // Mission Section
   mission_title?: string
@@ -25,6 +28,9 @@ export interface AboutPageCMSSettings {
   mission_image_caption_title?: string
   mission_image_caption_description?: string
   mission_image_caption_icon?: string
+  mission_bg_type?: 'color' | 'image'
+  mission_bg_color?: string
+  mission_bg_image_url?: string
 
   // Stats Section
   stats_visible?: boolean
@@ -34,6 +40,9 @@ export interface AboutPageCMSSettings {
     number: string
     label: string
   }>
+  stats_bg_type?: 'color' | 'image'
+  stats_bg_color?: string
+  stats_bg_image_url?: string
 
   // Values Section
   values_visible?: boolean
@@ -44,6 +53,9 @@ export interface AboutPageCMSSettings {
     description: string
     icon: string
   }>
+  values_bg_type?: 'color' | 'image'
+  values_bg_color?: string
+  values_bg_image_url?: string
 
   // Team Section
   team_visible?: boolean
@@ -55,6 +67,9 @@ export interface AboutPageCMSSettings {
     bio: string
     image_url: string
   }>
+  team_bg_type?: 'color' | 'image'
+  team_bg_color?: string
+  team_bg_image_url?: string
 
   // Vision Section
   vision_title?: string
@@ -64,6 +79,9 @@ export interface AboutPageCMSSettings {
     description: string
     icon: string
   }>
+  vision_bg_type?: 'color' | 'image'
+  vision_bg_color?: string
+  vision_bg_image_url?: string
 
   // CTA Section
   cta_visible?: boolean
@@ -73,6 +91,9 @@ export interface AboutPageCMSSettings {
   cta_button_1_link?: string
   cta_button_2_text?: string
   cta_button_2_link?: string
+  cta_bg_type?: 'color' | 'image'
+  cta_bg_color?: string
+  cta_bg_image_url?: string
 
   // Audit
   created_at?: string
