@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import MediaSelector from '../MediaSelector'
 import BackgroundStylingField from './BackgroundStylingField'
+import RichTextEditor from './RichTextEditor'
 import type { MediaFile } from '../../lib/api/media'
 
 interface Props {
@@ -351,21 +352,12 @@ function MissionSection({ settings, updateSetting }: SectionProps) {
           />
         </FormField>
 
-        <FormField label="Description" description="HTML supported">
-          <textarea
+        <FormField label="Description">
+          <RichTextEditor
             value={settings.mission_description || ''}
-            onChange={(e) => updateSetting('mission_description', e.target.value)}
-            placeholder="Mission description... (HTML tags supported)"
-            rows={2}
-            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onChange={(value) => updateSetting('mission_description', value)}
+            placeholder="Enter mission description..."
           />
-          <p className="text-xs text-gray-500 italic mt-1">💡 HTML content is supported</p>
-          {settings.mission_description && (
-            <div
-              className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700"
-              dangerouslySetInnerHTML={{ __html: settings.mission_description }}
-            />
-          )}
         </FormField>
 
         <div className="border-t border-gray-200 pt-3 mt-3">

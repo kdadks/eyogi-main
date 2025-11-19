@@ -1,0 +1,106 @@
+/* Quill Preview Styles */
+.ql-editor {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.ql-editor ul,
+.ql-editor ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.ql-editor ul li,
+.ql-editor ol li {
+  margin-bottom: 0.5rem;
+}
+
+.ql-editor ul {
+  list-style-type: disc;
+}
+
+.ql-editor ol {
+  list-style-type: decimal;
+}
+
+.ql-editor li {
+  display: list-item;
+}
+
+.ql-editor h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.ql-editor h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.ql-editor h3 {
+  font-size: 1.25em;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.ql-editor p {
+  margin: 0.5rem 0;
+}
+
+.ql-editor blockquote {
+  border-left: 4px solid #ccc;
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+  color: #666;
+}
+
+.ql-editor code {
+  background-color: #f4f4f4;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.ql-editor strong {
+  font-weight: bold;
+}
+
+.ql-editor em {
+  font-style: italic;
+}
+
+.ql-editor u {
+  text-decoration: underline;
+}
+
+.ql-editor s {
+  text-decoration: line-through;
+}
+
+.ql-editor a {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+.ql-editor a:hover {
+  color: #1e3a8a;
+}
+
+.ql-editor pre {
+  background-color: #f4f4f4;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.ql-editor pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: #333;
+}

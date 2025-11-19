@@ -431,7 +431,7 @@ export default function HomePage() {
                     />
                     <div>
                       <p className="font-semibold">{testimonial.name}</p>
-                      <p className="text-sm text-gray-500">Hindu Education {testimonial.role}</p>
+                      <p className="text-sm text-gray-500">{testimonial.role}</p>
                     </div>
                   </CardContent>
                 </Card>
