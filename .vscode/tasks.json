@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build SSH Project",
+			"type": "shell",
+			"command": "cd src/SSH && npm run build"
+		}
+	]
+}

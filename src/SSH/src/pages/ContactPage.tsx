@@ -11,6 +11,7 @@ import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { getContactPageCMS, ContactPageCMSSettings } from '../lib/api/contactPageCMS'
 import { getBackgroundStyle } from '../utils/backgroundStyler'
+import '../components/styles/quill-preview.css'
 
 import {
   EnvelopeIcon,

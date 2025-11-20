@@ -5,6 +5,7 @@ import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { getBackgroundStyle } from '../utils/backgroundStyler'
+import '../components/styles/quill-preview.css'
 import {
   AcademicCapIcon,
   BookOpenIcon,
@@ -224,7 +225,7 @@ export default function AboutPage() {
                   </h2>
                   {cmsData.mission_description && (
                     <div
-                      className="text-lg text-gray-600 mb-8"
+                      className="text-lg text-gray-600 mb-8 ql-editor ql-blank=false"
                       dangerouslySetInnerHTML={{
                         __html: cmsData.mission_description,
                       }}
