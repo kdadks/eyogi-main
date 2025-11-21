@@ -51,8 +51,8 @@ const nextConfig = {
   },
   // Reduce bundle analyzer overhead
   productionBrowserSourceMaps: false,
-  // Optimize output - disable standalone for Netlify
-  ...(process.env.NETLIFY ? {} : { output: 'standalone' }),
+  // Optimize output
+  output: 'standalone',
   // Skip optimizations for faster builds
   // Reduce build size
   compiler: {

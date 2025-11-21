@@ -22,11 +22,7 @@
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "reinstall": "cross-env NODE_OPTIONS=--no-deprecation rimraf node_modules yarn.lock && yarn install",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "deploy": "node deploy.js",
-    "netlify:build": "yarn run build",
-    "netlify:dev": "npx netlify dev",
-    "netlify:deploy": "npx netlify deploy --prod --dir=.next",
-    "netlify:preview": "npx netlify deploy --dir=.next"
+    "deploy": "node deploy.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

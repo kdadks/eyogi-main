@@ -7,11 +7,6 @@ export const getServerSideURL = () => {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   }
 
-  // Netlify environment detection
-  if (!url && process.env.NETLIFY && process.env.URL) {
-    return process.env.URL
-  }
-
   if (!url) {
     url = 'http://localhost:3000'
   }
