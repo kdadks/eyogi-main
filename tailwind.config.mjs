@@ -21,7 +21,6 @@ export default {
     './src/lib/**/*.{ts,tsx}',
     './src/plugins/**/*.{ts,tsx}',
     './src/providers/**/*.{ts,tsx}',
-    './src/resend/**/*.{ts,tsx}',
     './src/schemas/**/*.{ts,tsx}',
     './src/search/**/*.{ts,tsx}',
     './src/utilities/**/*.{ts,tsx}',

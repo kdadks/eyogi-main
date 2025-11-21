@@ -42,9 +42,15 @@ NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 # UploadThing credentials for file/media management
 UPLOADTHING_TOKEN=your-uploadthing-token
 
-# ===== EMAIL =====
-# Resend API key for contact forms and notifications
-RESEND_API_KEY=your-resend-api-key
+# ===== EMAIL (SMTP) =====
+# Email configuration for contact forms and notifications
+SMTP_HOST=your-smtp-host
+SMTP_PORT=587
+SMTP_USER=your-email@example.com
+SMTP_PASS=your-app-password
+SMTP_PORT=587
+SMTP_USER=your-email@outlook.com
+SMTP_PASS=your-app-password
 
 # ===== OPTIONAL =====
 # Disable image optimization in problematic environments
@@ -114,20 +120,38 @@ If you want to change the file storage provider, PayloadCMS supports multiple st
 3. Migrating existing media files
 4. Updating environment variables
 
-### Resend (Email Service) - Current Implementation
+### Email Service (SMTP) - Current Implementation
 
-**This project currently uses Resend for email functionality, but alternatives exist.**
+**This project uses Nodemailer with SMTP for email functionality (contact forms and notifications).**
 
-**Current Setup (Resend):**
+**Current Setup (SMTP):**
 
-1. Go to https://resend.com
-2. Generate API key
-3. Add to `RESEND_API_KEY` in `.env`
+1. Configure your SMTP server credentials:
+   ```bash
+   SMTP_HOST=your-smtp-host.com
+   SMTP_PORT=587  # Use 465 for SSL, 587 for TLS
+   SMTP_USER=your-email@example.com
+   SMTP_PASS=your-app-password
+   ```
 
-**Alternative Email Providers:**
+2. Supported SMTP Providers:
+   - **Gmail**: SMTP server at smtp.gmail.com:587 (use app password)
+   - **Outlook**: SMTP server at smtp-mail.outlook.com:587
+   - **SendGrid**: SMTP relay at smtp.sendgrid.net:587
+   - **AWS SES**: SMTP endpoint from your AWS region
+   - **Custom SMTP**: Any SMTP server supporting TLS/SSL
 
-- **SendGrid**: Popular email service with good deliverability
-- **Mailgun**: Developer-focused email API
+**Email Features:**
+- Contact form submissions
+- Registration confirmations
+- Course enrollment notifications
+- Certificate delivery
+- Password reset emails
+- Admin notifications
+
+**Email Service File:**
+- Implementation: `src/lib/email/emailService.ts`
+- API endpoint: `src/app/api/send/route.ts`
 - **Amazon SES**: AWS email service
 - **Nodemailer**: Direct SMTP integration
 - **Custom Email API**: Build your own email integration
@@ -492,7 +516,6 @@ NEXT_PUBLIC_SERVER_URL=https://yourdomain.com
 # Same secrets as development
 PAYLOAD_SECRET=your-production-secret-32-chars-minimum
 UPLOADTHING_TOKEN=your-uploadthing-token
-RESEND_API_KEY=your-resend-api-key
 ```
 
 #
@@ -521,7 +544,6 @@ PAYLOAD_SECRET=your-secret-key
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 UPLOADTHING_SECRET=your-uploadthing-secret
 UPLOADTHING_APP_ID=your-uploadthing-app-id
-RESEND_API_KEY=your-resend-api-key
 ```
 
 ### Development Commands

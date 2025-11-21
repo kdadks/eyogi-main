@@ -8,7 +8,6 @@ interface ImportMetaEnv {
   readonly UPLOADTHING_TOKEN: string
   readonly VITE_JWT_SECRET: string
   readonly VITE_SESSION_TIMEOUT: string
-  readonly VITE_RESEND_API_KEY: string
   readonly VITE_FROM_EMAIL: string
   readonly VITE_STRIPE_PUBLISHABLE_KEY: string
   readonly STRIPE_SECRET_KEY: string
