@@ -1,10 +1,51 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Build SSH Project",
-			"type": "shell",
-			"command": "cd src/SSH && npm run build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Main Project",
+      "type": "shell",
+      "command": "yarn build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build SSH Project",
+      "type": "shell",
+      "command": "cd src/SSH && npm run build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Dev Server",
+      "type": "shell",
+      "command": "yarn dev",
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Lint",
+      "type": "shell",
+      "command": "yarn lint",
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "Lint Fix",
+      "type": "shell",
+      "command": "yarn lint:fix",
+      "problemMatcher": ["$eslint-stylish"]
+    }
+  ]
 }
