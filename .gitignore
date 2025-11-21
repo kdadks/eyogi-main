@@ -41,3 +41,9 @@ check-*.js
 add-*.js
 *debug*
 *-debug.*
+
+# Documentation - Store locally only (except root README.md)
+*.md
+!README.md
+!/src/SSH/README.md
+!/src/SSH/migrations/README.md

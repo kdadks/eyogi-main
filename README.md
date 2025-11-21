@@ -2,6 +2,8 @@
 
 A Next.js 15 + PayloadCMS 3.9 application with PostgreSQL backend, built for content management and educational platform delivery.
 
+> 📚 **For comprehensive project documentation including all features, systems, and architecture**, see **[COMPREHENSIVE_README.md](./COMPREHENSIVE_README.md)**
+
 ### Prerequisites (Required)
 
 - **Node.js**: 18.20.2 or higher (or Node.js 20.9.0+)
