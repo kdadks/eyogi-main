@@ -260,9 +260,12 @@ export default function SocialMediaManagement() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-center p-8">
-          <div className="text-gray-600">Loading social media links...</div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
+            <div className="w-8 h-8 border-4 border-red-200 border-t-red-500 rounded-full animate-spin" />
+          </div>
+          <p className="text-gray-600">Loading social media links...</p>
         </div>
       </div>
     )
@@ -272,17 +275,17 @@ export default function SocialMediaManagement() {
     <div className="space-y-6">
       {/* Statistics Cards and Add Button */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Total Links</div>
-          <div className="mt-1 text-lg font-bold text-gray-900">{stats.total}</div>
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 p-3">
+          <div className="text-xs font-medium text-red-700">Total Links</div>
+          <div className="mt-1 text-lg font-bold text-red-900">{stats.total}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Active Links</div>
-          <div className="mt-1 text-lg font-bold text-green-600">{stats.active}</div>
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 p-3">
+          <div className="text-xs font-medium text-red-700">Active Links</div>
+          <div className="mt-1 text-lg font-bold text-red-900">{stats.active}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Inactive</div>
-          <div className="mt-1 text-lg font-bold text-orange-600">{stats.total - stats.active}</div>
+        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 p-3">
+          <div className="text-xs font-medium text-red-700">Inactive</div>
+          <div className="mt-1 text-lg font-bold text-red-900">{stats.total - stats.active}</div>
         </div>
         <Button
           onClick={handleAddLink}

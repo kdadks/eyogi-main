@@ -528,17 +528,17 @@ export default function FooterMenuManagement() {
     <div className="space-y-6">
       {/* Statistics Cards and Add Button */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Total Items</div>
-          <div className="mt-1 text-lg font-bold text-gray-900">{stats.totalItems}</div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-3">
+          <div className="text-xs font-medium text-purple-700">Total Items</div>
+          <div className="mt-1 text-lg font-bold text-purple-900">{stats.totalItems}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Active Items</div>
-          <div className="mt-1 text-lg font-bold text-green-600">{stats.activeItems}</div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-3">
+          <div className="text-xs font-medium text-purple-700">Active Items</div>
+          <div className="mt-1 text-lg font-bold text-purple-900">{stats.activeItems}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Sections</div>
-          <div className="mt-1 text-lg font-bold text-purple-600">{stats.sections}</div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-3">
+          <div className="text-xs font-medium text-purple-700">Sections</div>
+          <div className="mt-1 text-lg font-bold text-purple-900">{stats.sections}</div>
         </div>
         <Button
           onClick={handleAddItem}

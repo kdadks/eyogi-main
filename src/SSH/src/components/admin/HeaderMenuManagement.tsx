@@ -506,17 +506,17 @@ export default function HeaderMenuManagement() {
     <div className="space-y-6">
       {/* Statistics Cards and Add Button */}
       <div className="grid grid-cols-4 gap-2">
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Total Items</div>
-          <div className="mt-1 text-lg font-bold text-gray-900">{stats.totalItems}</div>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-3">
+          <div className="text-xs font-medium text-blue-700">Total Items</div>
+          <div className="mt-1 text-lg font-bold text-blue-900">{stats.totalItems}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Active Items</div>
-          <div className="mt-1 text-lg font-bold text-green-600">{stats.activeItems}</div>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-3">
+          <div className="text-xs font-medium text-blue-700">Active Items</div>
+          <div className="mt-1 text-lg font-bold text-blue-900">{stats.activeItems}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-xs font-medium text-gray-600">Parent Items</div>
-          <div className="mt-1 text-lg font-bold text-blue-600">{stats.parentItems}</div>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-3">
+          <div className="text-xs font-medium text-blue-700">Parent Items</div>
+          <div className="mt-1 text-lg font-bold text-blue-900">{stats.parentItems}</div>
         </div>
         <Button
           onClick={handleAddItem}
