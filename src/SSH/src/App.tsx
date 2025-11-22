@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast'
 
 // Layout Components (keep these eager loaded as they're used everywhere)
 import { GlossyHeader } from './components/layout/GlossyHeader'
-import Footer from './components/layout/Footer'
+import Footer from './components/layout/FooterDynamic'
 import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
 import AuthRedirect from './components/auth/AuthRedirect'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'

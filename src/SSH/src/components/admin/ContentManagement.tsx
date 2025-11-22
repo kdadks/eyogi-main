@@ -8,6 +8,7 @@ import {
   TrashIcon,
   XMarkIcon,
   PaintBrushIcon,
+  Bars4Icon,
 } from '@heroicons/react/24/outline'
 import { Page } from '../../types'
 import { getPages, createPage, updatePage, deletePage } from '../../lib/api/pages'
@@ -21,6 +22,8 @@ import PageCMSEditor from './PageCMSEditor'
 import HomePageCMSEditor from './HomePageCMSEditor'
 import AboutPageCMSEditor from './AboutPageCMSEditor'
 import ContactPageCMSEditor from './ContactPageCMSEditor'
+import HeaderMenuManagement from './HeaderMenuManagement'
+import FooterMenuManagement from './FooterMenuManagement'
 
 // Form data interface for creating/editing pages
 interface PageFormData {
@@ -53,9 +56,9 @@ export default function ContentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [activeTab, setActiveTab] = useState<'pages' | 'home-cms' | 'about-cms' | 'contact-cms'>(
-    'pages',
-  )
+  const [activeTab, setActiveTab] = useState<
+    'pages' | 'home-cms' | 'about-cms' | 'contact-cms' | 'header-menu' | 'footer-menu'
+  >('pages')
 
   // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -276,8 +279,19 @@ export default function ContentManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
+      {/* Main Tabs */}
       <div className="flex gap-4 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('header-menu')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'header-menu' || activeTab === 'footer-menu'
+              ? 'border-orange-600 text-orange-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Bars4Icon className="w-4 h-4" />
+          Menu Management
+        </button>
         <button
           onClick={() => setActiveTab('pages')}
           className={`px-4 py-2 font-medium border-b-2 transition-colors ${
@@ -322,6 +336,32 @@ export default function ContentManagement() {
           Contact Page Editor
         </button>
       </div>
+
+      {/* Sub-tabs for Menu Management */}
+      {(activeTab === 'header-menu' || activeTab === 'footer-menu') && (
+        <div className="flex gap-4 border-b border-gray-200 ml-4">
+          <button
+            onClick={() => setActiveTab('header-menu')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeTab === 'header-menu'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Header Menu
+          </button>
+          <button
+            onClick={() => setActiveTab('footer-menu')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeTab === 'footer-menu'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Footer Menu
+          </button>
+        </div>
+      )}
 
       {/* Page Management Tab */}
       {activeTab === 'pages' && (
@@ -821,6 +861,12 @@ export default function ContentManagement() {
 
       {/* Contact Page CMS Editor Tab */}
       {activeTab === 'contact-cms' && <ContactPageCMSEditor slug="contact" />}
+
+      {/* Header Menu Management Tab */}
+      {activeTab === 'header-menu' && <HeaderMenuManagement />}
+
+      {/* Footer Menu Management Tab */}
+      {activeTab === 'footer-menu' && <FooterMenuManagement />}
     </div>
   )
 }

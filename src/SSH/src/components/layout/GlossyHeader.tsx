@@ -1,32 +1,31 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Users, BookOpen, GraduationCap, LogOut, User, Home } from 'lucide-react'
+import { Menu, X, LogOut, User } from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import RollingText from '../ui/RollingText'
 import logoImage from '/Images/SSH_Logo.png'
 import fallbackLogo from '/Images/Logo.png'
+import { getMenuItemsFromDB, MenuItemType } from '../../lib/api/menus'
+
 interface NavLink {
   name: string
   href: string
-  icon?: React.ReactNode
+  icon?: string
   external?: boolean
 }
-const navLinks: NavLink[] = [
-  { name: 'Home', href: '/', icon: <GraduationCap className="w-4 h-4" /> },
-  { name: 'About', href: '/about', icon: <Users className="w-4 h-4" /> },
-  { name: 'Courses', href: '/courses', icon: <BookOpen className="w-4 h-4" /> },
-  { name: 'Gurukuls', href: '/gurukuls', icon: <GraduationCap className="w-4 h-4" /> },
-  { name: 'Contact', href: '/contact', icon: <Users className="w-4 h-4" /> },
-]
+
 interface GlossyHeaderProps {
   onOpenAuthModal?: (mode?: 'signin' | 'signup') => void
 }
 export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [navLinks, setNavLinks] = useState<NavLink[]>([])
+  const [loading, setLoading] = useState(true)
   const location = useLocation()
   const navigate = useNavigate()
   // Get website auth context
@@ -37,6 +36,38 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
     await websiteSignOut()
     navigate('/', { replace: true })
   }
+
+  // Load header menu items from database
+  useEffect(() => {
+    const loadHeaderMenu = async () => {
+      try {
+        // Fetch both parent and child header items
+        const parentItems = await getMenuItemsFromDB('header')
+        const childItems = await getMenuItemsFromDB('header-child')
+
+        // For now, only use parent items in the header navigation
+        // You can enhance this later to include dropdowns for children
+        const menuItems: NavLink[] = parentItems
+          .filter((item) => item.isActive !== false)
+          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+          .map((item) => ({
+            name: item.label || item.title,
+            href: item.url || item.href || '/',
+            icon: item.icon,
+            external: item.openInNewTab,
+          }))
+
+        setNavLinks(menuItems)
+      } catch (error) {
+        console.error('Failed to load header menu:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadHeaderMenu()
+  }, [])
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
@@ -148,34 +179,59 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
           </motion.div>
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-2 flex-1 justify-center min-w-0">
-            {navLinks.map((link) => (
-              <motion.div
-                key={link.name}
-                variants={linkVariants}
-                initial="initial"
-                whileHover="hover"
-                whileTap={{ scale: 0.98 }}
-              >
-                <Link
-                  to={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-1 relative overflow-hidden whitespace-nowrap ${
-                    location.pathname === link.href
-                      ? 'text-gray-900 bg-orange-100 shadow-lg'
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
+            {!loading &&
+              navLinks.map((link) => (
+                <motion.div
+                  key={link.name}
+                  variants={linkVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {link.icon}
-                  <span>{link.name}</span>
-                  {location.pathname === link.href && (
-                    <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-400 to-red-500"
-                      layoutId="activeTab"
-                      transition={{ duration: 0.3 }}
-                    />
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-1 relative overflow-hidden whitespace-nowrap text-gray-700 hover:text-gray-900"
+                    >
+                      {link.icon &&
+                        (() => {
+                          const IconComponent = LucideIcons[
+                            link.icon as keyof typeof LucideIcons
+                          ] as React.ComponentType<{ className?: string }>
+                          return IconComponent ? <IconComponent className="w-4 h-4" /> : null
+                        })()}
+                      <span>{link.name}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      to={link.href}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-1 relative overflow-hidden whitespace-nowrap ${
+                        location.pathname === link.href
+                          ? 'text-gray-900 bg-orange-100 shadow-lg'
+                          : 'text-gray-700 hover:text-gray-900'
+                      }`}
+                    >
+                      {link.icon &&
+                        (() => {
+                          const IconComponent = LucideIcons[
+                            link.icon as keyof typeof LucideIcons
+                          ] as React.ComponentType<{ className?: string }>
+                          return IconComponent ? <IconComponent className="w-4 h-4" /> : null
+                        })()}
+                      <span>{link.name}</span>
+                      {location.pathname === link.href && (
+                        <motion.div
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-400 to-red-500"
+                          layoutId="activeTab"
+                          transition={{ duration: 0.3 }}
+                        />
+                      )}
+                    </Link>
                   )}
-                </Link>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
             {/* Main Site Link */}
             <motion.div
               variants={linkVariants}
@@ -299,18 +355,43 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
               <div className="px-2 pt-2 pb-3 space-y-3">
                 {navLinks.map((link) => (
                   <motion.div key={link.name} variants={mobileItemVariants}>
-                    <Link
-                      to={link.href}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
-                        location.pathname === link.href
-                          ? 'text-gray-900 bg-orange-100 shadow-lg'
-                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      {link.icon}
-                      <span>{link.name}</span>
-                    </Link>
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                      >
+                        {link.icon &&
+                          (() => {
+                            const IconComponent = LucideIcons[
+                              link.icon as keyof typeof LucideIcons
+                            ] as React.ComponentType<{ className?: string }>
+                            return IconComponent ? <IconComponent className="w-5 h-5" /> : null
+                          })()}
+                        <span>{link.name}</span>
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
+                          location.pathname === link.href
+                            ? 'text-gray-900 bg-orange-100 shadow-lg'
+                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                      >
+                        {link.icon &&
+                          (() => {
+                            const IconComponent = LucideIcons[
+                              link.icon as keyof typeof LucideIcons
+                            ] as React.ComponentType<{ className?: string }>
+                            return IconComponent ? <IconComponent className="w-5 h-5" /> : null
+                          })()}
+                        <span>{link.name}</span>
+                      </Link>
+                    )}
                   </motion.div>
                 ))}
                 {/* Main Site Link for Mobile */}
