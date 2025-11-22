@@ -16,6 +16,7 @@ import {
   deleteMenuItemFromDB,
   MenuItemType,
 } from '@/lib/api/menus'
+import SocialMediaManagement from './SocialMediaManagement'
 
 interface MenuStats {
   headerItems: number
@@ -27,7 +28,7 @@ interface MenuStats {
 export default function MenuManagement() {
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedMenu, setSelectedMenu] = useState<'header' | 'footer'>('header')
+  const [selectedMenu, setSelectedMenu] = useState<'header' | 'footer' | 'social'>('header')
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItemType | null>(null)
   const [stats, setStats] = useState<MenuStats>({
@@ -55,6 +56,11 @@ export default function MenuManagement() {
   const loadMenuItems = async () => {
     setLoading(true)
     try {
+      // Skip loading for social media tab as it has its own component
+      if (selectedMenu === 'social') {
+        setMenuItems([])
+        return
+      }
       // Load only items for the selected menu
       const items = await getMenuItemsFromDB(selectedMenu)
       setMenuItems(items)
@@ -333,18 +339,33 @@ export default function MenuManagement() {
           >
             Footer Menu
           </button>
+          <button
+            onClick={() => setSelectedMenu('social')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              selectedMenu === 'social'
+                ? 'bg-red-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Social Media
+          </button>
         </div>
-        <Button
-          onClick={handleAddItem}
-          className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span>Add Item</span>
-        </Button>
+        {selectedMenu !== 'social' && (
+          <Button
+            onClick={handleAddItem}
+            className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>Add Item</span>
+          </Button>
+        )}
       </div>
 
+      {/* Social Media Management Tab */}
+      {selectedMenu === 'social' && <SocialMediaManagement />}
+
       {/* Form Modal */}
-      {showForm && (
+      {showForm && selectedMenu !== 'social' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
             <div className="border-b border-gray-200 px-6 py-4 sticky top-0 bg-white">

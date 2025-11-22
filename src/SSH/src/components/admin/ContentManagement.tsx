@@ -24,6 +24,7 @@ import AboutPageCMSEditor from './AboutPageCMSEditor'
 import ContactPageCMSEditor from './ContactPageCMSEditor'
 import HeaderMenuManagement from './HeaderMenuManagement'
 import FooterMenuManagement from './FooterMenuManagement'
+import SocialMediaManagement from './SocialMediaManagement'
 
 // Form data interface for creating/editing pages
 interface PageFormData {
@@ -57,7 +58,13 @@ export default function ContentManagement() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<
-    'pages' | 'home-cms' | 'about-cms' | 'contact-cms' | 'header-menu' | 'footer-menu'
+    | 'pages'
+    | 'home-cms'
+    | 'about-cms'
+    | 'contact-cms'
+    | 'header-menu'
+    | 'footer-menu'
+    | 'social-media'
   >('pages')
 
   // Modal States
@@ -338,7 +345,9 @@ export default function ContentManagement() {
       </div>
 
       {/* Sub-tabs for Menu Management */}
-      {(activeTab === 'header-menu' || activeTab === 'footer-menu') && (
+      {(activeTab === 'header-menu' ||
+        activeTab === 'footer-menu' ||
+        activeTab === 'social-media') && (
         <div className="flex gap-4 border-b border-gray-200 ml-4">
           <button
             onClick={() => setActiveTab('header-menu')}
@@ -359,6 +368,16 @@ export default function ContentManagement() {
             }`}
           >
             Footer Menu
+          </button>
+          <button
+            onClick={() => setActiveTab('social-media')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeTab === 'social-media'
+                ? 'border-red-600 text-red-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Social Media
           </button>
         </div>
       )}
@@ -867,6 +886,9 @@ export default function ContentManagement() {
 
       {/* Footer Menu Management Tab */}
       {activeTab === 'footer-menu' && <FooterMenuManagement />}
+
+      {/* Social Media Management Tab */}
+      {activeTab === 'social-media' && <SocialMediaManagement />}
     </div>
   )
 }

@@ -8,6 +8,7 @@ import {
   EllipsisVerticalIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '../ui/Button'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { toast } from 'sonner'
 import {
   getMenuItemsFromDB,
@@ -104,6 +105,17 @@ export default function FooterMenuManagement() {
   const [sectionName, setSectionName] = useState<string>('')
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
   const [dragOverItem, setDragOverItem] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean
+    itemId: string | null
+    itemTitle: string
+    isDeleting: boolean
+  }>({
+    isOpen: false,
+    itemId: null,
+    itemTitle: '',
+    isDeleting: false,
+  })
 
   // Load menu items from database
   useEffect(() => {
@@ -200,57 +212,44 @@ export default function FooterMenuManagement() {
     setShowForm(true)
   }
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = (id: string) => {
     const item = menuItems.find((i) => i.id === id)
     const itemTitle = item?.title || 'this item'
 
-    toast(
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="font-semibold text-gray-900">Delete Menu Item</p>
-          <p className="text-sm text-gray-600 mt-1">
-            Are you sure you want to delete "{itemTitle}"? This action cannot be undone.
-          </p>
-        </div>
-        <div className="flex gap-2 justify-end">
-          <button
-            onClick={() => toast.dismiss()}
-            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={async () => {
-              toast.dismiss()
-              const loadingToast = toast.loading('Deleting menu item...')
-              try {
-                const success = await deleteMenuItemFromDB(id)
-                toast.dismiss(loadingToast)
-                if (success) {
-                  const updated = menuItems.filter((item) => item.id !== id)
-                  setMenuItems(updated)
-                  toast.success(`"${itemTitle}" deleted successfully`)
-                  await updateStats(updated)
-                } else {
-                  toast.error('Failed to delete menu item')
-                }
-              } catch (error) {
-                toast.dismiss(loadingToast)
-                console.error('Error deleting menu item:', error)
-                toast.error('Failed to delete menu item')
-              }
-            }}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
-          >
-            Delete
-          </button>
-        </div>
-      </div>,
-      {
-        duration: Infinity,
-        closeButton: true,
-      },
-    )
+    setDeleteConfirm({
+      isOpen: true,
+      itemId: id,
+      itemTitle,
+      isDeleting: false,
+    })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.itemId) return
+
+    setDeleteConfirm((prev) => ({ ...prev, isDeleting: true }))
+
+    try {
+      const success = await deleteMenuItemFromDB(deleteConfirm.itemId)
+      if (success) {
+        const updated = menuItems.filter((item) => item.id !== deleteConfirm.itemId)
+        setMenuItems(updated)
+        toast.success(`"${deleteConfirm.itemTitle}" deleted successfully`)
+        await updateStats(updated)
+      } else {
+        toast.error('Failed to delete menu item')
+      }
+    } catch (error) {
+      console.error('Error deleting menu item:', error)
+      toast.error('Failed to delete menu item')
+    } finally {
+      setDeleteConfirm({
+        isOpen: false,
+        itemId: null,
+        itemTitle: '',
+        isDeleting: false,
+      })
+    }
   }
 
   const handleToggleActive = async (id: string) => {
@@ -527,36 +526,26 @@ export default function FooterMenuManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600">Total Items</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900">{stats.totalItems}</div>
+      {/* Statistics Cards and Add Button */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-white rounded-lg border border-gray-200 p-3">
+          <div className="text-xs font-medium text-gray-600">Total Items</div>
+          <div className="mt-1 text-lg font-bold text-gray-900">{stats.totalItems}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600">Active Items</div>
-          <div className="mt-2 text-3xl font-bold text-green-600">{stats.activeItems}</div>
+        <div className="bg-white rounded-lg border border-gray-200 p-3">
+          <div className="text-xs font-medium text-gray-600">Active Items</div>
+          <div className="mt-1 text-lg font-bold text-green-600">{stats.activeItems}</div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600">Sections</div>
-          <div className="mt-2 text-3xl font-bold text-purple-600">{stats.sections}</div>
-        </div>
-      </div>
-
-      {/* Add Button */}
-      <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Footer Menu Items</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage links and sections that appear in the footer
-          </p>
+        <div className="bg-white rounded-lg border border-gray-200 p-3">
+          <div className="text-xs font-medium text-gray-600">Sections</div>
+          <div className="mt-1 text-lg font-bold text-purple-600">{stats.sections}</div>
         </div>
         <Button
           onClick={handleAddItem}
-          className="flex items-center space-x-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium"
+          className="flex items-center justify-center space-x-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium cursor-pointer col-span-1"
         >
           <PlusIcon className="w-5 h-5" />
-          <span>Add Item</span>
+          <span>Add</span>
         </Button>
       </div>
 
@@ -786,13 +775,13 @@ export default function FooterMenuManagement() {
                     setShowForm(false)
                     setEditingItem(null)
                   }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium cursor-pointer"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium"
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium cursor-pointer"
                 >
                   {editingItem ? 'Update' : 'Create'} Item
                 </Button>
@@ -894,7 +883,7 @@ export default function FooterMenuManagement() {
                         <td className="px-6 py-4 text-center">
                           <button
                             onClick={() => handleToggleActive(item.id)}
-                            className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                            className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
                               item.isActive
                                 ? 'bg-green-100 text-green-800 hover:bg-green-200'
                                 : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
@@ -917,14 +906,14 @@ export default function FooterMenuManagement() {
                           <div className="flex justify-end space-x-3">
                             <button
                               onClick={() => handleEditItem(item)}
-                              className="text-blue-600 hover:text-blue-700 transition-colors"
+                              className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
                               title="Edit"
                             >
                               <PencilIcon className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="text-red-600 hover:text-red-700 transition-colors"
+                              className="text-red-600 hover:text-red-700 transition-colors cursor-pointer"
                               title="Delete"
                             >
                               <TrashIcon className="w-5 h-5" />
@@ -940,6 +929,26 @@ export default function FooterMenuManagement() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Menu Item"
+        message={`Are you sure you want to delete "${deleteConfirm.itemTitle}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() =>
+          setDeleteConfirm({
+            isOpen: false,
+            itemId: null,
+            itemTitle: '',
+            isDeleting: false,
+          })
+        }
+        variant="danger"
+        loading={deleteConfirm.isDeleting}
+      />
     </div>
   )
 }

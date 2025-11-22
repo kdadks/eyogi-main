@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Matter, { Body } from 'matter-js'
-import { Facebook, Linkedin, Twitter, Youtube } from 'lucide-react'
+import { Facebook, Linkedin, Twitter, Youtube, Instagram } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
