@@ -18,6 +18,9 @@ import {
   Award,
   BarChart3,
   UserCheck,
+  Eye,
+  EyeOff,
+  Menu,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { usePermissions } from '../../contexts/PermissionContext'
@@ -30,6 +33,11 @@ interface Permission {
   icon: React.ReactNode
   resource: string
   action: string
+}
+
+interface RolePermission {
+  permission_id: string
+  menu_visible: boolean
 }
 // Icon mapping for different resources
 const getIconForResource = (resource: string): React.ReactNode => {
@@ -69,9 +77,19 @@ const ROLE_DEFAULTS = {
   student: [],
   parent: [],
 }
+
+const ROLE_MENU_DEFAULTS: Record<string, Record<string, boolean>> = {
+  admin: {},
+  business_admin: {},
+  teacher: {},
+  student: {},
+  parent: {},
+}
+
 export default function AdminPermissionManagement() {
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>(ROLE_DEFAULTS)
+  const [menuVisibility, setMenuVisibility] = useState<Record<string, Record<string, boolean>>>(ROLE_MENU_DEFAULTS)
   const [selectedRole, setSelectedRole] = useState<string>('business_admin')
   const [loading, setLoading] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -99,10 +117,10 @@ export default function AdminPermissionManagement() {
         permissionsData,
       )
 
-      // Load all role permissions
+      // Load all role permissions with menu visibility
       const { data: rolePermData, error: roleError } = await supabaseAdmin
         .from('role_permissions')
-        .select('id, role, permission_id, created_at')
+        .select('id, role, permission_id, menu_visible, created_at')
 
       if (roleError) {
         console.error('Error loading role permissions:', roleError)
@@ -133,15 +151,27 @@ export default function AdminPermissionManagement() {
         parent: [],
       }
 
-      // Map role permissions
-      ;(rolePermData || []).forEach((rp: { role: string; permission_id: string }) => {
+      // Track menu visibility for each role and permission
+      const menuVisibilityMap: Record<string, Record<string, boolean>> = {
+        admin: {},
+        business_admin: {},
+        teacher: {},
+        student: {},
+        parent: {},
+      }
+
+      // Map role permissions and menu visibility
+      ;(rolePermData || []).forEach((rp: { role: string; permission_id: string; menu_visible: boolean }) => {
         if (rolePermissionMap[rp.role]) {
           rolePermissionMap[rp.role].push(rp.permission_id)
+          menuVisibilityMap[rp.role][rp.permission_id] = rp.menu_visible ?? true
         }
       })
 
       console.log('Role permissions map:', rolePermissionMap)
+      console.log('Menu visibility map:', menuVisibilityMap)
       setRolePermissions(rolePermissionMap)
+      setMenuVisibility(menuVisibilityMap)
 
       toast.success(`Loaded ${uiPermissions.length} permissions successfully`)
     } catch (error) {
@@ -167,11 +197,12 @@ export default function AdminPermissionManagement() {
         .delete()
         .eq('role', selectedRole)
       if (deleteError) throw deleteError
-      // Insert new role permissions
+      // Insert new role permissions with menu visibility
       if (rolePermissions[selectedRole].length > 0) {
         const rolePermissionInserts = rolePermissions[selectedRole].map((permissionId) => ({
           role: selectedRole,
           permission_id: permissionId,
+          menu_visible: menuVisibility[selectedRole]?.[permissionId] ?? true,
         }))
         const { error: insertError } = await supabaseAdmin
           .from('role_permissions')
@@ -224,7 +255,31 @@ export default function AdminPermissionManagement() {
         [selectedRole]: newPermissions,
       }
     })
+
+    // If granting permission, default menu visibility to true
+    if (checked) {
+      setMenuVisibility((prev) => ({
+        ...prev,
+        [selectedRole]: {
+          ...prev[selectedRole],
+          [permissionId]: true,
+        },
+      }))
+    }
+
     toast.success(`Permission ${checked ? 'granted' : 'removed'} for ${selectedRole}`)
+  }
+
+  const handleMenuVisibilityChange = (permissionId: string, visible: boolean) => {
+    setMenuVisibility((prev) => ({
+      ...prev,
+      [selectedRole]: {
+        ...prev[selectedRole],
+        [permissionId]: visible,
+      },
+    }))
+    setHasChanges(true)
+    toast.success(`Menu ${visible ? 'visible' : 'hidden'} for ${selectedRole}`)
   }
   const roles = Object.keys(ROLE_DEFAULTS)
   const currentPermissions = rolePermissions[selectedRole] || []
@@ -421,26 +476,49 @@ export default function AdminPermissionManagement() {
                 <div className="space-y-4">
                   {resourcePermissions.map((permission) => {
                     const isChecked = currentPermissions.includes(permission.id)
+                    const isMenuVisible = menuVisibility[selectedRole]?.[permission.id] ?? true
                     return (
                       <div
                         key={permission.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                           <div className="p-2 bg-gray-100 rounded-md">{permission.icon}</div>
-                          <div>
+                          <div className="flex-1">
                             <div className="font-medium text-gray-900">{permission.name}</div>
                             <div className="text-sm text-gray-500">{permission.description}</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isChecked && <CheckCircle className="h-4 w-4 text-green-500" />}
-                          <Switch
-                            checked={isChecked}
-                            onCheckedChange={(checked: boolean) =>
-                              handlePermissionChange(permission.id, checked)
-                            }
-                          />
+                        <div className="flex items-center gap-4">
+                          {/* Menu Visibility Toggle */}
+                          {isChecked && (
+                            <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-md border">
+                              <Menu className="h-4 w-4 text-gray-500" />
+                              <span className="text-xs text-gray-600">Show in Menu</span>
+                              <Switch
+                                checked={isMenuVisible}
+                                onCheckedChange={(visible: boolean) =>
+                                  handleMenuVisibilityChange(permission.id, visible)
+                                }
+                                className="scale-75"
+                              />
+                              {isMenuVisible ? (
+                                <Eye className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <EyeOff className="h-4 w-4 text-orange-500" />
+                              )}
+                            </div>
+                          )}
+                          {/* Permission Toggle */}
+                          <div className="flex items-center gap-2">
+                            {isChecked && <CheckCircle className="h-4 w-4 text-green-500" />}
+                            <Switch
+                              checked={isChecked}
+                              onCheckedChange={(checked: boolean) =>
+                                handlePermissionChange(permission.id, checked)
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
                     )

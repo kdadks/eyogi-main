@@ -498,3 +498,86 @@ export async function grantBatchPermissions(
     throw error
   }
 }
+
+// Menu Visibility Functions
+
+export async function getMenuVisibilityForRole(role: string): Promise<Record<string, boolean>> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('role_permissions')
+      .select('permission_id, menu_visible, permissions(resource, action)')
+      .eq('role', role)
+
+    if (error) {
+      console.error('Error fetching menu visibility for role:', error)
+      return {}
+    }
+
+    // Build a map of resource.action -> menu_visible
+    const visibilityMap: Record<string, boolean> = {}
+    data?.forEach((rp: any) => {
+      if (rp.permissions) {
+        const key = `${rp.permissions.resource}.${rp.permissions.action}`
+        visibilityMap[key] = rp.menu_visible ?? true
+      }
+    })
+
+    return visibilityMap
+  } catch (error) {
+    console.error('Error in getMenuVisibilityForRole:', error)
+    return {}
+  }
+}
+
+export async function checkMenuVisibility(
+  role: string,
+  resource: string,
+  action: string = 'read',
+): Promise<boolean> {
+  try {
+    // Super admins and admins always see all menu items
+    if (role === 'super_admin' || role === 'admin') {
+      return true
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('role_permissions')
+      .select('menu_visible, permissions!inner(resource, action)')
+      .eq('role', role)
+      .eq('permissions.resource', resource)
+      .eq('permissions.action', action)
+      .single()
+
+    if (error || !data) {
+      console.error('Error checking menu visibility:', error)
+      return false
+    }
+
+    return data.menu_visible ?? true
+  } catch (error) {
+    console.error('Error in checkMenuVisibility:', error)
+    return false
+  }
+}
+
+export async function updateMenuVisibility(
+  role: string,
+  permissionId: string,
+  menuVisible: boolean,
+): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin
+      .from('role_permissions')
+      .update({ menu_visible: menuVisible })
+      .eq('role', role)
+      .eq('permission_id', permissionId)
+
+    if (error) {
+      console.error('Error updating menu visibility:', error)
+      throw new Error('Failed to update menu visibility')
+    }
+  } catch (error) {
+    console.error('Error in updateMenuVisibility:', error)
+    throw error
+  }
+}

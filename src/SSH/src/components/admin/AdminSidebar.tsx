@@ -27,7 +27,7 @@ interface AdminSidebarProps {
 }
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { user, signOut } = useAuth()
-  const { canAccessResource, getUserRole, currentUser, isSuperAdminRole } = usePermissions()
+  const { canAccessResource, canShowInMenu, getUserRole, currentUser, isSuperAdminRole } = usePermissions()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const handleSignOut = async () => {
     if (isSigningOut) return // Prevent double-clicks
@@ -149,18 +149,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     },
   ]
   const filteredNavigation = navigation.filter((item) => {
-    // Check if item requires admin-only access
-    if (item.adminOnly) {
-      const role = getUserRole()
-      if (role !== 'admin' && role !== 'super_admin') {
+    const role = getUserRole()
+
+    // Super admin and admin always see all menu items
+    if (role === 'admin' || role === 'super_admin') {
+      return true
+    }
+
+    // For other roles, check permissions first
+    if (item.permission) {
+      const hasPermission = canAccessResource(item.permission.resource, item.permission.action)
+      if (!hasPermission) {
         return false
       }
+
+      // Then check menu visibility
+      return canShowInMenu(item.permission.resource, item.permission.action)
     }
-    // Check resource-level permissions
-    if (item.permission) {
-      return canAccessResource(item.permission.resource, item.permission.action)
-    }
-    return true
+
+    // If no permission requirement and not adminOnly, show it
+    // adminOnly items are already filtered by checking for super_admin/admin above
+    return !item.adminOnly
   })
   return (
     <>
