@@ -102,6 +102,7 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
@@ -299,7 +300,9 @@ export default function TeacherDashboard() {
         return
       }
 
-      const isDuplicate = await checkSlugExists(watch('slug'))
+      const slug = watch('slug')
+      if (!slug) return
+      const isDuplicate = await checkSlugExists(slug)
       setSlugError(isDuplicate ? 'This slug is already in use. Please choose a different one.' : '')
     }
 
@@ -1940,31 +1943,84 @@ export default function TeacherDashboard() {
                                   <TrophyIcon className="h-3 w-3" />
                                   <span>Completed: {completedEnrollments.length}</span>
                                 </div>
+                                <div className="flex items-center space-x-1">
+                                  <DocumentTextIcon className="h-3 w-3" />
+                                  <span>
+                                    Certificates:{' '}
+                                    {certificates.filter((cert: Certificate) => cert.student_id === student.id).length}
+                                  </span>
+                                </div>
                               </div>
                               <div className="space-y-2 mb-3 flex-1">
                                 <p className="text-xs font-semibold text-green-800">
                                   Enrolled Courses:
                                 </p>
                                 <div className="space-y-1">
-                                  {studentEnrollments.slice(0, 3).map((enrollment) => (
-                                    <div
-                                      key={enrollment.id}
-                                      className="text-xs bg-white/60 rounded px-2 py-1 flex items-center justify-between"
-                                    >
-                                      <span className="truncate flex-1">
-                                        {enrollment.course?.title || 'Unknown Course'}
-                                      </span>
-                                      <Badge
-                                        className={
-                                          enrollment.status === 'completed'
-                                            ? 'bg-indigo-100 text-indigo-800 border-indigo-200 ml-1'
-                                            : 'bg-green-100 text-green-800 border-green-200 ml-1'
-                                        }
+                                  {studentEnrollments.slice(0, 3).map((enrollment) => {
+                                    const cert = certificates.find(
+                                      (c: Certificate) =>
+                                        c.student_id === student.id && c.course_id === enrollment.course_id,
+                                    )
+                                    return (
+                                      <div
+                                        key={enrollment.id}
+                                        className="text-xs bg-white/60 rounded px-2 py-1"
                                       >
-                                        {enrollment.status === 'completed' ? 'Done' : 'Active'}
-                                      </Badge>
-                                    </div>
-                                  ))}
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="truncate flex-1">
+                                            {enrollment.course?.title || 'Unknown Course'}
+                                          </span>
+                                          <Badge
+                                            className={
+                                              enrollment.status === 'completed'
+                                                ? 'bg-indigo-100 text-indigo-800 border-indigo-200 ml-1'
+                                                : 'bg-green-100 text-green-800 border-green-200 ml-1'
+                                            }
+                                          >
+                                            {enrollment.status === 'completed' ? 'Done' : 'Active'}
+                                          </Badge>
+                                        </div>
+                                        {cert && (
+                                          <div className="flex items-center gap-1 mt-1">
+                                            <button
+                                              onClick={() => {
+                                                if (cert.file_url) {
+                                                  window.open(`${cert.file_url}?t=${Date.now()}`, '_blank')
+                                                } else {
+                                                  toast.error('Certificate PDF not found')
+                                                }
+                                              }}
+                                              className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-0.5"
+                                            >
+                                              <EyeIcon className="h-3 w-3" />
+                                              View Cert
+                                            </button>
+                                            <span className="text-gray-300">|</span>
+                                            <button
+                                              onClick={async () => {
+                                                try {
+                                                  toast.loading('Regenerating certificate...')
+                                                  const { regenerateCertificate } =
+                                                    await import('@/lib/api/certificates')
+                                                  await regenerateCertificate(cert.id)
+                                                  await loadDashboardData()
+                                                  toast.dismiss()
+                                                  toast.success('Certificate regenerated!')
+                                                } catch (error) {
+                                                  toast.dismiss()
+                                                  toast.error('Failed to regenerate certificate')
+                                                }
+                                              }}
+                                              className="text-[10px] text-orange-600 hover:text-orange-800 hover:underline flex items-center gap-0.5"
+                                            >
+                                              <PencilIcon className="h-3 w-3" />
+                                              Reissue
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })}
                                   {studentEnrollments.length > 3 && (
                                     <p className="text-xs text-green-700 italic">
                                       +{studentEnrollments.length - 3} more
@@ -3690,7 +3746,17 @@ export default function TeacherDashboard() {
                       })}
                     </div>
                   </div>
-                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                  {selectedTemplate && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center text-sm text-blue-800">
+                        <DocumentTextIcon className="h-4 w-4 mr-2" />
+                        <span className="font-medium">
+                          Template selected - You can preview it before issuing
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -3698,8 +3764,93 @@ export default function TeacherDashboard() {
                         setSelectedEnrollmentForCert(null)
                         setSelectedTemplate(null)
                       }}
+                      className="border-gray-300"
                     >
                       Cancel
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!selectedTemplate || !selectedEnrollmentForCert) return
+
+                        try {
+                          toast.loading('Generating preview...')
+                          // Get the enrollment details
+                          const enrollment = enrollments.find((e) => e.id === selectedEnrollmentForCert)
+                          if (!enrollment) return
+
+                          // Get the template
+                          const template = certificateAssignments.find(
+                            (a) => a.template_id === selectedTemplate,
+                          )?.template
+                          if (!template) return
+
+                          // Generate preview data
+                          const certificateData = {
+                            studentName: enrollment.student?.full_name || 'Student Name',
+                            studentId:
+                              enrollment.student?.student_id ||
+                              enrollment.student?.full_name
+                                ?.split(' ')
+                                .map((n) => n.charAt(0))
+                                .join('')
+                                .toUpperCase() +
+                                Math.random().toString().slice(-3) ||
+                              'STU001',
+                            courseName: enrollment.course?.title || 'Course Name',
+                            courseId:
+                              enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+                            gurukulName: enrollment.course?.gurukul?.name || 'eYogi Gurukul',
+                            completionDate: enrollment.completed_at || new Date().toISOString(),
+                            certificateNumber: `PREVIEW-${Date.now()}`,
+                            verificationCode: 'PREVIEW',
+                          }
+
+                          // Generate preview
+                          const previewUrl = await generateCertificatePreview(
+                            certificateData,
+                            template,
+                          )
+
+                          toast.dismiss()
+
+                          // Open preview in new window
+                          const previewWindow = window.open('', '_blank')
+                          if (previewWindow) {
+                            previewWindow.document.write(`
+                              <!DOCTYPE html>
+                              <html>
+                                <head>
+                                  <title>Certificate Preview</title>
+                                  <style>
+                                    body { margin: 0; padding: 20px; background: #f3f4f6; }
+                                    iframe { width: 100%; height: 90vh; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                                    .header { text-align: center; margin-bottom: 20px; }
+                                    h1 { color: #1f2937; }
+                                    .note { color: #6b7280; font-style: italic; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <div class="header">
+                                    <h1>Certificate Preview</h1>
+                                    <p class="note">This is a preview. The actual certificate will have a unique number.</p>
+                                  </div>
+                                  <iframe src="${previewUrl}"></iframe>
+                                </body>
+                              </html>
+                            `)
+                            previewWindow.document.close()
+                          }
+                        } catch (error) {
+                          toast.dismiss()
+                          console.error('Preview error:', error)
+                          toast.error('Failed to generate preview')
+                        }
+                      }}
+                      disabled={!selectedTemplate}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <EyeIcon className="h-4 w-4 mr-2" />
+                      Preview Certificate
                     </Button>
                     <Button
                       onClick={() => {
@@ -3711,7 +3862,7 @@ export default function TeacherDashboard() {
                         }
                       }}
                       disabled={!selectedTemplate}
-                      className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <TrophyIcon className="h-4 w-4 mr-2" />
                       Issue Certificate
@@ -4079,7 +4230,18 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                  {selectedTemplate && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center text-sm text-blue-800">
+                        <DocumentTextIcon className="h-4 w-4 mr-2" />
+                        <span className="font-medium">
+                          Template selected - You can preview it before bulk issuing
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -4087,8 +4249,94 @@ export default function TeacherDashboard() {
                         setBulkEligibleEnrollments([])
                         setSelectedTemplate(null)
                       }}
+                      className="border-gray-300"
                     >
                       Cancel
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!selectedTemplate || bulkEligibleEnrollments.length === 0) return
+
+                        try {
+                          toast.loading('Generating preview...')
+                          // Get first enrollment for preview
+                          const firstEnrollmentId = bulkEligibleEnrollments[0]
+                          const enrollment = enrollments.find((e) => e.id === firstEnrollmentId)
+                          if (!enrollment) return
+
+                          // Get the template
+                          const template = certificateAssignments.find(
+                            (a) => a.template_id === selectedTemplate,
+                          )?.template
+                          if (!template) return
+
+                          // Generate preview data
+                          const certificateData = {
+                            studentName: enrollment.student?.full_name || 'Student Name',
+                            studentId:
+                              enrollment.student?.student_id ||
+                              enrollment.student?.full_name
+                                ?.split(' ')
+                                .map((n) => n.charAt(0))
+                                .join('')
+                                .toUpperCase() +
+                                Math.random().toString().slice(-3) ||
+                              'STU001',
+                            courseName: enrollment.course?.title || 'Course Name',
+                            courseId:
+                              enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+                            gurukulName: enrollment.course?.gurukul?.name || 'eYogi Gurukul',
+                            completionDate: enrollment.completed_at || new Date().toISOString(),
+                            certificateNumber: `PREVIEW-${Date.now()}`,
+                            verificationCode: 'PREVIEW',
+                          }
+
+                          // Generate preview
+                          const previewUrl = await generateCertificatePreview(
+                            certificateData,
+                            template,
+                          )
+
+                          toast.dismiss()
+
+                          // Open preview in new window
+                          const previewWindow = window.open('', '_blank')
+                          if (previewWindow) {
+                            previewWindow.document.write(`
+                              <!DOCTYPE html>
+                              <html>
+                                <head>
+                                  <title>Certificate Preview</title>
+                                  <style>
+                                    body { margin: 0; padding: 20px; background: #f3f4f6; }
+                                    iframe { width: 100%; height: 90vh; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                                    .header { text-align: center; margin-bottom: 20px; }
+                                    h1 { color: #1f2937; }
+                                    .note { color: #6b7280; font-style: italic; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <div class="header">
+                                    <h1>Certificate Preview</h1>
+                                    <p class="note">Preview for the first student. All ${bulkEligibleEnrollments.length} certificates will use this template.</p>
+                                  </div>
+                                  <iframe src="${previewUrl}"></iframe>
+                                </body>
+                              </html>
+                            `)
+                            previewWindow.document.close()
+                          }
+                        } catch (error) {
+                          toast.dismiss()
+                          console.error('Preview error:', error)
+                          toast.error('Failed to generate preview')
+                        }
+                      }}
+                      disabled={!selectedTemplate}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <EyeIcon className="h-4 w-4 mr-2" />
+                      Preview Certificate
                     </Button>
                     <Button
                       onClick={() => {
@@ -4097,7 +4345,7 @@ export default function TeacherDashboard() {
                         }
                       }}
                       disabled={!selectedTemplate}
-                      className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <TrophyIcon className="h-4 w-4 mr-2" />
                       Issue {bulkEligibleEnrollments.length} Certificates

@@ -154,6 +154,25 @@ export interface Certificate {
   student?: User
   teacher?: User
 }
+export interface DynamicField {
+  id: string
+  name: string
+  label: string
+  type: 'text' | 'date' | 'number' | 'select' | 'image'
+  x: number // Position from left (percentage or pixels)
+  y: number // Position from top (percentage or pixels)
+  width: number
+  height: number
+  fontSize: number
+  fontColor: string
+  fontFamily: string
+  textAlign: 'left' | 'center' | 'right'
+  isBold: boolean
+  isItalic: boolean
+  isRequired: boolean
+  options?: string[] // For select type
+}
+
 export interface CertificateTemplate {
   id: string
   name: string
@@ -180,10 +199,24 @@ export interface CertificateTemplate {
     signatures?: {
       vice_chancellor_signature_url?: string
       vice_chancellor_signature_data?: string // Base64 image data
-      vice_chancellor_name?: string // Name label
+      vice_chancellor_name?: string // Name label (Secretary)
       president_signature_url?: string
       president_signature_data?: string // Base64 image data
-      president_name?: string // Name label
+      president_name?: string // Name label (Chancellor)
+    }
+    signature_positions?: {
+      secretary?: {
+        x: number
+        y: number
+        width: number
+        height: number
+      }
+      chancellor?: {
+        x: number
+        y: number
+        width: number
+        height: number
+      }
     }
     seal?: {
       official_seal_url?: string
@@ -209,6 +242,17 @@ export interface CertificateTemplate {
       gurukul_id?: string
       course_id?: string
       assigned_at?: string
+    }
+    template_image?: string // Image-based template URL
+    dynamic_fields?: DynamicField[] // Dynamic field configuration for image-based templates
+    text_message?: {
+      x: number
+      y: number
+      width: number
+      height: number
+      text: string
+      fontSize: number
+      fontColor: string
     }
   }
   is_active: boolean

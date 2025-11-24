@@ -923,3 +923,113 @@ export async function issueBatchCertificates(
     throw new Error(`Failed to issue batch certificates: ${errorMessage}`)
   }
 }
+
+/**
+ * Regenerate certificate PDF with the latest template
+ */
+export async function regenerateCertificate(certificateId: string): Promise<Certificate> {
+  console.log('regenerateCertificate called with:', { certificateId })
+
+  // Get certificate details with all relations
+  const { data: certificate, error: certError } = await supabaseAdmin
+    .from('certificates')
+    .select(
+      `
+      *,
+      courses(*),
+      student:profiles!certificates_student_id_fkey(*),
+      teacher:profiles!certificates_teacher_id_fkey(*)
+    `,
+    )
+    .eq('id', certificateId)
+    .single()
+
+  if (certError || !certificate) {
+    console.error('Certificate not found:', { certificateId, certError })
+    throw new Error('Certificate not found')
+  }
+
+  console.log('Certificate found:', {
+    certificateId,
+    studentId: certificate.student_id,
+    courseId: certificate.course_id,
+    templateId: certificate.template_id,
+  })
+
+  // Get the template
+  const { data: template, error: templateError } = await supabaseAdmin
+    .from('certificate_templates')
+    .select('*')
+    .eq('id', certificate.template_id)
+    .single()
+
+  if (templateError || !template) {
+    console.error('Certificate template not found:', { templateId: certificate.template_id, templateError })
+    throw new Error('Certificate template not found')
+  }
+
+  console.log('Regenerating certificate with template:', {
+    templateId: template.id,
+    templateName: template.name,
+  })
+
+  // Generate and upload new PDF
+  try {
+    const certificateData: CertificateData = {
+      studentName: certificate.student?.full_name || 'Student',
+      studentId: certificate.student_id,
+      courseName: certificate.course?.title || 'Course',
+      courseId: certificate.course_id,
+      gurukulName: certificate.course?.gurukul?.name || 'eYogi Gurukul',
+      completionDate: certificate.completion_date || new Date().toISOString(),
+      certificateNumber: certificate.certificate_number,
+      verificationCode: certificate.verification_code || '',
+    }
+
+    const pdfUrl = await generateAndUploadCertificatePDF(
+      certificate.certificate_number,
+      certificateData,
+      template as CertificateTemplate,
+    )
+
+    // Update certificate with the new PDF URL
+    const { data: updatedCert, error: updateError } = await supabaseAdmin
+      .from('certificates')
+      .update({
+        file_url: pdfUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', certificate.id)
+      .select(
+        `
+        *,
+        courses(*),
+        student:profiles!certificates_student_id_fkey(*),
+        teacher:profiles!certificates_teacher_id_fkey(*)
+      `,
+      )
+      .single()
+
+    if (updateError) {
+      console.error('Error updating certificate with new PDF URL:', updateError)
+      throw new Error('Failed to update certificate')
+    }
+
+    console.log('Certificate regenerated successfully:', {
+      certificateId: updatedCert.id,
+      newPdfUrl: pdfUrl,
+    })
+
+    return {
+      ...updatedCert,
+      issued_at: updatedCert.issue_date,
+      issued_by: updatedCert.teacher_id || 'system',
+      course: updatedCert.courses,
+      student: updatedCert.student,
+      teacher: updatedCert.teacher,
+    } as Certificate
+  } catch (pdfError) {
+    console.error('Error regenerating certificate PDF:', pdfError)
+    throw new Error('Failed to regenerate certificate PDF')
+  }
+}

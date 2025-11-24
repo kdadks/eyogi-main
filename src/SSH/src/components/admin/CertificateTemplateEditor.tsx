@@ -20,6 +20,7 @@ import {
 import TemplateImageUpload from './TemplateImageUpload'
 import DynamicFieldEditor, { DynamicField } from './DynamicFieldEditor'
 import TemplateImagePreview from './TemplateImagePreview'
+import VisualFieldPositioner from './VisualFieldPositioner'
 interface CertificateTemplateEditorProps {
   template?: CertificateTemplate
   isOpen: boolean
@@ -55,10 +56,10 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       signatures: {
         vice_chancellor_signature_url: '',
         vice_chancellor_signature_data: '',
-        vice_chancellor_name: 'Vice Chancellor',
+        vice_chancellor_name: 'Secretary eYogi Gurukul',
         president_signature_url: '',
         president_signature_data: '',
-        president_name: 'President',
+        president_name: 'Chancellor SSHU',
       },
       seal: {
         official_seal_url: '',
@@ -87,6 +88,13 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
   const [templateImage, setTemplateImage] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>([])
+  const [signaturePositions, setSignaturePositions] = useState<{
+    secretary?: { x: number; y: number; width: number; height: number }
+    chancellor?: { x: number; y: number; width: number; height: number }
+  }>({
+    secretary: { x: 80, y: 500, width: 120, height: 40 },
+    chancellor: { x: 400, y: 500, width: 120, height: 40 },
+  })
   const [activeTab, setActiveTab] = useState<'design' | 'image'>('design')
   const [issueDate, setIssueDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [selectedBatch, setSelectedBatch] = useState<string>('')
@@ -130,12 +138,14 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
         }
       }
 
-      // Update form data with the image URL nested inside template_data
+      // Update form data with the image URL, dynamic fields, and signature positions
       const updateData = {
         ...formData,
         template_data: {
           ...formData.template_data,
           template_image: imageUrl,
+          dynamic_fields: dynamicFields,
+          signature_positions: signaturePositions,
         },
       }
 
@@ -566,16 +576,16 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     <h4 className="text-lg font-medium">Signature Images</h4>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Vice Chancellor Signature */}
+                    {/* Secretary Signature (Left) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Vice Chancellor Signature
+                        Secretary Signature (Left)
                       </label>
                       {formData.template_data?.signatures?.vice_chancellor_signature_data ? (
                         <div className="space-y-2">
                           <img
                             src={formData.template_data.signatures.vice_chancellor_signature_data}
-                            alt="Vice Chancellor Signature"
+                            alt="Secretary Signature"
                             className="max-w-40 max-h-16 object-contain border rounded"
                           />
                           <button
@@ -607,22 +617,22 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                             className="cursor-pointer flex flex-col items-center gap-2"
                           >
                             <PencilIcon className="h-8 w-8 text-gray-400" />
-                            <span className="text-sm text-gray-600">Upload VC Signature</span>
+                            <span className="text-sm text-gray-600">Upload Secretary Signature</span>
                             <span className="text-xs text-gray-500">PNG, JPG up to 2MB</span>
                           </label>
                         </div>
                       )}
                     </div>
-                    {/* President Signature */}
+                    {/* Chancellor Signature (Right) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        President Signature
+                        Chancellor Signature (Right)
                       </label>
                       {formData.template_data?.signatures?.president_signature_data ? (
                         <div className="space-y-2">
                           <img
                             src={formData.template_data.signatures.president_signature_data}
-                            alt="President Signature"
+                            alt="Chancellor Signature"
                             className="max-w-40 max-h-16 object-contain border rounded"
                           />
                           <button
@@ -655,7 +665,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                           >
                             <PencilIcon className="h-8 w-8 text-gray-400" />
                             <span className="text-sm text-gray-600">
-                              Upload President Signature
+                              Upload Chancellor Signature
                             </span>
                             <span className="text-xs text-gray-500">PNG, JPG up to 2MB</span>
                           </label>
@@ -716,7 +726,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                   <CardContent className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Vice Chancellor Name
+                        Secretary Name (Left)
                       </label>
                       <input
                         type="text"
@@ -728,12 +738,12 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                        placeholder="Vice Chancellor"
+                        placeholder="Secretary eYogi Gurukul"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        President Name
+                        Chancellor Name (Right)
                       </label>
                       <input
                         type="text"
@@ -745,7 +755,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                        placeholder="President"
+                        placeholder="Chancellor SSHU"
                       />
                     </div>
                   </CardContent>
@@ -908,6 +918,37 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                     />
                   </CardContent>
                 </Card>
+
+                {/* Visual Field Positioner */}
+                {templateImage && (
+                  <VisualFieldPositioner
+                    templateImage={templateImage}
+                    fields={dynamicFields}
+                    onFieldsChange={setDynamicFields}
+                    signatures={signaturePositions}
+                    onSignaturesChange={setSignaturePositions}
+                  />
+                )}
+
+                {/* Dynamic Fields Editor (Add/Manage Fields) */}
+                {templateImage && (
+                  <Card>
+                    <CardHeader>
+                      <h4 className="text-lg font-medium">Manage Dynamic Fields</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Add fields that will be populated with student/course data
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <DynamicFieldEditor
+                        fields={dynamicFields}
+                        onFieldsChange={setDynamicFields}
+                        templateImage={templateImage}
+                        disabled={loading}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
               {/* Right Panel - Template Preview */}

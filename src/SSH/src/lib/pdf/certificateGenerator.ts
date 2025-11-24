@@ -140,37 +140,199 @@ export class CertificateGenerator {
         height,
       )
 
-      // Add student name
-      this.pdf.setFont('helvetica', 'bold')
-      this.pdf.setFontSize(26)
-      this.pdf.setTextColor(37, 99, 235) // Blue
-      const nameWidth = this.pdf.getTextWidth(data.studentName)
-      this.pdf.text(data.studentName, (width - nameWidth) / 2, 120)
+      // Get dynamic fields from template
+      const dynamicFields = template.template_data?.dynamic_fields || []
 
-      // Add course name
-      this.pdf.setFontSize(16)
-      this.pdf.setTextColor(255, 107, 53) // Orange
-      const courseWidth = this.pdf.getTextWidth(data.courseName)
-      this.pdf.text(data.courseName, (width - courseWidth) / 2, 145)
+      // If dynamic fields are configured, use them
+      if (dynamicFields.length > 0) {
+        console.log('Rendering certificate with dynamic fields:', dynamicFields.length)
 
-      // Add completion date
-      this.pdf.setFontSize(12)
-      this.pdf.setTextColor(31, 41, 55) // Dark gray
-      const completionDateText = `Date: ${new Date(data.completionDate).toLocaleDateString()}`
-      const dateWidth = this.pdf.getTextWidth(completionDateText)
-      this.pdf.text(completionDateText, (width - dateWidth) / 2, 170)
+        // Map certificate data to field values
+        const fieldValues: Record<string, string> = {
+          student_name: data.studentName,
+          student_id: data.studentId,
+          course_name: data.courseName,
+          course_id: data.courseId,
+          gurukul_name: data.gurukulName,
+          completion_date: new Date(data.completionDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          certificate_number: data.certificateNumber,
+          verification_code: data.verificationCode,
+        }
 
-      // Add certificate number and verification code at bottom
-      this.pdf.setFontSize(10)
-      this.pdf.setTextColor(100, 100, 100)
-      this.pdf.text(`Certificate #: ${data.certificateNumber}`, 20, height - 15)
-      this.pdf.text(`Verification Code: ${data.verificationCode}`, width - 120, height - 15)
+        // Render each dynamic field
+        for (const field of dynamicFields) {
+          const value = fieldValues[field.name] || ''
+          if (!value) continue
+
+          // Positions are in pixels from the editor, treat them as absolute mm for PDF
+          const xPos = (field.x / 700) * width // Assuming 700px editor width maps to PDF width
+          const yPos = (field.y / 500) * height // Assuming 500px editor height maps to PDF height
+
+          // Parse color (hex to RGB)
+          const color = this.hexToRgb(field.fontColor || '#000000')
+          this.pdf.setTextColor(color.r, color.g, color.b)
+
+          // Set font
+          const fontStyle = field.isBold && field.isItalic ? 'bolditalic' :
+                           field.isBold ? 'bold' :
+                           field.isItalic ? 'italic' : 'normal'
+          this.pdf.setFont('helvetica', fontStyle)
+          this.pdf.setFontSize(field.fontSize || 12)
+
+          // Calculate text position based on alignment
+          let textX = xPos
+          const textWidth = this.pdf.getTextWidth(value)
+
+          if (field.textAlign === 'center') {
+            textX = xPos - textWidth / 2
+          } else if (field.textAlign === 'right') {
+            textX = xPos - textWidth
+          }
+
+          // Render the text
+          this.pdf.text(value, textX, yPos)
+        }
+      }
+
+      // Render Secretary signature if configured
+      if (template.template_data?.signature_positions?.secretary) {
+        const secretaryPos = template.template_data.signature_positions.secretary
+        const secretaryName = template.template_data.signatures?.vice_chancellor_name || 'Secretary'
+        const secretarySigData = template.template_data.signatures?.vice_chancellor_signature_data
+
+        // Positions are in pixels from the editor, treat them as absolute mm for PDF
+        const xPos = (secretaryPos.x / 700) * width // Assuming 700px editor width maps to PDF width
+        const yPos = (secretaryPos.y / 500) * height // Assuming 500px editor height maps to PDF height
+        const sigWidth = (secretaryPos.width / 700) * width
+        const sigHeight = (secretaryPos.height / 500) * height
+
+        try {
+          if (secretarySigData) {
+            // Add signature image
+            this.pdf.addImage(secretarySigData, 'PNG', xPos, yPos, sigWidth, sigHeight)
+          }
+        } catch (error) {
+          console.warn('Failed to add secretary signature:', error)
+        }
+
+        // Add secretary name below signature
+        this.pdf.setFont('helvetica', 'bold')
+        this.pdf.setFontSize(10)
+        this.pdf.setTextColor(0, 0, 0)
+        const nameWidth = this.pdf.getTextWidth(secretaryName)
+        this.pdf.text(secretaryName, xPos + (sigWidth - nameWidth) / 2, yPos + sigHeight + 4)
+      }
+
+      // Render Chancellor signature if configured
+      if (template.template_data?.signature_positions?.chancellor) {
+        const chancellorPos = template.template_data.signature_positions.chancellor
+        const chancellorName = template.template_data.signatures?.president_name || 'Chancellor'
+        const chancellorSigData = template.template_data.signatures?.president_signature_data
+
+        // Positions are in pixels from the editor, treat them as absolute mm for PDF
+        const xPos = (chancellorPos.x / 700) * width // Assuming 700px editor width maps to PDF width
+        const yPos = (chancellorPos.y / 500) * height // Assuming 500px editor height maps to PDF height
+        const sigWidth = (chancellorPos.width / 700) * width
+        const sigHeight = (chancellorPos.height / 500) * height
+
+        try {
+          if (chancellorSigData) {
+            // Add signature image
+            this.pdf.addImage(chancellorSigData, 'PNG', xPos, yPos, sigWidth, sigHeight)
+          }
+        } catch (error) {
+          console.warn('Failed to add chancellor signature:', error)
+        }
+
+        // Add chancellor name below signature
+        this.pdf.setFont('helvetica', 'bold')
+        this.pdf.setFontSize(10)
+        this.pdf.setTextColor(0, 0, 0)
+        const nameWidth = this.pdf.getTextWidth(chancellorName)
+        this.pdf.text(chancellorName, xPos + (sigWidth - nameWidth) / 2, yPos + sigHeight + 4)
+      }
+
+      // Render text message if configured
+      if (template.template_data?.text_message) {
+        const textMsg = template.template_data.text_message
+
+        // Positions are in pixels from the editor, treat them as absolute mm for PDF
+        const xPos = (textMsg.x / 700) * width // Assuming 700px editor width maps to PDF width
+        const yPos = (textMsg.y / 500) * height // Assuming 500px editor height maps to PDF height
+        const msgWidth = (textMsg.width / 700) * width
+
+        // Parse color
+        const color = this.hexToRgb(textMsg.fontColor || '#000000')
+        this.pdf.setTextColor(color.r, color.g, color.b)
+
+        // Set font
+        this.pdf.setFont('helvetica', 'normal')
+        this.pdf.setFontSize(textMsg.fontSize || 12)
+
+        // Split text if it's too long for the width
+        const lines = this.pdf.splitTextToSize(textMsg.text, msgWidth)
+
+        // Render text (centered within the width)
+        lines.forEach((line: string, index: number) => {
+          const lineWidth = this.pdf.getTextWidth(line)
+          const textX = xPos + (msgWidth - lineWidth) / 2
+          this.pdf.text(line, textX, yPos + (index * (textMsg.fontSize || 12) * 0.4))
+        })
+      }
+
+      // Only use fallback if no dynamic fields configured
+      if (dynamicFields.length === 0) {
+        // Fallback: Use default hardcoded positions if no dynamic fields configured
+        console.log('No dynamic fields found, using default positions')
+
+        // Add student name
+        this.pdf.setFont('helvetica', 'bold')
+        this.pdf.setFontSize(26)
+        this.pdf.setTextColor(37, 99, 235) // Blue
+        const nameWidth = this.pdf.getTextWidth(data.studentName)
+        this.pdf.text(data.studentName, (width - nameWidth) / 2, 120)
+
+        // Add course name
+        this.pdf.setFontSize(16)
+        this.pdf.setTextColor(255, 107, 53) // Orange
+        const courseWidth = this.pdf.getTextWidth(data.courseName)
+        this.pdf.text(data.courseName, (width - courseWidth) / 2, 145)
+
+        // Add completion date
+        this.pdf.setFontSize(12)
+        this.pdf.setTextColor(31, 41, 55) // Dark gray
+        const completionDateText = `Date: ${new Date(data.completionDate).toLocaleDateString()}`
+        const dateWidth = this.pdf.getTextWidth(completionDateText)
+        this.pdf.text(completionDateText, (width - dateWidth) / 2, 170)
+
+        // Add certificate number and verification code at bottom
+        this.pdf.setFontSize(10)
+        this.pdf.setTextColor(100, 100, 100)
+        this.pdf.text(`Certificate #: ${data.certificateNumber}`, 20, height - 15)
+        this.pdf.text(`Verification Code: ${data.verificationCode}`, width - 120, height - 15)
+      }
 
       return this.pdf.output('blob')
     } catch (error) {
       console.error('Error generating image-based certificate:', error)
       throw error
     }
+  }
+
+  // Helper function to convert hex color to RGB
+  private hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : { r: 0, g: 0, b: 0 }
   }
   async generatePreview(data: CertificateData, template?: CertificateTemplate): Promise<string> {
     await this.generateCertificate(data, template)

@@ -8,6 +8,7 @@ import {
   issueCertificateWithTemplate,
   bulkIssueCertificates,
   getCertificatesFromTable,
+  regenerateCertificate,
 } from '@/lib/api/certificates'
 import {
   getCertificateTemplates,
@@ -28,7 +29,7 @@ import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { usePermissions } from '../../contexts/PermissionContext'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import CertificateTemplateEditor from './CertificateTemplateEditor'
+import CompleteCertificateEditor from './CompleteCertificateEditor'
 import CertificatePreviewModal from './CertificatePreviewModal'
 import TemplateAssignmentModal from './TemplateAssignmentModal'
 import {
@@ -425,51 +426,62 @@ export default function CertificateManagement() {
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                const certificateData: CertificateData = {
-                                  studentName: certificate.student?.full_name || 'Student Name',
-                                  studentId:
-                                    certificate.student?.student_id ||
-                                    certificate.student?.full_name
-                                      ?.split(' ')
-                                      .map((n) => n.charAt(0))
-                                      .join('')
-                                      .toUpperCase() + Math.random().toString().slice(-3) ||
-                                    'STU001',
-                                  courseName: certificate.course?.title || 'Course Name',
-                                  courseId:
-                                    certificate.course?.course_number ||
-                                    `C${Math.random().toString().slice(-3)}`,
-                                  gurukulName: certificate.course?.gurukul?.name || 'Gurukul Name',
-                                  completionDate:
-                                    certificate.completion_date ||
-                                    certificate.issue_date ||
-                                    certificate.created_at,
-                                  certificateNumber:
-                                    certificate.certificate_number || certificate.id,
-                                  verificationCode: certificate.verification_code || 'N/A',
+                                // Instead of generating PDF in browser, open the stored PDF directly
+                                if (certificate.file_url) {
+                                  // Add cache-busting parameter to force reload
+                                  const cacheBustUrl = `${certificate.file_url}?t=${Date.now()}`
+                                  window.open(cacheBustUrl, '_blank')
+                                } else {
+                                  toast.error('Certificate PDF not found')
                                 }
-                                setPreviewData(certificateData)
-                                setPreviewModalOpen(true)
                               }}
                               title="View Certificate"
                             >
                               <EyeIcon className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" title="Download Certificate">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (certificate.file_url) {
+                                  // Download the stored PDF
+                                  const link = document.createElement('a')
+                                  link.href = `${certificate.file_url}?t=${Date.now()}`
+                                  link.download = `certificate-${certificate.certificate_number}.pdf`
+                                  link.target = '_blank'
+                                  document.body.appendChild(link)
+                                  link.click()
+                                  document.body.removeChild(link)
+                                  toast.success('Download started')
+                                } else {
+                                  toast.error('Certificate PDF not found')
+                                }
+                              }}
+                              title="Download Certificate"
+                            >
                               <ArrowDownTrayIcon className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => {
-                                // For reissuing, we need to find the enrollment or create a new certificate
-                                // This might need a different handler since certificates table doesn't have enrollment_id
-                                toast.error(
-                                  'Reissue functionality needs to be updated for new certificate system',
-                                )
+                              onClick={async () => {
+                                try {
+                                  toast.loading('Regenerating certificate...')
+                                  await regenerateCertificate(certificate.id)
+                                  await loadData()
+                                  toast.dismiss()
+                                  toast.success('Certificate regenerated successfully')
+                                } catch (error) {
+                                  toast.dismiss()
+                                  const errorMessage =
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Failed to regenerate certificate'
+                                  toast.error(errorMessage)
+                                }
                               }}
                               className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                              title="Reissue Certificate"
+                              title="Regenerate Certificate with Latest Template"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </Button>
@@ -931,7 +943,7 @@ export default function CertificateManagement() {
         </Card>
       )}
       {/* Template Editor Modal */}
-      <CertificateTemplateEditor
+      <CompleteCertificateEditor
         template={editingTemplate}
         isOpen={templateEditorOpen}
         onClose={() => {
