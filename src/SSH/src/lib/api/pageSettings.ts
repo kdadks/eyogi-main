@@ -183,7 +183,10 @@ export async function getPageSettings(slug: string): Promise<PageSettings | null
         }
 
         if (error) {
-          console.error('Failed to fetch page settings:', error)
+          console.error(
+            'Failed to fetch page settings:',
+            error.message || error.code || JSON.stringify(error),
+          )
           return null
         }
         return data

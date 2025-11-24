@@ -26,7 +26,10 @@ export async function getSocialMediaLinksFromDB(): Promise<SocialMediaLink[]> {
       .order('sort_order', { ascending: true })
 
     if (error) {
-      console.error('Error fetching social media links:', error)
+      console.error(
+        'Error fetching social media links:',
+        error.message || error.code || JSON.stringify(error),
+      )
       return []
     }
 

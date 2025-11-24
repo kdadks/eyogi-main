@@ -323,7 +323,10 @@ export async function getMenuItemsFromDB(menu?: string): Promise<MenuItemType[]>
     const { data, error } = await query
 
     if (error) {
-      console.error('[MenuAPI] Error fetching menu items:', error)
+      console.error(
+        '[MenuAPI] Error fetching menu items:',
+        error.message || error.code || JSON.stringify(error),
+      )
       return []
     }
 

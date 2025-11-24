@@ -35,6 +35,7 @@ import {
   getTeacherCertificateAssignments,
   CertificateAssignment,
 } from '@/lib/api/certificateAssignments'
+import { getCertificateTemplates, CertificateTemplate } from '@/lib/api/certificateTemplates'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getUserProfile, getAllStudents } from '@/lib/api/users'
 import {
@@ -166,6 +167,7 @@ export default function TeacherDashboard() {
   const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([])
   const [gurukuls, setGurukuls] = useState<Array<{ id: string; name: string; slug: string }>>([])
   const [certificateAssignments, setCertificateAssignments] = useState<CertificateAssignment[]>([])
+  const [allTemplates, setAllTemplates] = useState<CertificateTemplate[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [allStudents, setAllStudents] = useState<ProfileWithAddress[]>([])
@@ -314,15 +316,19 @@ export default function TeacherDashboard() {
       console.log(
         'generatePreview called. showTemplatePreviewModal:',
         showTemplatePreviewModal,
-        'certificateAssignments length:',
-        certificateAssignments.length,
+        'allTemplates length:',
+        allTemplates.length,
         'currentTemplateIndex:',
         currentTemplateIndex,
       )
-      if (
-        certificateAssignments.length > currentTemplateIndex &&
-        certificateAssignments[currentTemplateIndex]
-      ) {
+      if (allTemplates.length > currentTemplateIndex && allTemplates[currentTemplateIndex]) {
+        // Skip preview generation for image-based templates (they already have images)
+        if (allTemplates[currentTemplateIndex].template_data?.template_image) {
+          console.log('Template is image-based, skipping preview generation')
+          setTemplatePreviewUrl(null)
+          return
+        }
+
         setLoadingPreview(true)
         try {
           console.log('Generating preview with data...')
@@ -336,7 +342,7 @@ export default function TeacherDashboard() {
             certificateNumber: 'CERT-2024-001',
             verificationCode: 'VERIFY123',
           }
-          const currentTemplate = certificateAssignments[currentTemplateIndex].template
+          const currentTemplate = allTemplates[currentTemplateIndex]
           console.log('Sample data:', sampleData)
           console.log('Current template:', currentTemplate)
           const preview = await generateCertificatePreview(sampleData, currentTemplate)
@@ -356,7 +362,7 @@ export default function TeacherDashboard() {
       }
     }
     generatePreview()
-  }, [showTemplatePreviewModal, currentTemplateIndex, certificateAssignments])
+  }, [showTemplatePreviewModal, currentTemplateIndex, allTemplates])
   const loadDashboardData = async () => {
     try {
       // Invalidate enrollment caches to ensure fresh data
@@ -402,6 +408,17 @@ export default function TeacherDashboard() {
       setGurukuls(gurukulData)
       setCertificateAssignments(assignmentsData)
       console.log('Certificate assignments loaded:', assignmentsData.length, assignmentsData)
+
+      // Fetch all available templates
+      try {
+        const templatesData = await getCertificateTemplates()
+        setAllTemplates(templatesData)
+        console.log('All templates loaded:', templatesData.length, templatesData)
+      } catch (error) {
+        console.error('Error loading templates:', error)
+        setAllTemplates([])
+      }
+
       setBatches(batchesData)
       setAllStudents(studentsData as ProfileWithAddress[])
       setCompletedBatchStudents(completedBatchStudentsData)
@@ -1629,12 +1646,11 @@ export default function TeacherDashboard() {
                                       e.status === 'completed' &&
                                       !hasCertificate(e.student_id, e.course_id),
                                   )
-                                  if (eligibleEnrollments.length === 1) {
-                                    // Single enrollment - open template selection modal
-                                    openIssuanceModal(eligibleEnrollments[0].id)
-                                  } else if (eligibleEnrollments.length > 1) {
-                                    // Multiple enrollments - use bulk issuance (default)
-                                    bulkIssueCertificates(eligibleEnrollments.map((e) => e.id))
+                                  if (eligibleEnrollments.length >= 1) {
+                                    // Always open template selection modal first
+                                    setBulkEligibleEnrollments(eligibleEnrollments.map((e) => e.id))
+                                    setShowBulkTemplateModal(true)
+                                    setSelectedTemplate(null)
                                   }
                                 }}
                                 className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
@@ -2204,10 +2220,10 @@ export default function TeacherDashboard() {
                   className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
                   onClick={() => {
                     console.log(
-                      'Available Templates card clicked. certificateAssignments:',
-                      certificateAssignments.length,
+                      'Available Templates card clicked. allTemplates:',
+                      allTemplates.length,
                     )
-                    if (certificateAssignments.length > 0) {
+                    if (allTemplates.length > 0) {
                       console.log('Opening template preview modal...')
                       setCurrentTemplateIndex(0)
                       setShowTemplatePreviewModal(true)
@@ -2216,9 +2232,7 @@ export default function TeacherDashboard() {
                 >
                   <CardContent className="p-6 text-center">
                     <DocumentTextIcon className="h-10 w-10 text-purple-600 mx-auto mb-3" />
-                    <div className="text-3xl font-bold text-purple-900">
-                      {certificateAssignments.length}
-                    </div>
+                    <div className="text-3xl font-bold text-purple-900">{allTemplates.length}</div>
                     <div className="text-sm text-purple-700">Available Templates</div>
                   </CardContent>
                 </Card>
@@ -4226,7 +4240,7 @@ export default function TeacherDashboard() {
       )}
 
       {/* Template Preview Modal */}
-      {showTemplatePreviewModal && certificateAssignments.length > 0 && (
+      {showTemplatePreviewModal && allTemplates.length > 0 && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-x-hidden">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
             <div className="p-6 border-b border-gray-200 flex-shrink-0">
@@ -4234,7 +4248,7 @@ export default function TeacherDashboard() {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Certificate Template Preview</h2>
                   <p className="text-gray-600 text-sm mt-1">
-                    Template {currentTemplateIndex + 1} of {certificateAssignments.length}
+                    Template {currentTemplateIndex + 1} of {allTemplates.length}
                   </p>
                 </div>
                 <button
@@ -4250,7 +4264,7 @@ export default function TeacherDashboard() {
             </div>
 
             <div className="p-6 flex-grow overflow-y-auto">
-              {certificateAssignments[currentTemplateIndex] && (
+              {allTemplates[currentTemplateIndex] && (
                 <div className="space-y-4">
                   {/* Template Info */}
                   <div className="bg-gray-50 rounded-lg p-4">
@@ -4260,7 +4274,7 @@ export default function TeacherDashboard() {
                           Template Name
                         </p>
                         <p className="text-lg font-semibold text-gray-900">
-                          {certificateAssignments[currentTemplateIndex].template?.name || 'Unknown'}
+                          {allTemplates[currentTemplateIndex]?.name || 'Unknown'}
                         </p>
                       </div>
                       <div>
@@ -4268,28 +4282,38 @@ export default function TeacherDashboard() {
                           Certificate Type
                         </p>
                         <p className="text-lg font-semibold text-gray-900">
-                          {certificateAssignments[currentTemplateIndex].template?.type ||
-                            'Certificate'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Assigned To</p>
-                        <p className="text-lg font-semibold text-gray-900">
-                          {certificateAssignments[currentTemplateIndex].course?.title ||
-                            certificateAssignments[currentTemplateIndex].gurukul?.name ||
-                            'Direct Assignment'}
+                          {allTemplates[currentTemplateIndex]?.type || 'Certificate'}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
-                        <p className="text-lg font-semibold text-green-600">Active</p>
+                        <p className="text-lg font-semibold text-green-600">
+                          {allTemplates[currentTemplateIndex]?.is_active ? 'Active' : 'Inactive'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">
+                          Template Type
+                        </p>
+                        <p className="text-lg font-semibold text-blue-600">
+                          {allTemplates[currentTemplateIndex]?.template_data?.template_image
+                            ? 'Image-based'
+                            : 'Design-based'}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Certificate Template Preview */}
+                  {/* Certificate Template Preview - Show image if available, otherwise show design preview */}
                   <div className="bg-white border-4 border-gray-300 rounded-lg p-0 overflow-hidden">
-                    {loadingPreview ? (
+                    {allTemplates[currentTemplateIndex]?.template_data?.template_image ? (
+                      <img
+                        src={allTemplates[currentTemplateIndex]?.template_data?.template_image}
+                        alt="Template Preview"
+                        className="w-full h-auto rounded-lg"
+                        style={{ minHeight: '600px', objectFit: 'contain' }}
+                      />
+                    ) : loadingPreview ? (
                       <div
                         className="w-full bg-gray-50 flex items-center justify-center"
                         style={{ minHeight: '600px' }}
@@ -4341,7 +4365,7 @@ export default function TeacherDashboard() {
 
                   {/* Template dots/indicators */}
                   <div className="flex items-center gap-1">
-                    {certificateAssignments.map((_, index) => (
+                    {allTemplates.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentTemplateIndex(index)}
@@ -4356,7 +4380,7 @@ export default function TeacherDashboard() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      if (currentTemplateIndex < certificateAssignments.length - 1) {
+                      if (currentTemplateIndex < allTemplates.length - 1) {
                         setCurrentTemplateIndex(currentTemplateIndex + 1)
                       }
                     }}

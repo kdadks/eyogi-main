@@ -70,6 +70,14 @@ export class CertificateGenerator {
   }
   async generateCertificate(data: CertificateData, template?: CertificateTemplate): Promise<Blob> {
     try {
+      // Check if this is an image-based template
+      if (template?.template_data?.template_image) {
+        console.log('Generating image-based certificate using template image')
+        return await this.generateImageBasedCertificate(data, template)
+      }
+
+      // Otherwise, generate design-based certificate
+      console.log('Generating design-based certificate')
       // Set up the certificate layout with decorative elements
       this.setupCertificate()
       // Add header with logos
@@ -86,6 +94,81 @@ export class CertificateGenerator {
       return this.pdf.output('blob')
     } catch (error) {
       console.error('Error in generateCertificate:', error)
+      throw error
+    }
+  }
+
+  private async generateImageBasedCertificate(
+    data: CertificateData,
+    template: CertificateTemplate,
+  ): Promise<Blob> {
+    try {
+      const { width, height } = this.design.layout
+
+      // Load and add the template image as the background
+      const templateImageUrl = template.template_data?.template_image
+      if (!templateImageUrl) {
+        throw new Error('Template image URL not found')
+      }
+
+      console.log('Loading template image:', templateImageUrl)
+
+      // Fetch the image
+      const response = await fetch(templateImageUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch template image: ${response.statusText}`)
+      }
+
+      const blob = await response.blob()
+      const arrayBuffer = await blob.arrayBuffer()
+      const uint8Array = new Uint8Array(arrayBuffer)
+      const binaryString = Array.from(uint8Array)
+        .map((byte) => String.fromCharCode(byte))
+        .join('')
+      const base64String = btoa(binaryString)
+
+      // Determine image format
+      const format = templateImageUrl.toLowerCase().includes('.png') ? 'PNG' : 'JPEG'
+
+      // Add the template image as the background
+      this.pdf.addImage(
+        `data:image/${format.toLowerCase()};base64,${base64String}`,
+        format,
+        0,
+        0,
+        width,
+        height,
+      )
+
+      // Add student name
+      this.pdf.setFont('helvetica', 'bold')
+      this.pdf.setFontSize(26)
+      this.pdf.setTextColor(37, 99, 235) // Blue
+      const nameWidth = this.pdf.getTextWidth(data.studentName)
+      this.pdf.text(data.studentName, (width - nameWidth) / 2, 120)
+
+      // Add course name
+      this.pdf.setFontSize(16)
+      this.pdf.setTextColor(255, 107, 53) // Orange
+      const courseWidth = this.pdf.getTextWidth(data.courseName)
+      this.pdf.text(data.courseName, (width - courseWidth) / 2, 145)
+
+      // Add completion date
+      this.pdf.setFontSize(12)
+      this.pdf.setTextColor(31, 41, 55) // Dark gray
+      const completionDateText = `Date: ${new Date(data.completionDate).toLocaleDateString()}`
+      const dateWidth = this.pdf.getTextWidth(completionDateText)
+      this.pdf.text(completionDateText, (width - dateWidth) / 2, 170)
+
+      // Add certificate number and verification code at bottom
+      this.pdf.setFontSize(10)
+      this.pdf.setTextColor(100, 100, 100)
+      this.pdf.text(`Certificate #: ${data.certificateNumber}`, 20, height - 15)
+      this.pdf.text(`Verification Code: ${data.verificationCode}`, width - 120, height - 15)
+
+      return this.pdf.output('blob')
+    } catch (error) {
+      console.error('Error generating image-based certificate:', error)
       throw error
     }
   }

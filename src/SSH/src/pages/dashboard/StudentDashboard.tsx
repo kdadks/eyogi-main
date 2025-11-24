@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Enrollment, Certificate, Course, StudentBatchProgress } from '../../types'
 import { getStudentEnrollments, getStudentCourseProgress } from '../../lib/api/enrollments'
-import { getStudentCertificates } from '../../lib/api/certificates'
+import { getStudentCertificates, downloadCertificatePDF } from '../../lib/api/certificates'
 import { getCourses } from '../../lib/api/courses'
 import { enrollInCourse } from '../../lib/api/enrollments'
 import { getUserProfile } from '../../lib/api/users'
@@ -115,6 +115,36 @@ export default function StudentDashboard() {
   // Consent
   const [showConsentModal, setShowConsentModal] = useState(false)
   const [studentConsent, setStudentConsent] = useState<StudentConsent | null>(null)
+  // Certificate download
+  const [downloadingCertificateId, setDownloadingCertificateId] = useState<string | null>(null)
+
+  // Handle certificate download with fallback to on-demand generation
+  const handleCertificateDownload = useCallback(async (certificate: Certificate) => {
+    try {
+      setDownloadingCertificateId(certificate.id)
+      console.log('Starting certificate download for:', certificate.certificate_number)
+
+      const pdfBlob = await downloadCertificatePDF(certificate)
+
+      // Create a download link
+      const url = window.URL.createObjectURL(pdfBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${certificate.certificate_number}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Certificate downloaded successfully')
+      console.log('Certificate downloaded:', certificate.certificate_number)
+    } catch (error) {
+      console.error('Error downloading certificate:', error)
+      toast.error('Failed to download certificate. Please try again.')
+    } finally {
+      setDownloadingCertificateId(null)
+    }
+  }, [])
 
   // Close achievements panel when clicking outside or pressing Escape
   useEffect(() => {
@@ -1578,27 +1608,35 @@ export default function StudentDashboard() {
                           {certificate.verification_code}
                         </p>
                       </div>
-                      {certificate.file_url && (
-                        <button
-                          onClick={() => window.open(certificate.file_url!, '_blank')}
-                          className="mt-3 sm:mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base min-h-[44px] sm:min-h-auto"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          <span>Download PDF</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleCertificateDownload(certificate)}
+                        disabled={downloadingCertificateId === certificate.id}
+                        className="mt-3 sm:mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base min-h-[44px] sm:min-h-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {downloadingCertificateId === certificate.id ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Downloading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                            <span>Download PDF</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 ))}

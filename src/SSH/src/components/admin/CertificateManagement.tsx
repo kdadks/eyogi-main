@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Certificate, Enrollment, CertificateTemplate, Course, Gurukul } from '@/types'
 import {
   issueCertificate,
+  issueCertificateWithTemplate,
   bulkIssueCertificates,
   getCertificatesFromTable,
 } from '@/lib/api/certificates'
@@ -24,6 +25,7 @@ import { getGurukuls } from '@/lib/api/gurukuls'
 import { generateCertificatePDF, CertificateData } from '@/lib/pdf/certificateGenerator'
 import { formatDate } from '@/lib/utils'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
+import { usePermissions } from '../../contexts/PermissionContext'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import CertificateTemplateEditor from './CertificateTemplateEditor'
@@ -44,6 +46,14 @@ import {
 } from '@heroicons/react/24/outline'
 export default function CertificateManagement() {
   const { canManageCertificates, canAssignTemplates, profile } = useAuth()
+  const { canAccess, hasAnyPermission } = usePermissions()
+
+  // Check both role-based and granular permissions
+  const hasPermission =
+    canManageCertificates ||
+    canAccess('certificates', 'read') ||
+    hasAnyPermission(['certificates.read', 'certificates.create'])
+
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [templates, setTemplates] = useState<CertificateTemplate[]>([])
   const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([])
@@ -134,7 +144,7 @@ export default function CertificateManagement() {
       return
     }
     try {
-      await issueCertificate(enrollmentId)
+      await issueCertificateWithTemplate(enrollmentId, selectedTemplate)
       await loadData()
       toast.success('Certificate issued successfully')
     } catch (error) {
@@ -152,7 +162,11 @@ export default function CertificateManagement() {
       return
     }
     try {
-      await bulkIssueCertificates(Array.from(selectedEnrollments))
+      await Promise.all(
+        Array.from(selectedEnrollments).map((enrollmentId) =>
+          issueCertificateWithTemplate(enrollmentId, selectedTemplate),
+        ),
+      )
       await loadData()
       setSelectedEnrollments(new Set())
       toast.success(`${selectedEnrollments.size} certificates issued successfully`)
@@ -315,7 +329,7 @@ export default function CertificateManagement() {
     )
   }
   // Check access permissions
-  if (!canManageCertificates) {
+  if (!hasPermission) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -497,8 +511,19 @@ export default function CertificateManagement() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {templates.map((template) => (
-                  <Card key={template.id} className="card-hover">
+                  <Card key={template.id} className="card-hover overflow-hidden">
                     <CardContent className="p-6">
+                      {/* Template Image Preview */}
+                      {template.template_data?.template_image && (
+                        <div className="mb-4 -mx-6 -mt-6">
+                          <img
+                            src={template.template_data.template_image}
+                            alt={template.name}
+                            className="w-full h-40 object-cover"
+                          />
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between mb-4">
                         <DocumentTextIcon className="h-8 w-8 text-orange-600" />
                         <Badge

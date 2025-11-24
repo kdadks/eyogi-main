@@ -1,7 +1,115 @@
 import { supabaseAdmin } from '../supabase'
-import { Certificate } from '@/types'
+import { Certificate, CertificateTemplate } from '@/types'
+import { generateCertificatePDF, CertificateData } from '../pdf/certificateGenerator'
 
 // NEW: Functions for working with the certificates table
+
+/**
+ * Generate and upload certificate PDF to Supabase storage
+ * Returns the public URL of the uploaded PDF
+ */
+export async function generateAndUploadCertificatePDF(
+  certificateNumber: string,
+  certificateData: CertificateData,
+  template?: CertificateTemplate,
+): Promise<string> {
+  try {
+    console.log('Generating PDF for certificate:', certificateNumber)
+
+    // Generate the PDF blob
+    const pdfBlob = await generateCertificatePDF(certificateData, template)
+
+    // Create a File object from the blob
+    const fileName = `${certificateNumber}.pdf`
+    const filePath = `certificates/${fileName}`
+    const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
+
+    console.log('Uploading certificate PDF:', { filePath, fileSize: pdfBlob.size })
+
+    // Upload to Supabase storage
+    const { data, error } = await supabaseAdmin.storage
+      .from('certificates')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true, // Allow overwriting if certificate is regenerated
+      })
+
+    if (error) {
+      throw new Error(`PDF upload failed: ${error.message}`)
+    }
+
+    console.log('PDF uploaded successfully:', { path: data.path })
+
+    // Get public URL
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from('certificates')
+      .getPublicUrl(data.path)
+
+    console.log('Certificate PDF URL generated:', {
+      url: publicUrlData.publicUrl,
+    })
+
+    return publicUrlData.publicUrl
+  } catch (error) {
+    console.error('Error generating/uploading certificate PDF:', error)
+    throw error
+  }
+}
+
+/**
+ * Download or generate certificate PDF
+ * If the certificate URL doesn't work, generates PDF on-demand
+ */
+export async function downloadCertificatePDF(
+  certificate: Certificate,
+  template?: CertificateTemplate,
+): Promise<Blob> {
+  try {
+    // First, try to fetch the existing PDF from storage URL
+    if (certificate.file_url) {
+      console.log('Attempting to download certificate from URL:', certificate.file_url)
+      try {
+        const response = await fetch(certificate.file_url)
+        if (response.ok) {
+          console.log('Successfully downloaded certificate PDF')
+          return await response.blob()
+        } else {
+          console.warn('Certificate URL returned status:', response.status)
+        }
+      } catch (fetchError) {
+        console.warn(
+          'Failed to download certificate from URL, will generate on-demand:',
+          fetchError,
+        )
+      }
+    }
+
+    // Fallback: Generate PDF on-demand
+    console.log('Generating certificate PDF on-demand')
+    const certificateData: CertificateData = {
+      studentName:
+        certificate.certificate_data?.student_name || certificate.student?.full_name || 'Student',
+      studentId: certificate.student_id,
+      courseName:
+        certificate.certificate_data?.course_title || certificate.course?.title || 'Course',
+      courseId: certificate.course_id,
+      gurukulName: 'eYogi Gurukul',
+      completionDate:
+        certificate.certificate_data?.completion_date ||
+        certificate.completion_date ||
+        new Date().toISOString(),
+      certificateNumber: certificate.certificate_number,
+      verificationCode: certificate.verification_code,
+    }
+
+    const pdfBlob = await generateCertificatePDF(certificateData, template)
+    console.log('Successfully generated certificate PDF on-demand')
+    return pdfBlob
+  } catch (error) {
+    console.error('Error downloading/generating certificate PDF:', error)
+    throw new Error('Failed to download certificate. Please try again.')
+  }
+}
 
 /**
  * Create a new certificate record in the certificates table
@@ -20,6 +128,14 @@ export async function createCertificate(certificateData: {
     const certificateNumber = `CERT-${Date.now()}-${certificateData.course_id.slice(-4)}`
     const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
     const now = new Date().toISOString()
+
+    console.log('Creating certificate record:', {
+      studentId: certificateData.student_id,
+      courseId: certificateData.course_id,
+      templateId: certificateData.template_id,
+      certificateNumber,
+      verificationCode,
+    })
 
     const { data, error } = await supabaseAdmin
       .from('certificates')
@@ -52,8 +168,15 @@ export async function createCertificate(certificateData: {
       .single()
 
     if (error) {
+      console.error('Error creating certificate:', { error, certificateData })
       throw new Error(`Failed to create certificate: ${error.message}`)
     }
+
+    console.log('Certificate created successfully:', {
+      certificateId: data.id,
+      studentId: data.student_id,
+      courseId: data.course_id,
+    })
 
     // Transform data to match interface
     return {
@@ -160,6 +283,13 @@ export async function getStudentCertificates(studentId: string): Promise<Certifi
 
     console.log(
       `Found ${certificatesFromTable.length} certificates in certificates table for student ${studentId}`,
+      certificatesFromTable.map((c) => ({
+        id: c.id,
+        studentId: c.student_id,
+        courseId: c.course_id,
+        title: c.title,
+        isActive: c.is_active,
+      })),
     )
     return certificatesFromTable
   } catch (error) {
@@ -288,16 +418,6 @@ export async function migrateCertificatesFromEnrollments(): Promise<{
   }
 }
 
-// Function to download certificate PDF
-export async function downloadCertificatePDF(certificateUrl: string): Promise<void> {
-  if (!certificateUrl) {
-    throw new Error('Certificate URL is required')
-  }
-
-  // Open certificate URL in new tab
-  window.open(certificateUrl, '_blank')
-}
-
 export async function getChildrenCertificates(
   parentId: string,
 ): Promise<{ childId: string; childName: string; certificates: Certificate[] }[]> {
@@ -409,13 +529,71 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
     },
   })
 
-  return certificate
+  // Generate and upload PDF after certificate is created
+  try {
+    const { data: template } = await supabaseAdmin
+      .from('certificate_templates')
+      .select('*')
+      .eq('id', templateId)
+      .single()
+
+    const certificateData: CertificateData = {
+      studentName: enrollment.profiles?.full_name || 'Student',
+      studentId: enrollment.student_id,
+      courseName: enrollment.courses?.title || 'Course',
+      courseId: enrollment.course_id,
+      gurukulName: 'eYogi Gurukul',
+      completionDate: enrollment.completed_at || new Date().toISOString(),
+      certificateNumber: certificate.certificate_number,
+      verificationCode: certificate.verification_code,
+    }
+
+    const pdfUrl = await generateAndUploadCertificatePDF(
+      certificate.certificate_number,
+      certificateData,
+      template as CertificateTemplate,
+    )
+
+    // Update certificate with the PDF URL
+    const { data: updatedCert, error: updateError } = await supabaseAdmin
+      .from('certificates')
+      .update({ file_url: pdfUrl })
+      .eq('id', certificate.id)
+      .select(
+        `
+        *,
+        courses(*),
+        student:profiles!certificates_student_id_fkey(*),
+        teacher:profiles!certificates_teacher_id_fkey(*)
+      `,
+      )
+      .single()
+
+    if (updateError) {
+      console.error('Error updating certificate with PDF URL:', updateError)
+      return certificate
+    }
+
+    return {
+      ...updatedCert,
+      issued_at: updatedCert.issue_date,
+      issued_by: updatedCert.teacher_id || 'system',
+      course: updatedCert.courses,
+      student: updatedCert.student,
+      teacher: updatedCert.teacher,
+    } as Certificate
+  } catch (pdfError) {
+    console.error('Error generating/uploading PDF:', pdfError)
+    return certificate
+  }
 }
 
 export async function issueCertificateWithTemplate(
   enrollmentId: string,
   templateId: string,
 ): Promise<Certificate> {
+  console.log('issueCertificateWithTemplate called with:', { enrollmentId, templateId })
+
   // Get enrollment details
   const { data: enrollment, error: enrollmentError } = await supabaseAdmin
     .from('enrollments')
@@ -430,10 +608,20 @@ export async function issueCertificateWithTemplate(
     .single()
 
   if (enrollmentError || !enrollment) {
+    console.error('Enrollment not found:', { enrollmentId, enrollmentError })
     throw new Error('Enrollment not found')
   }
 
+  console.log('Enrollment found:', {
+    enrollmentId,
+    studentId: enrollment.student_id,
+    courseId: enrollment.course_id,
+    status: enrollment.status,
+    studentName: enrollment.profiles?.full_name,
+  })
+
   if (enrollment.status !== 'completed') {
+    console.error('Enrollment status is not completed:', { status: enrollment.status })
     throw new Error('Can only issue certificates for completed courses')
   }
 
@@ -445,6 +633,7 @@ export async function issueCertificateWithTemplate(
   })
 
   if (existingCertificate.length > 0) {
+    console.error('Certificate already exists for this enrollment')
     throw new Error('Certificate already issued for this enrollment')
   }
 
@@ -456,10 +645,17 @@ export async function issueCertificateWithTemplate(
     .single()
 
   if (templateError || !template) {
+    console.error('Certificate template not found:', { templateId, templateError })
     throw new Error('Certificate template not found')
   }
 
-  // Create certificate in the certificates table
+  console.log('Creating certificate with:', {
+    studentId: enrollment.student_id,
+    courseId: enrollment.course_id,
+    templateId: templateId,
+  })
+
+  // Create certificate in the certificates table (without file_url initially)
   const certificate = await createCertificate({
     student_id: enrollment.student_id,
     course_id: enrollment.course_id,
@@ -475,7 +671,60 @@ export async function issueCertificateWithTemplate(
     },
   })
 
-  return certificate
+  // Generate and upload PDF after certificate is created
+  try {
+    const certificateData: CertificateData = {
+      studentName: enrollment.profiles?.full_name || 'Student',
+      studentId: enrollment.student_id,
+      courseName: enrollment.courses?.title || 'Course',
+      courseId: enrollment.course_id,
+      gurukulName: 'eYogi Gurukul',
+      completionDate: enrollment.completed_at || new Date().toISOString(),
+      certificateNumber: certificate.certificate_number,
+      verificationCode: certificate.verification_code,
+    }
+
+    const pdfUrl = await generateAndUploadCertificatePDF(
+      certificate.certificate_number,
+      certificateData,
+      template as CertificateTemplate,
+    )
+
+    // Update certificate with the PDF URL
+    const { data: updatedCert, error: updateError } = await supabaseAdmin
+      .from('certificates')
+      .update({ file_url: pdfUrl })
+      .eq('id', certificate.id)
+      .select(
+        `
+        *,
+        courses(*),
+        student:profiles!certificates_student_id_fkey(*),
+        teacher:profiles!certificates_teacher_id_fkey(*)
+      `,
+      )
+      .single()
+
+    if (updateError) {
+      console.error('Error updating certificate with PDF URL:', updateError)
+      // Still return the certificate even if PDF upload failed
+      return certificate
+    }
+
+    return {
+      ...updatedCert,
+      issued_at: updatedCert.issue_date,
+      issued_by: updatedCert.teacher_id || 'system',
+      course: updatedCert.courses,
+      student: updatedCert.student,
+      teacher: updatedCert.teacher,
+    } as Certificate
+  } catch (pdfError) {
+    console.error('Error generating/uploading PDF:', pdfError)
+    // Still return the certificate even if PDF generation failed
+    // The PDF can be generated on-demand when the student tries to view it
+    return certificate
+  }
 }
 
 export async function bulkIssueCertificates(enrollmentIds: string[]): Promise<Certificate[]> {
