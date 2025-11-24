@@ -104,13 +104,14 @@ export default defineConfig(({ command }) => {
               return 'vendor-dates'
             }
             
-            // Charts and visualization
+            // Charts and visualization - MUST stay with React due to circular dependencies
+            // Recharts has internal circular dependencies that cause issues when split separately
             if (
               id.includes('node_modules/recharts') ||
               id.includes('node_modules/d3-') ||
               id.includes('node_modules/victory')
             ) {
-              return 'vendor-charts'
+              return 'vendor-react'
             }
             
             // Toast/notifications - also React context based
@@ -193,7 +194,7 @@ export default defineConfig(({ command }) => {
           },
         },
       },
-      chunkSizeWarningLimit: 1500, // Raised to 1.5MB since gzipped sizes are much smaller
+      chunkSizeWarningLimit: 2000, // Raised to 2MB since gzipped sizes are much smaller and recharts is now in vendor-react
       minify: !isDev ? 'terser' : false, // Use terser for better console removal
       terserOptions: !isDev
         ? {
