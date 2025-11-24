@@ -9,6 +9,8 @@ import WebsiteAuthModal from './components/auth/WebsiteAuthModal'
 import AuthRedirect from './components/auth/AuthRedirect'
 import AdminProtectedRoute from './components/auth/AdminProtectedRoute'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import CookieConsentBanner from './components/tracking/CookieConsentBanner'
+import PageTracker from './components/tracking/PageTracker'
 
 // Lazy load SSH Website Components
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -40,7 +42,7 @@ const CourseAssignmentManagement = lazy(
 )
 const EnrollmentManagement = lazy(() => import('./components/admin/EnrollmentManagement'))
 const GurukulManagement = lazy(() => import('./components/admin/GurukulManagement'))
-const SiteAnalytics = lazy(() => import('./components/admin/SiteAnalytics'))
+const AdminAnalytics = lazy(() => import('./components/admin/AdminAnalytics'))
 const CertificateManagement = lazy(() => import('./components/admin/CertificateManagement'))
 const ContentManagement = lazy(() => import('./components/admin/ContentManagement'))
 const MediaManagement = lazy(() => import('./components/admin/MediaManagement'))
@@ -67,6 +69,15 @@ function App() {
 
   // Check if current path is admin route
   const isAdminRoute = location.pathname.startsWith('/admin')
+  const isDashboardRoute = location.pathname.startsWith('/dashboard')
+
+  // Debug logging
+  useEffect(() => {
+    console.log('App.tsx - Current path:', location.pathname)
+    console.log('App.tsx - isAdminRoute:', isAdminRoute)
+    console.log('App.tsx - isDashboardRoute:', isDashboardRoute)
+    console.log('App.tsx - Should show banner:', !isAdminRoute && !isDashboardRoute)
+  }, [location.pathname, isAdminRoute, isDashboardRoute])
 
   // Load cache testing utilities in PRODUCTION only
   useEffect(() => {
@@ -84,6 +95,8 @@ function App() {
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
+      {/* Page Tracker - tracks page views for analytics */}
+      {!isAdminRoute && <PageTracker />}
       {/* Only show GlossyHeader for non-admin routes */}
       {!isAdminRoute && <GlossyHeader onOpenAuthModal={openAuthModal} />}
       {/* Main content with top padding only for non-admin routes */}
@@ -172,7 +185,7 @@ function App() {
               <Route path="certificates" element={<CertificateManagement />} />
               <Route path="content" element={<ContentManagement />} />
               <Route path="media" element={<MediaManagement />} />
-              <Route path="analytics" element={<SiteAnalytics />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="batches" element={<BatchManagement />} />
               <Route path="students" element={<StudentManagement />} />
               <Route path="teachers" element={<TeacherManagement />} />
@@ -210,6 +223,8 @@ function App() {
         initialMode={authModalMode}
         redirectAfterAuth="/dashboard" // Redirect to dashboard after successful login
       />
+      {/* Cookie Consent Banner - Show only on public website pages (not admin or dashboard) */}
+      {!isAdminRoute && !isDashboardRoute && <CookieConsentBanner />}
     </div>
   )
 }

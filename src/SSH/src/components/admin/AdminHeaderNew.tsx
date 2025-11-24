@@ -1,6 +1,7 @@
 import React from 'react'
 import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import { HelpButton, adminDashboardHelpTopics } from '../help'
 
 interface AdminHeaderProps {
   onMenuClick: () => void
@@ -26,6 +27,13 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
         </div>
         {/* Right side */}
         <div className="flex items-center space-x-4">
+          {/* Help Button */}
+          <HelpButton
+            topics={adminDashboardHelpTopics}
+            title="Admin Dashboard Help"
+            description="Learn how to manage users, courses, enrollments, analytics, and more"
+            showKeyboardHint={true}
+          />
           {/* Notifications */}
           <button
             type="button"

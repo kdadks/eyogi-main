@@ -26,6 +26,7 @@ import { User, MapPin, X } from 'lucide-react'
 import AddChildModal from '../../../components/parents/AddChildModal'
 import ChatBotTrigger from '../../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../../components/profile/ProfileEditModal'
+import { HelpButton, parentsDashboardHelpTopics } from '../../../components/help'
 import AddressForm from '../../../components/forms/AddressForm'
 import DashboardComplianceSection from '../../../components/compliance/DashboardComplianceSection'
 import StudentAttendanceView from '../../../components/student/StudentAttendanceView'
@@ -833,6 +834,18 @@ export default function ParentsDashboard() {
               </motion.p>
             </div>
             <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
+              >
+                <HelpButton
+                  topics={parentsDashboardHelpTopics}
+                  title="Parents Dashboard Help"
+                  description="Learn how to manage your children's learning journey and track their progress"
+                  showKeyboardHint={true}
+                />
+              </motion.div>
               <motion.button
                 onClick={() => {
                   setIsProfileModalOpen(true)

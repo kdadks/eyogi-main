@@ -541,3 +541,18 @@ body {
     filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.3));
   }
 }
+/* Cookie Consent Banner Animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}

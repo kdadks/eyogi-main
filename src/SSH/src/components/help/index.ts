@@ -1,0 +1,7 @@
+export { default as HelpModal } from './HelpModal'
+export type { HelpTopic, HelpSection } from './HelpModal'
+export { default as HelpButton } from './HelpButton'
+export { teacherDashboardHelpTopics } from './teacherDashboardHelp'
+export { studentDashboardHelpTopics } from './studentDashboardHelp'
+export { parentsDashboardHelpTopics } from './parentsDashboardHelp'
+export { adminDashboardHelpTopics } from './adminDashboardHelp'

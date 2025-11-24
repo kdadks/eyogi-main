@@ -7,10 +7,14 @@ interface ConsentAuditModalProps {
   consent: StudentConsent | null
   studentName: string
   onClose: () => void
+  userRole?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
 }
 
-export default function ConsentAuditModal({ consent, studentName, onClose }: ConsentAuditModalProps) {
+export default function ConsentAuditModal({ consent, studentName, onClose, userRole }: ConsentAuditModalProps) {
   if (!consent) return null
+
+  // Check if user can view sensitive data (IP and Browser)
+  const canViewSensitiveData = userRole === 'business_admin' || userRole === 'super_admin' || userRole === 'admin'
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
@@ -122,26 +126,30 @@ export default function ConsentAuditModal({ consent, studentName, onClose }: Con
                           {formatDate(consent.consent_date)}
                         </p>
                       </div>
-                      <div>
-                        <label className="text-xs font-medium text-green-700 uppercase tracking-wide flex items-center">
-                          <MapPinIcon className="w-4 h-4 mr-1" />
-                          IP Address
-                        </label>
-                        <p className="text-green-900 font-mono text-sm mt-1">
-                          {consent.ip_address || 'Not recorded'}
-                        </p>
-                      </div>
+                      {canViewSensitiveData && (
+                        <div>
+                          <label className="text-xs font-medium text-green-700 uppercase tracking-wide flex items-center">
+                            <MapPinIcon className="w-4 h-4 mr-1" />
+                            IP Address
+                          </label>
+                          <p className="text-green-900 font-mono text-sm mt-1">
+                            {consent.ip_address || 'Not recorded'}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="pt-3 border-t border-green-200">
-                      <label className="text-xs font-medium text-green-700 uppercase tracking-wide flex items-center">
-                        <ComputerDesktopIcon className="w-4 h-4 mr-1" />
-                        User Agent (Browser/Device)
-                      </label>
-                      <p className="text-green-900 text-sm mt-1 break-all">
-                        {consent.user_agent || 'Not recorded'}
-                      </p>
-                    </div>
+                    {canViewSensitiveData && (
+                      <div className="pt-3 border-t border-green-200">
+                        <label className="text-xs font-medium text-green-700 uppercase tracking-wide flex items-center">
+                          <ComputerDesktopIcon className="w-4 h-4 mr-1" />
+                          User Agent (Browser/Device)
+                        </label>
+                        <p className="text-green-900 text-sm mt-1 break-all">
+                          {consent.user_agent || 'Not recorded'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

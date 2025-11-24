@@ -67,6 +67,7 @@ import AttendanceManagement from '../../components/admin/AttendanceManagement'
 import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge'
 import ConsentAuditModal from '../../components/consent/ConsentAuditModal'
 import { getStudentsConsent, getStudentConsent, StudentConsent } from '../../lib/api/consent'
+import { HelpButton, teacherDashboardHelpTopics } from '../../components/help'
 import {
   PlusIcon,
   AcademicCapIcon,
@@ -1128,6 +1129,18 @@ export default function TeacherDashboard() {
                 </Badge>
               </motion.div>
               */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.65 }}
+              >
+                <HelpButton
+                  topics={teacherDashboardHelpTopics}
+                  title="Teacher Dashboard Help"
+                  description="Learn how to use all dashboard features"
+                  showKeyboardHint={true}
+                />
+              </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -4708,6 +4721,7 @@ export default function TeacherDashboard() {
         <ConsentAuditModal
           consent={selectedConsentForAudit}
           studentName={selectedStudentNameForAudit}
+          userRole={user?.role as 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'}
           onClose={() => {
             setShowConsentAudit(false)
             setSelectedConsentForAudit(null)

@@ -9,6 +9,7 @@ import ContentManagement from '@/components/admin/ContentManagement'
 import CourseManagement from '@/components/admin/CourseManagement'
 import GurukulManagement from '@/components/admin/GurukulManagement'
 import SiteAnalytics from '@/components/admin/SiteAnalytics'
+import { HelpButton, adminDashboardHelpTopics } from '../../components/help'
 import { getEnrollmentStats } from '@/lib/api/enrollments'
 import { getAllUsers } from '@/lib/api/users'
 import {
@@ -373,6 +374,13 @@ export default function AdminDashboard() {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-64"
                 />
               </div>
+              {/* Help Button */}
+              <HelpButton
+                topics={adminDashboardHelpTopics}
+                title="Admin Dashboard Help"
+                description="Learn how to manage users, courses, enrollments, analytics, and more"
+                showKeyboardHint={true}
+              />
               {/* Notifications */}
               <div className="relative">
                 <button

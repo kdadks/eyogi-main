@@ -62,6 +62,7 @@ import StudentAttendanceView from '../../components/student/StudentAttendanceVie
 import ConsentModal from '../../components/consent/ConsentModal'
 import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge'
 import { getStudentConsent, StudentConsent } from '../../lib/api/consent'
+import { HelpButton, studentDashboardHelpTopics } from '../../components/help'
 interface StudentStats {
   totalEnrollments: number
   completedCourses: number
@@ -2180,6 +2181,12 @@ export default function StudentDashboard() {
           )}
         </div>
       </div>
+      <HelpButton
+        topics={studentDashboardHelpTopics}
+        title="Student Dashboard Help"
+        description="Learn how to track your courses and progress"
+        showKeyboardHint={true}
+      />
       <ChatBotTrigger />
       {/* Profile Edit Modal */}
       {isProfileModalOpen && user && (
