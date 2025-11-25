@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../supabase'
 import { Course } from '../../types'
 import { generateCourseSlug, generateSlug } from '../utils'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
+import { generateCourseNumber } from '../course-number-generator'
 export async function getCourses(filters?: {
   gurukul_id?: string
   level?: string
@@ -145,16 +146,26 @@ export async function getEnrolledCount(courseIdOrSlug: string): Promise<number> 
   }
 }
 export async function createCourse(
-  course: Omit<Course, 'id' | 'created_at' | 'updated_at'>,
+  course: Omit<Course, 'id' | 'created_at' | 'updated_at'> & { part?: string },
 ): Promise<Course> {
   try {
     const courseId = crypto.randomUUID()
+
     // Generate slug if not provided
     const slug = course.slug || generateSlug(course.title)
+
+    // Generate course number automatically if not provided
+    const courseNumber =
+      course.course_number ||
+      (await generateCourseNumber(course.gurukul_id, course.title, course.part))
+
+    const { part, ...courseWithoutPart } = course
+
     const courseData = {
-      ...course,
+      ...courseWithoutPart,
       id: courseId,
       slug: slug,
+      course_number: courseNumber,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -171,12 +182,57 @@ export async function createCourse(
     throw error
   }
 }
-export async function updateCourse(id: string, updates: Partial<Course>): Promise<Course> {
+export async function updateCourse(
+  id: string,
+  updates: Partial<Course> & { part?: string; regenerateCourseNumber?: boolean },
+): Promise<Course> {
   try {
+    // Get the current course to check if title or gurukul changed
+    const { data: currentCourse, error: fetchError } = await supabaseAdmin
+      .from('courses')
+      .select('title, gurukul_id, course_number')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !currentCourse) {
+      throw new Error('Course not found')
+    }
+
+    let finalUpdates = { ...updates }
+
+    // Extract the base course number (without part) from current course number
+    // e.g., "HIB1A" -> "HIB1", "HIB2" -> "HIB2"
+    const currentBaseNumber = currentCourse.course_number.replace(/[A-Z]$/, '')
+
+    // Check if title or gurukul changed - these require regenerating the base number
+    const titleChanged = updates.title && updates.title !== currentCourse.title
+    const gurukulChanged = updates.gurukul_id && updates.gurukul_id !== currentCourse.gurukul_id
+
+    if (titleChanged || gurukulChanged) {
+      // Title or gurukul changed - regenerate the entire course number with new prefix
+      const newTitle = updates.title || currentCourse.title
+      const newGurukulId = updates.gurukul_id || currentCourse.gurukul_id
+      const newCourseNumber = await generateCourseNumber(newGurukulId, newTitle, updates.part)
+      finalUpdates.course_number = newCourseNumber
+    } else if (updates.part !== undefined) {
+      // Only part changed - keep the base number, just append/update the part
+      if (updates.part && updates.part.trim()) {
+        const normalizedPart = updates.part.trim().toUpperCase().charAt(0)
+        finalUpdates.course_number = `${currentBaseNumber}${normalizedPart}`
+      } else {
+        // Part removed - use just the base number
+        finalUpdates.course_number = currentBaseNumber
+      }
+    }
+    // If nothing changed, course_number stays the same (not updated)
+
+    // Remove part and regenerateCourseNumber from updates as they're not DB columns
+    const { part, regenerateCourseNumber, ...dbUpdates } = finalUpdates
+
     const { data, error } = await supabaseAdmin
       .from('courses')
       .update({
-        ...updates,
+        ...dbUpdates,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

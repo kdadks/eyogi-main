@@ -202,6 +202,7 @@ interface CourseFormData {
   meta_title?: string
   meta_description?: string
   teacher_id?: string
+  part?: string // Optional part identifier (A, B, C, D, etc.)
 }
 const initialFormData: CourseFormData = {
   gurukul_id: '',
@@ -220,6 +221,7 @@ const initialFormData: CourseFormData = {
   learning_outcomes: [],
   is_active: true,
   syllabus: null,
+  part: '',
 }
 export default function CourseManagement() {
   const [courses, setCourses] = useState<Course[]>([])
@@ -369,7 +371,7 @@ export default function CourseManagement() {
     })
   }
   const handleCreateCourse = async () => {
-    if (!formData.title || !formData.gurukul_id || !formData.course_number) {
+    if (!formData.title || !formData.gurukul_id) {
       toast.error('Please fill in all required fields')
       return
     }
@@ -378,7 +380,6 @@ export default function CourseManagement() {
       const courseData = {
         // Only include fields that exist in the database schema
         gurukul_id: formData.gurukul_id,
-        course_number: formData.course_number,
         title: formData.title,
         slug:
           formData.slug ||
@@ -413,6 +414,7 @@ export default function CourseManagement() {
         meta_title: formData.meta_title || undefined,
         meta_description: formData.meta_description || undefined,
         teacher_id: formData.teacher_id || undefined,
+        part: formData.part || undefined,
       }
       await createCourse(courseData)
       toast.success('Course created successfully')
@@ -491,7 +493,6 @@ export default function CourseManagement() {
     try {
       const updates = {
         gurukul_id: formData.gurukul_id,
-        course_number: formData.course_number,
         title: formData.title,
         slug:
           formData.slug ||
@@ -526,6 +527,7 @@ export default function CourseManagement() {
         meta_title: formData.meta_title || undefined,
         meta_description: formData.meta_description || undefined,
         teacher_id: formData.teacher_id || undefined,
+        part: formData.part || undefined,
       }
       await updateCourse(editingCourse.id, updates)
       toast.success('Course updated successfully')
@@ -960,14 +962,39 @@ export default function CourseManagement() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Course Number *
+                    Part (Optional)
+                    <span className="text-xs text-gray-500 ml-1">(A, B, C, D, etc.)</span>
                   </label>
                   <Input
-                    value={formData.course_number}
-                    onChange={(e) => setFormData({ ...formData, course_number: e.target.value })}
-                    placeholder="e.g., CS101"
-                    required
+                    value={formData.part || ''}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().slice(0, 1)
+                      setFormData({ ...formData, part: value })
+                    }}
+                    placeholder="A, B, C..."
+                    maxLength={1}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Course number will be auto-generated:
+                    {formData.gurukul_id &&
+                    formData.title &&
+                    gurukuls.find((g) => g.id === formData.gurukul_id) ? (
+                      <span className="font-semibold ml-1">
+                        {gurukuls
+                          .find((g) => g.id === formData.gurukul_id)
+                          ?.name.replace(/[^a-zA-Z]/g, '')
+                          .substring(0, 2)
+                          .toUpperCase()}
+                        {formData.title
+                          .replace(/[^a-zA-Z]/g, '')
+                          .charAt(0)
+                          .toUpperCase()}
+                        #{formData.part || ''}
+                      </span>
+                    ) : (
+                      ' [Select gurukul and enter title]'
+                    )}
+                  </p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
@@ -1225,14 +1252,53 @@ export default function CourseManagement() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Course Number *
+                    Course Number
                   </label>
                   <Input
                     value={formData.course_number}
-                    onChange={(e) => setFormData({ ...formData, course_number: e.target.value })}
-                    placeholder="e.g., CS101"
-                    required
+                    readOnly
+                    disabled
+                    className="bg-gray-100 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Will be regenerated if title or gurukul is changed
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Part (Optional)
+                    <span className="text-xs text-gray-500 ml-1">(A, B, C, D, etc.)</span>
+                  </label>
+                  <Input
+                    value={formData.part || ''}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().slice(0, 1)
+                      setFormData({ ...formData, part: value })
+                    }}
+                    placeholder="A, B, C..."
+                    maxLength={1}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Course number preview:
+                    {formData.gurukul_id &&
+                    formData.title &&
+                    gurukuls.find((g) => g.id === formData.gurukul_id) ? (
+                      <span className="font-semibold ml-1">
+                        {gurukuls
+                          .find((g) => g.id === formData.gurukul_id)
+                          ?.name.replace(/[^a-zA-Z]/g, '')
+                          .substring(0, 2)
+                          .toUpperCase()}
+                        {formData.title
+                          .replace(/[^a-zA-Z]/g, '')
+                          .charAt(0)
+                          .toUpperCase()}
+                        #{formData.part || ''}
+                      </span>
+                    ) : (
+                      ' [Select gurukul and enter title]'
+                    )}
+                  </p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>

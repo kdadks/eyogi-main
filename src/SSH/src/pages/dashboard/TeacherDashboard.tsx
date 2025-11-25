@@ -107,7 +107,8 @@ import {
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
-  course_number: z.string().min(1, 'Course number is required'),
+  course_number: z.string().optional(), // No longer required - auto-generated
+  part: z.string().max(1, 'Part must be a single letter').optional(),
   title: z.string().min(5, 'Title must be at least 5 characters'),
   slug: z.string().optional(),
   description: z.string().min(20, 'Description must be at least 20 characters'),
@@ -520,6 +521,7 @@ export default function TeacherDashboard() {
         image_url: selectedCourseImage?.file_url || data.image_url,
         cover_image_url: selectedCoverImage?.file_url || data.cover_image_url,
         video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url,
+        part: data.part || undefined,
       }
       await createCourse(courseData)
       await loadDashboardData()
@@ -3198,13 +3200,44 @@ export default function TeacherDashboard() {
                         <p className="text-sm text-red-600">{errors.gurukul_id.message}</p>
                       )}
                     </div>
-                    <Input
-                      label="Course Number"
-                      placeholder="C1001"
-                      {...register('course_number')}
-                      error={errors.course_number?.message}
-                      className="text-sm"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Part (Optional){' '}
+                        <span className="text-xs text-gray-500">(A, B, C, D, etc.)</span>
+                      </label>
+                      <Input
+                        placeholder="A, B, C..."
+                        {...register('part')}
+                        maxLength={1}
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase().slice(0, 1)
+                          setValue('part', value)
+                        }}
+                        error={errors.part?.message}
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Course number will be auto-generated:
+                        {watch('gurukul_id') &&
+                        watch('title') &&
+                        gurukuls.find((g) => g.id === watch('gurukul_id')) ? (
+                          <span className="font-semibold ml-1">
+                            {gurukuls
+                              .find((g) => g.id === watch('gurukul_id'))
+                              ?.name.replace(/[^a-zA-Z]/g, '')
+                              .substring(0, 2)
+                              .toUpperCase()}
+                            {watch('title')
+                              ?.replace(/[^a-zA-Z]/g, '')
+                              .charAt(0)
+                              .toUpperCase()}
+                            #{watch('part') || ''}
+                          </span>
+                        ) : (
+                          ' [Select gurukul and enter title]'
+                        )}
+                      </p>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Slug{' '}
