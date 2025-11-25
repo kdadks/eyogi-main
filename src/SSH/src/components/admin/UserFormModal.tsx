@@ -3,6 +3,7 @@ import { X, User, Shield, Save, Loader2 } from 'lucide-react'
 import { supabaseAdmin } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { generateRoleId } from '../../lib/id-generator'
+import { normalizeCountryToISO3, normalizeStateToISO2 } from '../../lib/iso-utils'
 // import AddressForm from '../forms/AddressForm'
 
 // Simple password hashing function (for development - use bcrypt in production)
@@ -15,17 +16,24 @@ const hashPassword = async (password: string): Promise<string> => {
     .join('')
 }
 
-// Generate email from full name
+// Generate email from full name following format: nameYYYYXXXX@eyogi-student.com
+// Example: aadvikgupt20250031@eyogi-student.com
 function generateEmailFromName(fullName: string): string {
   if (!fullName) return ''
+
   // Convert name to lowercase, remove spaces and special characters
   const namePart = fullName
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .substring(0, 15)
+    .replace(/[^a-z]/g, '')
+    .substring(0, 10) // Take first 10 letters
+
+  // Add year (4 digits)
+  const year = new Date().getFullYear()
+
   // Add random 4-digit number
   const randomPart = Math.floor(1000 + Math.random() * 9000)
-  return `${namePart}${randomPart}@eyogi.com`
+
+  return `${namePart}${year}${randomPart}@eyogi-student.com`
 }
 import type { Database } from '../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -231,8 +239,12 @@ export default function UserFormModal({
           throw new Error('Failed to create user account')
         }
 
+        // Normalize country and state codes to proper ISO format
+        const normalizedCountry = normalizeCountryToISO3(formData.country)
+        const normalizedState = normalizeStateToISO2(formData.state, normalizedCountry)
+
         // Generate appropriate ID based on role
-        const roleIds = await generateRoleId(formData.role, formData.country, formData.state)
+        const roleIds = await generateRoleId(formData.role, normalizedCountry, normalizedState)
 
         // Create profile in database
         const baseProfileData = {
@@ -245,9 +257,9 @@ export default function UserFormModal({
           address_line_1: formData.address_line_1,
           address_line_2: formData.address_line_2,
           city: formData.city,
-          state: formData.state,
+          state: normalizedState,
           zip_code: formData.zip_code,
-          country: formData.country,
+          country: normalizedCountry,
           password_hash: await hashPassword(formData.password),
           status: 'active',
           created_at: new Date().toISOString(),
@@ -267,6 +279,10 @@ export default function UserFormModal({
         }
         toast.success('User created successfully!')
       } else {
+        // Normalize country and state codes to proper ISO format
+        const normalizedCountry = normalizeCountryToISO3(formData.country)
+        const normalizedState = normalizeStateToISO2(formData.state, normalizedCountry)
+
         // Update existing user profile (include all DB fields)
         const updateData = {
           full_name: formData.full_name,
@@ -283,9 +299,9 @@ export default function UserFormModal({
           address_line_1: formData.address_line_1,
           address_line_2: formData.address_line_2,
           city: formData.city,
-          state: formData.state,
+          state: normalizedState,
           zip_code: formData.zip_code,
-          country: formData.country,
+          country: normalizedCountry,
           age: formData.age ? Number(formData.age) : null,
           grade: formData.grade,
           updated_at: new Date().toISOString(),

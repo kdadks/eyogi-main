@@ -196,23 +196,10 @@ export function normalizeStateToISO2(state: string, countryISO3: string): string
   const trimmed = state.trim()
   const normalized = trimmed.toUpperCase()
 
-  // Already 2-letter code
-  if (normalized.length === 2 && normalized === normalized.toUpperCase()) {
-    return normalized
-  }
-
-  // Ireland: Handle single-letter codes (D -> DU)
-  if (countryISO3 === 'IRL' && normalized.length === 1) {
-    return IRELAND_SINGLE_LETTER_MAP[normalized] || trimmed
-  }
-
-  // UK: Handle 3-letter region codes (ENG -> EN)
-  if (countryISO3 === 'GBR' && normalized.length === 3) {
-    return UK_REGION_MAP[normalized] || trimmed
-  }
-
-  // Return as-is (might already be a 2-letter code)
-  return trimmed
+  // Return the state code as-is (uppercase)
+  // State codes vary by country - some are 2-letter, some are 3-letter
+  // (e.g., US: CA, NY are 2-letter; Australia: NSW, QLD are 3-letter)
+  return normalized
 }
 
 /**

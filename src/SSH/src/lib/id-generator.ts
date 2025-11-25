@@ -6,19 +6,21 @@
  */
 
 import { supabaseAdmin } from './supabase'
-import { getCountryCode, getCountyCode } from './isoCodes'
 
 /**
  * Generate Student ID based on location and year
  * Format: CCCCCYYYY##### (e.g., IRLDU202500001)
+ * @param country - 3-letter country code (already normalized, e.g., IRL, USA, AUS)
+ * @param state - 2-letter state code (already normalized, e.g., DU, CA, NS)
  */
 export async function generateStudentId(country: string, state: string): Promise<string> {
-  const countryCode = getCountryCode(country)
-  const countyCode = getCountyCode(state, countryCode)
+  // Use the codes directly from the database - they're already in correct format
+  const countryCode = country.toUpperCase()
+  const stateCode = state.toUpperCase()
   const year = new Date().getFullYear()
 
   // Get the count of existing students with the same location prefix for this year
-  const prefix = `${countryCode}${countyCode}${year}`
+  const prefix = `${countryCode}${stateCode}${year}`
 
   const { count, error } = await supabaseAdmin
     .from('profiles')
