@@ -193,6 +193,9 @@ export default function TeacherDashboard() {
     | 'attendance'
     | 'settings'
   >('overview')
+  const [activeStudentsView, setActiveStudentsView] = useState<'registered' | 'enrolled'>(
+    'registered',
+  )
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>([''])
   const [prerequisites, setPrerequisites] = useState<string[]>([''])
   const [tags, setTags] = useState<string[]>([''])
@@ -1710,6 +1713,7 @@ export default function TeacherDashboard() {
                 <Card
                   className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
                   onClick={() => {
+                    setActiveStudentsView('registered')
                     setTimeout(() => {
                       const registeredSection = document.querySelector(
                         '[data-section="registered-students"]',
@@ -1736,6 +1740,7 @@ export default function TeacherDashboard() {
                 <Card
                   className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
                   onClick={() => {
+                    setActiveStudentsView('enrolled')
                     setTimeout(() => {
                       const enrolledSection = document.querySelector(
                         '[data-section="enrolled-students"]',
@@ -1886,166 +1891,279 @@ export default function TeacherDashboard() {
               )}
 
               {/* Enrolled Students */}
-              <Card
-                data-section="enrolled-students"
-                className="border-0 shadow-xl bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 scroll-mt-32"
-              >
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
-                    <h3 className="text-lg font-semibold text-green-900">Enrolled Students</h3>
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      {stats.totalEnrolled} enrolled
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {stats.totalEnrolled === 0 ? (
-                    <div className="text-center py-12">
-                      <CheckCircleIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No enrolled students
-                      </h3>
-                      <p className="text-gray-600">
-                        Students who are actively enrolled in courses will appear here.
-                      </p>
+              {activeStudentsView === 'enrolled' && (
+                <Card
+                  data-section="enrolled-students"
+                  className="border-0 shadow-xl bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 scroll-mt-32"
+                >
+                  <CardHeader>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                      <h3 className="text-lg font-semibold text-green-900">Enrolled Students</h3>
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        {stats.totalEnrolled} enrolled
+                      </Badge>
                     </div>
-                  ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {allStudents
-                        .map((student) => {
+                  </CardHeader>
+                  <CardContent>
+                    {stats.totalEnrolled === 0 ? (
+                      <div className="text-center py-12">
+                        <CheckCircleIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No enrolled students
+                        </h3>
+                        <p className="text-gray-600">
+                          Students who are actively enrolled in courses will appear here.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {allStudents
+                          .map((student) => {
+                            const studentEnrollments = enrollments.filter(
+                              (e) =>
+                                e.student_id === student.id &&
+                                (e.status === 'approved' || e.status === 'completed'),
+                            )
+                            return { student, studentEnrollments }
+                          })
+                          .filter(({ studentEnrollments }) => studentEnrollments.length > 0)
+                          .map(({ student, studentEnrollments }) => {
+                            const activeEnrollments = studentEnrollments.filter(
+                              (e) => e.status === 'approved',
+                            )
+                            const completedEnrollments = studentEnrollments.filter(
+                              (e) => e.status === 'completed',
+                            )
+
+                            return (
+                              <div
+                                key={student.id}
+                                className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-200 flex flex-col h-full"
+                              >
+                                <div className="flex items-center space-x-3 mb-3">
+                                  <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                    <span className="text-white font-bold">
+                                      {student.full_name?.charAt(0) || 'S'}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-green-900">
+                                      {student.full_name}
+                                    </p>
+                                    <p className="text-sm text-green-700">{student.student_id}</p>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-green-600 mb-3 space-y-1">
+                                  <div>Email: {student.email}</div>
+                                  <div className="flex items-center space-x-1">
+                                    <CheckCircleIcon className="h-3 w-3" />
+                                    <span>Active: {activeEnrollments.length}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <TrophyIcon className="h-3 w-3" />
+                                    <span>Completed: {completedEnrollments.length}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <DocumentTextIcon className="h-3 w-3" />
+                                    <span>
+                                      Certificates:{' '}
+                                      {
+                                        certificates.filter(
+                                          (cert: Certificate) => cert.student_id === student.id,
+                                        ).length
+                                      }
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="space-y-2 mb-3 flex-1">
+                                  <p className="text-xs font-semibold text-green-800">
+                                    Enrolled Courses:
+                                  </p>
+                                  <div className="space-y-1">
+                                    {studentEnrollments.slice(0, 3).map((enrollment) => {
+                                      const cert = certificates.find(
+                                        (c: Certificate) =>
+                                          c.student_id === student.id &&
+                                          c.course_id === enrollment.course_id,
+                                      )
+                                      return (
+                                        <div
+                                          key={enrollment.id}
+                                          className="text-xs bg-white/60 rounded px-2 py-1"
+                                        >
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="truncate flex-1">
+                                              {enrollment.course?.title || 'Unknown Course'}
+                                            </span>
+                                            <Badge
+                                              className={
+                                                enrollment.status === 'completed'
+                                                  ? 'bg-indigo-100 text-indigo-800 border-indigo-200 ml-1'
+                                                  : 'bg-green-100 text-green-800 border-green-200 ml-1'
+                                              }
+                                            >
+                                              {enrollment.status === 'completed'
+                                                ? 'Done'
+                                                : 'Active'}
+                                            </Badge>
+                                          </div>
+                                          {cert && (
+                                            <div className="flex items-center gap-1 mt-1">
+                                              <button
+                                                onClick={() => {
+                                                  if (cert.file_url) {
+                                                    window.open(
+                                                      `${cert.file_url}?t=${Date.now()}`,
+                                                      '_blank',
+                                                    )
+                                                  } else {
+                                                    toast.error('Certificate PDF not found')
+                                                  }
+                                                }}
+                                                className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-0.5"
+                                              >
+                                                <EyeIcon className="h-3 w-3" />
+                                                View Cert
+                                              </button>
+                                              <span className="text-gray-300">|</span>
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    toast.loading('Regenerating certificate...')
+                                                    const { regenerateCertificate } = await import(
+                                                      '@/lib/api/certificates'
+                                                    )
+                                                    await regenerateCertificate(cert.id)
+                                                    await loadDashboardData()
+                                                    toast.dismiss()
+                                                    toast.success('Certificate regenerated!')
+                                                  } catch (error) {
+                                                    toast.dismiss()
+                                                    toast.error('Failed to regenerate certificate')
+                                                  }
+                                                }}
+                                                className="text-[10px] text-orange-600 hover:text-orange-800 hover:underline flex items-center gap-0.5"
+                                              >
+                                                <PencilIcon className="h-3 w-3" />
+                                                Reissue
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    })}
+                                    {studentEnrollments.length > 3 && (
+                                      <p className="text-xs text-green-700 italic">
+                                        +{studentEnrollments.length - 3} more
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEnrollmentModal(student)}
+                                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold mt-auto"
+                                >
+                                  <UserIcon className="h-4 w-4 mr-1" />
+                                  Manage Enrollments
+                                </Button>
+                              </div>
+                            )
+                          })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Registered Students */}
+              {activeStudentsView === 'registered' && (
+                <Card
+                  data-section="registered-students"
+                  className="border-0 shadow-xl bg-white/70 backdrop-blur-sm scroll-mt-32"
+                >
+                  <CardHeader>
+                    <div className="flex items-center space-x-2">
+                      <UserGroupIcon className="h-6 w-6 text-blue-600" />
+                      <h3 className="text-lg font-semibold">Registered Students</h3>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {allStudents.length === 0 ? (
+                      <div className="text-center py-12">
+                        <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No registered students
+                        </h3>
+                        <p className="text-gray-600">
+                          Students with EYG IDs will appear here once they register.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {allStudents.map((student) => {
                           const studentEnrollments = enrollments.filter(
-                            (e) =>
-                              e.student_id === student.id &&
-                              (e.status === 'approved' || e.status === 'completed'),
+                            (e) => e.student_id === student.id,
                           )
-                          return { student, studentEnrollments }
-                        })
-                        .filter(({ studentEnrollments }) => studentEnrollments.length > 0)
-                        .map(({ student, studentEnrollments }) => {
                           const activeEnrollments = studentEnrollments.filter(
-                            (e) => e.status === 'approved',
-                          )
-                          const completedEnrollments = studentEnrollments.filter(
-                            (e) => e.status === 'completed',
+                            (e) => e.status === 'approved' || e.status === 'completed',
                           )
 
                           return (
                             <div
                               key={student.id}
-                              className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-200 flex flex-col h-full"
+                              className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200"
                             >
                               <div className="flex items-center space-x-3 mb-3">
-                                <div className="h-10 w-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                                   <span className="text-white font-bold">
                                     {student.full_name?.charAt(0) || 'S'}
                                   </span>
                                 </div>
                                 <div className="flex-1">
-                                  <p className="font-medium text-green-900">{student.full_name}</p>
-                                  <p className="text-sm text-green-700">{student.student_id}</p>
+                                  <p className="font-medium text-blue-900">{student.full_name}</p>
+                                  <p className="text-sm text-blue-700">{student.student_id}</p>
                                 </div>
                               </div>
-                              <div className="text-xs text-green-600 mb-3 space-y-1">
+                              <div className="text-xs text-blue-600 mb-3 space-y-1">
                                 <div>Email: {student.email}</div>
-                                <div className="flex items-center space-x-1">
-                                  <CheckCircleIcon className="h-3 w-3" />
-                                  <span>Active: {activeEnrollments.length}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <TrophyIcon className="h-3 w-3" />
-                                  <span>Completed: {completedEnrollments.length}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <DocumentTextIcon className="h-3 w-3" />
-                                  <span>
-                                    Certificates:{' '}
-                                    {certificates.filter((cert: Certificate) => cert.student_id === student.id).length}
-                                  </span>
+                                <div>Enrollments: {activeEnrollments.length}</div>
+                                <div>
+                                  Completed:{' '}
+                                  {
+                                    studentEnrollments.filter((e) => e.status === 'completed')
+                                      .length
+                                  }
                                 </div>
                               </div>
-                              <div className="space-y-2 mb-3 flex-1">
-                                <p className="text-xs font-semibold text-green-800">
-                                  Enrolled Courses:
-                                </p>
-                                <div className="space-y-1">
-                                  {studentEnrollments.slice(0, 3).map((enrollment) => {
-                                    const cert = certificates.find(
-                                      (c: Certificate) =>
-                                        c.student_id === student.id && c.course_id === enrollment.course_id,
-                                    )
-                                    return (
-                                      <div
-                                        key={enrollment.id}
-                                        className="text-xs bg-white/60 rounded px-2 py-1"
-                                      >
-                                        <div className="flex items-center justify-between mb-1">
-                                          <span className="truncate flex-1">
-                                            {enrollment.course?.title || 'Unknown Course'}
-                                          </span>
-                                          <Badge
-                                            className={
-                                              enrollment.status === 'completed'
-                                                ? 'bg-indigo-100 text-indigo-800 border-indigo-200 ml-1'
-                                                : 'bg-green-100 text-green-800 border-green-200 ml-1'
-                                            }
-                                          >
-                                            {enrollment.status === 'completed' ? 'Done' : 'Active'}
-                                          </Badge>
-                                        </div>
-                                        {cert && (
-                                          <div className="flex items-center gap-1 mt-1">
-                                            <button
-                                              onClick={() => {
-                                                if (cert.file_url) {
-                                                  window.open(`${cert.file_url}?t=${Date.now()}`, '_blank')
-                                                } else {
-                                                  toast.error('Certificate PDF not found')
-                                                }
-                                              }}
-                                              className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-0.5"
-                                            >
-                                              <EyeIcon className="h-3 w-3" />
-                                              View Cert
-                                            </button>
-                                            <span className="text-gray-300">|</span>
-                                            <button
-                                              onClick={async () => {
-                                                try {
-                                                  toast.loading('Regenerating certificate...')
-                                                  const { regenerateCertificate } =
-                                                    await import('@/lib/api/certificates')
-                                                  await regenerateCertificate(cert.id)
-                                                  await loadDashboardData()
-                                                  toast.dismiss()
-                                                  toast.success('Certificate regenerated!')
-                                                } catch (error) {
-                                                  toast.dismiss()
-                                                  toast.error('Failed to regenerate certificate')
-                                                }
-                                              }}
-                                              className="text-[10px] text-orange-600 hover:text-orange-800 hover:underline flex items-center gap-0.5"
-                                            >
-                                              <PencilIcon className="h-3 w-3" />
-                                              Reissue
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )
-                                  })}
-                                  {studentEnrollments.length > 3 && (
-                                    <p className="text-xs text-green-700 italic">
-                                      +{studentEnrollments.length - 3} more
-                                    </p>
-                                  )}
-                                </div>
+                              {/* Consent Status Badge */}
+                              <div className="mb-3">
+                                <ConsentStatusBadge
+                                  consentGiven={
+                                    studentConsents.get(student.id)?.consent_given || false
+                                  }
+                                  withdrawn={studentConsents.get(student.id)?.withdrawn || false}
+                                  size="sm"
+                                  showLabel={true}
+                                  onClick={async () => {
+                                    const consent = await getStudentConsent(student.id)
+                                    if (consent) {
+                                      setSelectedConsentForAudit(consent)
+                                      setSelectedStudentNameForAudit(student.full_name || 'Unknown')
+                                      setShowConsentAudit(true)
+                                    } else {
+                                      toast.error('No consent record found for this student')
+                                    }
+                                  }}
+                                />
                               </div>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => openEnrollmentModal(student)}
-                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold mt-auto"
+                                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
                               >
                                 <UserIcon className="h-4 w-4 mr-1" />
                                 Manage Enrollments
@@ -2053,155 +2171,66 @@ export default function TeacherDashboard() {
                             </div>
                           )
                         })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Registered Students */}
-              <Card
-                data-section="registered-students"
-                className="border-0 shadow-xl bg-white/70 backdrop-blur-sm scroll-mt-32"
-              >
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <UserGroupIcon className="h-6 w-6 text-blue-600" />
-                    <h3 className="text-lg font-semibold">Registered Students</h3>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {allStudents.length === 0 ? (
-                    <div className="text-center py-12">
-                      <UserGroupIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No registered students
-                      </h3>
-                      <p className="text-gray-600">
-                        Students with EYG IDs will appear here once they register.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {allStudents.map((student) => {
-                        const studentEnrollments = enrollments.filter(
-                          (e) => e.student_id === student.id,
-                        )
-                        const activeEnrollments = studentEnrollments.filter(
-                          (e) => e.status === 'approved' || e.status === 'completed',
-                        )
-
-                        return (
-                          <div
-                            key={student.id}
-                            className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200"
-                          >
-                            <div className="flex items-center space-x-3 mb-3">
-                              <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                                <span className="text-white font-bold">
-                                  {student.full_name?.charAt(0) || 'S'}
-                                </span>
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-medium text-blue-900">{student.full_name}</p>
-                                <p className="text-sm text-blue-700">{student.student_id}</p>
-                              </div>
-                            </div>
-                            <div className="text-xs text-blue-600 mb-3 space-y-1">
-                              <div>Email: {student.email}</div>
-                              <div>Enrollments: {activeEnrollments.length}</div>
-                              <div>
-                                Completed:{' '}
-                                {studentEnrollments.filter((e) => e.status === 'completed').length}
-                              </div>
-                            </div>
-                            {/* Consent Status Badge */}
-                            <div className="mb-3">
-                              <ConsentStatusBadge
-                                consentGiven={
-                                  studentConsents.get(student.id)?.consent_given || false
-                                }
-                                withdrawn={studentConsents.get(student.id)?.withdrawn || false}
-                                size="sm"
-                                showLabel={true}
-                                onClick={async () => {
-                                  const consent = await getStudentConsent(student.id)
-                                  if (consent) {
-                                    setSelectedConsentForAudit(consent)
-                                    setSelectedStudentNameForAudit(student.full_name || 'Unknown')
-                                    setShowConsentAudit(true)
-                                  } else {
-                                    toast.error('No consent record found for this student')
-                                  }
-                                }}
-                              />
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEnrollmentModal(student)}
-                              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
-                            >
-                              <UserIcon className="h-4 w-4 mr-1" />
-                              Manage Enrollments
-                            </Button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Batch Enrollment Helper */}
-              <Card className="border-0 shadow-xl bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <QueueListIcon className="h-6 w-6 text-purple-600" />
-                    <h3 className="text-lg font-semibold text-purple-900">
-                      Quick Enrollment Guide
-                    </h3>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 text-sm text-purple-800">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                        1
+              {activeStudentsView === 'registered' && (
+                <Card className="border-0 shadow-xl bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                  <CardHeader>
+                    <div className="flex items-center space-x-2">
+                      <QueueListIcon className="h-6 w-6 text-purple-600" />
+                      <h3 className="text-lg font-semibold text-purple-900">
+                        Quick Enrollment Guide
+                      </h3>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 text-sm text-purple-800">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          1
+                        </div>
+                        <div>
+                          <p className="font-medium">Create or select a batch</p>
+                          <p className="text-purple-700">
+                            Go to Batches tab to create new batches for your courses
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">Create or select a batch</p>
-                        <p className="text-purple-700">
-                          Go to Batches tab to create new batches for your courses
-                        </p>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          2
+                        </div>
+                        <div>
+                          <p className="font-medium">Enroll students manually</p>
+                          <p className="text-purple-700">
+                            Add registered students to batches - only enrolled students can receive
+                            certificates
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          3
+                        </div>
+                        <div>
+                          <p className="font-medium">Complete batch and issue certificates</p>
+                          <p className="text-purple-700">
+                            Mark batch as completed when course is finished, then issue certificates
+                            to all students
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                        2
-                      </div>
-                      <div>
-                        <p className="font-medium">Enroll students manually</p>
-                        <p className="text-purple-700">
-                          Add registered students to batches - only enrolled students can receive
-                          certificates
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                        3
-                      </div>
-                      <div>
-                        <p className="font-medium">Complete batch and issue certificates</p>
-                        <p className="text-purple-700">
-                          Mark batch as completed when course is finished, then issue certificates
-                          to all students
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Close students motion.div */}
             </motion.div>
           )}
           {/* Batch Certificate Management View */}
@@ -3788,7 +3817,9 @@ export default function TeacherDashboard() {
                         try {
                           toast.loading('Generating preview...')
                           // Get the enrollment details
-                          const enrollment = enrollments.find((e) => e.id === selectedEnrollmentForCert)
+                          const enrollment = enrollments.find(
+                            (e) => e.id === selectedEnrollmentForCert,
+                          )
                           if (!enrollment) return
 
                           // Get the template
@@ -3806,12 +3837,12 @@ export default function TeacherDashboard() {
                                 ?.split(' ')
                                 .map((n) => n.charAt(0))
                                 .join('')
-                                .toUpperCase() +
-                                Math.random().toString().slice(-3) ||
+                                .toUpperCase() + Math.random().toString().slice(-3) ||
                               'STU001',
                             courseName: enrollment.course?.title || 'Course Name',
                             courseId:
-                              enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+                              enrollment.course?.course_number ||
+                              `C${Math.random().toString().slice(-3)}`,
                             gurukulName: enrollment.course?.gurukul?.name || 'eYogi Gurukul',
                             completionDate: enrollment.completed_at || new Date().toISOString(),
                             certificateNumber: `PREVIEW-${Date.now()}`,
@@ -4292,12 +4323,12 @@ export default function TeacherDashboard() {
                                 ?.split(' ')
                                 .map((n) => n.charAt(0))
                                 .join('')
-                                .toUpperCase() +
-                                Math.random().toString().slice(-3) ||
+                                .toUpperCase() + Math.random().toString().slice(-3) ||
                               'STU001',
                             courseName: enrollment.course?.title || 'Course Name',
                             courseId:
-                              enrollment.course?.course_number || `C${Math.random().toString().slice(-3)}`,
+                              enrollment.course?.course_number ||
+                              `C${Math.random().toString().slice(-3)}`,
                             gurukulName: enrollment.course?.gurukul?.name || 'eYogi Gurukul',
                             completionDate: enrollment.completed_at || new Date().toISOString(),
                             certificateNumber: `PREVIEW-${Date.now()}`,
@@ -4721,7 +4752,15 @@ export default function TeacherDashboard() {
         <ConsentAuditModal
           consent={selectedConsentForAudit}
           studentName={selectedStudentNameForAudit}
-          userRole={user?.role as 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'}
+          userRole={
+            user?.role as
+              | 'student'
+              | 'teacher'
+              | 'admin'
+              | 'business_admin'
+              | 'super_admin'
+              | 'parent'
+          }
           onClose={() => {
             setShowConsentAudit(false)
             setSelectedConsentForAudit(null)

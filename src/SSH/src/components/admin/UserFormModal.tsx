@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, User, Shield, Save, Loader2 } from 'lucide-react'
 import { supabaseAdmin } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+import { generateRoleId } from '../../lib/id-generator'
 // import AddressForm from '../forms/AddressForm'
 
 // Simple password hashing function (for development - use bcrypt in production)
@@ -12,6 +13,19 @@ const hashPassword = async (password: string): Promise<string> => {
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
+}
+
+// Generate email from full name
+function generateEmailFromName(fullName: string): string {
+  if (!fullName) return ''
+  // Convert name to lowercase, remove spaces and special characters
+  const namePart = fullName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 15)
+  // Add random 4-digit number
+  const randomPart = Math.floor(1000 + Math.random() * 9000)
+  return `${namePart}${randomPart}@eyogi.com`
 }
 import type { Database } from '../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -154,10 +168,17 @@ export default function UserFormModal({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      }
+      // Auto-generate email when full name changes in create mode
+      if (mode === 'create' && name === 'full_name' && value) {
+        updated.email = generateEmailFromName(value)
+      }
+      return updated
+    })
   }
   // No handleAddressChange needed; address is handled via user prop
   const validateForm = () => {
@@ -171,6 +192,14 @@ export default function UserFormModal({
     }
     if (!formData.full_name) {
       toast.error('Full name is required')
+      return false
+    }
+    if (!formData.country) {
+      toast.error('Country is required')
+      return false
+    }
+    if (!formData.state) {
+      toast.error('State/Province is required')
       return false
     }
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
@@ -201,6 +230,10 @@ export default function UserFormModal({
         if (!authData.user) {
           throw new Error('Failed to create user account')
         }
+
+        // Generate appropriate ID based on role
+        const roleIds = await generateRoleId(formData.role, formData.country, formData.state)
+
         // Create profile in database
         const baseProfileData = {
           id: authData.user.id,
@@ -221,15 +254,10 @@ export default function UserFormModal({
           updated_at: new Date().toISOString(),
         }
 
-        // Only include student fields for student role
+        // Include role-specific IDs
         const profileData = {
           ...baseProfileData,
-          // Only include student_id for student role
-          ...(formData.role === 'student'
-            ? {
-                student_id: formData.student_id || null,
-              }
-            : {}),
+          ...roleIds,
         }
         const { error: profileError } = await supabaseAdmin.from('profiles').insert([profileData])
         if (profileError) {
@@ -359,18 +387,21 @@ export default function UserFormModal({
                 </select>
               </div>
             )}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                required
-                disabled={isReadOnly}
-              />
-            </div>
+            {/* Email field - hidden in create mode, shown in edit/view mode */}
+            {mode !== 'create' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                  required
+                  disabled={isReadOnly}
+                />
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
               <input
@@ -442,17 +473,22 @@ export default function UserFormModal({
             {/* Role-based fields */}
             {formData.role === 'student' && (
               <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Student ID</label>
-                  <input
-                    type="text"
-                    name="student_id"
-                    value={formData.student_id}
-                    onChange={handleInputChange}
-                    className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                    disabled={isReadOnly}
-                  />
-                </div>
+                {/* Student ID - hidden in create mode, auto-generated */}
+                {mode === 'edit' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Student ID
+                    </label>
+                    <input
+                      type="text"
+                      name="student_id"
+                      value={formData.student_id}
+                      onChange={handleInputChange}
+                      className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${readOnlyClass}`}
+                      disabled
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Grade</label>
                   <input
@@ -552,13 +588,16 @@ export default function UserFormModal({
           {/* Address Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Country <span className="text-red-500">*</span>
+              </label>
               <select
                 name="country"
                 value={formData.country}
                 onChange={handleInputChange}
                 className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
                 disabled={isReadOnly}
+                required
               >
                 <option value="">Select Country</option>
                 {countries.map((c) => (
@@ -572,7 +611,7 @@ export default function UserFormModal({
             {availableStates.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  State/Province
+                  State/Province <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="state"
@@ -580,6 +619,7 @@ export default function UserFormModal({
                   onChange={handleInputChange}
                   className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
                   disabled={isReadOnly}
+                  required
                 >
                   <option value="">Select State/Province</option>
                   {availableStates.map((s) => (

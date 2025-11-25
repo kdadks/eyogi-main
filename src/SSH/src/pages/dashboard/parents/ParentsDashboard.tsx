@@ -64,7 +64,7 @@ interface ProfileWithAddress {
 }
 interface Child {
   student_id: string // Database UUID for queries (profile.id)
-  display_student_id?: string // EYG-prefixed ID for display (e.g., EYG-001)
+  display_student_id?: string // ISO format student ID for display (e.g., IRLDU202500001)
   full_name: string
   age: number
   grade: string
@@ -419,7 +419,7 @@ export default function ParentsDashboard() {
 
           return {
             student_id: profile.id, // Use profile.id (UUID) for database queries like attendance
-            display_student_id: profile.student_id, // EYG-prefixed ID for display
+            display_student_id: profile.student_id, // ISO format student ID for display
             full_name: profile.full_name || 'Unknown',
             age: age,
             grade: profile.grade || 'Not Set', // Use grade from database
@@ -877,52 +877,51 @@ export default function ParentsDashboard() {
             {/* Scroll indicator for mobile */}
             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none sm:hidden z-10 rounded-r-lg" />
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
-              <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min"
-          >
-            {tabs
-              .filter((tab) => tab.available)
-              .map((tab, index) => (
-                <motion.button
-                  key={tab.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9 + index * 0.1 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setActiveTab(
-                      tab.id as
-                        | 'home'
-                        | 'children'
-                        | 'enrollments'
-                        | 'progress'
-                        | 'attendance'
-                        | 'settings'
-                        | 'analytics',
-                    )
-                    // Scroll to top of page
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  title={tab.name}
-                  className={`relative flex items-center justify-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-lg lg:rounded-xl font-semibold text-xs sm:text-sm lg:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg transform scale-105'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 lg:h-5 lg:w-5 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.name}</span>
-                  {tab.badge && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+              <div className="flex gap-2 sm:gap-3 lg:gap-4 bg-white/50 backdrop-blur-sm p-2 sm:p-3 lg:p-4 rounded-lg sm:rounded-xl lg:rounded-2xl border border-white/20 shadow-lg min-w-min">
+                {tabs
+                  .filter((tab) => tab.available)
+                  .map((tab, index) => (
+                    <motion.button
+                      key={tab.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 + index * 0.1 }}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setActiveTab(
+                          tab.id as
+                            | 'home'
+                            | 'children'
+                            | 'enrollments'
+                            | 'progress'
+                            | 'attendance'
+                            | 'settings'
+                            | 'analytics',
+                        )
+                        // Scroll to top of page
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      title={tab.name}
+                      className={`relative flex items-center justify-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-lg lg:rounded-xl font-semibold text-xs sm:text-sm lg:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
+                        activeTab === tab.id
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg transform scale-105'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
+                      }`}
                     >
-                      {tab.badge}
-                    </motion.span>
-                  )}
-                </motion.button>
-              ))}
+                      <tab.icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 lg:h-5 lg:w-5 flex-shrink-0" />
+                      <span className="hidden sm:inline">{tab.name}</span>
+                      {tab.badge && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center shadow-lg"
+                        >
+                          {tab.badge}
+                        </motion.span>
+                      )}
+                    </motion.button>
+                  ))}
               </div>
             </div>
           </motion.div>
@@ -1547,7 +1546,9 @@ function HomeTab({
                     <div className="flex-1 flex flex-col">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">{course.title}</h4>
+                          <h4 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
+                            {course.title}
+                          </h4>
                           <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
                           <span
                             className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
@@ -1583,7 +1584,9 @@ function HomeTab({
                           </div>
                           <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
                         </div>
-                        <span className="text-xs text-gray-600 truncate ml-2">{course.instructor}</span>
+                        <span className="text-xs text-gray-600 truncate ml-2">
+                          {course.instructor}
+                        </span>
                       </div>
                     </div>
                     <motion.button
@@ -1655,12 +1658,7 @@ function ChildrenTab({
                   title="Edit Child"
                   aria-label="Edit Child"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1677,12 +1675,7 @@ function ChildrenTab({
                   title="Delete Child"
                   aria-label="Delete Child"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

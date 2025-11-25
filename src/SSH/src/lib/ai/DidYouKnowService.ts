@@ -154,7 +154,7 @@ export class DidYouKnowService {
       {
         id: 'fact-18',
         content:
-          'Our unique Student ID system (EYG-YEAR-XXXX) ensures each learner has a permanent identity that tracks their entire educational journey with us! 🆔',
+          'Our unique Student ID system (e.g., IRLDU202500001) includes country, location, year, and sequence - ensuring each learner has a permanent identity that tracks their entire educational journey with us! 🆔',
         category: 'platform',
         intent: ['student_progress', 'enrollment_process'],
         persona: ['student', 'parent'],

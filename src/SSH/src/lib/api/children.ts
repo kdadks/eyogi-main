@@ -1,23 +1,30 @@
 import { supabase, supabaseAdmin } from '../supabase'
 import type { Database } from '../../types/database'
+import { getCountryCode, getCountyCode } from '../isoCodes'
+import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
 type Profile = Database['public']['Tables']['profiles']['Row']
 export interface CreateChildData {
   full_name: string
   date_of_birth: string // Make this mandatory instead of age
   grade: string
   parent_id: string
+  country: string // MANDATORY for proper student ID generation
+  state: string // MANDATORY for proper student ID generation (county/state)
   phone?: string
   address_line_1?: string
   address_line_2?: string
   city?: string
-  state?: string
   zip_code?: string
-  country?: string
 }
 /**
- * Generate next student ID
+ * Generate next student ID in ISO format
+ * Format: CountryCode(3) + CountyCode(2) + Year(4) + Sequence(5)
+ * Example: IRLDU202500001 (Ireland + Dublin + 2025 + 00001)
  */
-async function generateNextStudentId(): Promise<string> {
+async function generateNextStudentId(
+  country?: string | null,
+  county?: string | null,
+): Promise<string> {
   try {
     let client = supabaseAdmin
     if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
@@ -25,36 +32,49 @@ async function generateNextStudentId(): Promise<string> {
     }
 
     const year = new Date().getFullYear()
-    // Get existing student IDs for this year and find the highest number
-    // Note: We search ALL profiles with student_id, not just those with role='student'
-    // because some profiles might have student_id but different roles
+
+    // Get ISO codes
+    const countryCode = getCountryCode(country)
+    const countyCode = getCountyCode(county, countryCode)
+
+    // Create the prefix for this location and year
+    const prefix = `${countryCode}${countyCode}${year}`
+
+    // Get existing student IDs with this prefix
     const { data: existingStudents } = await client
       .from('profiles')
       .select('student_id')
       .not('student_id', 'is', null)
-      .like('student_id', `EYG-${year}%`)
+      .like('student_id', `${prefix}%`)
 
     let nextNumber = 1
     if (existingStudents && existingStudents.length > 0) {
-      // Extract the numeric part from student IDs and find the maximum
+      // Extract the numeric part (last 5 digits) from student IDs and find the maximum
       const numbers = existingStudents
         .map((student) => {
-          const match = student.student_id?.match(/EYG-\d{4}-(\d{4})/)
-          return match ? parseInt(match[1], 10) : 0
+          const studentId = student.student_id
+          if (!studentId || studentId.length < 5) return 0
+          // Get last 5 characters as the sequence number
+          const sequencePart = studentId.slice(-5)
+          const num = parseInt(sequencePart, 10)
+          return isNaN(num) ? 0 : num
         })
-        .filter((num) => !isNaN(num))
+        .filter((num) => num > 0)
 
       if (numbers.length > 0) {
         nextNumber = Math.max(...numbers) + 1
       }
     }
 
-    const result = `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
+    // Format: CCCCCYYYY##### (e.g., IRLDU202500001)
+    const result = `${prefix}${nextNumber.toString().padStart(5, '0')}`
     return result
-  } catch {
-    // Fallback to a random number if there's an error
-    const randomNum = Math.floor(Math.random() * 9999) + 1
-    return `EYG-${new Date().getFullYear()}-${randomNum.toString().padStart(4, '0')}`
+  } catch (error) {
+    console.error('Error generating student ID:', error)
+    // Fallback to a default pattern if there's an error
+    const year = new Date().getFullYear()
+    const randomNum = Math.floor(Math.random() * 99999) + 1
+    return `XXX XX${year}${randomNum.toString().padStart(5, '0')}`
   }
 }
 /**
@@ -66,8 +86,8 @@ function generateStudentEmail(fullName: string, studentId: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .substring(0, 10)
-  // Extract numeric part from student ID
-  const idPart = studentId.replace(/[^0-9]/g, '').substring(-4)
+  // Use last 5 digits of student ID (the sequence number)
+  const idPart = studentId.slice(-5)
   return `${namePart}${idPart}@eyogi-student.com`
 }
 /**
@@ -85,10 +105,22 @@ function generateUUID(): string {
  */
 export async function createChild(childData: CreateChildData): Promise<Profile> {
   try {
+    // Validate mandatory fields for student ID generation
+    if (!childData.country || childData.country.trim() === '') {
+      throw new Error('Country is required to generate student ID')
+    }
+    if (!childData.state || childData.state.trim() === '') {
+      throw new Error('State/County is required to generate student ID')
+    }
+
+    // Normalize country and state codes to ISO format
+    const normalizedCountry = normalizeCountryToISO3(childData.country)
+    const normalizedState = normalizeStateToISO2(childData.state, normalizedCountry)
+
     // Generate unique ID
     const childId = generateUUID()
-    // Generate student ID
-    const studentId = await generateNextStudentId()
+    // Generate student ID with normalized country and county/state codes
+    const studentId = await generateNextStudentId(normalizedCountry, normalizedState)
     // Generate unique email for child
     const email = generateStudentEmail(childData.full_name, studentId)
     // Calculate age from date of birth
@@ -99,7 +131,7 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--
     }
-    // Prepare child profile data
+    // Prepare child profile data with normalized ISO codes
     const profileData = {
       id: childId,
       email,
@@ -112,9 +144,9 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
       address_line_1: childData.address_line_1 || null,
       address_line_2: childData.address_line_2 || null,
       city: childData.city || null,
-      state: childData.state || null,
+      state: normalizedState, // Use normalized 2-letter state code
       zip_code: childData.zip_code || null,
-      country: childData.country || null,
+      country: normalizedCountry, // Use normalized 3-letter country code
       student_id: studentId,
       parent_id: childData.parent_id, // Link child to parent
     }
@@ -182,6 +214,18 @@ export async function updateChild(
         calculatedAge--
       }
     }
+
+    // Normalize country and state codes if provided
+    let normalizedCountry = updates.country || null
+    let normalizedState = updates.state || null
+
+    if (normalizedCountry) {
+      normalizedCountry = normalizeCountryToISO3(normalizedCountry)
+      if (normalizedState) {
+        normalizedState = normalizeStateToISO2(normalizedState, normalizedCountry)
+      }
+    }
+
     const updateData = {
       full_name: updates.full_name,
       date_of_birth: updates.date_of_birth, // Add the missing date_of_birth field
@@ -192,9 +236,9 @@ export async function updateChild(
       address_line_1: updates.address_line_1 || null,
       address_line_2: updates.address_line_2 || null,
       city: updates.city || null,
-      state: updates.state || null,
+      state: normalizedState, // Use normalized 2-letter state code
       zip_code: updates.zip_code || null,
-      country: updates.country || null,
+      country: normalizedCountry, // Use normalized 3-letter country code
     }
     let client = supabaseAdmin
     if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {

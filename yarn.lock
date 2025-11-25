@@ -2790,15 +2790,6 @@
     react "18.2.0"
     react-dom "18.2.0"
 
-"@react-email/render@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.npmjs.org/@react-email/render/-/render-1.0.1.tgz"
-  integrity sha512-W3gTrcmLOVYnG80QuUp22ReIT/xfLsVJ+n7ghSlG2BITB8evNABn1AO2rGQoXuK84zKtDAlxCdm3hRyIpZdGSA==
-  dependencies:
-    html-to-text "9.0.5"
-    js-beautify "^1.14.11"
-    react-promise-suspense "0.3.4"
-
 "@react-hook/debounce@^1.0.6":
   version "1.0.11"
   resolved "https://registry.npmjs.org/@react-hook/debounce/-/debounce-1.0.11.tgz"
@@ -2872,14 +2863,6 @@
   dependencies:
     domhandler "^5.0.3"
     selderee "^0.10.0"
-
-"@selderee/plugin-htmlparser2@^0.11.0":
-  version "0.11.0"
-  resolved "https://registry.npmjs.org/@selderee/plugin-htmlparser2/-/plugin-htmlparser2-0.11.0.tgz"
-  integrity sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==
-  dependencies:
-    domhandler "^5.0.3"
-    selderee "^0.11.0"
 
 "@smithy/abort-controller@^3.1.9":
   version "3.1.9"
@@ -4916,7 +4899,7 @@ deep-is@^0.1.3:
   resolved "https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz"
   integrity sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==
 
-deepmerge@^4.2.2, deepmerge@^4.3.1, deepmerge@4.3.1:
+deepmerge@^4.2.2, deepmerge@4.3.1:
   version "4.3.1"
   resolved "https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz"
   integrity sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==
@@ -5038,10 +5021,10 @@ domutils@^3.0.1:
     domelementtype "^2.3.0"
     domhandler "^5.0.3"
 
-dotenv@^17.2.2:
-  version "17.2.2"
-  resolved "https://registry.npmjs.org/dotenv/-/dotenv-17.2.2.tgz"
-  integrity sha512-Sf2LSQP+bOlhKWWyhFsn0UsfdK/kCWRv1iuA2gXAwt3dyNabr6QSj00I2V10pidqz69soatm9ZwZvpQMTIOd5Q==
+dotenv@^17.2.3:
+  version "17.2.3"
+  resolved "https://registry.npmjs.org/dotenv/-/dotenv-17.2.3.tgz"
+  integrity sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==
 
 drizzle-kit@0.28.0:
   version "0.28.0"
@@ -5662,11 +5645,6 @@ fast-copy@^3.0.2:
   resolved "https://registry.npmjs.org/fast-copy/-/fast-copy-3.0.2.tgz"
   integrity sha512-dl0O9Vhju8IrcLndv2eU4ldt1ftXMqqfgN4H1cpmGV7P6jeB9FwpN9a2c8DPGE1Ys88rNUJVYDHq73CGAGOPfQ==
 
-fast-deep-equal@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-2.0.1.tgz"
-  integrity sha512-bCK/2Z4zLidyB4ReuIsvALH6w31YfAQDmXMqMx6FyfHqvBxtjC0eRumeSu4Bs3XtXwpyIywtSTrVT99BxY1f9w==
-
 fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"
   resolved "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz"
@@ -6173,18 +6151,7 @@ html-to-text@9.0.3:
     htmlparser2 "^8.0.1"
     selderee "^0.10.0"
 
-html-to-text@9.0.5:
-  version "9.0.5"
-  resolved "https://registry.npmjs.org/html-to-text/-/html-to-text-9.0.5.tgz"
-  integrity sha512-qY60FjREgVZL03vJU6IfMV4GDjGBIoOyvuFdpBDIX9yTlDw0TjxVBQp+P8NvpdIXNJvfWBTNul7fsAQJq2FNpg==
-  dependencies:
-    "@selderee/plugin-htmlparser2" "^0.11.0"
-    deepmerge "^4.3.1"
-    dom-serializer "^2.0.0"
-    htmlparser2 "^8.0.2"
-    selderee "^0.11.0"
-
-htmlparser2@^8.0.1, htmlparser2@^8.0.2:
+htmlparser2@^8.0.1:
   version "8.0.2"
   resolved "https://registry.npmjs.org/htmlparser2/-/htmlparser2-8.0.2.tgz"
   integrity sha512-GYdjWKDkbRLkZ5geuHs5NY1puJ+PXwP7+fHPRz06Eirsb9ugf6d8kkXav6ADhcODhFFPMIXyxkxSuMf3D6NCFA==
@@ -6587,7 +6554,7 @@ joycon@^3.1.1:
   resolved "https://registry.npmjs.org/joycon/-/joycon-3.1.1.tgz"
   integrity sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==
 
-js-beautify@^1.14.11, js-beautify@^1.6.12:
+js-beautify@^1.6.12:
   version "1.15.1"
   resolved "https://registry.npmjs.org/js-beautify/-/js-beautify-1.15.1.tgz"
   integrity sha512-ESjNzSlt/sWE8sciZH8kBF8BPlwXPwhR6pWKAw8bw4Bwj+iZcnKW6ONWUutJ7eObuBZQpiIb8S7OYspWrKt7rA==
@@ -7552,14 +7519,6 @@ parseley@^0.11.0:
     leac "^0.6.0"
     peberminta "^0.8.0"
 
-parseley@^0.12.0:
-  version "0.12.1"
-  resolved "https://registry.npmjs.org/parseley/-/parseley-0.12.1.tgz"
-  integrity sha512-e6qHKe3a9HWr0oMRVDTRhKce+bRO8VGQR3NyVwcjwrbhMmFCX9KszEV35+rn4AdilFAq9VPxP/Fe1wC9Qjd2lw==
-  dependencies:
-    leac "^0.6.0"
-    peberminta "^0.9.0"
-
 path-exists@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmjs.org/path-exists/-/path-exists-4.0.0.tgz"
@@ -7653,11 +7612,6 @@ peberminta@^0.8.0:
   version "0.8.0"
   resolved "https://registry.npmjs.org/peberminta/-/peberminta-0.8.0.tgz"
   integrity sha512-YYEs+eauIjDH5nUEGi18EohWE0nV2QbGTqmxQcqgZ/0g+laPCQmuIqq7EBLVi9uim9zMgfJv0QBZEnQ3uHw/Tw==
-
-peberminta@^0.9.0:
-  version "0.9.0"
-  resolved "https://registry.npmjs.org/peberminta/-/peberminta-0.9.0.tgz"
-  integrity sha512-XIxfHpEuSJbITd1H3EeQwpcZbTLHc+VVr8ANI9t5sit565tsI4/xK3KWTUFE2e6QiangUkh3B0jihzmGnNrRsQ==
 
 peek-readable@^5.1.4:
   version "5.3.1"
@@ -8161,13 +8115,6 @@ react-matter-js@^1.0.5:
     svgpath "^2.2.3"
     tuplerone "^3.4.0-beta.6"
 
-react-promise-suspense@0.3.4:
-  version "0.3.4"
-  resolved "https://registry.npmjs.org/react-promise-suspense/-/react-promise-suspense-0.3.4.tgz"
-  integrity sha512-I42jl7L3Ze6kZaq+7zXWSunBa3b1on5yfvUW6Eo/3fFOj6dZ5Bqmcd264nJbTK/gn1HjjILAjSwnZbV4RpSaNQ==
-  dependencies:
-    fast-deep-equal "^2.0.1"
-
 react-remove-scroll-bar@^2.3.7:
   version "2.3.8"
   resolved "https://registry.npmjs.org/react-remove-scroll-bar/-/react-remove-scroll-bar-2.3.8.tgz"
@@ -8350,13 +8297,6 @@ resend@^0.17.2:
     axios "1.4.0"
     type-fest "3.13.0"
 
-resend@^4.1.2:
-  version "4.1.2"
-  resolved "https://registry.npmjs.org/resend/-/resend-4.1.2.tgz"
-  integrity sha512-km0btrAj/BqIaRlS+SoLNMaCAUUWEgcEvZpycfVvoXEwAHCxU+vp/ikxPgKRkyKyiR2iDcdUq5uIBTDK9oSSSQ==
-  dependencies:
-    "@react-email/render" "1.0.1"
-
 resolve-dir@^1.0.0, resolve-dir@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/resolve-dir/-/resolve-dir-1.0.1.tgz"
@@ -8500,13 +8440,6 @@ selderee@^0.10.0:
   integrity sha512-DEL/RW/f4qLw/NrVg97xKaEBC8IpzIG2fvxnzCp3Z4yk4jQ3MXom+Imav9wApjxX2dfS3eW7x0DXafJr85i39A==
   dependencies:
     parseley "^0.11.0"
-
-selderee@^0.11.0:
-  version "0.11.0"
-  resolved "https://registry.npmjs.org/selderee/-/selderee-0.11.0.tgz"
-  integrity sha512-5TF+l7p4+OsnP8BCCvSyZiSPc4x4//p5uPwK8TCnVPJYRmU2aYKMpOXvw8zM5a5JvuuCGN1jmsMwuU2W02ukfA==
-  dependencies:
-    parseley "^0.12.0"
 
 semver@^6.3.1:
   version "6.3.1"

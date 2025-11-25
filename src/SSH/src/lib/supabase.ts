@@ -145,6 +145,9 @@ export interface Database {
           student_id: string | null
           teacher_id: string | null
           parent_id: string | null
+          teacher_code: string | null
+          parent_code: string | null
+          admin_code: string | null
           created_at: string
           updated_at: string
         }
@@ -164,6 +167,9 @@ export interface Database {
           student_id?: string | null
           teacher_id?: string | null
           parent_id?: string | null
+          teacher_code?: string | null
+          parent_code?: string | null
+          admin_code?: string | null
         }
         Update: {
           email?: string
@@ -179,6 +185,9 @@ export interface Database {
           student_id?: string | null
           teacher_id?: string | null
           parent_id?: string | null
+          teacher_code?: string | null
+          parent_code?: string | null
+          admin_code?: string | null
         }
       }
       gurukuls: {

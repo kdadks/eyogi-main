@@ -70,33 +70,74 @@ export async function getBatches(filters?: {
       .in('batch_id', batchIds)
       .eq('is_active', true)
 
-    // Fetch all course assignments in one query
+    // Fetch all course assignments in one query with course details
     const { data: coursesData } = await supabaseAdmin
       .from('batch_courses')
-      .select('batch_id')
+      .select('batch_id, course:courses(*)')
       .in('batch_id', batchIds)
       .eq('is_active', true)
+
+    // Fetch all batch progress in one query
+    const { data: progressData } = await supabaseAdmin
+      .from('batch_progress')
+      .select('*')
+      .in('batch_id', batchIds)
+      .order('week_number', { ascending: true })
 
     // Create maps for quick lookup
     const studentCountMap = new Map<string, number>()
     const courseCountMap = new Map<string, number>()
+    const courseMap = new Map<string, unknown>()
+    const progressMap = new Map<string, unknown[]>()
 
     studentCounts?.forEach((item: { batch_id: string }) => {
       studentCountMap.set(item.batch_id, (studentCountMap.get(item.batch_id) || 0) + 1)
     })
 
-    coursesData?.forEach((item: { batch_id: string }) => {
+    coursesData?.forEach((item: { batch_id: string; course: unknown }) => {
       courseCountMap.set(item.batch_id, (courseCountMap.get(item.batch_id) || 0) + 1)
+      // Store the first course for this batch (assuming one course per batch for now)
+      if (!courseMap.has(item.batch_id) && item.course) {
+        courseMap.set(item.batch_id, item.course)
+      }
     })
 
-    // Map the data without fetching progress (too expensive for list view)
-    const batchesWithData = data.map((batch: { id: string } & Record<string, unknown>) => ({
-      ...batch,
-      student_count: studentCountMap.get(batch.id) || 0,
-      course_count: courseCountMap.get(batch.id) || 0,
-      course: null,
-      progress: [],
-    }))
+    progressData?.forEach((item: { batch_id: string } & Record<string, unknown>) => {
+      if (!progressMap.has(item.batch_id)) {
+        progressMap.set(item.batch_id, [])
+      }
+      progressMap.get(item.batch_id)?.push(item)
+    })
+
+    // Map the data with course and progress information
+    const batchesWithData = data.map((batch: { id: string } & Record<string, unknown>) => {
+      const progress = progressMap.get(batch.id) || []
+      const course = courseMap.get(batch.id) || null
+
+      // Calculate progress percentage
+      let progress_percentage = 0
+      if (course && typeof course === 'object' && 'duration_weeks' in course) {
+        const totalWeeks = (course as { duration_weeks: number }).duration_weeks
+        const completedWeeks = progress.filter(
+          (p: unknown) =>
+            typeof p === 'object' &&
+            p !== null &&
+            'is_completed' in p &&
+            (p as { is_completed: boolean }).is_completed,
+        ).length
+        progress_percentage = totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0
+      }
+
+      return {
+        ...batch,
+        student_count: studentCountMap.get(batch.id) || 0,
+        course_count: courseCountMap.get(batch.id) || 0,
+        course,
+        progress,
+        progress_percentage,
+        certificates_issued: batch.certificates_issued || false,
+      }
+    })
 
     return batchesWithData as unknown as Batch[]
   } catch (error) {

@@ -2,6 +2,8 @@ import { supabaseAdmin } from '../supabase'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import type { Database } from '../supabase'
 import type { Course } from '../../types'
+import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
+import { generateStudentId } from '../id-generator'
 type Profile = Database['public']['Tables']['profiles']['Row'] & {
   grade?: string
   address_line_1?: string
@@ -41,7 +43,6 @@ export async function getAllStudents(): Promise<Profile[]> {
         .select('id, full_name, email, role, student_id, created_at, updated_at, age')
         .eq('role', 'student')
         .not('student_id', 'is', null)
-        .ilike('student_id', 'EYG%')
         .order('student_id', { ascending: true })
       if (error) {
         return []
@@ -77,16 +78,20 @@ export async function updateUserRole(userId: string, newRole: Profile['role']): 
     role: newRole,
     updated_at: new Date().toISOString(),
   }
-  // If changing to student, assign student ID
+  // If changing to student, assign student ID (requires country and state)
   if (newRole === 'student') {
-    const year = new Date().getFullYear()
-    const { count } = await supabaseAdmin
+    // Get user's country and state
+    const { data: userProfile } = await supabaseAdmin
       .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('role', 'student')
-      .not('student_id', 'is', null)
-    const nextNumber = (count || 0) + 1
-    updateData.student_id = `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
+      .select('country, state')
+      .eq('id', userId)
+      .single()
+
+    if (userProfile?.country && userProfile?.state) {
+      updateData.student_id = await generateStudentId(userProfile.country, userProfile.state)
+    } else {
+      throw new Error('Country and state are required to generate student ID')
+    }
   }
   // If changing from student, remove student ID
   if (newRole !== 'student') {
@@ -159,9 +164,22 @@ export async function updateUserProfile(
   userId: string,
   updates: Database['public']['Tables']['profiles']['Update'],
 ): Promise<Profile> {
+  // Normalize country and state codes to ISO format if provided
+  let normalizedUpdates = { ...updates }
+
+  if (updates.country) {
+    normalizedUpdates.country = normalizeCountryToISO3(updates.country as string)
+    if (updates.state) {
+      normalizedUpdates.state = normalizeStateToISO2(
+        updates.state as string,
+        normalizedUpdates.country,
+      )
+    }
+  }
+
   // Update with flat address fields directly - no transformation needed
   const updateData = {
-    ...updates,
+    ...normalizedUpdates,
     updated_at: new Date().toISOString(),
   }
   const { data, error } = await supabaseAdmin

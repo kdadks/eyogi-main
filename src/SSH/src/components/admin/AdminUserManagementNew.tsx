@@ -300,7 +300,11 @@ const AdminUserManagement: React.FC = () => {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student ID
+                  {roleFilter === 'student'
+                    ? 'Student ID'
+                    : roleFilter === 'all'
+                      ? 'ID / Role Info'
+                      : 'User ID'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
@@ -353,7 +357,7 @@ const AdminUserManagement: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.student_id || '-'}
+                    {user.role === 'student' ? user.student_id || '-' : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.created_at).toLocaleDateString()}

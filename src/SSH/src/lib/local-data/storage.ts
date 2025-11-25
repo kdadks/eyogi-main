@@ -26,13 +26,14 @@ export interface LocalSession {
 export function generateId(): string {
   return Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
 }
-// Generate student ID
+// Generate student ID - Legacy local storage version
+// Note: Real app uses ISO format CCCCCYYYY##### from id-generator.ts
 export function generateStudentId(): string {
   const year = new Date().getFullYear()
   const existingUsers = getStoredUsers()
-  const currentYearUsers = existingUsers.filter((u) => u.student_id?.startsWith(`EYG-${year}-`))
+  const currentYearUsers = existingUsers.filter((u) => u.student_id?.startsWith(`XXXXX${year}`))
   const nextNumber = currentYearUsers.length + 1
-  return `EYG-${year}-${nextNumber.toString().padStart(4, '0')}`
+  return `XXXXX${year}${nextNumber.toString().padStart(5, '0')}`
 }
 // Storage keys
 const STORAGE_KEYS = {
@@ -106,7 +107,7 @@ export function initializeDefaultData(): void {
         parent_guardian_name: undefined,
         parent_guardian_email: undefined,
         parent_guardian_phone: undefined,
-        student_id: 'EYG-2025-0001',
+        student_id: 'IRLDU202500001', // ISO format: IRL (Ireland) + DU (Dublin) + 2025 + 00001
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },

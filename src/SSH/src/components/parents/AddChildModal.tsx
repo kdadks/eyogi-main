@@ -206,8 +206,12 @@ export default function AddChildModal({
       newErrors.city = 'City is required'
     }
 
+    if (!formData.address.country || !formData.address.country.trim()) {
+      newErrors.country = 'Country is required (needed for student ID generation)'
+    }
+
     if (!formData.address.state.trim()) {
-      newErrors.state = 'State is required'
+      newErrors.state = 'State/County is required (needed for student ID generation)'
     }
 
     if (!formData.address.zip_code.trim()) {
@@ -365,6 +369,23 @@ export default function AddChildModal({
 
         <div className="flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {/* Student ID Info Notice */}
+            {!isEditMode && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Student ID Generation</p>
+                    <p>
+                      A unique student ID will be automatically generated based on the country and
+                      state/county you provide (e.g., IRLDU202500001 for Dublin, Ireland). Please
+                      ensure these fields are accurate.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Basic Information Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {/* Full Name */}

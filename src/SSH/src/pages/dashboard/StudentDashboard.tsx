@@ -1971,7 +1971,7 @@ export default function StudentDashboard() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
             >
-              <StudentAttendanceView />
+              <StudentAttendanceView studentId={user?.id} />
             </motion.div>
           )}
           {/* Settings Tab */}
