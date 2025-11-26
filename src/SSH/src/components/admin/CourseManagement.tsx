@@ -640,15 +640,18 @@ export default function CourseManagement() {
               {/* Level */}
               <div className="col-span-1">
                 <span
-                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getLevelColor(course.level)}`}
+                  className={`inline-flex px-2 py-1 text-xs font-medium rounded ${getLevelColor(course.level)}`}
                 >
-                  {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
+                  {course.level
+                    .split(' ')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ')}
                 </span>
               </div>
               {/* Status */}
               <div className="col-span-2 flex items-center gap-1">
                 <span
-                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                  className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
                     course.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}
                 >
@@ -659,7 +662,7 @@ export default function CourseManagement() {
               <div className="col-span-1">
                 <button
                   onClick={() => handleFeaturedToggle(course)}
-                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full transition-colors ${
+                  className={`inline-flex px-2 py-1 text-xs font-medium rounded transition-colors ${
                     course.featured
                       ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -738,9 +741,10 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${getLevelColor(viewingCourse.level)}`}
+                      className={`px-2 py-1 text-xs font-medium rounded ${getLevelColor(viewingCourse.level)}`}
                     >
-                      {viewingCourse.level}
+                      {viewingCourse.level.charAt(0).toUpperCase() +
+                        viewingCourse.level.slice(1).toLowerCase()}
                     </span>
                   </div>
                 </div>
@@ -784,7 +788,7 @@ export default function CourseManagement() {
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        className={`px-2 py-1 text-xs font-medium rounded ${
                           viewingCourse.is_active
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
@@ -793,7 +797,7 @@ export default function CourseManagement() {
                         {viewingCourse.is_active ? 'Active' : 'Inactive'}
                       </span>
                       {viewingCourse.featured && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
                           Featured
                         </span>
                       )}

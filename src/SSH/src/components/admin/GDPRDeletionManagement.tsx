@@ -284,7 +284,11 @@ export default function GDPRDeletionManagement({
               <div>
                 <label className="text-sm font-medium text-gray-700">Request Type</label>
                 <p className="text-sm text-gray-900 mt-1">
-                  {selectedRequest.request_type.replace('_', ' ')}
+                  {selectedRequest.request_type
+                    .replace('_', ' ')
+                    .split(' ')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ')}
                 </p>
               </div>
               <div>
@@ -764,7 +768,12 @@ export default function GDPRDeletionManagement({
                       {request.target_user?.full_name || 'Unknown User'}
                     </p>
                     <p className="text-xs text-gray-600 mb-1">
-                      {request.target_user?.email} • {request.request_type.replace('_', ' ')}
+                      {request.target_user?.email} •{' '}
+                      {request.request_type
+                        .replace('_', ' ')
+                        .split(' ')
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ')}
                     </p>
                     <p className="text-xs text-gray-500">
                       Requested by: {request.requester?.full_name}

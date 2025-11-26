@@ -44,15 +44,20 @@ import { countries, getStatesForCountry } from '../../lib/address-utils'
 
 // Utility to build address object for DB
 
-// Utility to extract age from date_of_birth
+// Utility to calculate age from date_of_birth
+function calculateAgeFromDateOfBirth(dateOfBirth: string): number | null {
+  if (!dateOfBirth) return null
+  const birthDate = new Date(dateOfBirth)
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
 
-// Utility to get date_of_birth from age
-function getDateOfBirthFromAge(age: string): string | null {
-  const n = parseInt(age)
-  if (!n || n < 0 || n > 120) return null
-  const now = new Date()
-  now.setFullYear(now.getFullYear() - n)
-  return now.toISOString().split('T')[0]
+  // Adjust age if birthday hasn't occurred this year yet
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+
+  return age >= 0 ? age : null
 }
 interface UserFormModalProps {
   isOpen: boolean
@@ -81,7 +86,7 @@ export default function UserFormModal({
     password: '',
     full_name: '',
     role: 'student',
-    status: 'pending_verification',
+    status: 'pending_activation',
     date_of_birth: '',
     phone: '',
     emergency_contact_name: '',
@@ -120,13 +125,16 @@ export default function UserFormModal({
         emergencyContact = user.emergency_contact as any
       }
 
+      const dateOfBirth = user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : ''
+      const calculatedAge = dateOfBirth ? calculateAgeFromDateOfBirth(dateOfBirth) : null
+
       setFormData({
         email: user?.email || '',
         password: '',
         full_name: user?.full_name || '',
         role: user?.role || 'student',
-        status: user?.status || 'pending_verification',
-        date_of_birth: user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : '',
+        status: user?.status || 'pending_activation',
+        date_of_birth: dateOfBirth,
         phone: user?.phone || '',
         emergency_contact_name: emergencyContact.name || '',
         emergency_contact_phone: emergencyContact.phone || '',
@@ -142,7 +150,7 @@ export default function UserFormModal({
         state: user?.state || '',
         zip_code: user?.zip_code || '',
         country: user?.country || '',
-        age: user?.age ? String(user.age) : '',
+        age: calculatedAge !== null ? String(calculatedAge) : '',
         grade: user?.grade || '',
       })
     } else {
@@ -151,7 +159,7 @@ export default function UserFormModal({
         password: '',
         full_name: '',
         role: 'student',
-        status: 'pending_verification',
+        status: 'pending_activation',
         date_of_birth: '',
         phone: '',
         emergency_contact_name: '',
@@ -185,6 +193,11 @@ export default function UserFormModal({
       // Auto-generate email when full name changes in create mode
       if (mode === 'create' && name === 'full_name' && value) {
         updated.email = generateEmailFromName(value)
+      }
+      // Auto-calculate age when date of birth changes
+      if (name === 'date_of_birth' && value) {
+        const calculatedAge = calculateAgeFromDateOfBirth(value)
+        updated.age = calculatedAge !== null ? String(calculatedAge) : ''
       }
       return updated
     })
@@ -308,7 +321,7 @@ export default function UserFormModal({
           email: formData.email,
           full_name: formData.full_name,
           role: formData.role,
-          status: formData.status || 'pending_verification',
+          status: formData.status || 'pending_activation',
           date_of_birth: formData.date_of_birth || null,
           phone: formData.phone || null,
           emergency_contact: emergencyContact,
@@ -479,17 +492,6 @@ export default function UserFormModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-              <input
-                type="text"
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                disabled={isReadOnly}
-              />
-            </div>
-            <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
               <input
                 type="date"
@@ -627,7 +629,9 @@ export default function UserFormModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Age</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Age (Auto-calculated)
+              </label>
               <input
                 type="number"
                 name="age"
@@ -636,11 +640,11 @@ export default function UserFormModal({
                     ? formData.age
                     : ''
                 }
-                onChange={handleInputChange}
-                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                readOnly
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded bg-gray-50 cursor-not-allowed"
                 min="0"
                 max="120"
-                disabled={isReadOnly}
+                disabled
               />
             </div>
           </div>

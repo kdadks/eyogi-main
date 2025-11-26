@@ -262,11 +262,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
                 <p className="text-sm font-medium text-gray-700">
                   {currentUser?.full_name || user?.email?.split('@')[0] || 'Admin'}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-500">
                   {(() => {
                     if (isSuperAdminRole()) return 'Super Admin'
                     const role = getUserRole()
-                    return role ? role.replace('_', ' ') : 'Admin'
+                    if (!role) return 'Admin'
+                    const text = role.replace('_', ' ')
+                    return text
+                      .split(' ')
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                      .join(' ')
                   })()}
                 </p>
               </div>

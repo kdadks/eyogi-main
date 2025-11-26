@@ -89,7 +89,8 @@ const ROLE_MENU_DEFAULTS: Record<string, Record<string, boolean>> = {
 export default function AdminPermissionManagement() {
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>(ROLE_DEFAULTS)
-  const [menuVisibility, setMenuVisibility] = useState<Record<string, Record<string, boolean>>>(ROLE_MENU_DEFAULTS)
+  const [menuVisibility, setMenuVisibility] =
+    useState<Record<string, Record<string, boolean>>>(ROLE_MENU_DEFAULTS)
   const [selectedRole, setSelectedRole] = useState<string>('business_admin')
   const [loading, setLoading] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -161,12 +162,14 @@ export default function AdminPermissionManagement() {
       }
 
       // Map role permissions and menu visibility
-      ;(rolePermData || []).forEach((rp: { role: string; permission_id: string; menu_visible: boolean }) => {
-        if (rolePermissionMap[rp.role]) {
-          rolePermissionMap[rp.role].push(rp.permission_id)
-          menuVisibilityMap[rp.role][rp.permission_id] = rp.menu_visible ?? true
-        }
-      })
+      ;(rolePermData || []).forEach(
+        (rp: { role: string; permission_id: string; menu_visible: boolean }) => {
+          if (rolePermissionMap[rp.role]) {
+            rolePermissionMap[rp.role].push(rp.permission_id)
+            menuVisibilityMap[rp.role][rp.permission_id] = rp.menu_visible ?? true
+          }
+        },
+      )
 
       console.log('Role permissions map:', rolePermissionMap)
       console.log('Menu visibility map:', menuVisibilityMap)
@@ -350,8 +353,10 @@ export default function AdminPermissionManagement() {
                   }`}
                 >
                   <div className="text-center">
-                    <div className="font-medium capitalize text-gray-900 mb-1">
-                      {role === 'business_admin' ? 'Business Admin' : role}
+                    <div className="font-medium text-gray-900 mb-1">
+                      {role === 'business_admin'
+                        ? 'Business admin'
+                        : role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()}
                     </div>
                     <Badge variant={isSelected ? 'default' : 'secondary'} className="text-xs">
                       {permissionCount} permissions
@@ -464,12 +469,16 @@ export default function AdminPermissionManagement() {
           Object.entries(groupedPermissions).map(([resource, resourcePermissions]) => (
             <Card key={resource}>
               <CardHeader>
-                <CardTitle className="capitalize flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   {resourcePermissions[0].icon}
-                  {resource} Permissions
+                  {resource
+                    .split(' ')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ')}{' '}
+                  Permissions
                 </CardTitle>
                 <CardDescription>
-                  Manage {resource}-related permissions for the {selectedRole} role
+                  Manage {resource.toLowerCase()}-related permissions for the {selectedRole} role
                 </CardDescription>
               </CardHeader>
               <CardContent>

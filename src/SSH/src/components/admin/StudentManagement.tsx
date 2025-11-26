@@ -73,7 +73,9 @@ export default function StudentManagement() {
   const [filteredStudents, setFilteredStudents] = useState<StudentWithEnrollments[]>([])
   const [studentConsents, setStudentConsents] = useState<Map<string, StudentConsent>>(new Map())
   const [showConsentAudit, setShowConsentAudit] = useState(false)
-  const [selectedConsentForAudit, setSelectedConsentForAudit] = useState<StudentConsent | null>(null)
+  const [selectedConsentForAudit, setSelectedConsentForAudit] = useState<StudentConsent | null>(
+    null,
+  )
   const [selectedStudentNameForAudit, setSelectedStudentNameForAudit] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
@@ -628,7 +630,7 @@ export default function StudentManagement() {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
-              <option value="pending_verification">Pending Verification</option>
+              <option value="pending_activation">Pending Activation</option>
             </select>
             <select
               value={consentFilter}
@@ -1345,25 +1347,27 @@ export default function StudentManagement() {
                               </span>
                             </div>
                             {/* Average Course Progress */}
-                            {student.course_progress && Object.keys(student.course_progress).length > 0 && (
-                              <div className="flex items-center">
-                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                  <div
-                                    className="bg-green-500 h-2 rounded-full"
-                                    style={{
-                                      width: `${student.average_course_progress || 0}%`,
-                                    }}
-                                  />
+                            {student.course_progress &&
+                              Object.keys(student.course_progress).length > 0 && (
+                                <div className="flex items-center">
+                                  <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div
+                                      className="bg-green-500 h-2 rounded-full"
+                                      style={{
+                                        width: `${student.average_course_progress || 0}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-gray-600">
+                                    {Math.round(student.average_course_progress || 0)}% avg
+                                  </span>
                                 </div>
-                                <span className="text-xs text-gray-600">
-                                  {Math.round(student.average_course_progress || 0)}% avg
-                                </span>
-                              </div>
-                            )}
+                              )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          {student.attendance_summaries && student.attendance_summaries.length > 0 ? (
+                          {student.attendance_summaries &&
+                          student.attendance_summaries.length > 0 ? (
                             <div className="flex items-center">
                               <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                                 <div

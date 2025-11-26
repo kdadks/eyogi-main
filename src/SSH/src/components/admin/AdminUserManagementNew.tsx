@@ -150,6 +150,25 @@ const AdminUserManagement: React.FC = () => {
     setEditingUser(null)
     loadUsers() // Refresh the list
   }
+
+  const handleActivateUser = async (userId: string, userName: string) => {
+    try {
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ status: 'active' })
+        .eq('id', userId)
+
+      if (error) {
+        toast.error('Failed to activate user')
+        return
+      }
+
+      toast.success(`${userName} has been activated successfully`)
+      loadUsers() // Refresh the list
+    } catch {
+      toast.error('Failed to activate user')
+    }
+  }
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -160,7 +179,10 @@ const AdminUserManagement: React.FC = () => {
       (roleFilter === 'admin' &&
         (user.role === 'admin' || user.role === 'business_admin' || user.role === 'super_admin')) ||
       user.role === roleFilter
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter
+    const matchesStatus =
+      statusFilter === 'all' ||
+      user.status === statusFilter ||
+      (statusFilter === 'pending_activation' && user.status === 'pending_verification')
     return matchesSearch && matchesRole && matchesStatus
   })
 
@@ -208,11 +230,31 @@ const AdminUserManagement: React.FC = () => {
         return 'bg-gray-100 text-gray-800'
       case 'suspended':
         return 'bg-red-100 text-red-800'
+      case 'pending_activation':
       case 'pending_verification':
         return 'bg-yellow-100 text-yellow-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const formatStatusLabel = (status: string) => {
+    if (status === 'pending_verification' || status === 'pending_activation') {
+      return 'Pending Activation'
+    }
+    const text = status.replace('_', ' ')
+    return text
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+  }
+
+  const formatRoleLabel = (role: string) => {
+    const text = role.replace('_', ' ')
+    return text
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
   }
   const isProtectedUser = (user: Profile): boolean => {
     return user.role === 'super_admin' || user.id === currentUser?.id
@@ -270,7 +312,7 @@ const AdminUserManagement: React.FC = () => {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
-              <option value="pending_verification">Pending</option>
+              <option value="pending_activation">Pending Activation</option>
             </select>
           </div>
           {/* Add User Button */}
@@ -344,16 +386,16 @@ const AdminUserManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${getRoleBadgeColor(user.role)}`}
                     >
-                      {user.role.replace('_', ' ')}
+                      {formatRoleLabel(user.role)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(user.status)}`}
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded ${getStatusBadgeColor(user.status)}`}
                     >
-                      {user.status.replace('_', ' ')}
+                      {formatStatusLabel(user.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -364,6 +406,30 @@ const AdminUserManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
+                      {(user.status === 'pending_activation' ||
+                        user.status === 'pending_verification') && (
+                        <button
+                          onClick={() => handleActivateUser(user.id, user.full_name)}
+                          className="text-green-600 hover:text-green-900 p-1 cursor-pointer"
+                          title="Activate user"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="h-4 w-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleViewUser(user)}
                         className="text-gray-600 hover:text-gray-900 p-1 cursor-pointer"

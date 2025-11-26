@@ -219,7 +219,10 @@ export interface SiteAnalytics {
 // STUDENT ANALYTICS
 // ============================================
 
-export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: string): Promise<StudentAnalytics> {
+export async function getStudentAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<StudentAnalytics> {
   try {
     // Get all students
     let studentsQuery = supabaseAdmin
@@ -240,11 +243,15 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
     const studentsByAge = (allStudents || []).reduce((acc: any, student: any) => {
       if (student.age) {
         const ageGroup =
-          student.age < 6 ? '0-5' :
-          student.age < 13 ? '6-12' :
-          student.age < 18 ? '13-17' :
-          student.age < 25 ? '18-24' :
-          '25+'
+          student.age < 6
+            ? '0-5'
+            : student.age < 13
+              ? '6-12'
+              : student.age < 18
+                ? '13-17'
+                : student.age < 25
+                  ? '18-24'
+                  : '25+'
         acc[ageGroup] = (acc[ageGroup] || 0) + 1
       }
       return acc
@@ -252,7 +259,7 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
 
     const studentsByAgeGroup = Object.entries(studentsByAge).map(([ageGroup, count]) => ({
       ageGroup,
-      count: count as number
+      count: count as number,
     }))
 
     // Get students by location
@@ -281,7 +288,7 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
 
     const studentsByStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
       status,
-      count
+      count,
     }))
 
     // Get top performing students
@@ -290,9 +297,7 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
       .select('student_id, status')
       .eq('status', 'completed')
 
-    const { data: certificates } = await supabaseAdmin
-      .from('certificates')
-      .select('student_id')
+    const { data: certificates } = await supabaseAdmin.from('certificates').select('student_id')
 
     const { data: attendanceRecords } = await supabaseAdmin
       .from('attendance_records')
@@ -302,21 +307,36 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
 
     // Count completions
     ;(enrollments || []).forEach((enr: any) => {
-      const metrics = studentMetrics.get(enr.student_id) || { coursesCompleted: 0, certificatesEarned: 0, totalClasses: 0, presentClasses: 0 }
+      const metrics = studentMetrics.get(enr.student_id) || {
+        coursesCompleted: 0,
+        certificatesEarned: 0,
+        totalClasses: 0,
+        presentClasses: 0,
+      }
       metrics.coursesCompleted++
       studentMetrics.set(enr.student_id, metrics)
     })
 
     // Count certificates
     ;(certificates || []).forEach((cert: any) => {
-      const metrics = studentMetrics.get(cert.student_id) || { coursesCompleted: 0, certificatesEarned: 0, totalClasses: 0, presentClasses: 0 }
+      const metrics = studentMetrics.get(cert.student_id) || {
+        coursesCompleted: 0,
+        certificatesEarned: 0,
+        totalClasses: 0,
+        presentClasses: 0,
+      }
       metrics.certificatesEarned++
       studentMetrics.set(cert.student_id, metrics)
     })
 
     // Calculate attendance
     ;(attendanceRecords || []).forEach((att: any) => {
-      const metrics = studentMetrics.get(att.student_id) || { coursesCompleted: 0, certificatesEarned: 0, totalClasses: 0, presentClasses: 0 }
+      const metrics = studentMetrics.get(att.student_id) || {
+        coursesCompleted: 0,
+        certificatesEarned: 0,
+        totalClasses: 0,
+        presentClasses: 0,
+      }
       metrics.totalClasses++
       if (att.status === 'present') metrics.presentClasses++
       studentMetrics.set(att.student_id, metrics)
@@ -330,7 +350,10 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
           name: student?.full_name || 'Unknown',
           coursesCompleted: metrics.coursesCompleted,
           certificatesEarned: metrics.certificatesEarned,
-          attendanceRate: metrics.totalClasses > 0 ? Math.round((metrics.presentClasses / metrics.totalClasses) * 100) : 0
+          attendanceRate:
+            metrics.totalClasses > 0
+              ? Math.round((metrics.presentClasses / metrics.totalClasses) * 100)
+              : 0,
         }
       })
       .sort((a, b) => b.coursesCompleted - a.coursesCompleted)
@@ -343,7 +366,7 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
       studentsByAgeGroup,
       studentsByLocation,
       studentsByStatus,
-      topStudents
+      topStudents,
     }
   } catch (error) {
     console.error('Error fetching student analytics:', error)
@@ -355,11 +378,12 @@ export async function getStudentAnalytics(dateRange: DateRange, gurukulId?: stri
 // ENROLLMENT ANALYTICS
 // ============================================
 
-export async function getEnrollmentAnalytics(dateRange: DateRange, gurukulId?: string): Promise<EnrollmentAnalytics> {
+export async function getEnrollmentAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<EnrollmentAnalytics> {
   try {
-    let query = supabaseAdmin
-      .from('enrollments')
-      .select('*, course:courses(title, gurukul_id)')
+    let query = supabaseAdmin.from('enrollments').select('*, course:courses(title, gurukul_id)')
 
     const { data: enrollments } = await query
 
@@ -369,8 +393,8 @@ export async function getEnrollmentAnalytics(dateRange: DateRange, gurukulId?: s
       : enrollments
 
     // Enrollments in date range
-    const rangeEnrollments = filteredEnrollments?.filter((e: any) =>
-      e.created_at >= dateRange.start && e.created_at <= dateRange.end
+    const rangeEnrollments = filteredEnrollments?.filter(
+      (e: any) => e.created_at >= dateRange.start && e.created_at <= dateRange.end,
     )
 
     // By status
@@ -381,7 +405,7 @@ export async function getEnrollmentAnalytics(dateRange: DateRange, gurukulId?: s
 
     const enrollmentsByStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
       status,
-      count
+      count,
     }))
 
     // Enrollment trends (last 30 days)
@@ -402,19 +426,22 @@ export async function getEnrollmentAnalytics(dateRange: DateRange, gurukulId?: s
       .sort((a, b) => a.date.localeCompare(b.date))
 
     // Completion rate
-    const completedCount = filteredEnrollments?.filter((e: any) => e.status === 'completed').length || 0
+    const completedCount =
+      filteredEnrollments?.filter((e: any) => e.status === 'completed').length || 0
     const totalCount = filteredEnrollments?.length || 1
     const completionRate = Math.round((completedCount / totalCount) * 100)
 
     // Average time to complete
-    const completedEnrollments = filteredEnrollments?.filter((e: any) => e.status === 'completed' && e.completed_at) || []
+    const completedEnrollments =
+      filteredEnrollments?.filter((e: any) => e.status === 'completed' && e.completed_at) || []
     const totalDays = completedEnrollments.reduce((sum: number, enr: any) => {
       const start = new Date(enr.enrolled_at)
       const end = new Date(enr.completed_at)
       const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
       return sum + days
     }, 0)
-    const averageTimeToComplete = completedEnrollments.length > 0 ? Math.round(totalDays / completedEnrollments.length) : 0
+    const averageTimeToComplete =
+      completedEnrollments.length > 0 ? Math.round(totalDays / completedEnrollments.length) : 0
 
     // By course
     const courseMap = new Map()
@@ -436,7 +463,7 @@ export async function getEnrollmentAnalytics(dateRange: DateRange, gurukulId?: s
       enrollmentTrends,
       completionRate,
       averageTimeToComplete,
-      enrollmentsByCourse
+      enrollmentsByCourse,
     }
   } catch (error) {
     console.error('Error fetching enrollment analytics:', error)
@@ -448,7 +475,10 @@ export async function getEnrollmentAnalytics(dateRange: DateRange, gurukulId?: s
 // COURSE ANALYTICS
 // ============================================
 
-export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: string): Promise<CourseAnalytics> {
+export async function getCourseAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<CourseAnalytics> {
   try {
     let coursesQuery = supabaseAdmin.from('courses').select('*')
     if (gurukulId) {
@@ -481,7 +511,8 @@ export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: strin
           title: course.title,
           enrollments: stats.enrollments,
           completions: stats.completions,
-          completionRate: stats.enrollments > 0 ? Math.round((stats.completions / stats.enrollments) * 100) : 0
+          completionRate:
+            stats.enrollments > 0 ? Math.round((stats.completions / stats.enrollments) * 100) : 0,
         }
       })
       .sort((a, b) => b.enrollments - a.enrollments)
@@ -495,7 +526,7 @@ export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: strin
 
     const coursesByLevel = Array.from(levelMap.entries()).map(([level, count]) => ({
       level,
-      count
+      count,
     }))
 
     // By delivery method
@@ -506,7 +537,7 @@ export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: strin
 
     const coursesByDeliveryMethod = Array.from(methodMap.entries()).map(([method, count]) => ({
       method,
-      count
+      count,
     }))
 
     // Capacity utilization
@@ -520,7 +551,7 @@ export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: strin
           courseName: course.title,
           enrolled,
           maxStudents,
-          utilizationRate: Math.round((enrolled / maxStudents) * 100)
+          utilizationRate: Math.round((enrolled / maxStudents) * 100),
         }
       })
       .sort((a, b) => b.utilizationRate - a.utilizationRate)
@@ -532,7 +563,7 @@ export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: strin
       popularCourses,
       coursesByLevel,
       coursesByDeliveryMethod,
-      capacityUtilization
+      capacityUtilization,
     }
   } catch (error) {
     console.error('Error fetching course analytics:', error)
@@ -544,7 +575,10 @@ export async function getCourseAnalytics(dateRange: DateRange, gurukulId?: strin
 // TEACHER ANALYTICS
 // ============================================
 
-export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: string): Promise<TeacherAnalytics> {
+export async function getTeacherAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<TeacherAnalytics> {
   try {
     const { data: teachers } = await supabaseAdmin
       .from('profiles')
@@ -562,9 +596,7 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
       .from('batches')
       .select('teacher_id, students:batch_students(count)')
 
-    const { data: certificates } = await supabaseAdmin
-      .from('certificates')
-      .select('teacher_id')
+    const { data: certificates } = await supabaseAdmin.from('certificates').select('teacher_id')
 
     const teacherMetrics = new Map()
 
@@ -574,7 +606,7 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
         studentCount: 0,
         courseCount: 0,
         batchCount: 0,
-        certificatesIssued: 0
+        certificatesIssued: 0,
       }
       metrics.courseCount++
       teacherMetrics.set(assignment.teacher_id, metrics)
@@ -587,7 +619,7 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
           studentCount: 0,
           courseCount: 0,
           batchCount: 0,
-          certificatesIssued: 0
+          certificatesIssued: 0,
         }
         metrics.batchCount++
         metrics.studentCount += batch.students?.[0]?.count || 0
@@ -602,7 +634,7 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
           studentCount: 0,
           courseCount: 0,
           batchCount: 0,
-          certificatesIssued: 0
+          certificatesIssued: 0,
         }
         metrics.certificatesIssued++
         teacherMetrics.set(cert.teacher_id, metrics)
@@ -615,7 +647,7 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
           studentCount: 0,
           courseCount: 0,
           batchCount: 0,
-          certificatesIssued: 0
+          certificatesIssued: 0,
         }
         return {
           teacherId: teacher.id,
@@ -623,7 +655,7 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
           studentCount: metrics.studentCount,
           courseCount: metrics.courseCount,
           batchCount: metrics.batchCount,
-          certificatesIssued: metrics.certificatesIssued
+          certificatesIssued: metrics.certificatesIssued,
         }
       })
       .filter((t) => t.studentCount > 0 || t.courseCount > 0)
@@ -633,14 +665,14 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
       teacherId: t.teacherId,
       teacherName: t.teacherName,
       metric: 'students',
-      value: t.studentCount
+      value: t.studentCount,
     }))
 
     return {
       totalTeachers: teachers?.length || 0,
       activeTeachers,
       teacherWorkload,
-      topTeachers
+      topTeachers,
     }
   } catch (error) {
     console.error('Error fetching teacher analytics:', error)
@@ -652,17 +684,40 @@ export async function getTeacherAnalytics(dateRange: DateRange, gurukulId?: stri
 // BATCH ANALYTICS
 // ============================================
 
-export async function getBatchAnalytics(dateRange: DateRange, gurukulId?: string): Promise<BatchAnalytics> {
+export async function getBatchAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<BatchAnalytics> {
   try {
     let batchQuery = supabaseAdmin
       .from('batches')
-      .select('*, gurukul:gurukuls(name), students:batch_students(count), progress:batch_progress(*)')
+      .select(
+        '*, gurukul:gurukuls(name), students:batch_students(count), progress:batch_progress(*)',
+      )
 
     if (gurukulId) {
       batchQuery = batchQuery.eq('gurukul_id', gurukulId)
     }
 
     const { data: batches } = await batchQuery
+
+    // Fetch batch courses and course details separately
+    const batchIds = (batches || []).map((batch: any) => batch.id)
+    let coursesQuery = supabaseAdmin
+      .from('batch_courses')
+      .select('batch_id, course:courses(duration_weeks)')
+      .in('batch_id', batchIds)
+      .eq('is_active', true)
+
+    const { data: coursesData } = await coursesQuery
+
+    // Create a map of batch_id to course data
+    const courseMap = new Map<string, any>()
+    coursesData?.forEach((item: any) => {
+      if (item.course && !courseMap.has(item.batch_id)) {
+        courseMap.set(item.batch_id, item.course)
+      }
+    })
 
     // By status
     const statusMap = new Map()
@@ -672,7 +727,7 @@ export async function getBatchAnalytics(dateRange: DateRange, gurukulId?: string
 
     const batchesByStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
       status,
-      count
+      count,
     }))
 
     // Average batch size
@@ -685,14 +740,15 @@ export async function getBatchAnalytics(dateRange: DateRange, gurukulId?: string
     const batchProgress = (batches || [])
       .map((batch: any) => {
         const progress = batch.progress || []
-        const totalWeeks = batch.course?.duration_weeks || 0
+        const course = courseMap.get(batch.id)
+        const totalWeeks = course?.duration_weeks || 0
         const completedWeeks = progress.filter((p: any) => p.is_completed).length
         return {
           batchId: batch.id,
           batchName: batch.name,
           totalWeeks,
           completedWeeks,
-          progressPercentage: totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0
+          progressPercentage: totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0,
         }
       })
       .sort((a, b) => b.progressPercentage - a.progressPercentage)
@@ -715,7 +771,7 @@ export async function getBatchAnalytics(dateRange: DateRange, gurukulId?: string
       batchesByStatus,
       averageBatchSize,
       batchProgress,
-      batchesByGurukul
+      batchesByGurukul,
     }
   } catch (error) {
     console.error('Error fetching batch analytics:', error)
@@ -727,7 +783,10 @@ export async function getBatchAnalytics(dateRange: DateRange, gurukulId?: string
 // ATTENDANCE ANALYTICS
 // ============================================
 
-export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: string): Promise<AttendanceAnalytics> {
+export async function getAttendanceAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<AttendanceAnalytics> {
   try {
     const { data: attendanceRecords } = await supabaseAdmin
       .from('attendance_records')
@@ -750,7 +809,7 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
     const attendanceByStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
       status,
       count,
-      percentage: Math.round((count / totalRecords) * 100)
+      percentage: Math.round((count / totalRecords) * 100),
     }))
 
     const presentCount = statusMap.get('present') || 0
@@ -760,7 +819,13 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
     const dailyAttendance = new Map()
     ;(filteredRecords || []).forEach((record: any) => {
       const date = record.class_date
-      const daily = dailyAttendance.get(date) || { date, presentCount: 0, absentCount: 0, lateCount: 0, excusedCount: 0 }
+      const daily = dailyAttendance.get(date) || {
+        date,
+        presentCount: 0,
+        absentCount: 0,
+        lateCount: 0,
+        excusedCount: 0,
+      }
       if (record.status === 'present') daily.presentCount++
       if (record.status === 'absent') daily.absentCount++
       if (record.status === 'late') daily.lateCount++
@@ -780,7 +845,7 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
         studentId,
         studentName: record.student?.full_name || 'Unknown',
         totalClasses: 0,
-        presentCount: 0
+        presentCount: 0,
       }
       stats.totalClasses++
       if (record.status === 'present') stats.presentCount++
@@ -790,7 +855,8 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
     const lowAttendanceStudents = Array.from(studentAttendance.values())
       .map((stats: any) => ({
         ...stats,
-        attendanceRate: stats.totalClasses > 0 ? Math.round((stats.presentCount / stats.totalClasses) * 100) : 0
+        attendanceRate:
+          stats.totalClasses > 0 ? Math.round((stats.presentCount / stats.totalClasses) * 100) : 0,
       }))
       .filter((s) => s.attendanceRate < 75 && s.totalClasses >= 5)
       .sort((a, b) => a.attendanceRate - b.attendanceRate)
@@ -801,7 +867,7 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
       .map((stats: any) => ({
         studentId: stats.studentId,
         studentName: stats.studentName,
-        totalClasses: stats.totalClasses
+        totalClasses: stats.totalClasses,
       }))
       .slice(0, 10)
 
@@ -810,7 +876,7 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
       attendanceByStatus,
       attendanceTrends,
       lowAttendanceStudents,
-      perfectAttendanceStudents
+      perfectAttendanceStudents,
     }
   } catch (error) {
     console.error('Error fetching attendance analytics:', error)
@@ -822,11 +888,16 @@ export async function getAttendanceAnalytics(dateRange: DateRange, gurukulId?: s
 // CERTIFICATE ANALYTICS
 // ============================================
 
-export async function getCertificateAnalytics(dateRange: DateRange, gurukulId?: string): Promise<CertificateAnalytics> {
+export async function getCertificateAnalytics(
+  dateRange: DateRange,
+  gurukulId?: string,
+): Promise<CertificateAnalytics> {
   try {
     const { data: allCertificates } = await supabaseAdmin
       .from('certificates')
-      .select('*, course:courses(title, gurukul_id), teacher:profiles!certificates_teacher_id_fkey(full_name)')
+      .select(
+        '*, course:courses(title, gurukul_id), teacher:profiles!certificates_teacher_id_fkey(full_name)',
+      )
 
     const filteredCertificates = gurukulId
       ? allCertificates?.filter((c: any) => c.course?.gurukul_id === gurukulId)
@@ -836,13 +907,11 @@ export async function getCertificateAnalytics(dateRange: DateRange, gurukulId?: 
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-    const certificatesThisWeek = filteredCertificates?.filter((c: any) =>
-      new Date(c.created_at) >= weekAgo
-    ).length || 0
+    const certificatesThisWeek =
+      filteredCertificates?.filter((c: any) => new Date(c.created_at) >= weekAgo).length || 0
 
-    const certificatesThisMonth = filteredCertificates?.filter((c: any) =>
-      new Date(c.created_at) >= monthAgo
-    ).length || 0
+    const certificatesThisMonth =
+      filteredCertificates?.filter((c: any) => new Date(c.created_at) >= monthAgo).length || 0
 
     // By course
     const courseMap = new Map()
@@ -916,7 +985,9 @@ export async function getCertificateAnalytics(dateRange: DateRange, gurukulId?: 
       return sum + days
     }, 0)
 
-    const averageTimeToComplete = enrollments?.length ? Math.round(totalDays / enrollments.length) : 0
+    const averageTimeToComplete = enrollments?.length
+      ? Math.round(totalDays / enrollments.length)
+      : 0
 
     return {
       totalCertificates: filteredCertificates?.length || 0,
@@ -926,7 +997,7 @@ export async function getCertificateAnalytics(dateRange: DateRange, gurukulId?: 
       certificatesByGurukul,
       certificatesByTeacher,
       certificateTrends,
-      averageTimeToComplete
+      averageTimeToComplete,
     }
   } catch (error) {
     console.error('Error fetching certificate analytics:', error)
@@ -940,13 +1011,9 @@ export async function getCertificateAnalytics(dateRange: DateRange, gurukulId?: 
 
 export async function getGurukulAnalytics(dateRange: DateRange): Promise<GurukulAnalytics> {
   try {
-    const { data: gurukuls } = await supabaseAdmin
-      .from('gurukuls')
-      .select('*')
+    const { data: gurukuls } = await supabaseAdmin.from('gurukuls').select('*')
 
-    const { data: courses } = await supabaseAdmin
-      .from('courses')
-      .select('id, gurukul_id')
+    const { data: courses } = await supabaseAdmin.from('courses').select('id, gurukul_id')
 
     const { data: enrollments } = await supabaseAdmin
       .from('enrollments')
@@ -962,8 +1029,10 @@ export async function getGurukulAnalytics(dateRange: DateRange): Promise<Gurukul
 
     const gurukulPerformance = (gurukuls || []).map((gurukul: any) => {
       const gurukulCourses = courses?.filter((c: any) => c.gurukul_id === gurukul.id) || []
-      const gurukulEnrollments = enrollments?.filter((e: any) => e.course?.gurukul_id === gurukul.id) || []
-      const gurukulCertificates = certificates?.filter((c: any) => c.course?.gurukul_id === gurukul.id) || []
+      const gurukulEnrollments =
+        enrollments?.filter((e: any) => e.course?.gurukul_id === gurukul.id) || []
+      const gurukulCertificates =
+        certificates?.filter((c: any) => c.course?.gurukul_id === gurukul.id) || []
 
       const studentIds = new Set()
       batchStudents?.forEach((bs: any) => {
@@ -972,7 +1041,9 @@ export async function getGurukulAnalytics(dateRange: DateRange): Promise<Gurukul
         }
       })
 
-      const completedEnrollments = gurukulEnrollments.filter((e: any) => e.status === 'completed').length
+      const completedEnrollments = gurukulEnrollments.filter(
+        (e: any) => e.status === 'completed',
+      ).length
       const totalEnrollments = gurukulEnrollments.length || 1
 
       return {
@@ -982,12 +1053,12 @@ export async function getGurukulAnalytics(dateRange: DateRange): Promise<Gurukul
         studentCount: studentIds.size,
         enrollmentCount: gurukulEnrollments.length,
         certificateCount: gurukulCertificates.length,
-        completionRate: Math.round((completedEnrollments / totalEnrollments) * 100)
+        completionRate: Math.round((completedEnrollments / totalEnrollments) * 100),
       }
     })
 
     return {
-      gurukulPerformance
+      gurukulPerformance,
     }
   } catch (error) {
     console.error('Error fetching gurukul analytics:', error)
@@ -1039,15 +1110,16 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       .map(([pagePath, views]) => {
         const uniqueUsers = usersByPage.get(pagePath)?.size || 0
         const durations = durationsByPage.get(pagePath) || []
-        const averageDuration = durations.length > 0
-          ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-          : 0
+        const averageDuration =
+          durations.length > 0
+            ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+            : 0
 
         return {
           pagePath,
           views,
           uniqueUsers,
-          averageDuration
+          averageDuration,
         }
       })
       .sort((a, b) => b.views - a.views)
@@ -1073,7 +1145,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       .map(({ date, activeUsers, sessions }) => ({
         date,
         activeUsers: activeUsers.size,
-        sessions
+        sessions,
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
@@ -1089,7 +1161,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
     const deviceTypes = Array.from(deviceMap.entries()).map(([deviceType, count]) => ({
       deviceType,
       count,
-      percentage: Math.round((count / totalDevices) * 100)
+      percentage: Math.round((count / totalDevices) * 100),
     }))
 
     // Top referrers with source parsing
@@ -1118,7 +1190,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       .map(([source, count]) => ({
         source,
         count,
-        percentage: Math.round((count / (pageAnalytics?.length || 1)) * 100)
+        percentage: Math.round((count / (pageAnalytics?.length || 1)) * 100),
       }))
       .sort((a, b) => b.count - a.count)
 
@@ -1134,7 +1206,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       .map(([country, count]) => ({
         country,
         count,
-        percentage: Math.round((count / (pageAnalytics?.length || 1)) * 100)
+        percentage: Math.round((count / (pageAnalytics?.length || 1)) * 100),
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 15)
@@ -1151,7 +1223,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       .map(([browser, count]) => ({
         browser,
         count,
-        percentage: Math.round((count / (pageAnalytics?.length || 1)) * 100)
+        percentage: Math.round((count / (pageAnalytics?.length || 1)) * 100),
       }))
       .sort((a, b) => b.count - a.count)
 
@@ -1162,7 +1234,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       browserStats,
       topReferrers,
       trafficSources,
-      locationData
+      locationData,
     }
   } catch (error) {
     console.error('Error fetching site analytics:', error)
@@ -1174,7 +1246,7 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       browserStats: [],
       topReferrers: [],
       trafficSources: [],
-      locationData: []
+      locationData: [],
     }
   }
 }
@@ -1205,7 +1277,8 @@ function parseReferrerSource(referrer: string): string {
     if (hostname.includes('baidu.com')) return 'Baidu'
 
     // Email
-    if (hostname.includes('mail.') || hostname.includes('outlook.') || hostname.includes('gmail.')) return 'Email'
+    if (hostname.includes('mail.') || hostname.includes('outlook.') || hostname.includes('gmail.'))
+      return 'Email'
 
     // External Referral
     return 'External'
@@ -1241,6 +1314,6 @@ export function getDateRange(period: string): DateRange {
 
   return {
     start: start.toISOString(),
-    end: end.toISOString()
+    end: end.toISOString(),
   }
 }

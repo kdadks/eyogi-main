@@ -26,6 +26,7 @@ import {
   TrophyIcon,
   UsersIcon,
   ClipboardDocumentListIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 import {
   ResponsiveContainer,
@@ -179,7 +180,6 @@ export default function AdminAnalytics() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
-          <p className="text-gray-600">Comprehensive insights into platform performance</p>
         </div>
         <div className="flex items-center space-x-4">
           <select
@@ -193,8 +193,7 @@ export default function AdminAnalytics() {
             <option value="1y">Last year</option>
           </select>
           <Button variant="outline" size="sm" onClick={loadAnalytics}>
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            Refresh
+            <ArrowPathIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -220,13 +219,36 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && <OverviewTab data={{ studentData, enrollmentData, courseData, teacherData, batchData, certificateData, attendanceData }} formatNumber={formatNumber} />}
-      {activeTab === 'students' && <StudentsTab data={studentData} enrollmentData={enrollmentData} formatNumber={formatNumber} />}
+      {activeTab === 'overview' && (
+        <OverviewTab
+          data={{
+            studentData,
+            enrollmentData,
+            courseData,
+            teacherData,
+            batchData,
+            certificateData,
+            attendanceData,
+          }}
+          formatNumber={formatNumber}
+        />
+      )}
+      {activeTab === 'students' && (
+        <StudentsTab
+          data={studentData}
+          enrollmentData={enrollmentData}
+          formatNumber={formatNumber}
+        />
+      )}
       {activeTab === 'courses' && <CoursesTab data={courseData} formatNumber={formatNumber} />}
       {activeTab === 'teachers' && <TeachersTab data={teacherData} formatNumber={formatNumber} />}
       {activeTab === 'batches' && <BatchesTab data={batchData} formatNumber={formatNumber} />}
-      {activeTab === 'attendance' && <AttendanceTab data={attendanceData} formatNumber={formatNumber} />}
-      {activeTab === 'certificates' && <CertificatesTab data={certificateData} formatNumber={formatNumber} />}
+      {activeTab === 'attendance' && (
+        <AttendanceTab data={attendanceData} formatNumber={formatNumber} />
+      )}
+      {activeTab === 'certificates' && (
+        <CertificatesTab data={certificateData} formatNumber={formatNumber} />
+      )}
       {activeTab === 'gurukuls' && <GurukulsTab data={gurukulData} formatNumber={formatNumber} />}
       {activeTab === 'site' && <SiteTab data={siteData} formatNumber={formatNumber} />}
       {activeTab === 'consent' && <ConsentReport />}
@@ -240,7 +262,15 @@ export default function AdminAnalytics() {
 // ============================================
 
 function OverviewTab({ data, formatNumber }: any) {
-  const { studentData, enrollmentData, courseData, teacherData, batchData, certificateData, attendanceData } = data
+  const {
+    studentData,
+    enrollmentData,
+    courseData,
+    teacherData,
+    batchData,
+    certificateData,
+    attendanceData,
+  } = data
 
   const stats = [
     {
@@ -341,8 +371,10 @@ function OverviewTab({ data, formatNumber }: any) {
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-end justify-between space-x-1">
-              {enrollmentData.enrollmentTrends.slice(-30).map((day, index) => {
-                const maxCount = Math.max(...enrollmentData.enrollmentTrends.map((d) => d.count))
+              {enrollmentData.enrollmentTrends.slice(-30).map((day: any, index: number) => {
+                const maxCount = Math.max(
+                  ...enrollmentData.enrollmentTrends.map((d: any) => d.count),
+                )
                 const height = maxCount > 0 ? (day.count / maxCount) * 240 : 0
                 return (
                   <div key={index} className="flex-1 flex flex-col items-center group">
@@ -355,7 +387,10 @@ function OverviewTab({ data, formatNumber }: any) {
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-gray-600 text-center">
-                      {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Date(day.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </div>
                   </div>
                 )
@@ -370,7 +405,9 @@ function OverviewTab({ data, formatNumber }: any) {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{enrollmentData?.averageTimeToComplete || 0}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {enrollmentData?.averageTimeToComplete || 0}
+              </div>
               <div className="text-sm text-gray-600">Days to Complete</div>
               <div className="text-xs text-gray-500 mt-1">Average course duration</div>
             </div>
@@ -379,7 +416,9 @@ function OverviewTab({ data, formatNumber }: any) {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{studentData?.activeStudents || 0}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {studentData?.activeStudents || 0}
+              </div>
               <div className="text-sm text-gray-600">Active Students</div>
               <div className="text-xs text-gray-500 mt-1">Currently enrolled</div>
             </div>
@@ -388,7 +427,9 @@ function OverviewTab({ data, formatNumber }: any) {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{batchData?.averageBatchSize || 0}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {batchData?.averageBatchSize || 0}
+              </div>
               <div className="text-sm text-gray-600">Avg Batch Size</div>
               <div className="text-xs text-gray-500 mt-1">Students per batch</div>
             </div>
@@ -397,7 +438,9 @@ function OverviewTab({ data, formatNumber }: any) {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{certificateData?.certificatesThisWeek || 0}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {certificateData?.certificatesThisWeek || 0}
+              </div>
               <div className="text-sm text-gray-600">This Week</div>
               <div className="text-xs text-gray-500 mt-1">Certificates issued</div>
             </div>
@@ -421,19 +464,25 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600">{formatNumber(data.totalStudents)}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {formatNumber(data.totalStudents)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Total Students</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">{formatNumber(data.activeStudents)}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {formatNumber(data.activeStudents)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Active Students</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-orange-600">{formatNumber(data.newStudents)}</div>
+            <div className="text-3xl font-bold text-orange-600">
+              {formatNumber(data.newStudents)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">New Students</div>
           </CardContent>
         </Card>
@@ -452,7 +501,9 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
                 return (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 flex-1">
-                      <span className="text-sm font-medium text-gray-900 w-16">{group.ageGroup}</span>
+                      <span className="text-sm font-medium text-gray-900 w-16">
+                        {group.ageGroup}
+                      </span>
                       <div className="flex-1 bg-gray-200 rounded-full h-3">
                         <div
                           className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all"
@@ -480,11 +531,21 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Courses Completed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Certificates</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attendance</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Rank
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Courses Completed
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Certificates
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Attendance
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -493,7 +554,9 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {index < 3 ? (
-                            <TrophyIcon className={`h-5 w-5 ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : 'text-orange-600'}`} />
+                            <TrophyIcon
+                              className={`h-5 w-5 ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : 'text-orange-600'}`}
+                            />
                           ) : (
                             <span className="text-sm text-gray-500">#{index + 1}</span>
                           )}
@@ -509,7 +572,15 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
                         <div className="text-sm text-gray-900">{student.certificatesEarned}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={student.attendanceRate >= 90 ? 'bg-green-100 text-green-800' : student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                        <Badge
+                          className={
+                            student.attendanceRate >= 90
+                              ? 'bg-green-100 text-green-800'
+                              : student.attendanceRate >= 75
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                          }
+                        >
                           {student.attendanceRate}%
                         </Badge>
                       </td>
@@ -534,13 +605,18 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
           <CardContent>
             <div className="space-y-3">
               {data.studentsByLocation.slice(0, 10).map((location: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
                   <div className="flex items-center space-x-3">
                     <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                       <MapPinIcon className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{location.city}, {location.state}</p>
+                      <p className="font-medium text-gray-900">
+                        {location.city}, {location.state}
+                      </p>
                       <p className="text-xs text-gray-600">{location.country}</p>
                     </div>
                   </div>
@@ -571,9 +647,20 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
                   rejected: 'bg-gray-100 text-gray-800 border-gray-200',
                 }
                 return (
-                  <div key={index} className={`p-4 rounded-lg border ${colors[status.status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border ${colors[status.status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                  >
                     <div className="text-2xl font-bold">{status.count}</div>
-                    <div className="text-sm capitalize">{status.status}</div>
+                    <div className="text-sm">
+                      {status.status
+                        .split(' ')
+                        .map(
+                          (word: string) =>
+                            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                        )
+                        .join(' ')}
+                    </div>
                   </div>
                 )
               })}
@@ -598,13 +685,17 @@ function CoursesTab({ data, formatNumber }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600">{formatNumber(data.totalCourses)}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {formatNumber(data.totalCourses)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Total Courses</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">{formatNumber(data.activeCourses)}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {formatNumber(data.activeCourses)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Active Courses</div>
           </CardContent>
         </Card>
@@ -621,11 +712,21 @@ function CoursesTab({ data, formatNumber }: any) {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrollments</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completions</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completion Rate</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Rank
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Course
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Enrollments
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Completions
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Completion Rate
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -644,7 +745,15 @@ function CoursesTab({ data, formatNumber }: any) {
                         <div className="text-sm text-gray-900">{course.completions}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={course.completionRate >= 70 ? 'bg-green-100 text-green-800' : course.completionRate >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                        <Badge
+                          className={
+                            course.completionRate >= 70
+                              ? 'bg-green-100 text-green-800'
+                              : course.completionRate >= 40
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                          }
+                        >
                           {course.completionRate}%
                         </Badge>
                       </td>
@@ -669,10 +778,20 @@ function CoursesTab({ data, formatNumber }: any) {
                 const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500']
                 return (
                   <div key={index} className="text-center p-4 bg-white border rounded-lg">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 ${colors[index % colors.length]} rounded-full text-white text-2xl font-bold mb-2`}>
+                    <div
+                      className={`inline-flex items-center justify-center w-16 h-16 ${colors[index % colors.length]} rounded-full text-white text-2xl font-bold mb-2`}
+                    >
                       {level.count}
                     </div>
-                    <div className="text-sm font-medium text-gray-900 capitalize">{level.level}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {level.level
+                        .split(' ')
+                        .map(
+                          (word: string) =>
+                            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                        )
+                        .join(' ')}
+                    </div>
                   </div>
                 )
               })}
@@ -690,7 +809,10 @@ function CoursesTab({ data, formatNumber }: any) {
           <CardContent>
             <div className="space-y-4">
               {data.capacityUtilization.map((course: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 text-sm">{course.courseName}</p>
                     <div className="flex items-center space-x-2 mt-2">
@@ -740,7 +862,15 @@ function CoursesTab({ data, formatNumber }: any) {
               {data.coursesByDeliveryMethod.map((method: any, index: number) => (
                 <div key={index} className="text-center p-4 bg-gray-50 rounded-lg">
                   <div className="text-2xl font-bold text-gray-900">{method.count}</div>
-                  <div className="text-sm text-gray-600 capitalize mt-1">{method.method}</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    {method.method
+                      .split(' ')
+                      .map(
+                        (word: string) =>
+                          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                      )
+                      .join(' ')}
+                  </div>
                 </div>
               ))}
             </div>
@@ -764,13 +894,17 @@ function TeachersTab({ data, formatNumber }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600">{formatNumber(data.totalTeachers)}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {formatNumber(data.totalTeachers)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Total Teachers</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">{formatNumber(data.activeTeachers)}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {formatNumber(data.activeTeachers)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Active Teachers</div>
           </CardContent>
         </Card>
@@ -787,18 +921,30 @@ function TeachersTab({ data, formatNumber }: any) {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Courses</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batches</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Certificates</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Teacher
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Students
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Courses
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Batches
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Certificates
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {data.teacherWorkload.map((teacher: any) => (
                     <tr key={teacher.teacherId} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{teacher.teacherName}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {teacher.teacherName}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{teacher.studentCount}</div>
@@ -837,13 +983,17 @@ function BatchesTab({ data, formatNumber }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600">{formatNumber(data.totalBatches)}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {formatNumber(data.totalBatches)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Total Batches</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">{formatNumber(data.averageBatchSize)}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {formatNumber(data.averageBatchSize)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Average Batch Size</div>
           </CardContent>
         </Card>
@@ -866,9 +1016,21 @@ function BatchesTab({ data, formatNumber }: any) {
                   archived: 'bg-orange-100 text-orange-800 border-orange-200',
                 }
                 return (
-                  <div key={index} className={`p-4 rounded-lg border ${colors[status.status as keyof typeof colors] || 'bg-gray-100'}`}>
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border ${colors[status.status as keyof typeof colors] || 'bg-gray-100'}`}
+                  >
                     <div className="text-2xl font-bold">{status.count}</div>
-                    <div className="text-sm capitalize">{status.status.replace('_', ' ')}</div>
+                    <div className="text-sm">
+                      {status.status
+                        .replace('_', ' ')
+                        .split(' ')
+                        .map(
+                          (word: string) =>
+                            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                        )
+                        .join(' ')}
+                    </div>
                   </div>
                 )
               })}
@@ -889,7 +1051,15 @@ function BatchesTab({ data, formatNumber }: any) {
                 <div key={index} className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-gray-900">{batch.batchName}</span>
-                    <Badge className={batch.progressPercentage >= 80 ? 'bg-green-100 text-green-800' : batch.progressPercentage >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}>
+                    <Badge
+                      className={
+                        batch.progressPercentage >= 80
+                          ? 'bg-green-100 text-green-800'
+                          : batch.progressPercentage >= 50
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-blue-100 text-blue-800'
+                      }
+                    >
                       {batch.progressPercentage}%
                     </Badge>
                   </div>
@@ -920,7 +1090,10 @@ function BatchesTab({ data, formatNumber }: any) {
           <CardContent>
             <div className="space-y-3">
               {data.batchesByGurukul.map((gurukul: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
                   <span className="font-medium text-gray-900">{gurukul.gurukulName}</span>
                   <Badge>{gurukul.count} batches</Badge>
                 </div>
@@ -968,9 +1141,20 @@ function AttendanceTab({ data, formatNumber }: any) {
                   excused: 'bg-blue-100 text-blue-800 border-blue-200',
                 }
                 return (
-                  <div key={index} className={`p-4 rounded-lg border ${colors[status.status as keyof typeof colors]}`}>
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border ${colors[status.status as keyof typeof colors]}`}
+                  >
                     <div className="text-2xl font-bold">{status.count}</div>
-                    <div className="text-sm capitalize">{status.status}</div>
+                    <div className="text-sm">
+                      {status.status
+                        .split(' ')
+                        .map(
+                          (word: string) =>
+                            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                        )
+                        .join(' ')}
+                    </div>
                     <div className="text-xs mt-1">{status.percentage}%</div>
                   </div>
                 )
@@ -990,7 +1174,11 @@ function AttendanceTab({ data, formatNumber }: any) {
             <div className="h-64 flex items-end justify-between space-x-1">
               {data.attendanceTrends.slice(-30).map((day: any, index: number) => {
                 const total = day.presentCount + day.absentCount + day.lateCount + day.excusedCount
-                const maxTotal = Math.max(...data.attendanceTrends.map((d: any) => d.presentCount + d.absentCount + d.lateCount + d.excusedCount))
+                const maxTotal = Math.max(
+                  ...data.attendanceTrends.map(
+                    (d: any) => d.presentCount + d.absentCount + d.lateCount + d.excusedCount,
+                  ),
+                )
                 const height = maxTotal > 0 ? (total / maxTotal) * 240 : 0
                 const presentPercentage = total > 0 ? (day.presentCount / total) * 100 : 0
 
@@ -1005,7 +1193,7 @@ function AttendanceTab({ data, formatNumber }: any) {
                           rgb(34, 197, 94) 0%,
                           rgb(34, 197, 94) ${presentPercentage}%,
                           rgb(239, 68, 68) ${presentPercentage}%,
-                          rgb(239, 68, 68) 100%)`
+                          rgb(239, 68, 68) 100%)`,
                       }}
                     >
                       <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
@@ -1014,7 +1202,10 @@ function AttendanceTab({ data, formatNumber }: any) {
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-gray-600 text-center">
-                      {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Date(day.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </div>
                   </div>
                 )
@@ -1036,10 +1227,15 @@ function AttendanceTab({ data, formatNumber }: any) {
           <CardContent>
             <div className="space-y-3">
               {data.lowAttendanceStudents.map((student: any) => (
-                <div key={student.studentId} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div
+                  key={student.studentId}
+                  className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-gray-900">{student.studentName}</p>
-                    <p className="text-xs text-gray-600">{student.presentCount}/{student.totalClasses} classes</p>
+                    <p className="text-xs text-gray-600">
+                      {student.presentCount}/{student.totalClasses} classes
+                    </p>
                   </div>
                   <Badge className="bg-red-100 text-red-800">{student.attendanceRate}%</Badge>
                 </div>
@@ -1061,7 +1257,10 @@ function AttendanceTab({ data, formatNumber }: any) {
           <CardContent>
             <div className="space-y-3">
               {data.perfectAttendanceStudents.map((student: any) => (
-                <div key={student.studentId} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div
+                  key={student.studentId}
+                  className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                >
                   <div>
                     <p className="font-medium text-gray-900">{student.studentName}</p>
                     <p className="text-xs text-gray-600">{student.totalClasses} classes</p>
@@ -1090,19 +1289,25 @@ function CertificatesTab({ data, formatNumber }: any) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600">{formatNumber(data.totalCertificates)}</div>
+            <div className="text-3xl font-bold text-purple-600">
+              {formatNumber(data.totalCertificates)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">Total Certificates</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600">{formatNumber(data.certificatesThisMonth)}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {formatNumber(data.certificatesThisMonth)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">This Month</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-3xl font-bold text-green-600">{formatNumber(data.certificatesThisWeek)}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {formatNumber(data.certificatesThisWeek)}
+            </div>
             <div className="text-sm text-gray-600 mt-2">This Week</div>
           </CardContent>
         </Card>
@@ -1130,7 +1335,10 @@ function CertificatesTab({ data, formatNumber }: any) {
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-gray-600 text-center">
-                      {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Date(day.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
                     </div>
                   </div>
                 )
@@ -1151,7 +1359,10 @@ function CertificatesTab({ data, formatNumber }: any) {
               {data.certificatesByCourse.map((course: any, index: number) => {
                 const percentage = (course.count / data.totalCertificates) * 100
                 return (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div className="flex items-center space-x-3 flex-1">
                       <span className="text-sm font-medium text-gray-900">{course.courseName}</span>
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -1179,7 +1390,10 @@ function CertificatesTab({ data, formatNumber }: any) {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {data.certificatesByTeacher.map((teacher: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
+                >
                   <div>
                     <p className="font-medium text-gray-900">{teacher.teacherName}</p>
                     <p className="text-xs text-gray-600">Teacher</p>
@@ -1211,7 +1425,8 @@ function CertificatesTab({ data, formatNumber }: any) {
 // ============================================
 
 function GurukulsTab({ data, formatNumber }: any) {
-  if (!data || !data.gurukulPerformance) return <div className="text-center py-12 text-gray-500">No data available</div>
+  if (!data || !data.gurukulPerformance)
+    return <div className="text-center py-12 text-gray-500">No data available</div>
 
   return (
     <div className="space-y-6">
@@ -1224,12 +1439,24 @@ function GurukulsTab({ data, formatNumber }: any) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gurukul</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Courses</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrollments</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Certificates</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completion Rate</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Gurukul
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Courses
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Students
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Enrollments
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Certificates
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Completion Rate
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -1251,7 +1478,15 @@ function GurukulsTab({ data, formatNumber }: any) {
                       <div className="text-sm text-gray-900">{gurukul.certificateCount}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge className={gurukul.completionRate >= 70 ? 'bg-green-100 text-green-800' : gurukul.completionRate >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                      <Badge
+                        className={
+                          gurukul.completionRate >= 70
+                            ? 'bg-green-100 text-green-800'
+                            : gurukul.completionRate >= 40
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }
+                      >
                         {gurukul.completionRate}%
                       </Badge>
                     </td>
@@ -1281,17 +1516,23 @@ function GurukulsTab({ data, formatNumber }: any) {
                   <div className="text-xs text-gray-600">Students</div>
                 </div>
                 <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">{gurukul.enrollmentCount}</div>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {gurukul.enrollmentCount}
+                  </div>
                   <div className="text-xs text-gray-600">Enrollments</div>
                 </div>
                 <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{gurukul.certificateCount}</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {gurukul.certificateCount}
+                  </div>
                   <div className="text-xs text-gray-600">Certificates</div>
                 </div>
               </div>
               <div className="mt-4 text-center">
                 <div className="text-sm text-gray-600">Completion Rate</div>
-                <div className="text-3xl font-bold text-orange-600 mt-1">{gurukul.completionRate}%</div>
+                <div className="text-3xl font-bold text-orange-600 mt-1">
+                  {gurukul.completionRate}%
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1306,22 +1547,36 @@ function GurukulsTab({ data, formatNumber }: any) {
 // ============================================
 
 function SiteTab({ data, formatNumber }: any) {
-  if (!data) return <div className="text-center py-12 text-gray-500">No site analytics data available</div>
+  if (!data)
+    return <div className="text-center py-12 text-gray-500">No site analytics data available</div>
 
-  const hasData = data.pageViews?.length > 0 || data.userActivity?.length > 0 || data.deviceTypes?.length > 0
+  const hasData =
+    data.pageViews?.length > 0 || data.userActivity?.length > 0 || data.deviceTypes?.length > 0
 
   if (!hasData) {
     return (
       <div className="text-center py-12">
         <EyeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No site analytics data available</h3>
-        <p className="text-gray-600">Site analytics data will appear here once page tracking is enabled and users accept cookie consent.</p>
+        <p className="text-gray-600">
+          Site analytics data will appear here once page tracking is enabled and users accept cookie
+          consent.
+        </p>
       </div>
     )
   }
 
   // Chart colors
-  const CHART_COLORS = ['#f97316', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e']
+  const CHART_COLORS = [
+    '#f97316',
+    '#3b82f6',
+    '#10b981',
+    '#f59e0b',
+    '#8b5cf6',
+    '#ec4899',
+    '#14b8a6',
+    '#f43f5e',
+  ]
 
   return (
     <div className="space-y-6">
@@ -1350,7 +1605,10 @@ function SiteTab({ data, formatNumber }: any) {
                       label={(entry) => `${entry.source}: ${entry.percentage}%`}
                     >
                       {data.trafficSources.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -1362,7 +1620,10 @@ function SiteTab({ data, formatNumber }: any) {
               {/* Source List */}
               <div className="space-y-3">
                 {data.trafficSources.map((source: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div className="flex items-center space-x-3">
                       <div
                         className="w-4 h-4 rounded"
@@ -1398,15 +1659,27 @@ function SiteTab({ data, formatNumber }: any) {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    tickFormatter={(date) =>
+                      new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    }
                   />
                   <YAxis />
-                  <Tooltip
-                    labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                  />
+                  <Tooltip labelFormatter={(date) => new Date(date).toLocaleDateString()} />
                   <Legend />
-                  <Line type="monotone" dataKey="activeUsers" stroke="#f97316" name="Active Users" strokeWidth={2} />
-                  <Line type="monotone" dataKey="sessions" stroke="#3b82f6" name="Sessions" strokeWidth={2} />
+                  <Line
+                    type="monotone"
+                    dataKey="activeUsers"
+                    stroke="#f97316"
+                    name="Active Users"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="sessions"
+                    stroke="#3b82f6"
+                    name="Sessions"
+                    strokeWidth={2}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -1441,7 +1714,10 @@ function SiteTab({ data, formatNumber }: any) {
               {/* Country List */}
               <div className="space-y-3 max-h-80 overflow-y-auto">
                 {data.locationData.map((location: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <span className="font-medium text-gray-900">{location.country}</span>
                     <div className="flex items-center space-x-3">
                       <span className="text-sm text-gray-600">{location.percentage}%</span>
@@ -1480,7 +1756,10 @@ function SiteTab({ data, formatNumber }: any) {
                       label={(entry) => `${entry.deviceType}: ${entry.percentage}%`}
                     >
                       {data.deviceTypes.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -1489,8 +1768,14 @@ function SiteTab({ data, formatNumber }: any) {
               </div>
               <div className="mt-4 space-y-2">
                 {data.deviceTypes.map((device: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-sm capitalize text-gray-900">{device.deviceType}</span>
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                  >
+                    <span className="text-sm text-gray-900">
+                      {device.deviceType.charAt(0).toUpperCase() +
+                        device.deviceType.slice(1).toLowerCase()}
+                    </span>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">{device.percentage}%</span>
                       <Badge variant="outline">{device.count}</Badge>
@@ -1525,7 +1810,10 @@ function SiteTab({ data, formatNumber }: any) {
               </div>
               <div className="mt-4 space-y-2">
                 {data.browserStats.map((browser: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                  >
                     <span className="text-sm text-gray-900">{browser.browser}</span>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">{browser.percentage}%</span>
@@ -1553,23 +1841,35 @@ function SiteTab({ data, formatNumber }: any) {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Page</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Views</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unique Users</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Duration</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Page
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Views
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Unique Users
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Avg Duration
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {data.pageViews.slice(0, 10).map((page: any, index: number) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{page.pagePath === '/' ? 'Home' : page.pagePath}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {page.pagePath === '/' ? 'Home' : page.pagePath}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{formatNumber(page.views)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formatNumber(page.uniqueUsers)}</div>
+                        <div className="text-sm text-gray-900">
+                          {formatNumber(page.uniqueUsers)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{page.averageDuration}s</div>
@@ -1595,8 +1895,13 @@ function SiteTab({ data, formatNumber }: any) {
           <CardContent>
             <div className="space-y-3">
               {data.topReferrers.map((referrer: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <span className="text-sm text-gray-900 truncate flex-1 font-mono">{referrer.referrer}</span>
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-sm text-gray-900 truncate flex-1 font-mono">
+                    {referrer.referrer}
+                  </span>
                   <Badge>{referrer.count}</Badge>
                 </div>
               ))}

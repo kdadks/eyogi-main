@@ -625,8 +625,14 @@ export default function MenuManagement() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {item.type}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            {item.type
+                              .split(' ')
+                              .map(
+                                (word) =>
+                                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                              )
+                              .join(' ')}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -636,7 +642,7 @@ export default function MenuManagement() {
                         <td className="px-6 py-4 text-center">
                           <button
                             onClick={() => handleToggleActive(item.id)}
-                            className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                            className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded text-xs font-medium transition-colors ${
                               item.isActive
                                 ? 'bg-green-100 text-green-800 hover:bg-green-200'
                                 : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
