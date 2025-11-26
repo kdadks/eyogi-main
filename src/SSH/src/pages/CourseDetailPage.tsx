@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useWebsiteAuth } from '../contexts/WebsiteAuthContext'
 import SEOHead from '../components/seo/SEOHead'
 import { generateCourseSchema, generateBreadcrumbSchema } from '../components/seo/StructuredData'
@@ -63,6 +63,7 @@ function parseLearningOutcomes(outcomes: string[]): Array<{ content: string; isH
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useWebsiteAuth()
+  const navigate = useNavigate()
   const [course, setCourse] = useState<Course | null>(null)
   const [enrolledCount, setEnrolledCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -111,6 +112,8 @@ export default function CourseDetailPage() {
       try {
         await enrollInCourse(course!.id, user.id)
         toast.success('Enrollment request submitted! You will receive confirmation once approved.')
+        // Redirect student to dashboard after enrollment
+        navigate('/dashboard/student')
       } catch {
         toast.error('Failed to enroll in course')
       } finally {

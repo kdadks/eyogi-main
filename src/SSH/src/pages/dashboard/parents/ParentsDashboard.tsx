@@ -20,6 +20,9 @@ import {
   AcademicCapIcon,
   CalendarDaysIcon,
   DocumentTextIcon,
+  ShieldExclamationIcon,
+  InformationCircleIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '../../../utils/sanitize'
 import { User, MapPin, X } from 'lucide-react'
@@ -30,6 +33,7 @@ import { HelpButton, parentsDashboardHelpTopics } from '../../../components/help
 import AddressForm from '../../../components/forms/AddressForm'
 import DashboardComplianceSection from '../../../components/compliance/DashboardComplianceSection'
 import StudentAttendanceView from '../../../components/student/StudentAttendanceView'
+import DataDeletionRequest from '../../../components/gdpr/DataDeletionRequest'
 import ConsentModal from '../../../components/consent/ConsentModal'
 import ConsentStatusBadge from '../../../components/consent/ConsentStatusBadge'
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/Card'
@@ -992,7 +996,9 @@ export default function ParentsDashboard() {
               </div>
             )}
             {activeTab === 'analytics' && <AnalyticsTab children={children} stats={stats} />}
-            {activeTab === 'settings' && <SettingsTab user={user} parentProfile={parentProfile} />}
+            {activeTab === 'settings' && (
+              <SettingsTab user={user} parentProfile={parentProfile} children={children} />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -2522,9 +2528,11 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
 function SettingsTab({
   user,
   parentProfile,
+  children,
 }: {
   user: { id: string; email: string; full_name: string; role: string } | null
   parentProfile: ParentProfile | null
+  children: Child[]
 }) {
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [addressData, setAddressData] = useState<AddressFormData>({
@@ -2712,6 +2720,135 @@ function SettingsTab({
           compactView={false}
           showNotifications={true}
         />
+      </motion.div>
+
+      {/* GDPR Data Deletion Section */}
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <div className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <ShieldExclamationIcon className="h-6 w-6 text-red-600" />
+            <h3 className="text-lg font-semibold text-gray-900">GDPR Data Deletion & Privacy</h3>
+          </div>
+
+          {/* Consolidated GDPR Information - Show once for all */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex gap-3">
+              <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                  Your Right to Data Deletion
+                </h4>
+                <p className="text-xs text-blue-800 mb-2">
+                  Under GDPR Article 17, you have the right to request deletion of personal data for
+                  yourself and your children. This includes personal information, enrollment data,
+                  attendance records, consent records, and compliance submissions.
+                </p>
+                <p className="text-xs text-blue-800">
+                  Note: Certificates may be anonymized rather than deleted for legal compliance.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Critical Warning for Parent Account Deletion */}
+          {children.length > 0 && (
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-6">
+              <div className="flex gap-3">
+                <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-bold text-red-900 mb-2">
+                    ⚠️ CRITICAL WARNING - Parent Account Deletion
+                  </h4>
+                  <p className="text-xs text-red-800 font-semibold mb-2">
+                    If you request deletion of YOUR ACCOUNT (parent account), ALL {children.length}{' '}
+                    {children.length === 1 ? 'child account' : 'children accounts'} linked to you
+                    will be PERMANENTLY DELETED automatically.
+                  </p>
+                  <p className="text-xs text-red-800">
+                    This is irreversible. All children's data, enrollments, certificates, and
+                    progress will be lost forever. Please exercise utmost caution before requesting
+                    parent account deletion.
+                  </p>
+                  <p className="text-xs text-red-700 mt-2 font-medium">
+                    To delete only a specific child's account, use the individual deletion option
+                    for that child below.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Compact Account Deletion Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Parent's Own Account */}
+            <div className="border border-gray-200 rounded-lg p-4 bg-white">
+              <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-200">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold">
+                  {(() => {
+                    if (!user?.full_name) return 'P'
+                    const nameParts = user.full_name.trim().split(/\s+/)
+                    return nameParts.length > 1
+                      ? (
+                          nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+                        ).toUpperCase()
+                      : nameParts[0].charAt(0).toUpperCase()
+                  })()}
+                </div>
+                <div className="flex-1">
+                  <h5 className="text-sm font-semibold text-gray-900">Your Account</h5>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+              </div>
+              <DataDeletionRequest userId={user?.id || ''} userRole="parent" compactView={true} />
+            </div>
+
+            {/* Children Accounts */}
+            {children.map((child) => {
+              // Get initials from child's name (first letter of first and last name)
+              const nameParts = child.full_name.trim().split(/\s+/)
+              const childInitials =
+                nameParts.length > 1
+                  ? nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+                  : nameParts[0].charAt(0)
+
+              return (
+                <div
+                  key={child.student_id}
+                  className="border border-gray-200 rounded-lg p-4 bg-white"
+                >
+                  <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-200">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                      {childInitials.toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <h5 className="text-sm font-semibold text-gray-900">{child.full_name}</h5>
+                      <p className="text-xs text-gray-500">
+                        {child.display_student_id || `ID: ${child.student_id.slice(0, 8)}`}
+                      </p>
+                    </div>
+                  </div>
+                  <DataDeletionRequest
+                    userId={user?.id || ''}
+                    userRole="parent"
+                    targetUserId={child.student_id}
+                    targetUserName={child.full_name}
+                    compactView={true}
+                  />
+                </div>
+              )
+            })}
+          </div>
+
+          {children.length === 0 && (
+            <div className="text-center py-4 text-gray-500 mt-4 border-t border-gray-200">
+              <p className="text-sm">No children accounts found.</p>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* Edit Profile Modal */}

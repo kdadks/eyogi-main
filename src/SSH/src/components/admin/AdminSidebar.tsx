@@ -18,6 +18,7 @@ import {
   ClipboardDocumentCheckIcon,
   DocumentTextIcon,
   CreditCardIcon,
+  ShieldExclamationIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -27,7 +28,8 @@ interface AdminSidebarProps {
 }
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { user, signOut } = useAuth()
-  const { canAccessResource, canShowInMenu, getUserRole, currentUser, isSuperAdminRole } = usePermissions()
+  const { canAccessResource, canShowInMenu, getUserRole, currentUser, isSuperAdminRole } =
+    usePermissions()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const handleSignOut = async () => {
     if (isSigningOut) return // Prevent double-clicks
@@ -146,6 +148,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       icon: ShieldCheckIcon,
       permission: { resource: 'permissions', action: 'read' },
       adminOnly: true, // Only admin and super_admin can manage permissions
+    },
+    {
+      name: 'GDPR Requests',
+      href: '/admin/gdpr',
+      icon: ShieldExclamationIcon,
+      permission: { resource: 'compliance', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can manage GDPR requests
     },
   ]
   const filteredNavigation = navigation.filter((item) => {

@@ -539,6 +539,97 @@ export interface Database {
           updated_at?: string
         }
       }
+      deletion_requests: {
+        Row: {
+          id: string
+          user_id: string | null
+          target_user_id: string | null
+          request_type: 'student_data' | 'parent_data' | 'full_account'
+          status: 'pending' | 'approved' | 'rejected' | 'processing' | 'completed' | 'failed'
+          reason: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          completed_at: string | null
+          rejection_reason: string | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          target_user_id?: string | null
+          request_type: 'student_data' | 'parent_data' | 'full_account'
+          status?: 'pending' | 'approved' | 'rejected' | 'processing' | 'completed' | 'failed'
+          reason?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          completed_at?: string | null
+          rejection_reason?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          target_user_id?: string | null
+          request_type?: 'student_data' | 'parent_data' | 'full_account'
+          status?: 'pending' | 'approved' | 'rejected' | 'processing' | 'completed' | 'failed'
+          reason?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          completed_at?: string | null
+          rejection_reason?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      deletion_audit_logs: {
+        Row: {
+          id: string
+          deletion_request_id: string
+          action: string
+          table_name: string
+          records_affected: number
+          success: boolean
+          error_message: string | null
+          performed_by: string | null
+          performed_at: string
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          deletion_request_id: string
+          action: string
+          table_name: string
+          records_affected?: number
+          success?: boolean
+          error_message?: string | null
+          performed_by?: string | null
+          performed_at?: string
+          metadata?: Json | null
+        }
+        Update: {
+          id?: string
+          deletion_request_id?: string
+          action?: string
+          table_name?: string
+          records_affected?: number
+          success?: boolean
+          error_message?: string | null
+          performed_by?: string
+          performed_at?: string
+          metadata?: Json | null
+        }
+      }
     }
     Views: {
       [_ in never]: never

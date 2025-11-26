@@ -63,6 +63,7 @@ import ConsentModal from '../../components/consent/ConsentModal'
 import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge'
 import { getStudentConsent, StudentConsent } from '../../lib/api/consent'
 import { HelpButton, studentDashboardHelpTopics } from '../../components/help'
+import DataDeletionRequest from '../../components/gdpr/DataDeletionRequest'
 interface StudentStats {
   totalEnrollments: number
   completedCourses: number
@@ -1932,164 +1933,6 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
-            </motion.div>
-          )}
-          {/* Analytics Tab (Admin Only) */}
-          {activeTab === 'analytics' && shouldShowAnalytics() && (
-            <motion.div
-              key="analytics"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="space-y-8"
-            >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Analytics Dashboard 📊
-                </h2>
-                <p className="text-xl text-gray-600">System analytics and reports</p>
-              </div>
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                <div className="flex items-center space-x-4 mb-6">
-                  <ChartBarIcon className="h-8 w-8 text-purple-600" />
-                  <h3 className="text-xl font-semibold text-gray-900">System Analytics</h3>
-                </div>
-                <p className="text-gray-600">
-                  Advanced analytics and reporting features are available here for users with
-                  appropriate permissions.
-                </p>
-              </div>
-            </motion.div>
-          )}
-          {/* Attendance Tab */}
-          {activeTab === 'attendance' && (
-            <motion.div
-              key="attendance"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-            >
-              <StudentAttendanceView studentId={user?.id} />
-            </motion.div>
-          )}
-          {/* Settings Tab */}
-          {activeTab === 'settings' && (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="space-y-8"
-            >
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-600 to-slate-600 bg-clip-text text-transparent">
-                  Account Settings ⚙️
-                </h2>
-                <p className="text-xl text-gray-600">
-                  Manage your account preferences and information
-                </p>
-              </div>
-              {/* Account Settings Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <CogIcon className="h-8 w-8 text-gray-600" />
-                    <h3 className="text-xl font-semibold text-gray-900">Account Information</h3>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (!studentProfile) {
-                        await loadStudentProfile()
-                      }
-                      setIsProfileModalOpen(true)
-                    }}
-                    className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center space-x-2 cursor-pointer"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                    <span>Edit Profile</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Personal Information */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                      Personal Information
-                    </h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Full Name</label>
-                        <p className="text-gray-900">{user?.full_name || 'Not provided'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Email</label>
-                        <p className="text-gray-900">{user?.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Phone</label>
-                        <p className="text-gray-900">{studentProfile?.phone || 'Not provided'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Date of Birth</label>
-                        <p className="text-gray-900">
-                          {studentProfile?.date_of_birth
-                            ? new Date(studentProfile.date_of_birth).toLocaleDateString()
-                            : 'Not provided'}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Student ID</label>
-                        <p className="font-semibold text-purple-600">
-                          {studentProfile?.student_id || user?.student_id || 'Not assigned'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Address Information */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                      Address Information
-                    </h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Street Address</label>
-                        <p className="text-gray-900">
-                          {studentProfile?.address_line_1 || 'Not provided'}
-                        </p>
-                        {studentProfile?.address_line_2 && (
-                          <p className="text-gray-900">{studentProfile.address_line_2}</p>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-gray-500">City</label>
-                          <p className="text-gray-900">{studentProfile?.city || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500">State</label>
-                          <p className="text-gray-900">{studentProfile?.state || 'Not provided'}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-gray-500">ZIP Code</label>
-                          <p className="text-gray-900">
-                            {studentProfile?.zip_code || 'Not provided'}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-500">Country</label>
-                          <p className="text-gray-900">
-                            {studentProfile?.country || 'Not provided'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Consent Section */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
@@ -2164,19 +2007,48 @@ export default function StudentDashboard() {
                 />
               </div>
 
-              {/* System Settings (Admin Only) */}
-              {canAccess('settings', 'view') && (
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
-                  <div className="flex items-center space-x-4 mb-6">
-                    <CogIcon className="h-8 w-8 text-purple-600" />
-                    <h3 className="text-xl font-semibold text-gray-900">System Configuration</h3>
-                  </div>
-                  <p className="text-gray-600">
-                    Advanced system configuration options are available here for users with
-                    administrative permissions.
-                  </p>
+              {/* GDPR Data Deletion Section */}
+              <DataDeletionRequest userId={user?.id || ''} userRole="student" />
+            </motion.div>
+          )}
+          {/* Analytics Tab (Admin Only) */}
+          {activeTab === 'analytics' && shouldShowAnalytics() && (
+            <motion.div
+              key="analytics"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-8"
+            >
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Analytics Dashboard 📊
+                </h2>
+                <p className="text-xl text-gray-600">System analytics and reports</p>
+              </div>
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8 border border-white/20">
+                <div className="flex items-center space-x-4 mb-6">
+                  <ChartBarIcon className="h-8 w-8 text-purple-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">System Analytics</h3>
                 </div>
-              )}
+                <p className="text-gray-600">
+                  Advanced analytics and reporting features are available here for users with
+                  appropriate permissions.
+                </p>
+              </div>
+            </motion.div>
+          )}
+          {/* Attendance Tab */}
+          {activeTab === 'attendance' && (
+            <motion.div
+              key="attendance"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <StudentAttendanceView studentId={user?.id} />
             </motion.div>
           )}
         </div>

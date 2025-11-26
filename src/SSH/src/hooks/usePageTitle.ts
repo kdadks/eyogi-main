@@ -27,6 +27,7 @@ const routeTitles: RouteTitle[] = [
   { path: '/admin/compliance', title: 'Compliance Management' },
   { path: '/admin/invoice', title: 'Invoice Management' },
   { path: '/admin/payment', title: 'Payment Management' },
+  { path: '/admin/gdpr', title: 'GDPR Deletion Management' },
 ]
 
 export const usePageTitle = () => {

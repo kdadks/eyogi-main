@@ -12,6 +12,7 @@ import {
   UserPlusIcon,
   BookOpenIcon as BookIcon,
   QueueListIcon,
+  ShieldExclamationIcon,
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
 import { getBatchStats } from '../../lib/api/batches'
@@ -27,7 +28,13 @@ interface DashboardStats {
 }
 interface ActivityItem {
   id: string
-  type: 'user_registration' | 'course_creation' | 'enrollment' | 'certificate_issued'
+  type:
+    | 'user_registration'
+    | 'course_creation'
+    | 'enrollment'
+    | 'certificate_issued'
+    | 'data_deletion'
+    | 'account_deletion'
   title: string
   description: string
   timestamp: string
@@ -114,7 +121,7 @@ const AdminDashboard: React.FC = () => {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7) // 7 days for recent activities
 
       // Optimized: Fetch only essential data without complex joins
-      const [recentUsers, recentCourses, recentBatches] = await Promise.all([
+      const [recentUsers, recentCourses, recentBatches, recentDeletions] = await Promise.all([
         // Recent user registrations
         supabaseAdmin
           .from('profiles')
@@ -138,6 +145,15 @@ const AdminDashboard: React.FC = () => {
           .gte('created_at', sevenDaysAgo.toISOString())
           .order('created_at', { ascending: false })
           .limit(3),
+
+        // Recent GDPR deletion requests (completed)
+        supabaseAdmin
+          .from('deletion_requests')
+          .select('id, target_user_id, request_type, status, completed_at')
+          .eq('status', 'completed')
+          .gte('completed_at', sevenDaysAgo.toISOString())
+          .order('completed_at', { ascending: false })
+          .limit(5),
       ])
 
       const activities: ActivityItem[] = []
@@ -183,6 +199,24 @@ const AdminDashboard: React.FC = () => {
             timestamp: batch.created_at,
             icon: QueueListIcon,
             iconColor: 'text-indigo-600',
+          })
+        })
+      }
+
+      // Add GDPR deletions
+      if (recentDeletions.data) {
+        recentDeletions.data.forEach((deletion) => {
+          const isFullAccount = deletion.request_type === 'full_account'
+          activities.push({
+            id: `deletion-${deletion.id}`,
+            type: isFullAccount ? 'account_deletion' : 'data_deletion',
+            title: isFullAccount ? 'Account Deleted' : 'Data Deleted',
+            description: isFullAccount
+              ? `User account (ID: ${deletion.target_user_id ? deletion.target_user_id.substring(0, 8) : 'Unknown'}...) was permanently deleted`
+              : `User data (ID: ${deletion.target_user_id ? deletion.target_user_id.substring(0, 8) : 'Unknown'}...) was deleted`,
+            timestamp: deletion.completed_at!,
+            icon: ShieldExclamationIcon,
+            iconColor: isFullAccount ? 'text-red-600' : 'text-orange-600',
           })
         })
       }
@@ -323,7 +357,7 @@ const AdminDashboard: React.FC = () => {
           <h2 className="text-lg font-medium text-gray-900">Quick Actions</h2>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <button
               onClick={() => navigate('/admin/users')}
               className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
@@ -363,6 +397,14 @@ const AdminDashboard: React.FC = () => {
               <ChartBarIcon className="h-6 w-6 text-purple-600 mb-2" />
               <h3 className="text-sm font-medium text-gray-900">View Reports</h3>
               <p className="text-xs text-gray-500">Analytics and insights</p>
+            </button>
+            <button
+              onClick={() => navigate('/admin/gdpr')}
+              className="p-3 text-left border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <ShieldExclamationIcon className="h-6 w-6 text-red-600 mb-2" />
+              <h3 className="text-sm font-medium text-gray-900">GDPR Requests</h3>
+              <p className="text-xs text-gray-500">Manage data deletion requests</p>
             </button>
           </div>
         </div>

@@ -84,8 +84,10 @@ export default function UserFormModal({
     status: 'pending_verification',
     date_of_birth: '',
     phone: '',
-    emergency_contact: '',
-    preferences: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_email: '',
+    emergency_contact_relationship: '',
     avatar_url: '',
     student_id: '',
     parent_id: '',
@@ -112,6 +114,12 @@ export default function UserFormModal({
   // No addressData state; use user.address directly
   useEffect(() => {
     if ((mode === 'edit' || mode === 'view') && user) {
+      // Parse emergency_contact JSONB if exists
+      let emergencyContact = { name: '', phone: '', email: '', relationship: '' }
+      if (user?.emergency_contact && typeof user.emergency_contact === 'object') {
+        emergencyContact = user.emergency_contact as any
+      }
+
       setFormData({
         email: user?.email || '',
         password: '',
@@ -120,31 +128,22 @@ export default function UserFormModal({
         status: user?.status || 'pending_verification',
         date_of_birth: user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : '',
         phone: user?.phone || '',
-        emergency_contact: user?.emergency_contact ? JSON.stringify(user.emergency_contact) : '',
-        preferences: user?.preferences ? JSON.stringify(user.preferences) : '',
+        emergency_contact_name: emergencyContact.name || '',
+        emergency_contact_phone: emergencyContact.phone || '',
+        emergency_contact_email: emergencyContact.email || '',
+        emergency_contact_relationship: emergencyContact.relationship || '',
         avatar_url: user?.avatar_url || '',
         student_id: user?.student_id || '',
-        parent_id:
-          user && 'parent_id' in user && typeof user.parent_id === 'string' ? user.parent_id : '',
-        teacher_id:
-          user && 'teacher_id' in user && typeof user.teacher_id === 'string'
-            ? user.teacher_id
-            : '',
-        address_line_1:
-          user && 'address_line_1' in user && typeof user.address_line_1 === 'string'
-            ? user.address_line_1
-            : '',
-        address_line_2:
-          user && 'address_line_2' in user && typeof user.address_line_2 === 'string'
-            ? user.address_line_2
-            : '',
-        city: user && 'city' in user && typeof user.city === 'string' ? user.city : '',
-        state: user && 'state' in user && typeof user.state === 'string' ? user.state : '',
-        zip_code:
-          user && 'zip_code' in user && typeof user.zip_code === 'string' ? user.zip_code : '',
-        country: user && 'country' in user && typeof user.country === 'string' ? user.country : '',
-        age: user && 'age' in user && typeof user.age !== 'undefined' ? String(user.age) : '',
-        grade: user && 'grade' in user && typeof user.grade === 'string' ? user.grade : '',
+        parent_id: user && 'parent_id' in user && user.parent_id ? String(user.parent_id) : '',
+        teacher_id: user?.teacher_id || '',
+        address_line_1: user?.address_line_1 || '',
+        address_line_2: user?.address_line_2 || '',
+        city: user?.city || '',
+        state: user?.state || '',
+        zip_code: user?.zip_code || '',
+        country: user?.country || '',
+        age: user?.age ? String(user.age) : '',
+        grade: user?.grade || '',
       })
     } else {
       setFormData({
@@ -155,8 +154,10 @@ export default function UserFormModal({
         status: 'pending_verification',
         date_of_birth: '',
         phone: '',
-        emergency_contact: '',
-        preferences: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        emergency_contact_email: '',
+        emergency_contact_relationship: '',
         avatar_url: '',
         student_id: '',
         parent_id: '',
@@ -246,22 +247,33 @@ export default function UserFormModal({
         // Generate appropriate ID based on role
         const roleIds = await generateRoleId(formData.role, normalizedCountry, normalizedState)
 
+        // Build emergency_contact JSONB object
+        const emergencyContact = {
+          name: formData.emergency_contact_name || null,
+          phone: formData.emergency_contact_phone || null,
+          email: formData.emergency_contact_email || null,
+          relationship: formData.emergency_contact_relationship || null,
+        }
+
         // Create profile in database
         const baseProfileData = {
           id: authData.user.id,
           email: formData.email,
           full_name: formData.full_name,
           role: formData.role,
-          date_of_birth: getDateOfBirthFromAge(formData.age),
+          status: formData.status || 'active',
+          date_of_birth: formData.date_of_birth || null,
           phone: formData.phone || null,
-          address_line_1: formData.address_line_1,
-          address_line_2: formData.address_line_2,
-          city: formData.city,
-          state: normalizedState,
-          zip_code: formData.zip_code,
-          country: normalizedCountry,
+          emergency_contact: emergencyContact,
+          address_line_1: formData.address_line_1 || null,
+          address_line_2: formData.address_line_2 || null,
+          city: formData.city || null,
+          state: normalizedState || null,
+          zip_code: formData.zip_code || null,
+          country: normalizedCountry || null,
+          age: formData.age ? Number(formData.age) : null,
+          grade: formData.grade || null,
           password_hash: await hashPassword(formData.password),
-          status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
@@ -283,54 +295,60 @@ export default function UserFormModal({
         const normalizedCountry = normalizeCountryToISO3(formData.country)
         const normalizedState = normalizeStateToISO2(formData.state, normalizedCountry)
 
-        // Update existing user profile (include all DB fields)
-        const updateData = {
+        // Build emergency_contact JSONB object
+        const emergencyContact = {
+          name: formData.emergency_contact_name || null,
+          phone: formData.emergency_contact_phone || null,
+          email: formData.emergency_contact_email || null,
+          relationship: formData.emergency_contact_relationship || null,
+        }
+
+        // Update existing user profile with all correct fields
+        const updateData: any = {
+          email: formData.email,
           full_name: formData.full_name,
           role: formData.role,
-          status: formData.status,
-          date_of_birth: getDateOfBirthFromAge(formData.age),
+          status: formData.status || 'pending_verification',
+          date_of_birth: formData.date_of_birth || null,
           phone: formData.phone || null,
-          emergency_contact: formData.emergency_contact,
-          preferences: formData.preferences,
-          avatar_url: formData.avatar_url,
+          emergency_contact: emergencyContact,
+          avatar_url: formData.avatar_url || null,
           student_id: formData.student_id || null,
           parent_id: formData.parent_id || null,
           teacher_id: formData.teacher_id || null,
-          address_line_1: formData.address_line_1,
-          address_line_2: formData.address_line_2,
-          city: formData.city,
-          state: normalizedState,
-          zip_code: formData.zip_code,
-          country: normalizedCountry,
+          address_line_1: formData.address_line_1 || null,
+          address_line_2: formData.address_line_2 || null,
+          city: formData.city || null,
+          state: normalizedState || null,
+          zip_code: formData.zip_code || null,
+          country: normalizedCountry || null,
           age: formData.age ? Number(formData.age) : null,
-          grade: formData.grade,
+          grade: formData.grade || null,
           updated_at: new Date().toISOString(),
         }
-        const { error: profileError } = await supabaseAdmin
+
+        // Add password_hash if password provided
+        if (formData.password) {
+          updateData.password_hash = await hashPassword(formData.password)
+        }
+        const { data: updatedData, error: profileError } = await supabaseAdmin
           .from('profiles')
           .update(updateData)
           .eq('id', user!.id)
+          .select()
+          .single()
+
         if (profileError) {
+          console.error('Profile update error:', profileError)
           throw new Error(`Update error: ${profileError.message}`)
         }
-        // Update email in auth if changed
-        if (user && formData.email !== user.email) {
-          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-            email: formData.email,
-          })
-          if (authError) {
-            throw new Error(`Email update error: ${authError.message}`)
-          }
+
+        if (!updatedData) {
+          console.error('No data returned after update for user:', user!.id)
+          throw new Error('Update failed: No data returned')
         }
-        // Update password if provided
-        if (user && formData.password) {
-          const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-            password: formData.password,
-          })
-          if (passwordError) {
-            throw new Error(`Password update error: ${passwordError.message}`)
-          }
-        }
+
+        console.log('Profile updated successfully:', updatedData)
         toast.success('User updated successfully!')
       }
       onSuccess()
@@ -545,29 +563,55 @@ export default function UserFormModal({
               </div>
             )}
             {/* Always show these fields */}
+            {/* Emergency Contact Fields */}
+            <div className="md:col-span-2">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Emergency Contact</h4>
+            </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Emergency Contact (JSON)
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Name</label>
               <input
                 type="text"
-                name="emergency_contact"
-                value={formData.emergency_contact}
+                name="emergency_contact_name"
+                value={formData.emergency_contact_name}
                 onChange={handleInputChange}
                 className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                placeholder="Full Name"
                 disabled={isReadOnly}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Preferences (JSON)
-              </label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Phone</label>
               <input
-                type="text"
-                name="preferences"
-                value={formData.preferences}
+                type="tel"
+                name="emergency_contact_phone"
+                value={formData.emergency_contact_phone}
                 onChange={handleInputChange}
                 className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                placeholder="+1234567890"
+                disabled={isReadOnly}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Email</label>
+              <input
+                type="email"
+                name="emergency_contact_email"
+                value={formData.emergency_contact_email}
+                onChange={handleInputChange}
+                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                placeholder="email@example.com"
+                disabled={isReadOnly}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Relationship</label>
+              <input
+                type="text"
+                name="emergency_contact_relationship"
+                value={formData.emergency_contact_relationship}
+                onChange={handleInputChange}
+                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                placeholder="Parent, Guardian, Spouse, etc."
                 disabled={isReadOnly}
               />
             </div>

@@ -65,7 +65,32 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       setLoading(false)
       setInitialized(true)
     }
-  }, [])
+
+    // Listen for GDPR deletion broadcasts
+    const channel = new BroadcastChannel('gdpr-deletion-channel')
+    channel.onmessage = (event) => {
+      // Only logout if the deleted user is the current user AND they are not an admin
+      // Admins performing deletions should not be logged out
+      if (
+        event.data.type === 'user-deleted' &&
+        user?.id === event.data.userId &&
+        user?.role !== 'admin' &&
+        user?.role !== 'business_admin' &&
+        user?.role !== 'super_admin'
+      ) {
+        // This user has been deleted, force logout and redirect
+        setUser(null)
+        setUserPermissions([])
+        localStorage.removeItem('website-user-id')
+        localStorage.removeItem('eyogi-ssh-local-session')
+        window.location.href = '/'
+      }
+    }
+
+    return () => {
+      channel.close()
+    }
+  }, [user?.id, user?.role])
   const loadUser = async (userId: string) => {
     try {
       const userData = await getUserProfile(userId)
