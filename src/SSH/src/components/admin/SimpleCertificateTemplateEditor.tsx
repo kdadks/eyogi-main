@@ -31,7 +31,9 @@ interface DraggingField {
 
 const PRESET_FIELDS = [
   { name: 'student_name', label: 'Student Name', fontSize: 32, fontColor: '#1a5490' },
+  { name: 'student_id', label: 'Student Number', fontSize: 14, fontColor: '#666666' },
   { name: 'course_name', label: 'Course Name', fontSize: 24, fontColor: '#d97706' },
+  { name: 'course_id', label: 'Course Number', fontSize: 14, fontColor: '#666666' },
   { name: 'completion_date', label: 'Completion Date', fontSize: 16, fontColor: '#000000' },
   { name: 'certificate_number', label: 'Certificate Number', fontSize: 12, fontColor: '#666666' },
 ]
@@ -43,8 +45,8 @@ export default function SimpleCertificateTemplateEditor({
   onSave,
 }: SimpleCertificateTemplateEditorProps) {
   const [templateName, setTemplateName] = useState('')
-  const [secretaryName, setSecretaryName] = useState('Secretary eYogi Gurukul')
-  const [chancellorName, setChancellorName] = useState('Chancellor SSHU')
+  const [secretaryName, setSecretaryName] = useState('President')
+  const [chancellorName, setChancellorName] = useState('Chancellor')
   const [templateImage, setTemplateImage] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [fields, setFields] = useState<DynamicField[]>([])
@@ -61,8 +63,8 @@ export default function SimpleCertificateTemplateEditor({
   useEffect(() => {
     if (template) {
       setTemplateName(template.name)
-      setSecretaryName(template.template_data?.signatures?.vice_chancellor_name || 'Secretary eYogi Gurukul')
-      setChancellorName(template.template_data?.signatures?.president_name || 'Chancellor SSHU')
+      setSecretaryName(template.template_data?.signatures?.vice_chancellor_name || 'President')
+      setChancellorName(template.template_data?.signatures?.president_name || 'Chancellor')
 
       if (template.template_data?.template_image) {
         setTemplateImage(template.template_data.template_image)

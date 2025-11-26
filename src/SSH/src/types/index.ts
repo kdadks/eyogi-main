@@ -253,6 +253,10 @@ export interface CertificateTemplate {
       text: string
       fontSize: number
       fontColor: string
+      fontFamily: string
+      textAlign: 'left' | 'center' | 'right'
+      isBold: boolean
+      isItalic: boolean
     }
   }
   is_active: boolean

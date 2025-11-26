@@ -283,6 +283,76 @@ export default function DynamicFieldEditor({
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Font Color</label>
+                  <input
+                    type="color"
+                    value={newField.fontColor || '#000000'}
+                    onChange={(e) => setNewField({ ...newField, fontColor: e.target.value })}
+                    className="w-full h-8 rounded border border-gray-300 cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Font Family</label>
+                  <select
+                    value={newField.fontFamily || 'Arial'}
+                    onChange={(e) => setNewField({ ...newField, fontFamily: e.target.value })}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {FONT_FAMILIES.map((family) => (
+                      <option key={family} value={family}>
+                        {family}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Text Align</label>
+                  <select
+                    value={newField.textAlign || 'left'}
+                    onChange={(e) =>
+                      setNewField({ ...newField, textAlign: e.target.value as 'left' | 'center' | 'right' })
+                    }
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 px-1">
+                <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newField.isBold || false}
+                    onChange={(e) => setNewField({ ...newField, isBold: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="font-bold">Bold</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newField.isItalic || false}
+                    onChange={(e) => setNewField({ ...newField, isItalic: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="italic">Italic</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newField.isRequired || false}
+                    onChange={(e) => setNewField({ ...newField, isRequired: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>Required</span>
+                </label>
+              </div>
+
               <div className="flex gap-2">
                 <Button onClick={handleAddField} size="sm" className="flex-1">
                   Add Field
@@ -363,55 +433,93 @@ export default function DynamicFieldEditor({
 
                   {/* Edit Panel */}
                   {editingFieldId === field.id && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Font Color
-                        </label>
-                        <input
-                          type="color"
-                          value={field.fontColor}
-                          onChange={(e) =>
-                            handleUpdateField(field.id, { fontColor: e.target.value })
-                          }
-                          className="w-full h-8 rounded border border-gray-300 cursor-pointer"
-                        />
+                    <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Font Color
+                          </label>
+                          <input
+                            type="color"
+                            value={field.fontColor}
+                            onChange={(e) =>
+                              handleUpdateField(field.id, { fontColor: e.target.value })
+                            }
+                            className="w-full h-8 rounded border border-gray-300 cursor-pointer"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Font Family
+                          </label>
+                          <select
+                            value={field.fontFamily}
+                            onChange={(e) =>
+                              handleUpdateField(field.id, { fontFamily: e.target.value })
+                            }
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                          >
+                            {FONT_FAMILIES.map((family) => (
+                              <option key={family} value={family}>
+                                {family}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Text Align
+                          </label>
+                          <select
+                            value={field.textAlign}
+                            onChange={(e) =>
+                              handleUpdateField(field.id, {
+                                textAlign: e.target.value as 'left' | 'center' | 'right',
+                              })
+                            }
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Font Family
+
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={field.isBold}
+                            onChange={(e) =>
+                              handleUpdateField(field.id, { isBold: e.target.checked })
+                            }
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="font-bold">Bold</span>
                         </label>
-                        <select
-                          value={field.fontFamily}
-                          onChange={(e) =>
-                            handleUpdateField(field.id, { fontFamily: e.target.value })
-                          }
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                        >
-                          {FONT_FAMILIES.map((family) => (
-                            <option key={family} value={family}>
-                              {family}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Text Align
+                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={field.isItalic}
+                            onChange={(e) =>
+                              handleUpdateField(field.id, { isItalic: e.target.checked })
+                            }
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="italic">Italic</span>
                         </label>
-                        <select
-                          value={field.textAlign}
-                          onChange={(e) =>
-                            handleUpdateField(field.id, {
-                              textAlign: e.target.value as 'left' | 'center' | 'right',
-                            })
-                          }
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                        >
-                          <option value="left">Left</option>
-                          <option value="center">Center</option>
-                          <option value="right">Right</option>
-                        </select>
+                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={field.isRequired}
+                            onChange={(e) =>
+                              handleUpdateField(field.id, { isRequired: e.target.checked })
+                            }
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>Required</span>
+                        </label>
                       </div>
                     </div>
                   )}

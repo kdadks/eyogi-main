@@ -147,6 +147,18 @@ export class CertificateGenerator {
       if (dynamicFields.length > 0) {
         console.log('Rendering certificate with dynamic fields:', dynamicFields.length)
 
+        // Load the template image to get actual dimensions
+        const img = new Image()
+        img.src = templateImageUrl
+        await new Promise((resolve, reject) => {
+          img.onload = resolve
+          img.onerror = reject
+        })
+
+        const templateWidth = img.naturalWidth
+        const templateHeight = img.naturalHeight
+        console.log('Template dimensions:', templateWidth, 'x', templateHeight)
+
         // Map certificate data to field values
         const fieldValues: Record<string, string> = {
           student_name: data.studentName,
@@ -168,29 +180,48 @@ export class CertificateGenerator {
           const value = fieldValues[field.name] || ''
           if (!value) continue
 
-          // Positions are in pixels from the editor, treat them as absolute mm for PDF
-          const xPos = (field.x / 700) * width // Assuming 700px editor width maps to PDF width
-          const yPos = (field.y / 500) * height // Assuming 500px editor height maps to PDF height
+          // Convert pixel positions to PDF mm based on actual template dimensions
+          // Fields are positioned in pixels on the template image
+          const xPos = (field.x / templateWidth) * width
+          const yPos = (field.y / templateHeight) * height
+          const fieldWidth = (field.width / templateWidth) * width
 
-          // Parse color (hex to RGB)
+          console.log(`Rendering field ${field.name} at x:${xPos}, y:${yPos} (original: ${field.x}, ${field.y})`)
+
+          // Parse color (hex to RGB) and apply formatting
           const color = this.hexToRgb(field.fontColor || '#000000')
           this.pdf.setTextColor(color.r, color.g, color.b)
 
-          // Set font
+          // Set font with proper style
+          // Map common font families to jsPDF supported fonts
+          let pdfFont = 'helvetica'
+          const fontFamily = (field.fontFamily || 'Arial').toLowerCase()
+
+          if (fontFamily.includes('times') || fontFamily.includes('serif')) {
+            pdfFont = 'times'
+          } else if (fontFamily.includes('courier') || fontFamily.includes('mono')) {
+            pdfFont = 'courier'
+          } else {
+            pdfFont = 'helvetica' // Default for Arial, Helvetica, Sans-serif, etc.
+          }
+
           const fontStyle = field.isBold && field.isItalic ? 'bolditalic' :
                            field.isBold ? 'bold' :
                            field.isItalic ? 'italic' : 'normal'
-          this.pdf.setFont('helvetica', fontStyle)
-          this.pdf.setFontSize(field.fontSize || 12)
+          this.pdf.setFont(pdfFont, fontStyle)
 
-          // Calculate text position based on alignment
+          // Scale font size appropriately
+          const scaledFontSize = (field.fontSize || 12) * (width / templateWidth)
+          this.pdf.setFontSize(scaledFontSize)
+
+          // Calculate text position based on alignment within the field width
           let textX = xPos
           const textWidth = this.pdf.getTextWidth(value)
 
           if (field.textAlign === 'center') {
-            textX = xPos - textWidth / 2
+            textX = xPos + (fieldWidth - textWidth) / 2
           } else if (field.textAlign === 'right') {
-            textX = xPos - textWidth
+            textX = xPos + fieldWidth - textWidth
           }
 
           // Render the text
@@ -198,17 +229,38 @@ export class CertificateGenerator {
         }
       }
 
+      // Get template dimensions (reuse from above if available)
+      let templateWidth = 700  // Default fallback
+      let templateHeight = 500 // Default fallback
+
+      if (dynamicFields.length > 0) {
+        // Already loaded above
+        const img = new Image()
+        img.src = templateImageUrl
+        try {
+          await new Promise((resolve, reject) => {
+            img.onload = resolve
+            img.onerror = reject
+            setTimeout(reject, 1000) // Timeout after 1s
+          })
+          templateWidth = img.naturalWidth
+          templateHeight = img.naturalHeight
+        } catch (error) {
+          console.warn('Could not load template dimensions, using defaults')
+        }
+      }
+
       // Render Secretary signature if configured
       if (template.template_data?.signature_positions?.secretary) {
         const secretaryPos = template.template_data.signature_positions.secretary
-        const secretaryName = template.template_data.signatures?.vice_chancellor_name || 'Secretary'
+        const secretaryName = template.template_data.signatures?.vice_chancellor_name || 'President'
         const secretarySigData = template.template_data.signatures?.vice_chancellor_signature_data
 
-        // Positions are in pixels from the editor, treat them as absolute mm for PDF
-        const xPos = (secretaryPos.x / 700) * width // Assuming 700px editor width maps to PDF width
-        const yPos = (secretaryPos.y / 500) * height // Assuming 500px editor height maps to PDF height
-        const sigWidth = (secretaryPos.width / 700) * width
-        const sigHeight = (secretaryPos.height / 500) * height
+        // Convert pixel positions to PDF mm based on actual template dimensions
+        const xPos = (secretaryPos.x / templateWidth) * width
+        const yPos = (secretaryPos.y / templateHeight) * height
+        const sigWidth = (secretaryPos.width / templateWidth) * width
+        const sigHeight = (secretaryPos.height / templateHeight) * height
 
         try {
           if (secretarySigData) {
@@ -221,7 +273,8 @@ export class CertificateGenerator {
 
         // Add secretary name below signature
         this.pdf.setFont('helvetica', 'bold')
-        this.pdf.setFontSize(10)
+        const scaledFontSize = 10 * (width / templateWidth)
+        this.pdf.setFontSize(scaledFontSize)
         this.pdf.setTextColor(0, 0, 0)
         const nameWidth = this.pdf.getTextWidth(secretaryName)
         this.pdf.text(secretaryName, xPos + (sigWidth - nameWidth) / 2, yPos + sigHeight + 4)
@@ -233,11 +286,11 @@ export class CertificateGenerator {
         const chancellorName = template.template_data.signatures?.president_name || 'Chancellor'
         const chancellorSigData = template.template_data.signatures?.president_signature_data
 
-        // Positions are in pixels from the editor, treat them as absolute mm for PDF
-        const xPos = (chancellorPos.x / 700) * width // Assuming 700px editor width maps to PDF width
-        const yPos = (chancellorPos.y / 500) * height // Assuming 500px editor height maps to PDF height
-        const sigWidth = (chancellorPos.width / 700) * width
-        const sigHeight = (chancellorPos.height / 500) * height
+        // Convert pixel positions to PDF mm based on actual template dimensions
+        const xPos = (chancellorPos.x / templateWidth) * width
+        const yPos = (chancellorPos.y / templateHeight) * height
+        const sigWidth = (chancellorPos.width / templateWidth) * width
+        const sigHeight = (chancellorPos.height / templateHeight) * height
 
         try {
           if (chancellorSigData) {
@@ -250,7 +303,8 @@ export class CertificateGenerator {
 
         // Add chancellor name below signature
         this.pdf.setFont('helvetica', 'bold')
-        this.pdf.setFontSize(10)
+        const scaledFontSize = 10 * (width / templateWidth)
+        this.pdf.setFontSize(scaledFontSize)
         this.pdf.setTextColor(0, 0, 0)
         const nameWidth = this.pdf.getTextWidth(chancellorName)
         this.pdf.text(chancellorName, xPos + (sigWidth - nameWidth) / 2, yPos + sigHeight + 4)
@@ -260,27 +314,55 @@ export class CertificateGenerator {
       if (template.template_data?.text_message) {
         const textMsg = template.template_data.text_message
 
-        // Positions are in pixels from the editor, treat them as absolute mm for PDF
-        const xPos = (textMsg.x / 700) * width // Assuming 700px editor width maps to PDF width
-        const yPos = (textMsg.y / 500) * height // Assuming 500px editor height maps to PDF height
-        const msgWidth = (textMsg.width / 700) * width
+        // Convert pixel positions to PDF mm based on actual template dimensions
+        const xPos = (textMsg.x / templateWidth) * width
+        const yPos = (textMsg.y / templateHeight) * height
+        const msgWidth = (textMsg.width / templateWidth) * width
 
         // Parse color
         const color = this.hexToRgb(textMsg.fontColor || '#000000')
         this.pdf.setTextColor(color.r, color.g, color.b)
 
-        // Set font
-        this.pdf.setFont('helvetica', 'normal')
-        this.pdf.setFontSize(textMsg.fontSize || 12)
+        // Map font family to jsPDF supported fonts
+        let pdfFont = 'helvetica'
+        const fontFamily = (textMsg.fontFamily || 'Arial').toLowerCase()
+
+        if (fontFamily.includes('times') || fontFamily.includes('serif') || fontFamily.includes('georgia')) {
+          pdfFont = 'times'
+        } else if (fontFamily.includes('courier') || fontFamily.includes('mono')) {
+          pdfFont = 'courier'
+        } else {
+          pdfFont = 'helvetica' // Default for Arial, Helvetica, Sans-serif, etc.
+        }
+
+        // Set font with proper style
+        const fontStyle = textMsg.isBold && textMsg.isItalic ? 'bolditalic' :
+                         textMsg.isBold ? 'bold' :
+                         textMsg.isItalic ? 'italic' : 'normal'
+        this.pdf.setFont(pdfFont, fontStyle)
+
+        // Scale font size
+        const scaledFontSize = (textMsg.fontSize || 12) * (width / templateWidth)
+        this.pdf.setFontSize(scaledFontSize)
 
         // Split text if it's too long for the width
         const lines = this.pdf.splitTextToSize(textMsg.text, msgWidth)
 
-        // Render text (centered within the width)
+        // Render text with proper alignment
         lines.forEach((line: string, index: number) => {
           const lineWidth = this.pdf.getTextWidth(line)
-          const textX = xPos + (msgWidth - lineWidth) / 2
-          this.pdf.text(line, textX, yPos + (index * (textMsg.fontSize || 12) * 0.4))
+          let textX = xPos
+
+          // Apply text alignment
+          const textAlign = textMsg.textAlign || 'center'
+          if (textAlign === 'center') {
+            textX = xPos + (msgWidth - lineWidth) / 2
+          } else if (textAlign === 'right') {
+            textX = xPos + msgWidth - lineWidth
+          }
+          // For 'left', textX remains as xPos
+
+          this.pdf.text(line, textX, yPos + (index * scaledFontSize * 0.4))
         })
       }
 

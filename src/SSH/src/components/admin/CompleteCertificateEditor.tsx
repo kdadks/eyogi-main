@@ -40,13 +40,28 @@ interface TextBox {
   text: string
   fontSize: number
   fontColor: string
+  fontFamily: string
+  textAlign: 'left' | 'center' | 'right'
+  isBold: boolean
+  isItalic: boolean
 }
 
 const PRESET_FIELDS = [
   { name: 'student_name', label: 'Student Name', fontSize: 32, fontColor: '#1a5490' },
+  { name: 'student_id', label: 'Student Number', fontSize: 14, fontColor: '#666666' },
   { name: 'course_name', label: 'Course Name', fontSize: 24, fontColor: '#d97706' },
+  { name: 'course_id', label: 'Course Number', fontSize: 14, fontColor: '#666666' },
   { name: 'completion_date', label: 'Completion Date', fontSize: 16, fontColor: '#000000' },
   { name: 'certificate_number', label: 'Certificate Number', fontSize: 12, fontColor: '#666666' },
+]
+
+const FONT_FAMILIES = [
+  'Arial',
+  'Georgia',
+  'Times New Roman',
+  'Courier New',
+  'Verdana',
+  'Trebuchet MS',
 ]
 
 export default function CompleteCertificateEditor({
@@ -72,14 +87,14 @@ export default function CompleteCertificateEditor({
     y: 500,
     width: 150,
     height: 60,
-    name: 'Secretary eYogi Gurukul',
+    name: 'President',
   })
   const [chancellorSignature, setChancellorSignature] = useState<SignatureBox>({
     x: 450,
     y: 500,
     width: 150,
     height: 60,
-    name: 'Chancellor SSHU',
+    name: 'Chancellor',
   })
 
   // Text message
@@ -91,6 +106,10 @@ export default function CompleteCertificateEditor({
     text: 'This certifies successful completion of the above course',
     fontSize: 14,
     fontColor: '#000000',
+    fontFamily: 'Arial',
+    textAlign: 'center',
+    isBold: false,
+    isItalic: false,
   })
 
   // Dragging state
@@ -128,7 +147,7 @@ export default function CompleteCertificateEditor({
           setSecretarySignature({
             ...secretarySignature,
             ...sig.secretary,
-            name: template.template_data.signatures?.vice_chancellor_name || 'Secretary eYogi Gurukul',
+            name: template.template_data.signatures?.vice_chancellor_name || 'President',
             image: template.template_data.signatures?.vice_chancellor_signature_data,
           })
         }
@@ -136,7 +155,7 @@ export default function CompleteCertificateEditor({
           setChancellorSignature({
             ...chancellorSignature,
             ...sig.chancellor,
-            name: template.template_data.signatures?.president_name || 'Chancellor SSHU',
+            name: template.template_data.signatures?.president_name || 'Chancellor',
             image: template.template_data.signatures?.president_signature_data,
           })
         }
@@ -151,18 +170,32 @@ export default function CompleteCertificateEditor({
 
   // Update image size
   useEffect(() => {
-    if (imageRef.current) {
-      const updateSize = () => {
-        if (imageRef.current) {
-          setImageSize({
-            width: imageRef.current.offsetWidth,
-            height: imageRef.current.offsetHeight,
-          })
-        }
+    const updateSize = () => {
+      if (imageRef.current) {
+        setImageSize({
+          width: imageRef.current.offsetWidth,
+          height: imageRef.current.offsetHeight,
+        })
       }
-      updateSize()
+    }
+
+    // Update size when image loads
+    if (imageRef.current) {
+      const img = imageRef.current
+
+      // If image is already loaded
+      if (img.complete) {
+        updateSize()
+      }
+
+      // Listen for load event
+      img.addEventListener('load', updateSize)
       window.addEventListener('resize', updateSize)
-      return () => window.removeEventListener('resize', updateSize)
+
+      return () => {
+        img.removeEventListener('load', updateSize)
+        window.removeEventListener('resize', updateSize)
+      }
     }
   }, [templateImage])
 
@@ -249,7 +282,12 @@ export default function CompleteCertificateEditor({
     const rect = e.currentTarget.getBoundingClientRect()
     const containerRect = containerRef.current?.getBoundingClientRect()
 
-    if (!containerRect) return
+    if (!containerRect) {
+      console.warn('Container not found for drag start')
+      return
+    }
+
+    console.log('Drag started:', { type, id, imageSize })
 
     // Calculate offset from element's position on the template
     setDragging({
@@ -292,6 +330,8 @@ export default function CompleteCertificateEditor({
       const containerRect = containerRef.current.getBoundingClientRect()
       const newX = e.clientX - containerRect.left - dragging.offsetX
       const newY = e.clientY - containerRect.top - dragging.offsetY
+
+      console.log('Dragging:', { type: dragging.type, newX, newY, imageSize })
 
       if (dragging.type === 'field' && dragging.id) {
         setFields((prev) =>
@@ -506,10 +546,10 @@ export default function CompleteCertificateEditor({
                 </CardContent>
               </Card>
 
-              {/* Secretary Signature */}
+              {/* President Signature */}
               <Card>
                 <CardHeader>
-                  <h3 className="font-semibold text-sm">3. Secretary</h3>
+                  <h3 className="font-semibold text-sm">3. President</h3>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div>
@@ -543,7 +583,7 @@ export default function CompleteCertificateEditor({
                       <div className="mt-1">
                         <img
                           src={secretarySignature.image}
-                          alt="Secretary signature"
+                          alt="President signature"
                           className="w-full h-12 object-contain border rounded"
                         />
                         <Button
@@ -671,7 +711,7 @@ export default function CompleteCertificateEditor({
                         </span>
                         <span className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-green-400 border border-green-600"></div>
-                          Secretary
+                          President
                         </span>
                         <span className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-purple-400 border border-purple-600"></div>
@@ -687,7 +727,10 @@ export default function CompleteCertificateEditor({
                       <div
                         ref={containerRef}
                         className="relative bg-gray-50 rounded-lg border-2 overflow-hidden"
-                        style={{ userSelect: 'none' }}
+                        style={{
+                          userSelect: 'none',
+                          cursor: dragging ? 'grabbing' : 'default'
+                        }}
                       >
                         <img
                           ref={imageRef}
@@ -720,7 +763,7 @@ export default function CompleteCertificateEditor({
                           </div>
                         ))}
 
-                        {/* Secretary Signature */}
+                        {/* President Signature */}
                         <div
                           className={`absolute cursor-move border-2 transition-all ${
                             selectedElement === 'secretary'
@@ -739,11 +782,11 @@ export default function CompleteCertificateEditor({
                           {secretarySignature.image ? (
                             <img
                               src={secretarySignature.image}
-                              alt="Secretary"
+                              alt="President"
                               className="max-w-full max-h-full object-contain"
                             />
                           ) : (
-                            <span className="text-[10px] font-semibold text-center">Secretary</span>
+                            <span className="text-[10px] font-semibold text-center">President</span>
                           )}
                         </div>
 
@@ -875,7 +918,23 @@ export default function CompleteCertificateEditor({
                             className="w-full h-8 border rounded"
                           />
                         </div>
-                        <div>
+                        <div className="col-span-2">
+                          <label className="font-medium">Font Family</label>
+                          <select
+                            value={selectedField.fontFamily}
+                            onChange={(e) =>
+                              updateField(selectedField.id, { fontFamily: e.target.value })
+                            }
+                            className="w-full px-2 py-1 border rounded"
+                          >
+                            {FONT_FAMILIES.map((family) => (
+                              <option key={family} value={family}>
+                                {family}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
                           <label className="font-medium">Align</label>
                           <select
                             value={selectedField.textAlign}
@@ -917,11 +976,11 @@ export default function CompleteCertificateEditor({
                     </Card>
                   )}
 
-                  {/* Secretary Properties */}
+                  {/* President Properties */}
                   {selectedElement === 'secretary' && (
                     <Card className="bg-green-50">
                       <CardHeader>
-                        <h3 className="font-semibold text-sm">Edit: Secretary Signature</h3>
+                        <h3 className="font-semibold text-sm">Edit: President Signature</h3>
                       </CardHeader>
                       <CardContent className="grid grid-cols-4 gap-2 text-xs">
                         <div>
@@ -1141,6 +1200,72 @@ export default function CompleteCertificateEditor({
                             }
                             className="w-full h-8 border rounded"
                           />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="font-medium">Font Family</label>
+                          <select
+                            value={textMessage.fontFamily}
+                            onChange={(e) =>
+                              setTextMessage({
+                                ...textMessage,
+                                fontFamily: e.target.value,
+                              })
+                            }
+                            className="w-full px-2 py-1 border rounded"
+                          >
+                            {FONT_FAMILIES.map((family) => (
+                              <option key={family} value={family}>
+                                {family}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="font-medium">Text Align</label>
+                          <select
+                            value={textMessage.textAlign}
+                            onChange={(e) =>
+                              setTextMessage({
+                                ...textMessage,
+                                textAlign: e.target.value as 'left' | 'center' | 'right',
+                              })
+                            }
+                            className="w-full px-2 py-1 border rounded"
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </div>
+                        <div className="col-span-4 flex items-center gap-4 pt-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={textMessage.isBold}
+                              onChange={(e) =>
+                                setTextMessage({
+                                  ...textMessage,
+                                  isBold: e.target.checked,
+                                })
+                              }
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="font-bold">Bold</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={textMessage.isItalic}
+                              onChange={(e) =>
+                                setTextMessage({
+                                  ...textMessage,
+                                  isItalic: e.target.checked,
+                                })
+                              }
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="italic">Italic</span>
+                          </label>
                         </div>
                       </CardContent>
                     </Card>

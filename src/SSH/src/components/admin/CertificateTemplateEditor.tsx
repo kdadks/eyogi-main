@@ -56,10 +56,10 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
       signatures: {
         vice_chancellor_signature_url: '',
         vice_chancellor_signature_data: '',
-        vice_chancellor_name: 'Secretary eYogi Gurukul',
+        vice_chancellor_name: 'President',
         president_signature_url: '',
         president_signature_data: '',
-        president_name: 'Chancellor SSHU',
+        president_name: 'Chancellor',
       },
       seal: {
         official_seal_url: '',
@@ -738,7 +738,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                        placeholder="Secretary eYogi Gurukul"
+                        placeholder="President"
                       />
                     </div>
                     <div>
@@ -755,7 +755,7 @@ const CertificateTemplateEditor: React.FC<CertificateTemplateEditorProps> = ({
                           )
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                        placeholder="Chancellor SSHU"
+                        placeholder="Chancellor"
                       />
                     </div>
                   </CardContent>
