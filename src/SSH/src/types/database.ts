@@ -9,6 +9,7 @@ export interface Database {
           full_name: string | null
           avatar_url: string | null
           role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
+          status: 'pending_verification' | 'active' | 'inactive' | 'suspended' | null
           age: number | null
           date_of_birth: string | null
           phone: string | null
@@ -32,6 +33,7 @@ export interface Database {
           full_name?: string | null
           avatar_url?: string | null
           role?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
+          status?: 'pending_verification' | 'active' | 'inactive' | 'suspended' | null
           age?: number | null
           date_of_birth?: string | null
           phone?: string | null
@@ -55,6 +57,7 @@ export interface Database {
           full_name?: string | null
           avatar_url?: string | null
           role?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
+          status?: 'pending_verification' | 'active' | 'inactive' | 'suspended' | null
           age?: number | null
           date_of_birth?: string | null
           phone?: string | null

@@ -184,7 +184,7 @@ const AdminUserManagement: React.FC = () => {
     const matchesStatus =
       statusFilter === 'all' ||
       user.status === statusFilter ||
-      (statusFilter === 'pending_activation' && user.status === 'pending_verification')
+      (statusFilter === 'pending_verification' && user.status === 'pending_verification')
     return matchesSearch && matchesRole && matchesStatus
   })
 
@@ -241,7 +241,7 @@ const AdminUserManagement: React.FC = () => {
   }
 
   const formatStatusLabel = (status: string) => {
-    if (status === 'pending_verification' || status === 'pending_activation') {
+    if (status === 'pending_verification') {
       return 'Pending Activation'
     }
     const text = status.replace('_', ' ')
@@ -314,7 +314,7 @@ const AdminUserManagement: React.FC = () => {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
-              <option value="pending_activation">Pending Activation</option>
+              <option value="pending_verification">Pending Verification</option>
             </select>
           </div>
           {/* Add User Button */}
@@ -408,8 +408,7 @@ const AdminUserManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
-                      {(user.status === 'pending_activation' ||
-                        user.status === 'pending_verification') && (
+                      {user.status === 'pending_verification' && (
                         <button
                           onClick={() => handleActivateUser(user.id, user.full_name)}
                           className="text-green-600 hover:text-green-900 p-1 cursor-pointer"

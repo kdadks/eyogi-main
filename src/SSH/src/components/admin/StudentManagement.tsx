@@ -630,7 +630,7 @@ export default function StudentManagement() {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
-              <option value="pending_activation">Pending Activation</option>
+              <option value="pending_verification">Pending Verification</option>
             </select>
             <select
               value={consentFilter}
