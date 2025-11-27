@@ -28,8 +28,17 @@ const getEncryptionKey = (): string => {
 
 const ENCRYPTION_KEY = getEncryptionKey()
 
+// Diagnostic logging
 if (!ENCRYPTION_KEY) {
-  console.warn('⚠️ VITE_ENCRYPTION_KEY not set. Encryption will not work properly.')
+  console.error('❌ CRITICAL: VITE_ENCRYPTION_KEY not set!')
+  console.error('⚠️  Encrypted data will NOT be decrypted.')
+  console.error('📖 See ENCRYPTION_SETUP_GUIDE.md for setup instructions.')
+  console.error(
+    '🔧 Action required: Set VITE_ENCRYPTION_KEY in Vercel environment variables and redeploy.',
+  )
+} else {
+  console.log('✅ Encryption key loaded successfully')
+  console.log(`🔑 Key length: ${ENCRYPTION_KEY.length} characters`)
 }
 
 /**
@@ -64,8 +73,11 @@ export function decryptField(encryptedValue: string | null | undefined): string 
 
   try {
     if (!ENCRYPTION_KEY) {
-      console.error('Encryption key not available')
-      return encryptedValue // Return encrypted value if key not available
+      console.error(
+        '❌ CRITICAL: Encryption key not available for decryption. Check VITE_ENCRYPTION_KEY environment variable.',
+      )
+      // Return the encrypted value so it's visible there's an issue
+      return `[ENCRYPTED: ${encryptedValue.substring(0, 20)}...]`
     }
 
     // Decrypt using AES
@@ -73,14 +85,14 @@ export function decryptField(encryptedValue: string | null | undefined): string 
     const decryptedString = decrypted.toString(CryptoJS.enc.Utf8)
 
     if (!decryptedString) {
-      console.error('Decryption failed - empty result')
-      return null
+      console.error('❌ Decryption failed - empty result. Key may be incorrect.')
+      return `[DECRYPT_FAILED: ${encryptedValue.substring(0, 20)}...]`
     }
 
     return decryptedString
   } catch (error) {
-    console.error('Decryption error:', error)
-    return null
+    console.error('❌ Decryption error:', error)
+    return `[DECRYPT_ERROR: ${encryptedValue.substring(0, 20)}...]`
   }
 }
 

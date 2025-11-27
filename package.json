@@ -1,6 +1,7 @@
 {
   "name": "eyogi",
   "version": "1.0.0",
+  "private": true,
   "description": "Website template for Payload",
   "license": "MIT",
   "type": "module",
@@ -75,8 +76,8 @@
     "pg": "^8.16.3",
     "postcss": "^8.4.38",
     "prism-react-renderer": "^2.3.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "react-lite-youtube-embed": "^2.5.1",
     "react-matter-js": "^1.0.5",
@@ -93,14 +94,19 @@
     "@types/escape-html": "^1.0.2",
     "@types/matter-js": "^0.19.8",
     "@types/node": "22.5.4",
-    "@types/react": "19.0.1",
-    "@types/react-dom": "19.0.1",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
     "copyfiles": "^2.4.1",
     "eslint": "^9.16.0",
     "eslint-config-next": "15.1.0",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
     "typescript": "5.7.2"
+  },
+  "resolutions": {
+    "lucide-react": "^0.378.0",
+    "payload-admin-bar": "^1.0.6",
+    "tailwind-scrollbar": "^4.0.2"
   },
   "engines": {
     "node": "^18.20.2 || >=20.9.0"
