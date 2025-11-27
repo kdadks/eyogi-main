@@ -5,6 +5,7 @@
 // =========================================================================
 import { supabaseAdmin } from '../supabase'
 import { queryCache, createCacheKey, CACHE_DURATIONS } from '../cache'
+import { decryptProfileFields } from '../encryption'
 // Local interface definitions for parent dashboard
 interface ParentChildRelationship {
   parent_id: string
@@ -161,13 +162,15 @@ export async function getParentChildren(
         if (relationshipError) {
           return { data: null, error: 'Failed to fetch children' }
         }
-        // Get dashboard stats for each child
+        // Get dashboard stats for each child and decrypt sensitive fields
         const childrenWithStats = await Promise.all(
           relationships?.map(async (rel) => {
             const child = rel.child as ChildProfile
+            // Decrypt sensitive profile fields
+            const decryptedChild = decryptProfileFields(child)
             const stats = await getChildDashboardStats(child.id)
             return {
-              ...child,
+              ...decryptedChild,
               relationship: rel,
               stats: stats.data || undefined,
             }

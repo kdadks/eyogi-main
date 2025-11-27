@@ -2,6 +2,7 @@ import { supabase, supabaseAdmin } from '../supabase'
 import type { Database } from '../../types/database'
 import { getCountryCode, getCountyCode } from '../isoCodes'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
+import { encryptProfileFields, decryptProfileFields } from '../encryption'
 type Profile = Database['public']['Tables']['profiles']['Row']
 export interface CreateChildData {
   full_name: string
@@ -150,13 +151,21 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
       student_id: studentId,
       parent_id: childData.parent_id, // Link child to parent
     }
+
+    // Encrypt sensitive fields before saving
+    const encryptedProfileData = encryptProfileFields(profileData)
+
     // Insert into database
     let client = supabaseAdmin
     if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
       client = supabase
     }
 
-    const { data, error } = await client.from('profiles').insert(profileData).select().single()
+    const { data, error } = await client
+      .from('profiles')
+      .insert(encryptedProfileData)
+      .select()
+      .single()
     if (error) {
       throw new Error(`Failed to create child profile: ${error.message}`)
     }
@@ -164,7 +173,8 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
     // Parent-child relationship is now handled simply through parent_id field in profiles table
     // No need for complex parent_child_relationships table
 
-    return data
+    // Decrypt before returning
+    return decryptProfileFields(data)
   } catch (error) {
     throw error
   }
@@ -189,7 +199,9 @@ export async function getChildrenByParentId(parentId: string): Promise<Profile[]
     if (directError) {
       throw new Error(`Failed to fetch children: ${directError.message}`)
     }
-    return directChildren || []
+    // Decrypt sensitive fields before returning
+    const decryptedChildren = (directChildren || []).map((child) => decryptProfileFields(child))
+    return decryptedChildren
   } catch (error) {
     throw error
   }
@@ -240,6 +252,10 @@ export async function updateChild(
       zip_code: updates.zip_code || null,
       country: normalizedCountry, // Use normalized 3-letter country code
     }
+
+    // Encrypt sensitive fields before updating
+    const encryptedUpdateData = encryptProfileFields(updateData)
+
     let client = supabaseAdmin
     if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
       client = supabase
@@ -247,14 +263,15 @@ export async function updateChild(
 
     const { data, error } = await client
       .from('profiles')
-      .update(updateData)
+      .update(encryptedUpdateData)
       .eq('id', childId)
       .select()
       .single()
     if (error) {
       throw new Error(`Failed to update child profile: ${error.message}`)
     }
-    return data
+    // Decrypt before returning
+    return decryptProfileFields(data)
   } catch (error) {
     throw error
   }

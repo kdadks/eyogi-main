@@ -24,6 +24,7 @@ interface ImportMetaEnv {
   readonly VITE_ALLOWED_FILE_TYPES: string
   readonly VITE_RATE_LIMIT_REQUESTS: string
   readonly VITE_RATE_LIMIT_WINDOW: string
+  readonly VITE_ENCRYPTION_KEY: string
 }
 interface ImportMeta {
   readonly env: ImportMetaEnv

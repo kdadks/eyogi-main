@@ -13,6 +13,7 @@ import { bulkMarkAttendance, createAttendanceSession } from '../../lib/api/atten
 import { Batch } from '../../types'
 import { toast } from 'react-hot-toast'
 import { supabaseAdmin } from '../../lib/supabase'
+import { decryptProfileFields } from '../../lib/encryption'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 
 interface AttendanceMarkingModalProps {
@@ -91,14 +92,17 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
       )
 
       const studentList: StudentAttendance[] =
-        data?.map((item: BatchStudentRow) => ({
-          student_id: item.student_id,
-          student_name: item.student?.[0]?.full_name || 'Unknown',
-          student_email: item.student?.[0]?.email || '',
-          student_number: item.student?.[0]?.student_id || undefined,
-          status: existingMap.get(item.student_id)?.status || 'present',
-          notes: existingMap.get(item.student_id)?.notes || '',
-        })) || []
+        data?.map((item: BatchStudentRow) => {
+          const decryptedStudent = item.student ? decryptProfileFields(item.student) : null
+          return {
+            student_id: item.student_id,
+            student_name: decryptedStudent?.full_name || 'Unknown',
+            student_email: decryptedStudent?.email || '',
+            student_number: decryptedStudent?.student_id || undefined,
+            status: existingMap.get(item.student_id)?.status || 'present',
+            notes: existingMap.get(item.student_id)?.notes || '',
+          }
+        }) || []
 
       setStudents(studentList)
     } catch (error) {

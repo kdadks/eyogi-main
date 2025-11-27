@@ -4,6 +4,7 @@ import type { Database } from '../supabase'
 import type { Course } from '../../types'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
 import { generateStudentId } from '../id-generator'
+import { encryptProfileFields, decryptProfileFields } from '../encryption'
 type Profile = Database['public']['Tables']['profiles']['Row'] & {
   grade?: string
   address_line_1?: string
@@ -26,7 +27,9 @@ export async function getAllUsers(): Promise<Profile[]> {
       if (error) {
         return []
       }
-      return (data || []) as unknown as Profile[]
+      // Decrypt sensitive fields for each user
+      const decryptedUsers = (data || []).map((user) => decryptProfileFields(user))
+      return decryptedUsers as unknown as Profile[]
     },
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
@@ -47,7 +50,9 @@ export async function getAllStudents(): Promise<Profile[]> {
       if (error) {
         return []
       }
-      return (data || []) as unknown as Profile[]
+      // Decrypt sensitive fields for each student
+      const decryptedStudents = (data || []).map((student) => decryptProfileFields(student))
+      return decryptedStudents as unknown as Profile[]
     },
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
@@ -67,7 +72,9 @@ export async function getAllTeachers(): Promise<Profile[]> {
       if (error) {
         return []
       }
-      return (data || []) as unknown as Profile[]
+      // Decrypt sensitive fields for each teacher
+      const decryptedTeachers = (data || []).map((teacher) => decryptProfileFields(teacher))
+      return decryptedTeachers as unknown as Profile[]
     },
     CACHE_DURATIONS.USER_PROFILE, // 5 minutes
   )
@@ -136,13 +143,18 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
         console.error('getUserProfile error:', error)
         return null
       }
-      // If address is present and is an object, return as is
-      if (data && typeof data.address === 'object' && data.address !== null) {
-        return data as Profile
-      }
-      // If address is missing, reconstruct from flat fields
+
+      // Decrypt sensitive fields before returning
       if (data) {
-        const d = data as Profile
+        const decryptedData = decryptProfileFields(data)
+
+        // If address is present and is an object, return as is
+        if (typeof decryptedData.address === 'object' && decryptedData.address !== null) {
+          return decryptedData as Profile
+        }
+
+        // If address is missing, reconstruct from flat fields
+        const d = decryptedData as Profile
         const address = {
           country: d.country || '',
           state: d.state || '',
@@ -151,7 +163,7 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
           postal_code: (d as { postal_code?: string }).postal_code || '',
         }
         return {
-          ...data,
+          ...decryptedData,
           address,
         } as Profile
       }
@@ -177,9 +189,12 @@ export async function updateUserProfile(
     }
   }
 
-  // Update with flat address fields directly - no transformation needed
+  // Encrypt sensitive fields before saving to database
+  const encryptedUpdates = encryptProfileFields(normalizedUpdates)
+
+  // Update with encrypted data
   const updateData = {
-    ...normalizedUpdates,
+    ...encryptedUpdates,
     updated_at: new Date().toISOString(),
   }
   const { data, error } = await supabaseAdmin
@@ -195,8 +210,9 @@ export async function updateUserProfile(
   // Invalidate user caches
   queryCache.invalidatePattern('users:.*')
 
-  // Return the data as-is with flat address fields
-  return data as Profile
+  // Decrypt the data before returning to the caller
+  const decryptedData = decryptProfileFields(data)
+  return decryptedData as Profile
 }
 export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
   const cacheKey = createCacheKey('users', 'teacher-courses', teacherId)

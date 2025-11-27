@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../supabase'
 import { Enrollment } from '../../types'
 import { checkCoursePrerequisites } from './prerequisites'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
+import { decryptProfileFields } from '../encryption'
 export async function enrollInCourse(courseId: string, studentId: string): Promise<Enrollment> {
   try {
     // Check prerequisites before enrollment
@@ -188,7 +189,7 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
         const mappedData = (data || []).map((item: Record<string, any>) => ({
           ...item,
           course: item.course || undefined,
-          student: item.student,
+          student: item.student ? decryptProfileFields(item.student) : undefined,
         }))
 
         return mappedData as unknown as Enrollment[]
@@ -243,17 +244,19 @@ export async function updateEnrollmentStatus(
     // Send enrollment confirmation email if status is being approved (non-blocking)
     if (status === 'approved' && enrollmentDetails) {
       try {
+        // Decrypt student profile before using it
+        const decryptedStudent = enrollmentDetails.student
+          ? decryptProfileFields(enrollmentDetails.student)
+          : null
         if (
-          enrollmentDetails.student &&
-          typeof enrollmentDetails.student === 'object' &&
-          'email' in enrollmentDetails.student &&
-          'full_name' in enrollmentDetails.student
+          decryptedStudent &&
+          typeof decryptedStudent === 'object' &&
+          'email' in decryptedStudent &&
+          'full_name' in decryptedStudent
         ) {
-          const studentEmail = (enrollmentDetails.student as { email: string; full_name: string })
-            .email
-          const studentFullName = (
-            enrollmentDetails.student as { email: string; full_name: string }
-          ).full_name
+          const studentEmail = (decryptedStudent as { email: string; full_name: string }).email
+          const studentFullName = (decryptedStudent as { email: string; full_name: string })
+            .full_name
           const courseName =
             typeof enrollmentDetails.course === 'object' &&
             enrollmentDetails.course &&
@@ -506,15 +509,18 @@ export async function approveEnrollment(enrollmentId: string): Promise<void> {
 
     // Send enrollment confirmation email (non-blocking)
     try {
+      // Decrypt student profile before using it
+      const decryptedStudent = enrollmentData.student
+        ? decryptProfileFields(enrollmentData.student)
+        : null
       if (
-        enrollmentData.student &&
-        typeof enrollmentData.student === 'object' &&
-        'email' in enrollmentData.student &&
-        'full_name' in enrollmentData.student
+        decryptedStudent &&
+        typeof decryptedStudent === 'object' &&
+        'email' in decryptedStudent &&
+        'full_name' in decryptedStudent
       ) {
-        const studentEmail = (enrollmentData.student as { email: string; full_name: string }).email
-        const studentFullName = (enrollmentData.student as { email: string; full_name: string })
-          .full_name
+        const studentEmail = (decryptedStudent as { email: string; full_name: string }).email
+        const studentFullName = (decryptedStudent as { email: string; full_name: string }).full_name
         const courseName =
           typeof enrollmentData.course === 'object' &&
           enrollmentData.course &&
@@ -649,7 +655,7 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
         const mappedData = (data || []).map((item: Record<string, any>) => ({
           ...item,
           course: item.course || undefined,
-          student: item.student,
+          student: item.student ? decryptProfileFields(item.student) : undefined,
         }))
 
         console.log(`Found ${mappedData.length} pending enrollments for teacher ${teacherId}`)
@@ -698,10 +704,11 @@ export async function getStudentsEnrolledInCourse(
         const studentsMap = new Map()
         data?.forEach((enrollment: any) => {
           if (enrollment.student) {
-            studentsMap.set(enrollment.student.id, {
-              id: enrollment.student.id,
-              full_name: enrollment.student.full_name,
-              email: enrollment.student.email,
+            const decryptedStudent = decryptProfileFields(enrollment.student)
+            studentsMap.set(decryptedStudent.id, {
+              id: decryptedStudent.id,
+              full_name: decryptedStudent.full_name,
+              email: decryptedStudent.email,
             })
           }
         })

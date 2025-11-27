@@ -103,7 +103,12 @@ export default function TeacherStudentManagement() {
           .in('course_id', courseIds)
           .order('enrolled_at', { ascending: false })
 
-        relevantEnrollments = courseEnrollments || []
+        // Decrypt student profiles in enrollments
+        relevantEnrollments =
+          courseEnrollments?.map((e: any) => ({
+            ...e,
+            profiles: e.profiles ? decryptProfileFields(e.profiles) : null,
+          })) || []
         console.log('Course enrollments found:', relevantEnrollments.length)
       }
 

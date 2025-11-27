@@ -12,6 +12,7 @@
 
 import { supabaseAdmin, supabase } from '../supabase'
 import { queryCache } from '../cache'
+import { decryptProfileFields } from '../encryption'
 import type {
   DeletionRequest,
   DeletionRequestStatus,
@@ -94,7 +95,14 @@ export async function createDeletionRequest(params: {
     // Invalidate relevant caches
     queryCache.invalidatePattern('deletion:.*')
 
-    return data as unknown as DeletionRequest
+    // Decrypt profile fields
+    const decryptedData = {
+      ...data,
+      requester: data.requester ? decryptProfileFields(data.requester) : null,
+      target_user: data.target_user ? decryptProfileFields(data.target_user) : null,
+    }
+
+    return decryptedData as unknown as DeletionRequest
   } catch (error) {
     console.error('Error in createDeletionRequest:', error)
     return null
@@ -269,7 +277,15 @@ export async function getDeletionRequest(requestId: string): Promise<DeletionReq
       return null
     }
 
-    return data as unknown as DeletionRequest
+    // Decrypt profile fields
+    const decryptedData = {
+      ...data,
+      requester: data.requester ? decryptProfileFields(data.requester) : null,
+      target_user: data.target_user ? decryptProfileFields(data.target_user) : null,
+      reviewer: data.reviewer ? decryptProfileFields(data.reviewer) : null,
+    }
+
+    return decryptedData as unknown as DeletionRequest
   } catch (error) {
     console.error('Error in getDeletionRequest:', error)
     return null
@@ -365,7 +381,15 @@ export async function getAllDeletionRequests(params?: {
       return { data: [], count: 0 }
     }
 
-    return { data: (data as unknown as DeletionRequest[]) || [], count: count || 0 }
+    // Decrypt profile fields for all requests
+    const decryptedData = (data || []).map((request: any) => ({
+      ...request,
+      requester: request.requester ? decryptProfileFields(request.requester) : null,
+      target_user: request.target_user ? decryptProfileFields(request.target_user) : null,
+      reviewer: request.reviewer ? decryptProfileFields(request.reviewer) : null,
+    }))
+
+    return { data: (decryptedData as unknown as DeletionRequest[]) || [], count: count || 0 }
   } catch (error) {
     console.error('Error in getAllDeletionRequests:', error)
     return { data: [], count: 0 }
@@ -409,7 +433,15 @@ export async function getUserDeletionRequests(userId: string): Promise<DeletionR
       return []
     }
 
-    return (data as unknown as DeletionRequest[]) || []
+    // Decrypt profile fields for all requests
+    const decryptedData = (data || []).map((request: any) => ({
+      ...request,
+      requester: request.requester ? decryptProfileFields(request.requester) : null,
+      target_user: request.target_user ? decryptProfileFields(request.target_user) : null,
+      reviewer: request.reviewer ? decryptProfileFields(request.reviewer) : null,
+    }))
+
+    return (decryptedData as unknown as DeletionRequest[]) || []
   } catch (error) {
     console.error('Error in getUserDeletionRequests:', error)
     return []
@@ -483,7 +515,15 @@ export async function reviewDeletionRequest(
     // Invalidate caches
     queryCache.invalidatePattern('deletion:.*')
 
-    return data as unknown as DeletionRequest
+    // Decrypt profile fields
+    const decryptedData = {
+      ...data,
+      requester: data.requester ? decryptProfileFields(data.requester) : null,
+      target_user: data.target_user ? decryptProfileFields(data.target_user) : null,
+      reviewer: data.reviewer ? decryptProfileFields(data.reviewer) : null,
+    }
+
+    return decryptedData as unknown as DeletionRequest
   } catch (error) {
     console.error('Error in reviewDeletionRequest:', error)
     return null

@@ -6,6 +6,7 @@ import {
   StudentAttendanceSummary,
   BatchAttendanceSummary,
 } from '../../types'
+import { decryptProfileFields } from '../encryption'
 
 /**
  * Attendance Management API Functions
@@ -77,6 +78,14 @@ export async function markAttendance(params: {
         return null
       }
 
+      // Decrypt teacher profile
+      if (data.marked_by_user) {
+        data.marked_by_user = decryptProfileFields(data.marked_by_user)
+      }
+      if (data.student) {
+        data.student = decryptProfileFields(data.student)
+      }
+
       return data
     } else {
       // Create new record
@@ -116,6 +125,14 @@ export async function markAttendance(params: {
       if (error) {
         console.error('Error creating attendance record:', error)
         return null
+      }
+
+      // Decrypt teacher profile
+      if (data.marked_by_user) {
+        data.marked_by_user = decryptProfileFields(data.marked_by_user)
+      }
+      if (data.student) {
+        data.student = decryptProfileFields(data.student)
       }
 
       return data
@@ -233,7 +250,18 @@ export async function getAttendanceRecords(params: {
       return []
     }
 
-    return data || []
+    // Decrypt teacher and student profiles
+    const decryptedData = (data || []).map((record) => {
+      if (record.marked_by_user) {
+        record.marked_by_user = decryptProfileFields(record.marked_by_user)
+      }
+      if (record.student) {
+        record.student = decryptProfileFields(record.student)
+      }
+      return record
+    })
+
+    return decryptedData
   } catch (error) {
     console.error('Error in getAttendanceRecords:', error)
     return []
@@ -284,6 +312,14 @@ export async function updateAttendanceRecord(
     if (error) {
       console.error('Error updating attendance record:', error)
       return null
+    }
+
+    // Decrypt teacher and student profiles
+    if (data.marked_by_user) {
+      data.marked_by_user = decryptProfileFields(data.marked_by_user)
+    }
+    if (data.student) {
+      data.student = decryptProfileFields(data.student)
     }
 
     return data
@@ -365,6 +401,11 @@ export async function createAttendanceSession(params: {
       return null
     }
 
+    // Decrypt teacher profile
+    if (data.created_by_user) {
+      data.created_by_user = decryptProfileFields(data.created_by_user)
+    }
+
     return data
   } catch (error) {
     console.error('Error in createAttendanceSession:', error)
@@ -421,7 +462,15 @@ export async function getAttendanceSessions(params: {
       return []
     }
 
-    return data || []
+    // Decrypt teacher profiles
+    const decryptedData = (data || []).map((session) => {
+      if (session.created_by_user) {
+        session.created_by_user = decryptProfileFields(session.created_by_user)
+      }
+      return session
+    })
+
+    return decryptedData
   } catch (error) {
     console.error('Error in getAttendanceSessions:', error)
     return []
@@ -468,6 +517,11 @@ export async function updateAttendanceSession(
     if (error) {
       console.error('Error updating attendance session:', error)
       return null
+    }
+
+    // Decrypt teacher profile
+    if (data.created_by_user) {
+      data.created_by_user = decryptProfileFields(data.created_by_user)
     }
 
     return data
@@ -595,10 +649,13 @@ export async function getBatchAttendanceSummary(
           student_id: s.student_id,
         })
 
+        // Decrypt student profile
+        const decryptedStudent = s.student ? decryptProfileFields(s.student) : s.student
+
         return {
           student_id: s.student_id,
-          student_name: s.student.full_name || 'Unknown',
-          student_email: s.student.email,
+          student_name: decryptedStudent?.full_name || 'Unknown',
+          student_email: decryptedStudent?.email || '',
           batch_id,
           batch_name: batchData.name,
           stats,
@@ -671,10 +728,13 @@ export async function getStudentAttendanceSummary(
           .eq('id', student_id)
           .single()
 
+        // Decrypt student profile
+        const decryptedStudent = studentData ? decryptProfileFields(studentData) : studentData
+
         return {
           student_id,
-          student_name: studentData?.full_name || 'Unknown',
-          student_email: studentData?.email || '',
+          student_name: decryptedStudent?.full_name || 'Unknown',
+          student_email: decryptedStudent?.email || '',
           batch_id: b.batch_id,
           batch_name: b.batch.name,
           stats,

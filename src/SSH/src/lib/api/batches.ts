@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../supabase'
+import { decryptProfileFields } from '../encryption'
 import {
   Batch,
   BatchStudent,
@@ -130,6 +131,8 @@ export async function getBatches(filters?: {
 
       return {
         ...batch,
+        teacher: batch.teacher ? decryptProfileFields(batch.teacher) : null,
+        creator: batch.creator ? decryptProfileFields(batch.creator) : null,
         student_count: studentCountMap.get(batch.id) || 0,
         course_count: courseCountMap.get(batch.id) || 0,
         course,
@@ -380,7 +383,14 @@ export async function getBatchStudents(batchId: string): Promise<BatchStudent[]>
       return []
     }
 
-    return data || []
+    // Decrypt student and assigned_by profiles
+    const decryptedData = (data || []).map((item: any) => ({
+      ...item,
+      student: item.student ? decryptProfileFields(item.student) : null,
+      assigned_by_user: item.assigned_by_user ? decryptProfileFields(item.assigned_by_user) : null,
+    }))
+
+    return decryptedData
   } catch (error) {
     console.error('Error in getBatchStudents:', error)
     return []
@@ -758,7 +768,13 @@ export async function getStudentBatches(studentId: string): Promise<BatchStudent
       return []
     }
 
-    return data || []
+    // Decrypt assigned_by_user profiles
+    const decryptedData = (data || []).map((item: any) => ({
+      ...item,
+      assigned_by_user: item.assigned_by_user ? decryptProfileFields(item.assigned_by_user) : null,
+    }))
+
+    return decryptedData
   } catch (error) {
     console.error('Error in getStudentBatches:', error)
     return []
@@ -819,12 +835,18 @@ export async function getCompletedBatchStudents(
         .eq('batch_id', batch.id)
         .eq('is_active', true)
 
+      // Decrypt student profiles
+      const decryptedStudents = (studentData || []).map((s: any) => ({
+        ...s,
+        student: s.student ? decryptProfileFields(s.student) : null,
+      }))
+
       if (studentError) {
         console.error('Error fetching batch students:', studentError)
         return []
       }
 
-      return (studentData || []).map((bs) => ({
+      return decryptedStudents.map((bs: any) => ({
         ...bs,
         name: bs.student?.full_name || 'Unknown Student',
         email: bs.student?.email || 'No Email',

@@ -3,6 +3,7 @@ import { Course } from '../../types'
 import { generateCourseSlug, generateSlug } from '../utils'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import { generateCourseNumber } from '../course-number-generator'
+import { decryptProfileFields } from '../encryption'
 export async function getCourses(filters?: {
   gurukul_id?: string
   level?: string
@@ -25,7 +26,9 @@ export async function getCourses(filters?: {
       return await queryCache.get(
         cacheKey,
         async () => {
-          let query = supabaseAdmin.from('courses').select('*')
+          let query = supabaseAdmin
+            .from('courses')
+            .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
           if (filters?.gurukul_id) {
             query = query.eq('gurukul_id', filters.gurukul_id)
           }
@@ -39,14 +42,21 @@ export async function getCourses(filters?: {
           if (error) {
             throw error
           }
-          return data || []
+          // Decrypt teacher profiles
+          const coursesWithDecryptedTeachers = (data || []).map((course: any) => ({
+            ...course,
+            teacher: course.teacher ? decryptProfileFields(course.teacher) : null,
+          }))
+          return coursesWithDecryptedTeachers
         },
         CACHE_DURATIONS.COURSES, // Cache for 1 week
       )
     }
 
     // For search queries, don't cache (always get fresh results)
-    let query = supabaseAdmin.from('courses').select('*')
+    let query = supabaseAdmin
+      .from('courses')
+      .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
     if (filters?.gurukul_id) {
       query = query.eq('gurukul_id', filters.gurukul_id)
     }
@@ -63,7 +73,12 @@ export async function getCourses(filters?: {
     if (error) {
       return []
     }
-    return data || []
+    // Decrypt teacher profiles
+    const coursesWithDecryptedTeachers = (data || []).map((course: any) => ({
+      ...course,
+      teacher: course.teacher ? decryptProfileFields(course.teacher) : null,
+    }))
+    return coursesWithDecryptedTeachers
   } catch {
     return []
   }
@@ -76,11 +91,18 @@ export async function getCourse(id: string): Promise<Course | null> {
       async () => {
         const { data, error } = await supabaseAdmin
           .from('courses')
-          .select('*')
+          .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
           .eq('id', id)
           .single()
         if (error) {
           throw error
+        }
+        // Decrypt teacher profile if present
+        if (data && data.teacher) {
+          return {
+            ...data,
+            teacher: decryptProfileFields(data.teacher),
+          }
         }
         return data
       },
@@ -99,7 +121,9 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     }
     // For slug format, we need to find the course by generating slugs for all courses
     // and matching against the provided slug
-    const { data: allCourses, error } = await supabaseAdmin.from('courses').select('*')
+    const { data: allCourses, error } = await supabaseAdmin
+      .from('courses')
+      .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
     if (error) {
       return null
     }
@@ -115,6 +139,13 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
       // Multiple courses found with same slug
     }
     const matchingCourse = matchingCourses[0] || null
+    // Decrypt teacher profile if present
+    if (matchingCourse && matchingCourse.teacher) {
+      return {
+        ...matchingCourse,
+        teacher: decryptProfileFields(matchingCourse.teacher),
+      }
+    }
     return matchingCourse || null
   } catch {
     return null

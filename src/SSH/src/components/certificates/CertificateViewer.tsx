@@ -63,7 +63,7 @@ export default function CertificateViewer() {
         }
 
         const certificate = certificates[0]
-        const profile = certificate.profiles
+        const profile = certificate.profiles ? decryptProfileFields(certificate.profiles) : null
         const course = certificate.courses
 
         // Get template info if template_id exists
