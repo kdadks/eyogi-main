@@ -97,7 +97,6 @@ export default function UserFormModal({
     avatar_url: '',
     student_id: '',
     parent_id: '',
-    teacher_id: '',
     address_line_1: '',
     address_line_2: '',
     city: '',
@@ -152,7 +151,6 @@ export default function UserFormModal({
           decryptedUser && 'parent_id' in decryptedUser && decryptedUser.parent_id
             ? String(decryptedUser.parent_id)
             : '',
-        teacher_id: decryptedUser?.teacher_id || '',
         address_line_1: decryptedUser?.address_line_1 || '',
         address_line_2: decryptedUser?.address_line_2 || '',
         city: decryptedUser?.city || '',
@@ -178,7 +176,6 @@ export default function UserFormModal({
         avatar_url: '',
         student_id: '',
         parent_id: '',
-        teacher_id: '',
         address_line_1: '',
         address_line_2: '',
         city: '',
@@ -343,7 +340,6 @@ export default function UserFormModal({
           avatar_url: formData.avatar_url || null,
           student_id: formData.student_id || null,
           parent_id: formData.parent_id || null,
-          teacher_id: formData.teacher_id || null,
           address_line_1: formData.address_line_1 || null,
           address_line_2: formData.address_line_2 || null,
           city: formData.city || null,
@@ -564,19 +560,6 @@ export default function UserFormModal({
                   type="text"
                   name="parent_id"
                   value={formData.parent_id}
-                  onChange={handleInputChange}
-                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                  disabled={isReadOnly}
-                />
-              </div>
-            )}
-            {formData.role === 'teacher' && (
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Teacher ID</label>
-                <input
-                  type="text"
-                  name="teacher_id"
-                  value={formData.teacher_id}
                   onChange={handleInputChange}
                   className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
                   disabled={isReadOnly}
