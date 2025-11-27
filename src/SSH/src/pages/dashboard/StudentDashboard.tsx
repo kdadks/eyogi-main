@@ -1302,9 +1302,12 @@ export default function StudentDashboard() {
                           Active
                         </span>
                       </div>
-                      <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">
-                        {enrollment.course?.description}
-                      </p>
+                      <div
+                        className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2 overflow-hidden"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(enrollment.course?.description || ''),
+                        }}
+                      />
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs sm:text-sm">
                           <span>Progress</span>
@@ -1349,11 +1352,14 @@ export default function StudentDashboard() {
                     .map((course) => (
                       <div
                         key={course.id}
-                        className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-3 sm:p-4 border border-white/20 hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+                        className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-3 sm:p-4 border border-white/20 hover:shadow-lg transition-all duration-300 flex flex-col h-full min-h-[200px]"
                       >
                         <div className="flex items-start justify-between mb-2 gap-2 flex-shrink-0">
-                          <Link to={generateCourseUrl(course)} className="hover:underline flex-1">
-                            <h3 className="text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-700 line-clamp-2 cursor-pointer transition-colors">
+                          <Link
+                            to={generateCourseUrl(course)}
+                            className="hover:underline flex-1 min-w-0"
+                          >
+                            <h3 className="text-sm sm:text-base font-semibold text-blue-600 hover:text-blue-700 line-clamp-2 cursor-pointer transition-colors break-words">
                               {course.title}
                             </h3>
                           </Link>
@@ -1370,10 +1376,19 @@ export default function StudentDashboard() {
                           </span>
                         </div>
                         <div
-                          className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2 flex-grow"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
+                          className="text-gray-600 text-xs sm:text-sm mb-3 flex-grow overflow-hidden"
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            wordBreak: 'break-word',
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(course.description || ''),
+                          }}
                         />
-                        <div className="flex items-center justify-between mt-auto pt-2">
+                        <div className="flex items-center justify-between mt-auto pt-2 flex-shrink-0 border-t border-gray-100">
                           <span className="text-xs text-gray-500 flex-shrink-0">
                             {course.duration_weeks}w
                           </span>
