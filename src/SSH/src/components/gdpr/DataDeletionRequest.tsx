@@ -168,9 +168,13 @@ export default function DataDeletionRequest({
     )
   }
 
-  const hasPendingRequest = existingRequests.some(
-    (req) =>
-      req.target_user_id === actualTargetUserId && ['pending', 'processing'].includes(req.status),
+  // Filter requests relevant to this component instance
+  const relevantRequests = existingRequests.filter(
+    (req) => req.target_user_id === actualTargetUserId,
+  )
+
+  const hasPendingRequest = relevantRequests.some((req) =>
+    ['pending', 'processing', 'approved'].includes(req.status),
   )
 
   if (showForm) {
@@ -366,11 +370,13 @@ export default function DataDeletionRequest({
         )}
 
         {/* Existing Requests */}
-        {existingRequests.length > 0 && (
+        {relevantRequests.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3">Your Deletion Requests</h4>
+            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+              {isParentRequesting ? `${actualTargetUserName}'s Deletion Requests` : 'Your Deletion Requests'}
+            </h4>
             <div className="space-y-3">
-              {existingRequests.map((request) => (
+              {relevantRequests.map((request) => (
                 <motion.div
                   key={request.id}
                   initial={{ opacity: 0, y: 10 }}
