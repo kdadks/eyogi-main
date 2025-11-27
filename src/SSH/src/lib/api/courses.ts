@@ -26,9 +26,7 @@ export async function getCourses(filters?: {
       return await queryCache.get(
         cacheKey,
         async () => {
-          let query = supabaseAdmin
-            .from('courses')
-            .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
+          let query = supabaseAdmin.from('courses').select('*, gurukul:gurukuls(*)')
           if (filters?.gurukul_id) {
             query = query.eq('gurukul_id', filters.gurukul_id)
           }
@@ -42,10 +40,30 @@ export async function getCourses(filters?: {
           if (error) {
             throw error
           }
-          // Decrypt teacher profiles
+
+          // Fetch teachers separately if courses have teacher_id
+          const teacherIds = [
+            ...new Set((data || []).map((c: any) => c.teacher_id).filter(Boolean)),
+          ]
+          let teachersMap = new Map()
+
+          if (teacherIds.length > 0) {
+            const { data: teachers } = await supabaseAdmin
+              .from('profiles')
+              .select('*')
+              .in('teacher_id', teacherIds)
+
+            if (teachers) {
+              teachers.forEach((teacher) => {
+                teachersMap.set(teacher.teacher_id, decryptProfileFields(teacher))
+              })
+            }
+          }
+
+          // Attach decrypted teachers to courses
           const coursesWithDecryptedTeachers = (data || []).map((course: any) => ({
             ...course,
-            teacher: course.teacher ? decryptProfileFields(course.teacher) : null,
+            teacher: course.teacher_id ? teachersMap.get(course.teacher_id) || null : null,
           }))
           return coursesWithDecryptedTeachers
         },
@@ -54,9 +72,7 @@ export async function getCourses(filters?: {
     }
 
     // For search queries, don't cache (always get fresh results)
-    let query = supabaseAdmin
-      .from('courses')
-      .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
+    let query = supabaseAdmin.from('courses').select('*, gurukul:gurukuls(*)')
     if (filters?.gurukul_id) {
       query = query.eq('gurukul_id', filters.gurukul_id)
     }
@@ -73,10 +89,28 @@ export async function getCourses(filters?: {
     if (error) {
       return []
     }
-    // Decrypt teacher profiles
+
+    // Fetch teachers separately if courses have teacher_id
+    const teacherIds = [...new Set((data || []).map((c: any) => c.teacher_id).filter(Boolean))]
+    let teachersMap = new Map()
+
+    if (teacherIds.length > 0) {
+      const { data: teachers } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .in('teacher_id', teacherIds)
+
+      if (teachers) {
+        teachers.forEach((teacher) => {
+          teachersMap.set(teacher.teacher_id, decryptProfileFields(teacher))
+        })
+      }
+    }
+
+    // Attach decrypted teachers to courses
     const coursesWithDecryptedTeachers = (data || []).map((course: any) => ({
       ...course,
-      teacher: course.teacher ? decryptProfileFields(course.teacher) : null,
+      teacher: course.teacher_id ? teachersMap.get(course.teacher_id) || null : null,
     }))
     return coursesWithDecryptedTeachers
   } catch {
@@ -91,19 +125,29 @@ export async function getCourse(id: string): Promise<Course | null> {
       async () => {
         const { data, error } = await supabaseAdmin
           .from('courses')
-          .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
+          .select('*, gurukul:gurukuls(*)')
           .eq('id', id)
           .single()
         if (error) {
           throw error
         }
-        // Decrypt teacher profile if present
-        if (data && data.teacher) {
-          return {
-            ...data,
-            teacher: decryptProfileFields(data.teacher),
+
+        // Fetch teacher separately if course has teacher_id
+        if (data && data.teacher_id) {
+          const { data: teacher } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .eq('teacher_id', data.teacher_id)
+            .single()
+
+          if (teacher) {
+            return {
+              ...data,
+              teacher: decryptProfileFields(teacher),
+            }
           }
         }
+
         return data
       },
       CACHE_DURATIONS.COURSES, // Cache for 1 week
@@ -123,7 +167,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     // and matching against the provided slug
     const { data: allCourses, error } = await supabaseAdmin
       .from('courses')
-      .select('*, gurukul:gurukuls(*), teacher:profiles!teacher_id_fkey(*)')
+      .select('*, gurukul:gurukuls(*)')
     if (error) {
       return null
     }
@@ -139,13 +183,23 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
       // Multiple courses found with same slug
     }
     const matchingCourse = matchingCourses[0] || null
-    // Decrypt teacher profile if present
-    if (matchingCourse && matchingCourse.teacher) {
-      return {
-        ...matchingCourse,
-        teacher: decryptProfileFields(matchingCourse.teacher),
+
+    // Fetch teacher separately if course has teacher_id
+    if (matchingCourse && matchingCourse.teacher_id) {
+      const { data: teacher } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('teacher_id', matchingCourse.teacher_id)
+        .single()
+
+      if (teacher) {
+        return {
+          ...matchingCourse,
+          teacher: decryptProfileFields(teacher),
+        }
       }
     }
+
     return matchingCourse || null
   } catch {
     return null

@@ -388,7 +388,7 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
         if (error) {
           return []
         }
-        // Transform the data to match our interface expectations
+        // Transform the data to match our interface expectations and decrypt student profiles
         const transformedData =
           data?.map((enrollment) => ({
             ...enrollment,
@@ -398,7 +398,7 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
                   gurukul: enrollment.courses.gurukuls, // Extract gurukul from gurukuls array
                 }
               : null,
-            student: enrollment.profiles || null,
+            student: enrollment.profiles ? decryptProfileFields(enrollment.profiles) : null,
           })) || []
         return transformedData
       } catch {
@@ -450,7 +450,7 @@ export async function getEnrollmentsByParent(parentId: string): Promise<Enrollme
         if (error) {
           return []
         }
-        // Transform the data to match our interface
+        // Transform the data to match our interface and decrypt student profiles
         const transformedData =
           data?.map((enrollment) => ({
             ...enrollment,
@@ -460,7 +460,7 @@ export async function getEnrollmentsByParent(parentId: string): Promise<Enrollme
                   gurukul: enrollment.courses.gurukuls,
                 }
               : null,
-            student: enrollment.profiles || null,
+            student: enrollment.profiles ? decryptProfileFields(enrollment.profiles) : null,
           })) || []
         return transformedData
       } catch {

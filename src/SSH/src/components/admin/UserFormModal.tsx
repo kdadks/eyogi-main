@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { generateRoleId } from '../../lib/id-generator'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../../lib/iso-utils'
+import { encryptProfileFields } from '../../lib/encryption'
 // import AddressForm from '../forms/AddressForm'
 
 // Simple password hashing function (for development - use bcrypt in production)
@@ -296,7 +297,13 @@ export default function UserFormModal({
           ...baseProfileData,
           ...roleIds,
         }
-        const { error: profileError } = await supabaseAdmin.from('profiles').insert([profileData])
+
+        // Encrypt sensitive profile fields before inserting
+        const encryptedProfileData = encryptProfileFields(profileData)
+
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .insert([encryptedProfileData])
         if (profileError) {
           // If profile creation fails, try to delete the auth user
           await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
@@ -344,9 +351,13 @@ export default function UserFormModal({
         if (formData.password) {
           updateData.password_hash = await hashPassword(formData.password)
         }
+
+        // Encrypt sensitive profile fields before updating
+        const encryptedUpdateData = encryptProfileFields(updateData)
+
         const { data: updatedData, error: profileError } = await supabaseAdmin
           .from('profiles')
-          .update(updateData)
+          .update(encryptedUpdateData)
           .eq('id', user!.id)
           .select()
           .single()

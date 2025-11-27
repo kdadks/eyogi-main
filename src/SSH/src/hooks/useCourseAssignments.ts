@@ -48,7 +48,7 @@ export function useCourseAssignments(teacherId?: string) {
         .in('teacher_id', teacherIds)
 
       // Decrypt teacher profiles
-      const decryptedTeachers = (teachersData || []).map(teacher => decryptProfileFields(teacher))
+      const decryptedTeachers = (teachersData || []).map((teacher) => decryptProfileFields(teacher))
 
       // Create a map for quick lookup
       const teacherMap = new Map(decryptedTeachers.map((t) => [t.teacher_id, t]))

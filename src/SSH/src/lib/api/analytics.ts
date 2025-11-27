@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../supabase'
+import { decryptProfileFields } from '../encryption'
 
 // ============================================
 // TYPES & INTERFACES
@@ -237,10 +238,16 @@ export async function getStudentAnalytics(
       .select('*')
       .eq('role', 'student')
 
+    // Decrypt all student profiles
+    const decryptedAllStudents = allStudents?.map((student) => decryptProfileFields(student))
+
     const { data: newStudents } = await studentsQuery
 
+    // Decrypt new student profiles
+    const decryptedNewStudents = newStudents?.map((student) => decryptProfileFields(student))
+
     // Get students by age group
-    const studentsByAge = (allStudents || []).reduce((acc: any, student: any) => {
+    const studentsByAge = (decryptedAllStudents || []).reduce((acc: any, student: any) => {
       if (student.age) {
         const ageGroup =
           student.age < 6
@@ -264,7 +271,7 @@ export async function getStudentAnalytics(
 
     // Get students by location
     const locationMap = new Map()
-    ;(allStudents || []).forEach((student: any) => {
+    ;(decryptedAllStudents || []).forEach((student: any) => {
       if (student.city || student.state || student.country) {
         const key = `${student.city || 'Unknown'},${student.state || 'Unknown'},${student.country || 'Unknown'}`
         locationMap.set(key, (locationMap.get(key) || 0) + 1)
@@ -281,7 +288,7 @@ export async function getStudentAnalytics(
 
     // Get students by status
     const statusMap = new Map()
-    ;(allStudents || []).forEach((student: any) => {
+    ;(decryptedAllStudents || []).forEach((student: any) => {
       const status = student.status || 'active'
       statusMap.set(status, (statusMap.get(status) || 0) + 1)
     })
@@ -344,7 +351,7 @@ export async function getStudentAnalytics(
 
     const topStudents = Array.from(studentMetrics.entries())
       .map(([studentId, metrics]: [string, any]) => {
-        const student = allStudents?.find((s: any) => s.id === studentId)
+        const student = decryptedAllStudents?.find((s: any) => s.id === studentId)
         return {
           id: studentId,
           name: student?.full_name || 'Unknown',
@@ -360,9 +367,9 @@ export async function getStudentAnalytics(
       .slice(0, 10)
 
     return {
-      totalStudents: allStudents?.length || 0,
-      activeStudents: allStudents?.filter((s: any) => s.status === 'active').length || 0,
-      newStudents: newStudents?.length || 0,
+      totalStudents: decryptedAllStudents?.length || 0,
+      activeStudents: decryptedAllStudents?.filter((s: any) => s.status === 'active').length || 0,
+      newStudents: decryptedNewStudents?.length || 0,
       studentsByAgeGroup,
       studentsByLocation,
       studentsByStatus,
@@ -585,7 +592,10 @@ export async function getTeacherAnalytics(
       .select('*')
       .eq('role', 'teacher')
 
-    const activeTeachers = teachers?.filter((t: any) => t.status === 'active').length || 0
+    // Decrypt all teacher profiles
+    const decryptedTeachers = teachers?.map((teacher) => decryptProfileFields(teacher))
+
+    const activeTeachers = decryptedTeachers?.filter((t: any) => t.status === 'active').length || 0
 
     // Get teacher workload
     const { data: courseAssignments } = await supabaseAdmin
@@ -641,7 +651,7 @@ export async function getTeacherAnalytics(
       }
     })
 
-    const teacherWorkload = (teachers || [])
+    const teacherWorkload = (decryptedTeachers || [])
       .map((teacher: any) => {
         const metrics = teacherMetrics.get(teacher.id) || {
           studentCount: 0,
@@ -669,7 +679,7 @@ export async function getTeacherAnalytics(
     }))
 
     return {
-      totalTeachers: teachers?.length || 0,
+      totalTeachers: decryptedTeachers?.length || 0,
       activeTeachers,
       teacherWorkload,
       topTeachers,
@@ -794,9 +804,15 @@ export async function getAttendanceAnalytics(
       .gte('class_date', dateRange.start)
       .lte('class_date', dateRange.end)
 
+    // Decrypt student profiles in attendance records
+    const decryptedAttendanceRecords = attendanceRecords?.map((record) => ({
+      ...record,
+      student: record.student ? decryptProfileFields(record.student) : null,
+    }))
+
     const filteredRecords = gurukulId
-      ? attendanceRecords?.filter((r: any) => r.batch?.gurukul_id === gurukulId)
-      : attendanceRecords
+      ? decryptedAttendanceRecords?.filter((r: any) => r.batch?.gurukul_id === gurukulId)
+      : decryptedAttendanceRecords
 
     const totalRecords = filteredRecords?.length || 1
 
@@ -899,9 +915,15 @@ export async function getCertificateAnalytics(
         '*, course:courses(title, gurukul_id), teacher:profiles!certificates_teacher_id_fkey(full_name)',
       )
 
+    // Decrypt teacher profiles in certificates
+    const decryptedAllCertificates = allCertificates?.map((cert) => ({
+      ...cert,
+      teacher: cert.teacher ? decryptProfileFields(cert.teacher) : null,
+    }))
+
     const filteredCertificates = gurukulId
-      ? allCertificates?.filter((c: any) => c.course?.gurukul_id === gurukulId)
-      : allCertificates
+      ? decryptedAllCertificates?.filter((c: any) => c.course?.gurukul_id === gurukulId)
+      : decryptedAllCertificates
 
     const now = new Date()
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)

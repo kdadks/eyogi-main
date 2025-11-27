@@ -3,6 +3,8 @@ import { supabaseAdmin } from '../lib/supabase'
 import { generateNextId } from '../lib/idGenerator'
 import { getUserProfile } from '../lib/api/users'
 import { getUserPermissions } from '../lib/api/permissions'
+import { queryCache } from '../lib/cache'
+import { encryptProfileFields } from '../lib/encryption'
 import type { Database } from '../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 // Simple password hashing function (for development - use bcrypt in production)
@@ -93,6 +95,9 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
   }, [user?.id, user?.role])
   const loadUser = async (userId: string) => {
     try {
+      // Invalidate user profile cache to ensure fresh decrypted data
+      queryCache.invalidatePattern(`users:profile:${userId}`)
+
       const userData = await getUserProfile(userId)
       if (!userData) {
         localStorage.removeItem('website-user-id')
@@ -151,6 +156,10 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       if (userData.status !== 'active') {
         return { error: 'Account is not active. Please contact support.' }
       }
+
+      // Invalidate user profile cache to ensure fresh decrypted data
+      queryCache.invalidatePattern(`users:profile:${userData.id}`)
+
       // Load full user profile with properly structured address
       const fullUserProfile = await getUserProfile(userData.id)
       if (!fullUserProfile) {
@@ -246,9 +255,13 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
           ? { student_id: generatedId, teacher_id: null }
           : { student_id: null, teacher_id: generatedId }),
       }
+
+      // Encrypt sensitive profile fields before inserting
+      const encryptedProfileData = encryptProfileFields(profileData)
+
       const { error: createError } = await supabaseAdmin
         .from('profiles')
-        .insert(profileData)
+        .insert(encryptedProfileData)
         .select()
         .single()
       if (createError) {
