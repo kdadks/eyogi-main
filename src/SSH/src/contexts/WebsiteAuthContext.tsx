@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabaseAdmin } from '../lib/supabase'
-import { generateNextId } from '../lib/idGenerator'
+import { generateRoleId } from '../lib/id-generator'
 import { getUserProfile } from '../lib/api/users'
 import { getUserPermissions } from '../lib/api/permissions'
 import { queryCache } from '../lib/cache'
@@ -244,8 +244,10 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       }
       // Hash password
       const passwordHash = await hashPassword(userData.password)
-      // Generate the appropriate ID based on role
-      const generatedId = await generateNextId(userData.role)
+
+      // Generate the appropriate ID based on role using the new system
+      const roleIds = await generateRoleId(userData.role, null, null)
+
       // Create user profile
       const profileData = {
         email: userData.email.toLowerCase(),
@@ -266,9 +268,8 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         emergency_contact: userData.emergency_contact || null,
         avatar_url: null,
         parent_id: null,
-        ...(userData.role === 'student'
-          ? { student_id: generatedId, teacher_id: null }
-          : { student_id: null, teacher_id: generatedId }),
+        // Spread the generated role IDs (student_id, teacher_code, parent_code, admin_code)
+        ...roleIds,
       }
 
       // Encrypt sensitive profile fields before inserting

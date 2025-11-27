@@ -469,6 +469,7 @@ export default function TeacherDashboard() {
           id: profileWithAddress.id,
           full_name: profileWithAddress.full_name,
           phone: profileWithAddress.phone || undefined,
+          date_of_birth: profileWithAddress.date_of_birth || undefined,
           address_line_1: profileWithAddress.address_line_1 || undefined,
           address_line_2: profileWithAddress.address_line_2 || undefined,
           city: profileWithAddress.city || undefined,
@@ -3049,7 +3050,11 @@ export default function TeacherDashboard() {
                         <label className="text-sm font-medium text-gray-500">Date of Birth</label>
                         <p className="text-gray-900">
                           {teacherProfile?.date_of_birth
-                            ? new Date(teacherProfile.date_of_birth).toLocaleDateString()
+                            ? new Date(teacherProfile.date_of_birth).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })
                             : 'Not provided'}
                         </p>
                       </div>
@@ -5570,22 +5575,22 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
     }
   }, [teacherId])
 
-  const loadStats = useCallback(async () => {
-    try {
-      const statsData = await getBatchStats()
-      setStats(statsData)
-    } catch (error) {
-      console.error('Error loading batch stats:', error)
+  // Calculate stats from teacher's batches only
+  useEffect(() => {
+    const calculatedStats = {
+      total: batches.length,
+      active: batches.filter((b) => b.status === 'active').length,
+      inactive: batches.filter((b) => !b.is_active).length,
+      completed: batches.filter((b) => b.status === 'completed').length,
+      archived: batches.filter((b) => b.status === 'archived').length,
+      in_progress: batches.filter((b) => b.status === 'in_progress').length,
     }
-  }, [])
+    setStats(calculatedStats)
+  }, [batches])
 
   useEffect(() => {
     setBatches(initialBatches)
   }, [initialBatches])
-
-  useEffect(() => {
-    loadStats()
-  }, [loadStats])
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDeleteBatch = async (batchId: string) => {
@@ -5626,8 +5631,8 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
       await updateBatchProgress(editingBatch.id, weekNumber, isCompleted, teacherId)
       toast.success(`Week ${weekNumber} ${isCompleted ? 'completed' : 'reset'}!`)
 
-      // Immediately refresh batch data to show progress updates
-      const updatedBatches = await getBatches()
+      // Immediately refresh batch data to show progress updates with teacher filter
+      const updatedBatches = await getBatches({ teacher_id: teacherId, is_active: true })
       const updatedBatch = updatedBatches.find((b) => b.id === editingBatch.id)
 
       if (updatedBatch) {

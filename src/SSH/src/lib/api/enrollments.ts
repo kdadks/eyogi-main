@@ -142,22 +142,11 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
     async () => {
       try {
         // First get the teacher's profile to find their teacher_id
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('teacher_id')
-          .eq('id', teacherId)
-          .single()
-
-        if (!profile?.teacher_id) {
-          console.log('No teacher_id found for profile:', teacherId)
-          return []
-        }
-
-        // Get courses assigned to this teacher
+        // Get courses assigned to this teacher (using profile UUID)
         const { data: assignments } = await supabaseAdmin
           .from('course_assignments')
           .select('course_id')
-          .eq('teacher_id', profile.teacher_id)
+          .eq('teacher_id', teacherId)
           .eq('is_active', true)
 
         if (!assignments || assignments.length === 0) {
@@ -603,22 +592,11 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
     async () => {
       try {
         // First get the teacher's teacher_id from profile
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('teacher_id')
-          .eq('id', teacherId)
-          .single()
-
-        if (!profile?.teacher_id) {
-          console.log('No teacher_id found for profile:', teacherId)
-          return []
-        }
-
-        // Get the course IDs assigned to this teacher
+        // Get the course IDs assigned to this teacher (using profile UUID)
         const { data: assignments, error: assignmentError } = await supabaseAdmin
           .from('course_assignments')
           .select('course_id')
-          .eq('teacher_id', profile.teacher_id)
+          .eq('teacher_id', teacherId)
           .eq('is_active', true)
 
         if (assignmentError) {
@@ -627,7 +605,7 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
         }
 
         if (!assignments || assignments.length === 0) {
-          console.log('No active course assignments found for teacher_id:', profile.teacher_id)
+          console.log('No active course assignments found for teacher_id:', teacherId)
           return []
         }
 

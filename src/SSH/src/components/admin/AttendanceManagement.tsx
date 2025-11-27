@@ -32,9 +32,7 @@ const AttendanceManagement: React.FC = () => {
   const [summary, setSummary] = useState<BatchAttendanceSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [showMarkingModal, setShowMarkingModal] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0],
-  )
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
 
   // Filter states
   const [dateFilter, setDateFilter] = useState({
@@ -46,7 +44,11 @@ const AttendanceManagement: React.FC = () => {
   const profile = user // useWebsiteAuth returns 'user' which is the profile
 
   // Simplified permissions - teachers, business_admin, and super_admin can manage attendance
-  const canCreate = profile?.role === 'teacher' || profile?.role === 'business_admin' || profile?.role === 'super_admin' || profile?.role === 'admin'
+  const canCreate =
+    profile?.role === 'teacher' ||
+    profile?.role === 'business_admin' ||
+    profile?.role === 'super_admin' ||
+    profile?.role === 'admin'
   const canUpdate = canCreate
   const canDelete = canCreate
   const canViewReports = canCreate
@@ -73,7 +75,10 @@ const AttendanceManagement: React.FC = () => {
   }, [profile, selectedBatch])
 
   const fetchAttendanceData = useCallback(async () => {
-    if (!selectedBatch) return
+    if (!selectedBatch) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
     try {
@@ -162,7 +167,12 @@ const AttendanceManagement: React.FC = () => {
     })
   }
 
-  const calculateAttendancePercentage = (stats: { present: number; late: number; excused: number; total_classes: number }) => {
+  const calculateAttendancePercentage = (stats: {
+    present: number
+    late: number
+    excused: number
+    total_classes: number
+  }) => {
     if (stats.total_classes === 0) return 0
     return Math.round(((stats.present + stats.late + stats.excused) / stats.total_classes) * 100)
   }
@@ -218,35 +228,47 @@ const AttendanceManagement: React.FC = () => {
           <CardTitle>Select Batch</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
-              <select
-                value={selectedBatch?.id || ''}
-                onChange={(e) => {
-                  const batch = batches.find((b) => b.id === e.target.value)
-                  setSelectedBatch(batch || null)
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select a batch...</option>
-                {batches.map((batch) => (
-                  <option key={batch.id} value={batch.id}>
-                    {batch.name} - {batch.gurukul?.name}
-                  </option>
-                ))}
-              </select>
+          {batches.length === 0 ? (
+            <div className="text-center py-8">
+              <UserGroupIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Batches Available</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {profile?.role === 'teacher'
+                  ? 'You have not been assigned to any batches yet. Create a new batch or contact your administrator.'
+                  : 'No active batches found. Create a new batch to get started.'}
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full"
-              />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                <select
+                  value={selectedBatch?.id || ''}
+                  onChange={(e) => {
+                    const batch = batches.find((b) => b.id === e.target.value)
+                    setSelectedBatch(batch || null)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a batch...</option>
+                  {batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.name} - {batch.gurukul?.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Date Range Filter */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -272,18 +294,29 @@ const AttendanceManagement: React.FC = () => {
 
       {/* Mark Attendance Button - Prominent placement */}
       {(() => {
-        console.log('AttendanceManagement: Button visibility check:', { canCreate, hasSelectedBatch: !!selectedBatch })
+        console.log('AttendanceManagement: Button visibility check:', {
+          canCreate,
+          hasSelectedBatch: !!selectedBatch,
+        })
         return canCreate && selectedBatch ? (
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Ready to Mark Attendance?</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Ready to Mark Attendance?
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    Mark attendance for {selectedBatch.name} - {new Date(selectedDate).toLocaleDateString()}
+                    Mark attendance for {selectedBatch.name} -{' '}
+                    {new Date(selectedDate).toLocaleDateString()}
                   </p>
                 </div>
-                <Button onClick={handleMarkAttendance} variant="primary" size="lg" className="shadow-lg">
+                <Button
+                  onClick={handleMarkAttendance}
+                  variant="primary"
+                  size="lg"
+                  className="shadow-lg"
+                >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Mark Attendance
                 </Button>
@@ -392,7 +425,9 @@ const AttendanceManagement: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900">
                             {studentSummary.student_name}
                           </div>
-                          <div className="text-sm text-gray-500">{studentSummary.student_email}</div>
+                          <div className="text-sm text-gray-500">
+                            {studentSummary.student_email}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -525,9 +560,7 @@ const AttendanceManagement: React.FC = () => {
           <CardContent className="p-12 text-center">
             <DocumentCheckIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Attendance Records</h3>
-            <p className="text-gray-600 mb-4">
-              Start marking attendance for {selectedBatch.name}
-            </p>
+            <p className="text-gray-600 mb-4">Start marking attendance for {selectedBatch.name}</p>
             {canCreate && (
               <Button onClick={handleMarkAttendance} variant="primary">
                 <PlusIcon className="h-5 w-5 mr-2" />

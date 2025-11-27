@@ -143,7 +143,6 @@ export interface Database {
           preferences: UserPreferences
           avatar_url: string | null
           student_id: string | null
-          teacher_id: string | null
           parent_id: string | null
           teacher_code: string | null
           parent_code: string | null
@@ -165,7 +164,6 @@ export interface Database {
           preferences?: UserPreferences
           avatar_url?: string | null
           student_id?: string | null
-          teacher_id?: string | null
           parent_id?: string | null
           teacher_code?: string | null
           parent_code?: string | null
@@ -183,7 +181,6 @@ export interface Database {
           preferences?: UserPreferences
           avatar_url?: string | null
           student_id?: string | null
-          teacher_id?: string | null
           parent_id?: string | null
           teacher_code?: string | null
           parent_code?: string | null
