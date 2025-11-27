@@ -5,6 +5,7 @@ import { supabase, supabaseAdmin } from '../lib/supabase'
 import { AuthContext, type AuthContextType } from './AuthContextTypes'
 import type { Profile } from '../types'
 import { debugAuth } from '../lib/authDebug'
+import { decryptProfileFields } from '../lib/encryption'
 interface AuthProviderProps {
   children: React.ReactNode
 }
@@ -43,7 +44,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return null
         }
 
-        return data
+        // Decrypt profile fields before returning
+        return data ? decryptProfileFields(data) : data
       } catch {
         // Retry on network exceptions
         if (retryCount < 2) {

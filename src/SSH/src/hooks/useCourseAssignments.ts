@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabaseAdmin } from '../lib/supabase'
 import { CourseAssignment, Course, User } from '../types'
 import toast from 'react-hot-toast'
+import { decryptProfileFields } from '../lib/encryption'
 export function useCourseAssignments(teacherId?: string) {
   const [assignments, setAssignments] = useState<CourseAssignment[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,8 +47,11 @@ export function useCourseAssignments(teacherId?: string) {
         .select('*')
         .in('teacher_id', teacherIds)
 
+      // Decrypt teacher profiles
+      const decryptedTeachers = (teachersData || []).map(teacher => decryptProfileFields(teacher))
+
       // Create a map for quick lookup
-      const teacherMap = new Map(teachersData?.map((t) => [t.teacher_id, t]) || [])
+      const teacherMap = new Map(decryptedTeachers.map((t) => [t.teacher_id, t]))
 
       // Combine the data
       const assignmentsWithRelations = assignmentsData?.map((assignment) => ({

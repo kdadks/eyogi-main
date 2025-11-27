@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../supabase'
+import { decryptProfileFields } from '../encryption'
 
 /**
  * Student Consent Management API
@@ -82,6 +83,14 @@ export async function getStudentConsent(studentId: string): Promise<StudentConse
       }
       console.error('Error fetching student consent:', error)
       return null
+    }
+
+    // Decrypt profile fields
+    if (data.student) {
+      data.student = decryptProfileFields(data.student)
+    }
+    if (data.consented_by_user) {
+      data.consented_by_user = decryptProfileFields(data.consented_by_user)
     }
 
     return data
@@ -289,7 +298,16 @@ export async function getAllConsents(params?: {
       return { data: [], count: 0 }
     }
 
-    return { data: data || [], count: count || 0 }
+    // Decrypt profile fields for all consents
+    const decryptedData = (data || []).map((consent) => ({
+      ...consent,
+      student: consent.student ? decryptProfileFields(consent.student) : consent.student,
+      consented_by_user: consent.consented_by_user
+        ? decryptProfileFields(consent.consented_by_user)
+        : consent.consented_by_user,
+    }))
+
+    return { data: decryptedData, count: count || 0 }
   } catch (error) {
     console.error('Error in getAllConsents:', error)
     return { data: [], count: 0 }

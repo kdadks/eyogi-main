@@ -9,6 +9,7 @@ import { usePermissions } from '../../hooks/usePermissions'
 import { Course, User } from '../../types'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { decryptProfileFields } from '../../lib/encryption'
 import {
   PlusIcon,
   XMarkIcon,
@@ -45,7 +46,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
           .order('full_name'),
         supabaseAdmin.from('courses').select('*').eq('is_active', true).order('title'),
       ])
-      setTeachers(teachersData.data || [])
+      const decryptedTeachers = (teachersData.data || []).map((teacher) =>
+        decryptProfileFields(teacher),
+      )
+      setTeachers(decryptedTeachers)
       setCourses(coursesData.data || [])
     } catch {
       toast.error('Failed to load teachers and courses')

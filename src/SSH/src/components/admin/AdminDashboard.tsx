@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { supabaseAdmin } from '../../lib/supabase'
 import { getBatchStats } from '../../lib/api/batches'
+import { decryptProfileFields } from '../../lib/encryption'
 interface DashboardStats {
   totalUsers: number
   totalCourses: number
@@ -161,11 +162,12 @@ const AdminDashboard: React.FC = () => {
       // Add user registrations
       if (recentUsers.data) {
         recentUsers.data.forEach((user) => {
+          const decryptedUser = decryptProfileFields(user)
           activities.push({
             id: `user-${user.id}`,
             type: 'user_registration',
             title: 'New User Registration',
-            description: `${user.full_name} (${user.role}) joined the platform`,
+            description: `${decryptedUser.full_name} (${decryptedUser.role}) joined the platform`,
             timestamp: user.created_at,
             icon: UserPlusIcon,
             iconColor: 'text-blue-600',

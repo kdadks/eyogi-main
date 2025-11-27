@@ -18,6 +18,7 @@ import toast from 'react-hot-toast'
 import UserFormModal from './UserFormModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { getUserProfile } from '../../lib/api/users'
+import { decryptProfileFields } from '../../lib/encryption'
 type Profile = Database['public']['Tables']['profiles']['Row']
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<Profile[]>([])
@@ -54,8 +55,9 @@ const AdminUserManagement: React.FC = () => {
         toast.error('Failed to load users')
         return
       }
-      // Filter out Supabase auth users (users without proper profile data)
-      const validUsers = (data || []).filter(
+      // Decrypt profiles and filter out Supabase auth users
+      const decryptedUsers = (data || []).map((user) => decryptProfileFields(user))
+      const validUsers = decryptedUsers.filter(
         (user) => user.full_name && user.email && user.role && user.id !== currentUser?.id, // Don't show current admin user
       )
       setUsers(validUsers)

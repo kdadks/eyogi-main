@@ -1,6 +1,7 @@
 // Compliance API Functions
 import { supabaseAdmin } from '../supabase'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
+import { decryptProfileFields } from '../encryption'
 import type {
   ComplianceItem,
   ComplianceForm,
@@ -300,14 +301,17 @@ export async function getComplianceSubmissions(filters: {
         const items = itemsResult.data || []
         const files = filesResult.data || []
 
+        // Decrypt user profiles
+        const decryptedUsers = users.map((user) => decryptProfileFields(user))
+
         // Combine data
         const enrichedSubmissions = submissions.map((submission) => ({
           ...submission,
-          user: users.find((u) => u.id === submission.user_id) || null,
+          user: decryptedUsers.find((u) => u.id === submission.user_id) || null,
           compliance_item: items.find((i) => i.id === submission.compliance_item_id) || null,
           files: files.filter((f) => f.submission_id === submission.id) || [],
           reviewer: submission.reviewed_by
-            ? users.find((u) => u.id === submission.reviewed_by) || null
+            ? decryptedUsers.find((u) => u.id === submission.reviewed_by) || null
             : null,
         }))
 

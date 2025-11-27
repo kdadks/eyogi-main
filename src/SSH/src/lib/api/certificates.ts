@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../supabase'
 import { Certificate, CertificateTemplate } from '@/types'
 import { generateCertificatePDF, CertificateData } from '../pdf/certificateGenerator'
+import { decryptProfileFields } from '../encryption'
 
 // NEW: Functions for working with the certificates table
 
@@ -229,14 +230,14 @@ export async function getCertificatesFromTable(filters?: {
       throw new Error(`Failed to fetch certificates: ${error.message}`)
     }
 
-    // Transform data to match interface
+    // Transform data to match interface and decrypt profiles
     return (data || []).map((cert) => ({
       ...cert,
       issued_at: cert.issue_date, // Alias for backward compatibility
       issued_by: cert.teacher_id || 'system', // For backward compatibility
       course: cert.courses,
-      student: cert.student,
-      teacher: cert.teacher,
+      student: cert.student ? decryptProfileFields(cert.student) : cert.student,
+      teacher: cert.teacher ? decryptProfileFields(cert.teacher) : cert.teacher,
     })) as Certificate[]
   } catch (error) {
     console.error('Error fetching certificates from table:', error)
@@ -964,7 +965,10 @@ export async function regenerateCertificate(certificateId: string): Promise<Cert
     .single()
 
   if (templateError || !template) {
-    console.error('Certificate template not found:', { templateId: certificate.template_id, templateError })
+    console.error('Certificate template not found:', {
+      templateId: certificate.template_id,
+      templateError,
+    })
     throw new Error('Certificate template not found')
   }
 
