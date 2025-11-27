@@ -34,6 +34,13 @@ interface WebsiteAuthContextType {
     role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
     phone?: string
     date_of_birth?: string
+    age?: number
+    emergency_contact?: {
+      name?: string
+      phone?: string
+      email?: string
+      relationship?: string
+    }
   }) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   // Check permissions
@@ -217,6 +224,13 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
     phone?: string
     date_of_birth?: string
+    age?: number
+    emergency_contact?: {
+      name?: string
+      phone?: string
+      email?: string
+      relationship?: string
+    }
   }) => {
     try {
       // Check if user already exists
@@ -241,6 +255,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         status: 'active',
         phone: userData.phone || null,
         date_of_birth: userData.date_of_birth || null,
+        age: userData.age || null,
         preferences: {},
         address_line_1: null,
         address_line_2: null,
@@ -248,7 +263,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         state: null,
         zip_code: null,
         country: null,
-        emergency_contact: null,
+        emergency_contact: userData.emergency_contact || null,
         avatar_url: null,
         parent_id: null,
         ...(userData.role === 'student'

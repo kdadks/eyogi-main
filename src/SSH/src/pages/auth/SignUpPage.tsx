@@ -75,12 +75,25 @@ export default function SignUpPage() {
   const onSubmit = async (data: SignUpForm) => {
     setLoading(true)
     try {
+      // Build emergency contact object if parent/guardian info provided
+      const emergencyContact =
+        data.parent_guardian_name || data.parent_guardian_email || data.parent_guardian_phone
+          ? {
+              name: data.parent_guardian_name || '',
+              email: data.parent_guardian_email || '',
+              phone: data.parent_guardian_phone || '',
+              relationship: 'Parent/Guardian',
+            }
+          : undefined
+
       const { error } = await signUp({
         email: data.email,
         password: data.password,
         full_name: data.full_name,
         role: data.role as 'student' | 'teacher' | 'parent',
         phone: data.phone,
+        age: data.age,
+        emergency_contact: emergencyContact,
       })
       if (error) {
         // Check if it's actually a success message that needs email confirmation

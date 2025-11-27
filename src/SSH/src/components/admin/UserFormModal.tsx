@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 import { generateRoleId } from '../../lib/id-generator'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../../lib/iso-utils'
-import { encryptProfileFields } from '../../lib/encryption'
+import { encryptProfileFields, decryptProfileFields } from '../../lib/encryption'
 // import AddressForm from '../forms/AddressForm'
 
 // Simple password hashing function (for development - use bcrypt in production)
@@ -120,39 +120,47 @@ export default function UserFormModal({
   // No addressData state; use user.address directly
   useEffect(() => {
     if ((mode === 'edit' || mode === 'view') && user) {
+      // Decrypt the user profile fields first
+      const decryptedUser = decryptProfileFields(user)
+
       // Parse emergency_contact JSONB if exists
       let emergencyContact = { name: '', phone: '', email: '', relationship: '' }
-      if (user?.emergency_contact && typeof user.emergency_contact === 'object') {
-        emergencyContact = user.emergency_contact as any
+      if (decryptedUser?.emergency_contact && typeof decryptedUser.emergency_contact === 'object') {
+        emergencyContact = decryptedUser.emergency_contact as any
       }
 
-      const dateOfBirth = user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : ''
+      const dateOfBirth = decryptedUser?.date_of_birth
+        ? String(decryptedUser.date_of_birth).substring(0, 10)
+        : ''
       const calculatedAge = dateOfBirth ? calculateAgeFromDateOfBirth(dateOfBirth) : null
 
       setFormData({
-        email: user?.email || '',
+        email: decryptedUser?.email || '',
         password: '',
-        full_name: user?.full_name || '',
-        role: user?.role || 'student',
-        status: user?.status || 'pending_activation',
+        full_name: decryptedUser?.full_name || '',
+        role: decryptedUser?.role || 'student',
+        status: decryptedUser?.status || 'pending_activation',
         date_of_birth: dateOfBirth,
-        phone: user?.phone || '',
+        phone: decryptedUser?.phone || '',
         emergency_contact_name: emergencyContact.name || '',
         emergency_contact_phone: emergencyContact.phone || '',
         emergency_contact_email: emergencyContact.email || '',
         emergency_contact_relationship: emergencyContact.relationship || '',
-        avatar_url: user?.avatar_url || '',
-        student_id: user?.student_id || '',
-        parent_id: user && 'parent_id' in user && user.parent_id ? String(user.parent_id) : '',
-        teacher_id: user?.teacher_id || '',
-        address_line_1: user?.address_line_1 || '',
-        address_line_2: user?.address_line_2 || '',
-        city: user?.city || '',
-        state: user?.state || '',
-        zip_code: user?.zip_code || '',
-        country: user?.country || '',
+        avatar_url: decryptedUser?.avatar_url || '',
+        student_id: decryptedUser?.student_id || '',
+        parent_id:
+          decryptedUser && 'parent_id' in decryptedUser && decryptedUser.parent_id
+            ? String(decryptedUser.parent_id)
+            : '',
+        teacher_id: decryptedUser?.teacher_id || '',
+        address_line_1: decryptedUser?.address_line_1 || '',
+        address_line_2: decryptedUser?.address_line_2 || '',
+        city: decryptedUser?.city || '',
+        state: decryptedUser?.state || '',
+        zip_code: decryptedUser?.zip_code || '',
+        country: decryptedUser?.country || '',
         age: calculatedAge !== null ? String(calculatedAge) : '',
-        grade: user?.grade || '',
+        grade: decryptedUser?.grade || '',
       })
     } else {
       setFormData({
