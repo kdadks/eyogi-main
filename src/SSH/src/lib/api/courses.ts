@@ -33,37 +33,18 @@ export async function getCourses(filters?: {
           if (filters?.level) {
             query = query.eq('level', filters.level)
           }
-          if (filters?.teacher_id) {
-            query = query.eq('teacher_id', filters.teacher_id)
-          }
+          // Note: courses table no longer has teacher_id field
+          // Use course_assignments table to filter by teacher
           const { data, error } = await query.order('created_at', { ascending: false })
           if (error) {
             throw error
           }
 
-          // Fetch teachers separately if courses have teacher_id
-          const teacherIds = [
-            ...new Set((data || []).map((c: any) => c.teacher_id).filter(Boolean)),
-          ]
-          let teachersMap = new Map()
-
-          if (teacherIds.length > 0) {
-            const { data: teachers } = await supabaseAdmin
-              .from('profiles')
-              .select('*')
-              .in('teacher_id', teacherIds)
-
-            if (teachers) {
-              teachers.forEach((teacher) => {
-                teachersMap.set(teacher.teacher_id, decryptProfileFields(teacher))
-              })
-            }
-          }
-
-          // Attach decrypted teachers to courses
+          // Courses no longer have direct teacher_id field
+          // Teachers are assigned via course_assignments table
           const coursesWithDecryptedTeachers = (data || []).map((course: any) => ({
             ...course,
-            teacher: course.teacher_id ? teachersMap.get(course.teacher_id) || null : null,
+            teacher: null, // Use course_assignments to get teacher info
           }))
           return coursesWithDecryptedTeachers
         },
@@ -79,9 +60,8 @@ export async function getCourses(filters?: {
     if (filters?.level) {
       query = query.eq('level', filters.level)
     }
-    if (filters?.teacher_id) {
-      query = query.eq('teacher_id', filters.teacher_id)
-    }
+    // Note: courses table no longer has teacher_id field
+    // Use course_assignments table to filter by teacher
     if (filters?.search) {
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
     }
@@ -132,13 +112,10 @@ export async function getCourse(id: string): Promise<Course | null> {
           throw error
         }
 
-        // Fetch teacher separately if course has teacher_id
-        if (data && data.teacher_id) {
-          const { data: teacher } = await supabaseAdmin
-            .from('profiles')
-            .select('*')
-            .eq('teacher_id', data.teacher_id)
-            .single()
+        // Courses no longer have direct teacher_id field
+        if (data) {
+          // Use course_assignments to get teacher info if needed
+          const teacher = null
 
           if (teacher) {
             return {
@@ -184,13 +161,10 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     }
     const matchingCourse = matchingCourses[0] || null
 
-    // Fetch teacher separately if course has teacher_id
-    if (matchingCourse && matchingCourse.teacher_id) {
-      const { data: teacher } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('teacher_id', matchingCourse.teacher_id)
-        .single()
+    // Courses no longer have direct teacher_id field
+    if (matchingCourse) {
+      // Use course_assignments to get teacher info if needed
+      const teacher = null
 
       if (teacher) {
         return {
@@ -352,19 +326,8 @@ export async function deleteCourse(id: string): Promise<void> {
 }
 export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
   try {
-    // Get teacher's profile to find their teacher_id
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('teacher_id')
-      .eq('id', teacherId)
-      .single()
-
-    if (!profile?.teacher_id) {
-      console.log('No teacher_id found for profile:', teacherId)
-      return []
-    }
-
     // Get courses assigned to this teacher via course_assignments
+    // Note: course_assignments.teacher_id now references profiles.id directly
     const { data: assignments, error: assignmentError } = await supabaseAdmin
       .from('course_assignments')
       .select(
@@ -373,7 +336,7 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
         courses!inner(*)
       `,
       )
-      .eq('teacher_id', profile.teacher_id)
+      .eq('teacher_id', teacherId)
       .eq('is_active', true)
 
     if (assignmentError) {
@@ -382,7 +345,7 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
     }
 
     if (!assignments || assignments.length === 0) {
-      console.log('No course assignments found for teacher_id:', profile.teacher_id)
+      console.log('No course assignments found for teacher profile:', teacherId)
       return []
     }
 

@@ -275,7 +275,7 @@ const BulkCourseAssignmentModal: React.FC<BulkCourseAssignmentModalProps> = ({
                             dangerouslySetInnerHTML={{ __html: course.description }}
                           />
                         )}
-                        {course.teacher_id && (
+                        {course.teacher && (
                           <p className="text-xs text-amber-600 ml-6 mt-1">
                             ⚠️ Already assigned to another teacher
                           </p>

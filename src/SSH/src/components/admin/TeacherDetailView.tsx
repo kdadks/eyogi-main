@@ -50,14 +50,14 @@ export default function TeacherDetailView() {
     try {
       setLoading(true)
 
-      // First get teacher data to get their teacher_id
+      // Get teacher data and their assignments using profile id
       const teacherData = await getUserProfile(teacherId)
 
       // Then fetch other data in parallel
       const [stats, items, assignments] = await Promise.all([
         getComplianceStats(teacherId, 'teacher'),
         getUserComplianceStatus(teacherId, 'teacher'),
-        getTeacherCourseAssignments(teacherData?.teacher_id || ''),
+        getTeacherCourseAssignments(teacherId), // teacherId is profiles.id (UUID)
       ])
 
       // Extract courses from assignments
@@ -317,6 +317,12 @@ export default function TeacherDetailView() {
 
               {/* Additional Personal Details */}
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {teacher.teacher_code && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Teacher Code</label>
+                    <p className="mt-1 text-sm font-mono text-gray-900">{teacher.teacher_code}</p>
+                  </div>
+                )}
                 {teacher.date_of_birth && (
                   <div>
                     <label className="text-xs font-medium text-gray-500">Date of Birth</label>

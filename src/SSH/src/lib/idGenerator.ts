@@ -73,11 +73,11 @@ export async function generateNextId(
     const currentYear = new Date().getFullYear()
     // Legacy code - use id-generator.ts generateStudentId() for new ISO format
     const prefix = `EYG-${currentYear}-`
-    // Get all existing teacher IDs
+    // Get all existing teacher codes
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('teacher_id')
-      .not('teacher_id', 'is', null)
+      .select('teacher_code')
+      .not('teacher_code', 'is', null)
       .order('created_at', { ascending: false })
     if (error) {
       // Fallback to 0001 if there's an error
@@ -87,7 +87,7 @@ export async function generateNextId(
     const sequenceNumbers: number[] = []
     if (data && data.length > 0) {
       data.forEach((record) => {
-        const id = record.teacher_id as string
+        const id = record.teacher_code as string
         if (id && id.startsWith(prefix)) {
           const sequencePart = id.replace(prefix, '')
           const sequenceNum = parseInt(sequencePart, 10)

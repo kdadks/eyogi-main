@@ -3,7 +3,7 @@ import { Button } from '../ui/Button'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { createBatch, updateBatch, assignCourseToBatch } from '../../lib/api/batches'
 import { getAllUsers } from '../../lib/api/users'
-import { getCourses } from '../../lib/api/courses'
+import { getCourses, getTeacherCourses } from '../../lib/api/courses'
 import { Batch, Gurukul, User, Course } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 
@@ -19,7 +19,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
     name: string
     description: string
     gurukul_id: string
-    teacher_id: string
+    teacher_id: string // References profiles.id (UUID)
     start_date: string
     end_date: string
     max_students: string
@@ -57,8 +57,11 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
         max_students: batch.max_students?.toString() || '',
         status: batch.status || 'not_started',
       })
+    } else if (profile?.role === 'teacher' && profile?.id) {
+      // Auto-set teacher_id to current user if they are a teacher
+      setFormData((prev) => ({ ...prev, teacher_id: profile.id }))
     }
-  }, [batch])
+  }, [batch, profile])
 
   const fetchTeachers = async () => {
     try {
@@ -72,8 +75,15 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
 
   const fetchCourses = async () => {
     try {
-      const courseList = await getCourses()
-      setCourses(courseList)
+      // If current user is a teacher, only show courses assigned to them
+      if (profile?.role === 'teacher' && profile?.id) {
+        const courseList = await getTeacherCourses(profile.id)
+        setCourses(courseList)
+      } else {
+        // Admins can see all courses
+        const courseList = await getCourses()
+        setCourses(courseList)
+      }
     } catch (error) {
       console.error('Error fetching courses:', error)
     }
@@ -276,7 +286,10 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
                 name="teacher_id"
                 value={formData.teacher_id}
                 onChange={handleInputChange}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                disabled={profile?.role === 'teacher'}
+                className={`w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                  profile?.role === 'teacher' ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
               >
                 <option value="">Select a teacher (optional)</option>
                 {teachers.map((teacher) => (

@@ -21,6 +21,7 @@ import { sanitizeHtml } from '../../utils/sanitize'
 import BatchModal from './BatchModal'
 import StudentAssignmentModal from './StudentAssignmentModal'
 import CourseAssignmentModal from './CourseAssignmentModal'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 const BatchManagement: React.FC = () => {
   const [batches, setBatches] = useState<Batch[]>([])
@@ -42,6 +43,12 @@ const BatchManagement: React.FC = () => {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null)
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
 
   // Filters
   const [filterGurukul, setFilterGurukul] = useState('')
@@ -97,15 +104,22 @@ const BatchManagement: React.FC = () => {
   const handleDeleteBatch = async (batch: Batch) => {
     if (!canDelete || !profile) return
 
-    if (window.confirm(`Are you sure you want to delete batch "${batch.name}"?`)) {
-      try {
-        await deleteBatch(batch.id)
-        await fetchData()
-      } catch (error) {
-        console.error('Error deleting batch:', error)
-        alert('Failed to delete batch')
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Batch',
+      message: `Are you sure you want to delete batch "${batch.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await deleteBatch(batch.id)
+          await fetchData()
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+        } catch (error) {
+          console.error('Error deleting batch:', error)
+          alert('Failed to delete batch')
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
+        }
+      },
+    })
   }
 
   const handleStudentAssignment = (batch: Batch) => {
@@ -505,6 +519,17 @@ const BatchManagement: React.FC = () => {
           }}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        variant="danger"
+      />
     </div>
   )
 }

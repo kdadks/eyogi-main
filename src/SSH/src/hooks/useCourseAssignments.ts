@@ -38,26 +38,29 @@ export function useCourseAssignments(teacherId?: string) {
         return
       }
 
-      // Get unique teacher_ids
-      const teacherIds = [...new Set(assignmentsData?.map((a) => a.teacher_id).filter(Boolean))]
+      // Get unique teacher profile IDs (course_assignments.teacher_id is now a UUID referencing profiles.id)
+      const teacherProfileIds = [
+        ...new Set(assignmentsData?.map((a) => a.teacher_id).filter(Boolean)),
+      ]
 
-      // Fetch all teachers in one query
+      // Fetch teachers by profile id
       const { data: teachersData } = await supabaseAdmin
         .from('profiles')
         .select('*')
-        .in('teacher_id', teacherIds)
+        .in('id', teacherProfileIds)
+        .eq('role', 'teacher')
 
       // Decrypt teacher profiles
       const decryptedTeachers = (teachersData || []).map((teacher) => decryptProfileFields(teacher))
 
-      // Create a map for quick lookup
-      const teacherMap = new Map(decryptedTeachers.map((t) => [t.teacher_id, t]))
+      // Create map for quick lookup by profile id
+      const teacherMapByProfileId = new Map(decryptedTeachers.map((t) => [t.id, t]))
 
       // Combine the data
       const assignmentsWithRelations = assignmentsData?.map((assignment) => ({
         ...assignment,
         course: assignment.courses,
-        teacher: teacherMap.get(assignment.teacher_id),
+        teacher: teacherMapByProfileId.get(assignment.teacher_id),
       }))
 
       setAssignments(assignmentsWithRelations || [])
@@ -74,88 +77,37 @@ export function useCourseAssignments(teacherId?: string) {
     notes?: string,
   ): Promise<boolean> => {
     try {
-      // Assigning teacher to course
-      // Check if we need to update the teacher profile with teacher_id
-      let actualTeacherId = teacherId
-      // Check if this is a profile ID (UUID format) and the teacher doesn't have a teacher_id yet
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      // teacherId should now be the profile UUID
+      // Verify the teacher exists and has the teacher role
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id, role, teacher_code')
+        .eq('id', teacherId)
+        .eq('role', 'teacher')
+        .single()
 
-      if (uuidRegex.test(teacherId)) {
-        // This is a profile ID, check if the teacher needs a teacher_id
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('id, teacher_id, role')
-          .eq('id', teacherId)
-          .eq('role', 'teacher')
-          .single()
+      if (!profile) {
+        toast.error('Teacher profile not found')
+        return false
+      }
 
-        if (profile && !profile.teacher_id) {
-          // Generate a teacher ID that fits in VARCHAR(20) - use last 12 chars of UUID with TCH- prefix
-          const shortTeacherId = `TCH-${profile.id.slice(-12)}`
-          // Update the profile to use the generated teacher_id
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({ teacher_id: shortTeacherId })
-            .eq('id', profile.id)
-          if (updateError) {
-            toast.error('Failed to update teacher profile')
-            return false
-          }
-          actualTeacherId = shortTeacherId
-        } else if (profile && profile.teacher_id) {
-          // Check if existing teacher_id is too long for the database
-          if (profile.teacher_id.length > 20) {
-            const shortTeacherId = `TCH-${profile.id.slice(-12)}`
-            // Update the profile with the shortened teacher_id
-            const { error: updateError } = await supabaseAdmin
-              .from('profiles')
-              .update({ teacher_id: shortTeacherId })
-              .eq('id', profile.id)
-            if (updateError) {
-              toast.error('Failed to update teacher profile')
-              return false
-            }
-            actualTeacherId = shortTeacherId
-          } else {
-            // Use existing teacher_id (it's already the right length)
-            actualTeacherId = profile.teacher_id
-          }
-        } else if (profile && profile.teacher_id === null) {
-          // teacher_id is explicitly null, generate a new one
-          const shortTeacherId = `TCH-${profile.id.slice(-12)}`
-          // Update the profile to use the generated teacher_id
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({ teacher_id: shortTeacherId })
-            .eq('id', profile.id)
-          if (updateError) {
-            toast.error('Failed to update teacher profile')
-            return false
-          }
-          actualTeacherId = shortTeacherId
-        } else if (!profile) {
-          toast.error('Teacher profile not found')
-          return false
-        }
-      }
-      // Failsafe: If actualTeacherId is still a UUID (too long), generate a short one
-      if (actualTeacherId.length > 20) {
-        actualTeacherId = `TCH-${actualTeacherId.slice(-12)}`
-      }
       // Check if assignment already exists
       const { data: existing } = await supabaseAdmin
         .from('course_assignments')
         .select('id')
-        .eq('teacher_id', actualTeacherId)
+        .eq('teacher_id', profile.id)
         .eq('course_id', courseId)
         .eq('is_active', true)
         .maybeSingle()
+
       if (existing) {
         toast.error('Teacher is already assigned to this course')
         return false
       }
+
+      // Insert assignment with profile UUID
       const { error } = await supabaseAdmin.from('course_assignments').insert({
-        teacher_id: actualTeacherId,
+        teacher_id: profile.id,
         course_id: courseId,
         assigned_by: assignedBy,
         notes: notes,
@@ -220,22 +172,26 @@ export function useCourseAssignments(teacherId?: string) {
         .select('teacher_id')
         .eq('course_id', courseId)
         .eq('is_active', true)
+
       if (error) {
         return []
       }
-      // Get teacher profiles for each teacher_id
-      const teachers = []
-      for (const assignment of assignments || []) {
-        const { data: teacher } = await supabaseAdmin
-          .from('profiles')
-          .select('*')
-          .eq('teacher_id', assignment.teacher_id)
-          .single()
-        if (teacher) {
-          teachers.push(teacher)
-        }
+
+      // Get unique teacher profile IDs
+      const teacherIds = [...new Set(assignments?.map((a) => a.teacher_id).filter(Boolean))]
+
+      if (teacherIds.length === 0) {
+        return []
       }
-      return teachers
+
+      // Fetch all teachers in one query
+      const { data: teachers } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .in('id', teacherIds)
+        .eq('role', 'teacher')
+
+      return (teachers || []).map((teacher) => decryptProfileFields(teacher))
     } catch {
       return []
     }

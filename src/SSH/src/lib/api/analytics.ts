@@ -598,28 +598,33 @@ export async function getTeacherAnalytics(
     const activeTeachers = decryptedTeachers?.filter((t: any) => t.status === 'active').length || 0
 
     // Get teacher workload
+    // Note: teacher_id in course_assignments is profiles.id (UUID)
     const { data: courseAssignments } = await supabaseAdmin
       .from('course_assignments')
       .select('teacher_id, course:courses(id, title)')
+      .eq('is_active', true)
 
     const { data: batches } = await supabaseAdmin
       .from('batches')
       .select('teacher_id, students:batch_students(count)')
+      .eq('is_active', true)
 
     const { data: certificates } = await supabaseAdmin.from('certificates').select('teacher_id')
 
     const teacherMetrics = new Map()
 
-    // Count courses
+    // Count courses - teacher_id is profiles.id (UUID)
     ;(courseAssignments || []).forEach((assignment: any) => {
-      const metrics = teacherMetrics.get(assignment.teacher_id) || {
-        studentCount: 0,
-        courseCount: 0,
-        batchCount: 0,
-        certificatesIssued: 0,
+      if (assignment.teacher_id) {
+        const metrics = teacherMetrics.get(assignment.teacher_id) || {
+          studentCount: 0,
+          courseCount: 0,
+          batchCount: 0,
+          certificatesIssued: 0,
+        }
+        metrics.courseCount++
+        teacherMetrics.set(assignment.teacher_id, metrics)
       }
-      metrics.courseCount++
-      teacherMetrics.set(assignment.teacher_id, metrics)
     })
 
     // Count batches and students

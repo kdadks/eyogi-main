@@ -19,6 +19,8 @@ import {
   CurrencyEuroIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
+import StudentTeachersModal from './StudentTeachersModal'
+
 export default function EnrollmentManagement() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [filteredEnrollments, setFilteredEnrollments] = useState<Enrollment[]>([])
@@ -28,6 +30,11 @@ export default function EnrollmentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+
   useEffect(() => {
     loadEnrollments()
   }, [])
@@ -279,9 +286,17 @@ export default function EnrollmentManagement() {
                             <UserIcon className="h-5 w-5 text-white" />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <button
+                              onClick={() =>
+                                setSelectedStudent({
+                                  id: enrollment.student_id,
+                                  name: enrollment.student?.full_name || 'Unknown',
+                                })
+                              }
+                              className="text-sm font-medium text-gray-900 hover:text-orange-600 hover:underline cursor-pointer transition-colors text-left"
+                            >
                               {enrollment.student?.full_name || 'Unknown'}
-                            </div>
+                            </button>
                             <div className="text-sm text-gray-500">{enrollment.student?.email}</div>
                             <div className="text-xs text-gray-400">
                               ID: {enrollment.student?.student_id}
@@ -408,6 +423,14 @@ export default function EnrollmentManagement() {
           )}
         </CardContent>
       </Card>
+
+      {selectedStudent && (
+        <StudentTeachersModal
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.name}
+          onClose={() => setSelectedStudent(null)}
+        />
+      )}
     </div>
   )
 }

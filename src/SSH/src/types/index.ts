@@ -44,7 +44,7 @@ export interface User {
   preferences?: UserPreferences
   age?: number | null
   student_id?: string | null
-  teacher_id?: string | null
+  teacher_code?: string | null
   parent_id?: string | null
   parent_guardian_name?: string | null
   parent_guardian_email?: string | null
@@ -100,7 +100,6 @@ export interface Course {
   meta_title?: string
   meta_description?: string
   created_by?: string
-  teacher_id?: string
   created_at: string
   updated_at: string
   gurukul?: Gurukul
@@ -132,7 +131,7 @@ export interface Certificate {
   student_id: string
   course_id: string
   template_id?: string | null
-  teacher_id?: string | null
+  teacher_id?: string | null // References profiles.id (UUID)
   title: string
   completion_date: string
   issue_date?: string | null
@@ -301,7 +300,7 @@ export interface CourseProgress {
 }
 export interface CourseAssignment {
   id: string
-  teacher_id: string
+  teacher_id: string // References profiles.id (UUID)
   course_id: string
   assigned_by?: string
   assigned_at: string
@@ -325,7 +324,7 @@ export type Profile = {
   preferences: UserPreferences | null
   role: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
   student_id: string | null
-  teacher_id: string | null
+  teacher_code: string | null
   parent_id: string | null
   created_at: string
   updated_at: string
@@ -345,7 +344,7 @@ export interface Batch {
   name: string
   description?: string | null
   gurukul_id: string
-  teacher_id?: string | null
+  teacher_id?: string | null // References profiles.id (UUID)
   course_id?: string | null
   start_date?: string | null
   end_date?: string | null

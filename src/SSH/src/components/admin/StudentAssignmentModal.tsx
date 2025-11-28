@@ -8,6 +8,7 @@ import {
   removeStudentFromBatch,
 } from '../../lib/api/batches'
 import { getAllUsers } from '../../lib/api/users'
+import { getTeacherEnrollments } from '../../lib/api/enrollments'
 import { Batch, BatchStudent, User } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
 
@@ -41,18 +42,29 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({
 
       setAssignedStudents(batchStudents)
 
-      // Filter out already assigned students
+      // If batch has a teacher assigned, only show students enrolled in that teacher's courses
+      let eligibleStudentIds: Set<string> | null = null
+      if (batch.teacher_id) {
+        const teacherEnrollments = await getTeacherEnrollments(batch.teacher_id)
+        eligibleStudentIds = new Set(teacherEnrollments.map((e) => e.student_id))
+      }
+
+      // Filter out already assigned students and optionally filter by teacher's enrollments
       const assignedStudentIds = new Set(batchStudents.map((bs) => bs.student_id))
-      const students = allUsers.filter(
-        (user) => user.role === 'student' && !assignedStudentIds.has(user.id),
-      )
+      const students = allUsers.filter((user) => {
+        if (user.role !== 'student') return false
+        if (assignedStudentIds.has(user.id)) return false
+        // If teacher is assigned to batch, only show their enrolled students
+        if (eligibleStudentIds && !eligibleStudentIds.has(user.id)) return false
+        return true
+      })
       setAvailableStudents(students)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
-  }, [batch.id])
+  }, [batch.id, batch.teacher_id])
 
   useEffect(() => {
     fetchData()
@@ -245,11 +257,8 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({
                         <div className="font-medium">{student.full_name || 'Unnamed Student'}</div>
                         <div className="text-sm text-gray-600">{student.email}</div>
                         {student.student_id && (
-                          <div className="text-sm text-gray-500">ID: {student.student_id}</div>
+                          <div className="text-sm text-gray-500 mt-1">ID: {student.student_id}</div>
                         )}
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {student.role}
-                        </Badge>
                       </div>
                     </div>
                   ))

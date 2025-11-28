@@ -89,16 +89,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Select a teacher</option>
-              {teachers.map((teacher) => {
-                // Use teacher_id if available, otherwise use the profile id (will be converted to proper teacher_id later)
-                const teacherId = teacher.teacher_id || teacher.id
-                // Teacher option prepared
-                return (
-                  <option key={teacher.id} value={teacherId}>
-                    {teacher.full_name} ({teacher.email})
-                  </option>
-                )
-              })}
+              {teachers.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.full_name} ({teacher.email})
+                  {teacher.teacher_code ? ` - ${teacher.teacher_code}` : ''}
+                </option>
+              ))}
             </select>
           </div>
           <div>

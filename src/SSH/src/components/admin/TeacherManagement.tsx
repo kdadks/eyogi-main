@@ -27,7 +27,7 @@ interface TeacherWithStats {
   id: string
   email: string
   full_name: string
-  teacher_id?: string | null
+  teacher_code?: string | null
   role: Profile['role']
   created_at: string
   complianceStats?: ComplianceStats
@@ -62,18 +62,18 @@ export default function TeacherManagement() {
         return
       }
 
-      // Get all teacher IDs and teacher_ids
+      // Get all teacher profile IDs
       const userIds = teacherData.map((t) => t.id)
-      const teacherIds = teacherData.map((t) => t.teacher_id).filter(Boolean)
 
       // Fetch all data in parallel with batch queries
 
       const [allCourseAssignments, allComplianceItems, allSubmissions] = await Promise.all([
         // Get all course assignments for all teachers at once
+        // Note: course_assignments.teacher_id now references profiles.id
         supabaseAdmin
           .from('course_assignments')
           .select('*, courses(*)')
-          .in('teacher_id', teacherIds)
+          .in('teacher_id', userIds)
           .eq('is_active', true)
           .then((res: { data: any[] | null }) => res.data || []),
 
@@ -112,8 +112,8 @@ export default function TeacherManagement() {
 
       // Calculate stats for each teacher
       const teachersWithStats = teacherData.map((teacher) => {
-        // Get teacher's assignments
-        const assignments = assignmentsByTeacherId.get(teacher.teacher_id || '') || []
+        // Get teacher's assignments by profile ID
+        const assignments = assignmentsByTeacherId.get(teacher.id) || []
 
         const courses = assignments.map((a: any) => a.courses).filter(Boolean) as Course[]
 
@@ -466,7 +466,7 @@ export default function TeacherManagement() {
         <BulkCourseAssignmentModal
           teacherIds={teachers
             .filter((t) => selectedTeachers.has(t.id))
-            .map((t) => t.teacher_id)
+            .map((t) => t.id) // Use profile id, not teacher_code
             .filter((id): id is string => id !== null && id !== undefined)}
           teacherNames={teachers
             .filter((t) => selectedTeachers.has(t.id))

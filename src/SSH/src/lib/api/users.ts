@@ -229,7 +229,7 @@ export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
         gurukuls (*)
       `,
           )
-          .eq('teacher_id', teacherId)
+          .eq('teacher_id', teacherId) // teacherId is profiles.id (UUID)
           .order('created_at', { ascending: false })
         if (error) {
           return []

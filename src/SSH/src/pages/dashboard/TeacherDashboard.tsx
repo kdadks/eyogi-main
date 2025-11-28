@@ -165,6 +165,20 @@ const generateSlug = (text: string): string => {
 
 export default function TeacherDashboard() {
   const { user, canAccess } = useWebsiteAuth()
+
+  // Debug: Check if teacher_code is available
+  React.useEffect(() => {
+    if (user) {
+      console.log('Teacher Dashboard - User object:', {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        teacher_code: user.teacher_code,
+        role: user.role,
+      })
+    }
+  }, [user])
+
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([])
@@ -773,7 +787,9 @@ export default function TeacherDashboard() {
           )
         : 0,
     averageRating: 0, // No rating system implemented yet
-    totalBatches: batches.length, // Real batch count for this teacher
+    totalBatches: batches.filter(
+      (batch) => batch.status === 'active' || batch.status === 'in_progress',
+    ).length, // Active batches only
   }
 
   // Notification data aggregation
@@ -2034,9 +2050,8 @@ export default function TeacherDashboard() {
                                                 onClick={async () => {
                                                   try {
                                                     toast.loading('Regenerating certificate...')
-                                                    const { regenerateCertificate } = await import(
-                                                      '@/lib/api/certificates'
-                                                    )
+                                                    const { regenerateCertificate } =
+                                                      await import('@/lib/api/certificates')
                                                     await regenerateCertificate(cert.id)
                                                     await loadDashboardData()
                                                     toast.dismiss()
@@ -3041,6 +3056,12 @@ export default function TeacherDashboard() {
                       <div>
                         <label className="text-sm font-medium text-gray-500">Email</label>
                         <p className="text-gray-900">{user?.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Teacher Code</label>
+                        <p className="text-gray-900 font-semibold">
+                          {user?.teacher_code || 'Not assigned'}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Phone</label>
@@ -5630,27 +5651,27 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
     try {
       await updateBatchProgress(editingBatch.id, weekNumber, isCompleted, teacherId)
       toast.success(`Week ${weekNumber} ${isCompleted ? 'completed' : 'reset'}!`)
-
-      // Immediately refresh batch data to show progress updates with teacher filter
-      const updatedBatches = await getBatches({ teacher_id: teacherId, is_active: true })
-      const updatedBatch = updatedBatches.find((b) => b.id === editingBatch.id)
-
-      if (updatedBatch) {
-        // Update the current editing batch with fresh data
-        setEditingBatch(updatedBatch)
-      }
-
-      // Refresh batches list and stats
-      if (onBatchUpdate) {
-        onBatchUpdate()
-      } else {
-        loadBatches()
-      }
-      loadStats()
     } catch (error) {
       console.error('Error updating progress:', error)
       toast.error('Failed to update progress')
     } finally {
+      // Refresh batch data after update (success or failure)
+      try {
+        const updatedBatches = await getBatches({ teacher_id: teacherId, is_active: true })
+        const updatedBatch = updatedBatches.find((b) => b.id === editingBatch.id)
+
+        if (updatedBatch) {
+          // Update the current editing batch with fresh data
+          setEditingBatch(updatedBatch)
+        }
+
+        // Refresh batches list and stats
+        loadBatches()
+        loadStats()
+      } catch (refreshError) {
+        console.error('Error refreshing batch data:', refreshError)
+        // Silent fail on refresh - don't show error toast
+      }
       // Remove loading state for this week
       setLoadingWeeks((prev) => {
         const newSet = new Set(prev)
@@ -5684,11 +5705,7 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
       )
 
       // Refresh the batches list
-      if (onBatchUpdate) {
-        onBatchUpdate()
-      } else {
-        loadBatches()
-      }
+      loadBatches()
       loadStats()
     } catch (error) {
       console.error('Error starting batch:', error)

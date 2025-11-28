@@ -270,22 +270,76 @@ const AttendanceManagement: React.FC = () => {
             </div>
           )}
 
+          {/* Batch Information */}
+          {selectedBatch && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Batch Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Status:</span>{' '}
+                  <Badge
+                    variant={
+                      selectedBatch.status === 'active' || selectedBatch.status === 'in_progress'
+                        ? 'success'
+                        : selectedBatch.status === 'completed'
+                          ? 'default'
+                          : 'warning'
+                    }
+                    size="sm"
+                  >
+                    {selectedBatch.status.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                </div>
+                {selectedBatch.start_date && (
+                  <div>
+                    <span className="text-gray-600">Start Date:</span>{' '}
+                    <span className="font-medium text-gray-900">
+                      {new Date(selectedBatch.start_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                {selectedBatch.end_date && (
+                  <div>
+                    <span className="text-gray-600">End Date:</span>{' '}
+                    <span className="font-medium text-gray-900">
+                      {new Date(selectedBatch.end_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Date Range Filter */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter Start Date
+              </label>
               <Input
                 type="date"
                 value={dateFilter.start}
                 onChange={(e) => setDateFilter({ ...dateFilter, start: e.target.value })}
+                placeholder={
+                  selectedBatch?.start_date
+                    ? new Date(selectedBatch.start_date).toISOString().split('T')[0]
+                    : undefined
+                }
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter End Date
+              </label>
               <Input
                 type="date"
                 value={dateFilter.end}
                 onChange={(e) => setDateFilter({ ...dateFilter, end: e.target.value })}
+                placeholder={
+                  selectedBatch?.end_date
+                    ? new Date(selectedBatch.end_date).toISOString().split('T')[0]
+                    : undefined
+                }
               />
             </div>
           </div>

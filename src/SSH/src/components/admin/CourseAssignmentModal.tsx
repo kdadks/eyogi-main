@@ -6,7 +6,9 @@ import { getBatchCourses, assignCourseToBatch, removeCourseFromBatch } from '../
 import { getCourses } from '../../lib/api/courses'
 import { Batch, BatchCourse, Course } from '../../types'
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth'
+import { useCourseAssignments } from '../../hooks/useCourseAssignments'
 import { sanitizeHtml } from '../../utils/sanitize'
+import { getLevelColor } from '../../lib/utils'
 
 interface CourseAssignmentModalProps {
   batch: Batch
@@ -27,16 +29,21 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
   const [assigning, setAssigning] = useState(false)
 
   const { profile } = useSupabaseAuth()
+  const courseAssignments = useCourseAssignments()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [batchCourses, allCourses] = await Promise.all([
-        getBatchCourses(batch.id),
-        getCourses({ gurukul_id: batch.gurukul_id }),
-      ])
-
+      const batchCourses = await getBatchCourses(batch.id)
       setAssignedCourses(batchCourses)
+
+      // If batch has a teacher assigned, only show courses assigned to that teacher
+      let allCourses: Course[]
+      if (batch.teacher_id) {
+        allCourses = await courseAssignments.getTeacherCourses(batch.teacher_id)
+      } else {
+        allCourses = await getCourses({ gurukul_id: batch.gurukul_id })
+      }
 
       // Filter out already assigned courses
       const assignedCourseIds = new Set(batchCourses.map((bc) => bc.course_id))
@@ -49,7 +56,8 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
     } finally {
       setLoading(false)
     }
-  }, [batch.id, batch.gurukul_id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batch.id, batch.gurukul_id, batch.teacher_id])
 
   useEffect(() => {
     fetchData()
@@ -104,21 +112,6 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
       course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.course_number.toLowerCase().includes(searchTerm.toLowerCase()),
   )
-
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'elementary':
-        return 'bg-green-100 text-green-800'
-      case 'basic':
-        return 'bg-blue-100 text-blue-800'
-      case 'intermediate':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'advanced':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   if (loading) {
     return (
@@ -182,15 +175,18 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
                           }}
                         />
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getLevelColor(batchCourse.course?.level || '')}>
+                          <Badge
+                            size="sm"
+                            className={getLevelColor(batchCourse.course?.level || '')}
+                          >
                             {batchCourse.course?.level}
                           </Badge>
-                          <span className="text-xs text-gray-500">
+                          <Badge size="sm" variant="outline">
                             {batchCourse.course?.duration_weeks} weeks
-                          </span>
-                          <span className="text-xs text-gray-500">
+                          </Badge>
+                          <Badge size="sm" variant="outline">
                             €{batchCourse.course?.price}
-                          </span>
+                          </Badge>
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Assigned: {new Date(batchCourse.assigned_at).toLocaleDateString()}
@@ -270,16 +266,22 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
                           className="text-sm text-gray-600 line-clamp-2"
                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                         />
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
-                          <span className="text-xs text-gray-500">{course.course_number}</span>
-                          <span className="text-xs text-gray-500">
+                        <div className="flex items-center flex-wrap gap-2 mt-2">
+                          <Badge size="sm" className={getLevelColor(course.level)}>
+                            {course.level}
+                          </Badge>
+                          <Badge size="sm" variant="outline">
+                            {course.course_number}
+                          </Badge>
+                          <Badge size="sm" variant="outline">
                             {course.duration_weeks} weeks
-                          </span>
-                          <span className="text-xs text-gray-500">€{course.price}</span>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Max students: {course.max_students}
+                          </Badge>
+                          <Badge size="sm" variant="outline">
+                            €{course.price}
+                          </Badge>
+                          <Badge size="sm" variant="info">
+                            Max: {course.max_students}
+                          </Badge>
                         </div>
                       </div>
                     </div>

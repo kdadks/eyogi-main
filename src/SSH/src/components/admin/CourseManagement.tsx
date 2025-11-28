@@ -473,7 +473,7 @@ export default function CourseManagement() {
         tags: course.tags || [],
         meta_title: course.meta_title || '',
         meta_description: course.meta_description || '',
-        teacher_id: course.teacher_id || '',
+        // Note: teacher_id removed - use course_assignments
       }
 
       console.log('🔵 Setting formData...')

@@ -117,7 +117,7 @@ export default function TemplateAssignmentModal({
         template_id: selectedTemplate,
         gurukul_id: assignmentType === 'gurukul' ? selectedGurukul : undefined,
         course_id: assignmentType === 'course' ? selectedCourse : undefined,
-        teacher_id: assignmentType === 'teacher' ? selectedTeacher : undefined,
+        teacher_id: assignmentType === 'teacher' ? selectedTeacher : undefined, // References profiles.id
       }
       // Ensure we don't send both gurukul_id and course_id
       if (assignmentType === 'gurukul') {

@@ -170,7 +170,7 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
             template:certificate_templates(*),
             gurukul:gurukuls(*),
             course:courses(*),
-            teacher:profiles!teacher_id(*),
+            teacher:profiles!certificate_template_assignments_teacher_id_fkey(*),
             creator:profiles!created_by(*)
           `,
           )
@@ -193,7 +193,7 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
             a.template_id === assignment.template_id &&
             a.gurukul_id === assignment.gurukul_id &&
             a.course_id === assignment.course_id &&
-            a.teacher_id === assignment.teacher_id,
+            a.teacher_id === assignment.teacher_id, // Comparing profile UUIDs
         ),
     )
 
@@ -210,7 +210,7 @@ export const createCertificateAssignment = async (
 ) => {
   // Validate that at least one of gurukul_id, course_id, or teacher_id is provided
   if (!assignmentData.gurukul_id && !assignmentData.course_id && !assignmentData.teacher_id) {
-    throw new Error('Either gurukul_id, course_id, or teacher_id must be provided')
+    throw new Error('Either gurukul_id, course_id, or teacher_id (profile UUID) must be provided')
   }
 
   // Check for duplicate assignment with detailed info
@@ -223,7 +223,7 @@ export const createCertificateAssignment = async (
       template:certificate_templates(name),
       gurukul:gurukuls(name),
       course:courses(title),
-      teacher:profiles!teacher_id(full_name),
+      teacher:profiles!certificate_template_assignments_teacher_id_fkey(full_name),
       creator:profiles!created_by(full_name)
     `,
     )
@@ -242,9 +242,9 @@ export const createCertificateAssignment = async (
   }
 
   if (assignmentData.teacher_id) {
-    existingQuery.eq('teacher_id', assignmentData.teacher_id)
+    existingQuery.eq('teacher_id', assignmentData.teacher_id) // teacher_id is profiles.id (UUID)
   } else {
-    existingQuery.is('teacher_id', null)
+    existingQuery.is('teacher_id', null) // NULL means applies to all
   }
 
   const { data: existing } = await existingQuery.single()

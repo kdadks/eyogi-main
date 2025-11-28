@@ -20,7 +20,7 @@ export async function getTeacherCourseAssignments(teacherId: string): Promise<Co
             courses:course_id(*)
           `,
           )
-          .eq('teacher_id', teacherId)
+          .eq('teacher_id', teacherId) // teacherId is profiles.id (UUID)
           .eq('is_active', true)
           .order('assigned_at', { ascending: false })
 
@@ -47,7 +47,7 @@ export async function assignCourseToTeacher(
   try {
     const insertData: Record<string, unknown> = {
       course_id: courseId,
-      teacher_id: teacherId,
+      teacher_id: teacherId, // teacherId is profiles.id (UUID)
       assigned_by: assignedBy,
       assigned_at: new Date().toISOString(),
       is_active: true,
@@ -144,12 +144,12 @@ export async function getCourseAssignments(filters?: {
       `
         *,
         courses:course_id(*),
-        teacher:teacher_id(*)
+        teacher:profiles!course_assignments_teacher_id_fkey(*)
       `,
     )
 
     if (filters?.teacherId) {
-      query = query.eq('teacher_id', filters.teacherId)
+      query = query.eq('teacher_id', filters.teacherId) // teacherId is profiles.id (UUID)
     }
 
     if (filters?.courseId) {
