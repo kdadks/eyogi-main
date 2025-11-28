@@ -3,6 +3,7 @@ import type { Database } from '../../types/database'
 import { getCountryCode, getCountyCode } from '../isoCodes'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
 import { encryptProfileFields, decryptProfileFields } from '../encryption'
+import { logEncryptedFieldChanges, type ChangedByInfo } from './auditTrail'
 type Profile = Database['public']['Tables']['profiles']['Row']
 export interface CreateChildData {
   full_name: string
@@ -104,7 +105,10 @@ function generateUUID(): string {
 /**
  * Create a new child profile in the database
  */
-export async function createChild(childData: CreateChildData): Promise<Profile> {
+export async function createChild(
+  childData: CreateChildData,
+  changedBy?: ChangedByInfo,
+): Promise<Profile> {
   try {
     // Validate mandatory fields for student ID generation
     if (!childData.country || childData.country.trim() === '') {
@@ -170,6 +174,22 @@ export async function createChild(childData: CreateChildData): Promise<Profile> 
       throw new Error(`Failed to create child profile: ${error.message}`)
     }
 
+    // Log audit trail for child creation (encrypted fields)
+    if (changedBy) {
+      try {
+        await logEncryptedFieldChanges(
+          'profiles',
+          childId,
+          null,
+          profileData as Record<string, unknown>,
+          changedBy,
+          'CREATE',
+        )
+      } catch (auditError) {
+        console.error('Failed to log audit trail for child creation:', auditError)
+      }
+    }
+
     // Parent-child relationship is now handled simply through parent_id field in profiles table
     // No need for complex parent_child_relationships table
 
@@ -213,8 +233,21 @@ export async function getChildrenByParentId(parentId: string): Promise<Profile[]
 export async function updateChild(
   childId: string,
   updates: Partial<CreateChildData> & { age?: number; email?: string },
+  changedBy?: ChangedByInfo,
 ): Promise<Profile> {
   try {
+    let client = supabaseAdmin
+    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+      client = supabase
+    }
+
+    // Fetch current profile data for audit trail comparison
+    const { data: currentProfile } = await client
+      .from('profiles')
+      .select('*')
+      .eq('id', childId)
+      .single()
+
     // Calculate age from date of birth if provided
     let calculatedAge = updates.age
     if (updates.date_of_birth) {
@@ -256,11 +289,6 @@ export async function updateChild(
     // Encrypt sensitive fields before updating
     const encryptedUpdateData = encryptProfileFields(updateData)
 
-    let client = supabaseAdmin
-    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-      client = supabase
-    }
-
     const { data, error } = await client
       .from('profiles')
       .update(encryptedUpdateData)
@@ -270,6 +298,25 @@ export async function updateChild(
     if (error) {
       throw new Error(`Failed to update child profile: ${error.message}`)
     }
+
+    // Log audit trail for child update (encrypted fields)
+    if (changedBy && currentProfile) {
+      try {
+        // Decrypt old data and use plaintext new data for proper comparison
+        const decryptedOldData = decryptProfileFields(currentProfile)
+        await logEncryptedFieldChanges(
+          'profiles',
+          childId,
+          decryptedOldData as Record<string, unknown>,
+          updateData as Record<string, unknown>,
+          changedBy,
+          'UPDATE',
+        )
+      } catch (auditError) {
+        console.error('Failed to log audit trail for child update:', auditError)
+      }
+    }
+
     // Decrypt before returning
     return decryptProfileFields(data)
   } catch (error) {

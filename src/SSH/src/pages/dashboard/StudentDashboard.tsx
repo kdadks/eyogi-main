@@ -2072,7 +2072,9 @@ export default function StudentDashboard() {
             studentProfile
               ? ({
                   ...user,
-                  // Override with address data from studentProfile which has the latest address info
+                  // Override with data from studentProfile which has the latest info
+                  phone: studentProfile.phone,
+                  date_of_birth: studentProfile.date_of_birth,
                   address_line_1: studentProfile.address_line_1,
                   address_line_2: studentProfile.address_line_2,
                   city: studentProfile.city,

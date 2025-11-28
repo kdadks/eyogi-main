@@ -44,6 +44,7 @@ import { formatCurrency } from '../../../lib/utils'
 import { getStudentEnrollments, getStudentCourseProgress } from '../../../lib/api/enrollments'
 import { getStudentBatchProgress } from '../../../lib/api/batches'
 import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
+import type { ChangedByInfo } from '../../../lib/api/auditTrail'
 import {
   createChild,
   getChildrenByParentId,
@@ -536,19 +537,30 @@ export default function ParentsDashboard() {
       return
     }
     try {
+      // Build changedBy info for audit trail - the parent is adding a child
+      const changedBy: ChangedByInfo = {
+        id: user.id,
+        email: user.email || '',
+        name: user.full_name || user.email || 'Unknown',
+        role: user.role || 'parent',
+      }
+
       // Create child in database
-      const newChildProfile = await createChild({
-        full_name: childData.fullName,
-        date_of_birth: childData.date_of_birth,
-        grade: childData.grade,
-        parent_id: user.id,
-        phone: childData.phone,
-        address_line_1: childData.address.address_line_1,
-        city: childData.address.city,
-        state: childData.address.state,
-        zip_code: childData.address.zip_code,
-        country: childData.address.country,
-      })
+      const newChildProfile = await createChild(
+        {
+          full_name: childData.fullName,
+          date_of_birth: childData.date_of_birth,
+          grade: childData.grade,
+          parent_id: user.id,
+          phone: childData.phone,
+          address_line_1: childData.address.address_line_1,
+          city: childData.address.city,
+          state: childData.address.state,
+          zip_code: childData.address.zip_code,
+          country: childData.address.country,
+        },
+        changedBy,
+      )
       // Calculate age from date of birth for local state
       const birthDate = new Date(childData.date_of_birth)
       const today = new Date()
@@ -623,19 +635,32 @@ export default function ParentsDashboard() {
     address: AddressFormData
   }) => {
     try {
-      if (!childToEdit) return
-      await updateChild(childToEdit.student_id, {
-        full_name: childData.fullName,
-        date_of_birth: childData.date_of_birth,
-        grade: childData.grade,
-        email: childData.email,
-        phone: childData.phone,
-        address_line_1: childData.address.address_line_1,
-        city: childData.address.city,
-        state: childData.address.state,
-        zip_code: childData.address.zip_code,
-        country: childData.address.country,
-      })
+      if (!childToEdit || !user?.id) return
+
+      // Build changedBy info for audit trail - the parent is updating a child
+      const changedBy: ChangedByInfo = {
+        id: user.id,
+        email: user.email || '',
+        name: user.full_name || user.email || 'Unknown',
+        role: user.role || 'parent',
+      }
+
+      await updateChild(
+        childToEdit.student_id,
+        {
+          full_name: childData.fullName,
+          date_of_birth: childData.date_of_birth,
+          grade: childData.grade,
+          email: childData.email,
+          phone: childData.phone,
+          address_line_1: childData.address.address_line_1,
+          city: childData.address.city,
+          state: childData.address.state,
+          zip_code: childData.address.zip_code,
+          country: childData.address.country,
+        },
+        changedBy,
+      )
       // Update local state
       setChildren((prev) =>
         prev.map((child) =>
@@ -1063,7 +1088,8 @@ export default function ParentsDashboard() {
           user={
             {
               ...user,
-              // Override with address data from parentProfile which has the latest address info
+              // Override with data from parentProfile which has the latest info
+              phone: parentProfile.phone,
               address_line_1: parentProfile.address_line_1,
               address_line_2: parentProfile.address_line_2,
               city: parentProfile.city,
@@ -2544,36 +2570,53 @@ function SettingsTab({
     full_name: user?.full_name || '',
     phone: '',
   })
-  // Load existing user data when component mounts or user changes
-  useEffect(() => {
-    if (user) {
-      setPersonalInfo({
-        full_name: user.full_name || '',
-        phone: parentProfile?.phone || '', // Load from parentProfile
-      })
-    }
-  }, [user, parentProfile])
-  // Load address data from parentProfile - prevent infinite loops with ref
+  // Track if form data has been loaded to prevent re-initialization while editing
+  const personalInfoLoadedRef = useRef(false)
   const addressLoadedRef = useRef(false)
+
+  // Load form data when modal opens
   useEffect(() => {
-    if (parentProfile && !addressLoadedRef.current) {
-      setAddressData({
-        country: parentProfile.country || '',
-        state: parentProfile.state || '',
-        city: parentProfile.city || '',
-        address_line_1: parentProfile.address_line_1 || '',
-        address_line_2: parentProfile.address_line_2 || '',
-        zip_code: parentProfile.zip_code || '',
-      })
-      addressLoadedRef.current = true
+    if (showEditProfile && user && parentProfile) {
+      // Load personal info only once when modal opens
+      if (!personalInfoLoadedRef.current) {
+        setPersonalInfo({
+          full_name: user.full_name || '',
+          phone: parentProfile?.phone || '',
+        })
+        personalInfoLoadedRef.current = true
+      }
+      // Load address data only once when modal opens
+      if (!addressLoadedRef.current) {
+        setAddressData({
+          country: parentProfile.country || '',
+          state: parentProfile.state || '',
+          city: parentProfile.city || '',
+          address_line_1: parentProfile.address_line_1 || '',
+          address_line_2: parentProfile.address_line_2 || '',
+          zip_code: parentProfile.zip_code || '',
+        })
+        addressLoadedRef.current = true
+      }
+    } else if (!showEditProfile) {
+      // Reset the flags when modal closes so next open gets fresh data
+      personalInfoLoadedRef.current = false
+      addressLoadedRef.current = false
     }
-  }, [parentProfile])
+  }, [showEditProfile, user, parentProfile])
   const handleSaveProfile = async () => {
     try {
       if (!user?.id) {
         toast.error('User not authenticated')
         return
       }
+      // Build changedBy info for audit trail - the parent is changing their own profile
+      const changedBy: ChangedByInfo = {
+        id: user.id,
+        email: user.email || '',
+        name: user.full_name || user.email || 'Unknown',
+        role: user.role || 'parent',
+      }
+
       // Update user profile with personal info and address data
       const updateData = {
         full_name: personalInfo.full_name,
@@ -2585,7 +2628,11 @@ function SettingsTab({
         zip_code: addressData.zip_code,
         country: addressData.country,
       }
-      await updateUserProfile(user.id, updateData as Parameters<typeof updateUserProfile>[1])
+      await updateUserProfile(
+        user.id,
+        updateData as Parameters<typeof updateUserProfile>[1],
+        changedBy,
+      )
       toast.success('Profile updated successfully!')
       setShowEditProfile(false)
     } catch {

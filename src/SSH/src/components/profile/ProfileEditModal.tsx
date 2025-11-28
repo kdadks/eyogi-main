@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,6 +10,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import AddressForm from '../forms/AddressForm'
 import { AddressFormData } from '../../lib/address-utils'
 import { updateUserProfile, getUserProfile } from '../../lib/api/users'
+import type { ChangedByInfo } from '../../lib/api/auditTrail'
 import type { Database } from '../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 const profileSchema = z.object({
@@ -59,7 +60,6 @@ export default function ProfileEditModal({
   onUpdate,
 }: ProfileEditModalProps) {
   const [loading, setLoading] = useState(false)
-  const [currentUser, setCurrentUser] = useState<Profile>(user)
   const [addressData, setAddressData] = useState<AddressFormData>({
     country: '',
     state: '',
@@ -68,35 +68,11 @@ export default function ProfileEditModal({
     address_line_2: '',
     zip_code: '',
   })
-  // Initialize form when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      // User data analysis removed for cleaner code
-    }
-  }, [isOpen, user])
-  // Load fresh user data when modal opens to ensure we have the latest address data
-  useEffect(() => {
-    const loadFreshUserData = async () => {
-      if (isOpen && user?.id) {
-        try {
-          const freshUserData = await getUserProfile(user.id)
-          if (freshUserData) {
-            setCurrentUser(freshUserData as Profile)
-          }
-        } catch {
-          // Fall back to the passed user data if there's an error
-          setCurrentUser(user)
-        }
-      }
-    }
-    if (isOpen) {
-      loadFreshUserData()
-    } else {
-      // Reset to original user when modal closes
-      setCurrentUser(user)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, user?.id])
+
+  // Use ref to track if form has been initialized for this modal session
+  const initializedRef = useRef(false)
+  const userIdRef = useRef<string | null>(null)
+
   const {
     register,
     handleSubmit,
@@ -105,92 +81,152 @@ export default function ProfileEditModal({
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: currentUser.full_name || '',
-      phone: currentUser.phone || '',
-      date_of_birth: currentUser.date_of_birth || '',
-      // Address fields handled separately by AddressForm component
+      full_name: '',
+      phone: '',
+      date_of_birth: '',
       emergency_contact: {
-        name: currentUser.emergency_contact?.name || '',
-        relationship: currentUser.emergency_contact?.relationship || '',
-        phone: currentUser.emergency_contact?.phone || '',
-        email: currentUser.emergency_contact?.email || '',
+        name: '',
+        relationship: '',
+        phone: '',
+        email: '',
       },
       preferences: {
-        language: currentUser.preferences?.language || 'english',
+        language: 'english',
         notifications: {
-          email: currentUser.preferences?.notifications?.email !== false,
-          sms: currentUser.preferences?.notifications?.sms !== false,
-          push: currentUser.preferences?.notifications?.push !== false,
+          email: true,
+          sms: true,
+          push: true,
         },
         accessibility: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          large_text: (currentUser.preferences as any)?.accessibility?.large_text || false,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          high_contrast: (currentUser.preferences as any)?.accessibility?.high_contrast || false,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          reduced_motion: (currentUser.preferences as any)?.accessibility?.reduced_motion || false,
+          large_text: false,
+          high_contrast: false,
+          reduced_motion: false,
         },
       },
     },
   })
-  // Reset form when currentUser changes (after fresh data is loaded)
+
+  // Initialize form only once when modal opens or user ID changes
   useEffect(() => {
-    // Initialize address form data
-    setAddressData({
-      address_line_1: (currentUser['address_line_1' as keyof typeof currentUser] as string) || '',
-      address_line_2: (currentUser['address_line_2' as keyof typeof currentUser] as string) || '',
-      city: (currentUser['city' as keyof typeof currentUser] as string) || '',
-      state: (currentUser['state' as keyof typeof currentUser] as string) || '',
-      zip_code: (currentUser['zip_code' as keyof typeof currentUser] as string) || '',
-      country: (currentUser['country' as keyof typeof currentUser] as string) || '',
-    })
-    reset({
-      full_name: currentUser.full_name || '',
-      phone: currentUser.phone || '',
-      date_of_birth: currentUser.date_of_birth || '',
-      // Address fields handled separately by AddressForm component
-      emergency_contact: {
-        name: currentUser.emergency_contact?.name || '',
-        relationship: currentUser.emergency_contact?.relationship || '',
-        phone: currentUser.emergency_contact?.phone || '',
-        email: currentUser.emergency_contact?.email || '',
-      },
-      preferences: {
-        language: currentUser.preferences?.language || 'english',
-        notifications: {
-          email: currentUser.preferences?.notifications?.email !== false,
-          sms: currentUser.preferences?.notifications?.sms !== false,
-          push: currentUser.preferences?.notifications?.push !== false,
-        },
-        accessibility: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          large_text: (currentUser.preferences as any)?.accessibility?.large_text || false,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          high_contrast: (currentUser.preferences as any)?.accessibility?.high_contrast || false,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          reduced_motion: (currentUser.preferences as any)?.accessibility?.reduced_motion || false,
-        },
-      },
-    })
-  }, [currentUser, reset])
+    const initializeForm = async () => {
+      if (!isOpen || !user?.id) return
+
+      // Only initialize if not already done for this user
+      if (initializedRef.current && userIdRef.current === user.id) return
+
+      try {
+        // Try to get fresh data from database
+        const freshUserData = await getUserProfile(user.id)
+        const userData = (freshUserData || user) as Profile
+
+        // Initialize address form data
+        setAddressData({
+          address_line_1: (userData['address_line_1' as keyof typeof userData] as string) || '',
+          address_line_2: (userData['address_line_2' as keyof typeof userData] as string) || '',
+          city: (userData['city' as keyof typeof userData] as string) || '',
+          state: (userData['state' as keyof typeof userData] as string) || '',
+          zip_code: (userData['zip_code' as keyof typeof userData] as string) || '',
+          country: (userData['country' as keyof typeof userData] as string) || '',
+        })
+
+        // Reset form with user data
+        reset({
+          full_name: userData.full_name || '',
+          phone: userData.phone || '',
+          date_of_birth: userData.date_of_birth || '',
+          emergency_contact: {
+            name: userData.emergency_contact?.name || '',
+            relationship: userData.emergency_contact?.relationship || '',
+            phone: userData.emergency_contact?.phone || '',
+            email: userData.emergency_contact?.email || '',
+          },
+          preferences: {
+            language: userData.preferences?.language || 'english',
+            notifications: {
+              email: userData.preferences?.notifications?.email !== false,
+              sms: userData.preferences?.notifications?.sms !== false,
+              push: userData.preferences?.notifications?.push !== false,
+            },
+            accessibility: {
+              large_text: (userData.preferences as any)?.accessibility?.large_text || false,
+              high_contrast: (userData.preferences as any)?.accessibility?.high_contrast || false,
+              reduced_motion: (userData.preferences as any)?.accessibility?.reduced_motion || false,
+            },
+          },
+        })
+
+        initializedRef.current = true
+        userIdRef.current = user.id
+      } catch {
+        // Fall back to passed user data
+        reset({
+          full_name: user.full_name || '',
+          phone: user.phone || '',
+          date_of_birth: user.date_of_birth || '',
+          emergency_contact: {
+            name: user.emergency_contact?.name || '',
+            relationship: user.emergency_contact?.relationship || '',
+            phone: user.emergency_contact?.phone || '',
+            email: user.emergency_contact?.email || '',
+          },
+          preferences: {
+            language: user.preferences?.language || 'english',
+            notifications: {
+              email: user.preferences?.notifications?.email !== false,
+              sms: user.preferences?.notifications?.sms !== false,
+              push: user.preferences?.notifications?.push !== false,
+            },
+            accessibility: {
+              large_text: (user.preferences as any)?.accessibility?.large_text || false,
+              high_contrast: (user.preferences as any)?.accessibility?.high_contrast || false,
+              reduced_motion: (user.preferences as any)?.accessibility?.reduced_motion || false,
+            },
+          },
+        })
+
+        initializedRef.current = true
+        userIdRef.current = user.id
+      }
+    }
+
+    if (isOpen) {
+      initializeForm()
+    } else {
+      // Reset the initialized flag when modal closes
+      initializedRef.current = false
+      userIdRef.current = null
+    }
+  }, [isOpen, user?.id, reset]) // Only depend on isOpen and user.id, not the full user object
   const onSubmit = async (data: ProfileForm) => {
     setLoading(true)
     try {
-      const updatedUser = await updateUserProfile(user.id, {
-        full_name: data.full_name,
-        phone: data.phone || null,
-        date_of_birth: data.date_of_birth || null,
-        // Use addressData instead of form data for address fields
-        address_line_1: addressData.address_line_1 || null,
-        address_line_2: addressData.address_line_2 || null,
-        city: addressData.city || null,
-        state: addressData.state || null,
-        zip_code: addressData.zip_code || null,
-        country: addressData.country || null,
-        emergency_contact: data.emergency_contact || null,
-        preferences: data.preferences || {},
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+      // Build changedBy info for audit trail - the user is changing their own profile
+      const changedBy: ChangedByInfo = {
+        id: user.id,
+        email: user.email || '',
+        name: data.full_name || user.email || 'Unknown',
+        role: user.role || 'student',
+      }
+
+      const updatedUser = await updateUserProfile(
+        user.id,
+        {
+          full_name: data.full_name,
+          phone: data.phone || null,
+          date_of_birth: data.date_of_birth || null,
+          // Use addressData instead of form data for address fields
+          address_line_1: addressData.address_line_1 || null,
+          address_line_2: addressData.address_line_2 || null,
+          city: addressData.city || null,
+          state: addressData.state || null,
+          zip_code: addressData.zip_code || null,
+          country: addressData.country || null,
+          emergency_contact: data.emergency_contact || null,
+          preferences: data.preferences || {},
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+        changedBy,
+      )
       toast.success('Profile updated successfully!')
       // Cast the result back to Profile type since the database returns the correct format
       onUpdate(updatedUser as Profile)
@@ -245,10 +281,10 @@ export default function ProfileEditModal({
                     error={errors.date_of_birth?.message}
                   />
                   <div className="text-sm text-gray-600">
-                    <strong>Email:</strong> {currentUser.email} (Cannot be changed)
+                    <strong>Email:</strong> {user.email} (Cannot be changed)
                   </div>
                   <div className="text-sm text-gray-600">
-                    <strong>Student ID:</strong> {currentUser.student_id} (System Generated)
+                    <strong>Student ID:</strong> {user.student_id} (System Generated)
                   </div>
                 </div>
               </CardContent>

@@ -4733,7 +4733,9 @@ export default function TeacherDashboard() {
           user={
             {
               ...user,
-              // Override with address data from teacherProfile which has the latest address info
+              // Override with data from teacherProfile which has the latest info
+              phone: teacherProfile.phone,
+              date_of_birth: teacherProfile.date_of_birth,
               address_line_1: teacherProfile.address_line_1,
               address_line_2: teacherProfile.address_line_2,
               city: teacherProfile.city,

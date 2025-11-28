@@ -5,6 +5,8 @@ import toast from 'react-hot-toast'
 import { generateRoleId } from '../../lib/id-generator'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../../lib/iso-utils'
 import { encryptProfileFields, decryptProfileFields } from '../../lib/encryption'
+import { logEncryptedFieldChanges, type ChangedByInfo } from '../../lib/api/auditTrail'
+import { usePermissions } from '../../hooks/usePermissions'
 // import AddressForm from '../forms/AddressForm'
 
 // Simple password hashing function (for development - use bcrypt in production)
@@ -82,6 +84,7 @@ export default function UserFormModal({
   mode,
 }: UserFormModalProps) {
   const [loading, setLoading] = useState(false)
+  const { currentUser, getUserRole } = usePermissions()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -314,6 +317,26 @@ export default function UserFormModal({
           await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
           throw new Error(`Profile creation error: ${profileError.message}`)
         }
+
+        // Log audit trail for user creation (encrypted fields)
+        if (currentUser) {
+          const changedBy: ChangedByInfo = {
+            id: currentUser.id || '',
+            email: currentUser.email || '',
+            name: currentUser.full_name || currentUser.email || 'Unknown',
+            role: getUserRole() || 'admin',
+          }
+
+          await logEncryptedFieldChanges(
+            'profiles',
+            authData.user.id,
+            null, // No old data for create
+            encryptedProfileData as Record<string, unknown>,
+            changedBy,
+            'CREATE',
+          )
+        }
+
         toast.success('User created successfully!')
       } else {
         // Normalize country and state codes to proper ISO format
@@ -359,6 +382,13 @@ export default function UserFormModal({
         // Encrypt sensitive profile fields before updating
         const encryptedUpdateData = encryptProfileFields(updateData)
 
+        // Fetch current profile data before update for audit trail comparison
+        const { data: currentProfileData } = await supabaseAdmin
+          .from('profiles')
+          .select('*')
+          .eq('id', user!.id)
+          .single()
+
         const { data: updatedData, error: profileError } = await supabaseAdmin
           .from('profiles')
           .update(encryptedUpdateData)
@@ -374,6 +404,29 @@ export default function UserFormModal({
         if (!updatedData) {
           console.error('No data returned after update for user:', user!.id)
           throw new Error('Update failed: No data returned')
+        }
+
+        // Log audit trail for encrypted field changes
+        if (currentUser && currentProfileData) {
+          const changedBy: ChangedByInfo = {
+            id: currentUser.id || '',
+            email: currentUser.email || '',
+            name: currentUser.full_name || currentUser.email || 'Unknown',
+            role: getUserRole() || 'admin',
+          }
+
+          // Decrypt old data for proper comparison (avoid false positives from encryption differences)
+          const decryptedOldData = decryptProfileFields(currentProfileData)
+
+          // Log changes - compare decrypted old data with plaintext new data (before encryption)
+          await logEncryptedFieldChanges(
+            'profiles',
+            user!.id,
+            decryptedOldData as Record<string, unknown>,
+            updateData as Record<string, unknown>,
+            changedBy,
+            'UPDATE',
+          )
         }
 
         toast.success('User updated successfully!')

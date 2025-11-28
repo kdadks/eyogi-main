@@ -54,6 +54,7 @@ const ComplianceManagement = lazy(() => import('./components/admin/ComplianceMan
 const InvoiceManagement = lazy(() => import('./components/admin/InvoiceManagement'))
 const PaymentManagement = lazy(() => import('./components/admin/PaymentManagement'))
 const GDPRDeletionManagement = lazy(() => import('./components/admin/GDPRDeletionManagement'))
+const AuditTrailManagement = lazy(() => import('./components/admin/AuditTrailManagement'))
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -187,6 +188,7 @@ function App() {
               <Route path="invoice" element={<InvoiceManagement />} />
               <Route path="payment" element={<PaymentManagement />} />
               <Route path="gdpr" element={<GDPRDeletionManagement />} />
+              <Route path="audit-trail" element={<AuditTrailManagement />} />
             </Route>
             {/* Detail pages */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />

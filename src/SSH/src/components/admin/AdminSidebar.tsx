@@ -19,6 +19,7 @@ import {
   DocumentTextIcon,
   CreditCardIcon,
   ShieldExclamationIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -155,6 +156,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       icon: ShieldExclamationIcon,
       permission: { resource: 'compliance', action: 'read' },
       adminOnly: true, // Only admin and super_admin can manage GDPR requests
+    },
+    {
+      name: 'Audit Trail',
+      href: '/admin/audit-trail',
+      icon: ClockIcon,
+      permission: { resource: 'compliance', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can view audit trail
     },
   ]
   const filteredNavigation = navigation.filter((item) => {

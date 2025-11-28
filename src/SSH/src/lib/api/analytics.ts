@@ -1042,29 +1042,61 @@ export async function getGurukulAnalytics(dateRange: DateRange): Promise<Gurukul
 
     const { data: courses } = await supabaseAdmin.from('courses').select('id, gurukul_id')
 
+    // Fetch enrollments with course_id to join with courses manually
     const { data: enrollments } = await supabaseAdmin
       .from('enrollments')
-      .select('*, course:courses(gurukul_id)')
+      .select('id, course_id, student_id, status')
 
-    const { data: certificates } = await supabaseAdmin
-      .from('certificates')
-      .select('*, course:courses(gurukul_id)')
+    const { data: certificates } = await supabaseAdmin.from('certificates').select('id, course_id')
 
     const { data: batchStudents } = await supabaseAdmin
       .from('batch_students')
       .select('student_id, batch:batches(gurukul_id)')
 
+    // Create a map of course_id to gurukul_id for efficient lookup
+    const courseGurukulMap = new Map<string, string>()
+    ;(courses || []).forEach((course: any) => {
+      if (course.id && course.gurukul_id) {
+        courseGurukulMap.set(course.id, course.gurukul_id)
+      }
+    })
+
     const gurukulPerformance = (gurukuls || []).map((gurukul: any) => {
       const gurukulCourses = courses?.filter((c: any) => c.gurukul_id === gurukul.id) || []
-      const gurukulEnrollments =
-        enrollments?.filter((e: any) => e.course?.gurukul_id === gurukul.id) || []
-      const gurukulCertificates =
-        certificates?.filter((c: any) => c.course?.gurukul_id === gurukul.id) || []
 
-      const studentIds = new Set()
+      // Get course IDs for this gurukul
+      const gurukulCourseIds = new Set(gurukulCourses.map((c: any) => c.id))
+
+      // Filter enrollments by checking if course_id belongs to this gurukul
+      const gurukulEnrollments =
+        enrollments?.filter((e: any) => {
+          if (!e.course_id) return false
+          const courseGurukulId = courseGurukulMap.get(e.course_id)
+          return courseGurukulId === gurukul.id
+        }) || []
+
+      // Filter certificates similarly
+      const gurukulCertificates =
+        certificates?.filter((c: any) => {
+          if (!c.course_id) return false
+          const courseGurukulId = courseGurukulMap.get(c.course_id)
+          return courseGurukulId === gurukul.id
+        }) || []
+
+      // Get unique students from both batch_students and enrollments
+      const studentIds = new Set<string>()
+
+      // Add students from batch_students
       batchStudents?.forEach((bs: any) => {
-        if (bs.batch?.gurukul_id === gurukul.id) {
+        if (bs.batch?.gurukul_id === gurukul.id && bs.student_id) {
           studentIds.add(bs.student_id)
+        }
+      })
+
+      // Also add students from enrollments for this gurukul
+      gurukulEnrollments.forEach((e: any) => {
+        if (e.student_id) {
+          studentIds.add(e.student_id)
         }
       })
 

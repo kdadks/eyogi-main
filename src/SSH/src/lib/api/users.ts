@@ -5,6 +5,7 @@ import type { Course } from '../../types'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
 import { generateStudentId } from '../id-generator'
 import { encryptProfileFields, decryptProfileFields } from '../encryption'
+import { logEncryptedFieldChanges, type ChangedByInfo } from './auditTrail'
 type Profile = Database['public']['Tables']['profiles']['Row'] & {
   grade?: string
   address_line_1?: string
@@ -175,7 +176,15 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
 export async function updateUserProfile(
   userId: string,
   updates: Database['public']['Tables']['profiles']['Update'],
+  changedBy?: ChangedByInfo,
 ): Promise<Profile> {
+  // Get current profile data for audit trail comparison
+  const { data: currentProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
   // Normalize country and state codes to ISO format if provided
   let normalizedUpdates = { ...updates }
 
@@ -205,6 +214,25 @@ export async function updateUserProfile(
     .single()
   if (error) {
     throw new Error('Failed to update user profile')
+  }
+
+  // Log audit trail for encrypted field changes
+  if (changedBy && currentProfile) {
+    try {
+      // Decrypt old data and use plaintext new data for proper comparison
+      const decryptedOldData = decryptProfileFields(currentProfile)
+      await logEncryptedFieldChanges(
+        'profiles',
+        userId,
+        decryptedOldData as Record<string, unknown>,
+        normalizedUpdates as Record<string, unknown>,
+        changedBy,
+        'UPDATE',
+      )
+    } catch (auditError) {
+      console.error('Failed to log audit trail:', auditError)
+      // Don't fail the update if audit trail fails
+    }
   }
 
   // Invalidate user caches
