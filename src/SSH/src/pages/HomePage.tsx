@@ -177,18 +177,49 @@ export default function HomePage() {
         {/* Hero Section */}
         <section
           id="hero"
-          className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section"
+          className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section min-h-[600px] lg:min-h-[700px]"
         >
+          {/* Sunrise Effect Background */}
+          <div className="sunrise-bg"></div>
+          
+          {/* Horizon Glow */}
+          <div className="sunrise-horizon-glow"></div>
+          
+          {/* Sun */}
+          <div className="sunrise-sun"></div>
+          
+          {/* Light Rays */}
+          <div className="sunrise-rays">
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+          </div>
+          
+          {/* Floating Clouds */}
+          <div className="sunrise-cloud sunrise-cloud-1"></div>
+          <div className="sunrise-cloud sunrise-cloud-2"></div>
+          <div className="sunrise-cloud sunrise-cloud-3"></div>
+          
           {/* Enhanced Glossy Glass Background Layers */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-200/30 via-orange-100/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-200/30 via-orange-100/20 to-transparent z-[3]"></div>
           {/* Glossy Shine Effect */}
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 via-transparent to-transparent"></div>
-          <div className="absolute inset-0 backdrop-blur-[2px] bg-white/15"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 via-transparent to-transparent z-[3]"></div>
+          <div className="absolute inset-0 backdrop-blur-[2px] bg-white/15 z-[3]"></div>
           {/* Additional Gloss Layer */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/20"></div>
-          <div className="relative container-max section-padding">
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/20 z-[3]"></div>
+          
+          <div className="relative container-max section-padding z-[4] sunrise-content">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="space-y-6 lg:space-y-8 text-center lg:text-left">
                 <div className="space-y-4 px-4 sm:px-0">

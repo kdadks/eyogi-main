@@ -174,14 +174,40 @@ export default function AboutPage() {
         <div className="min-h-screen bg-gray-50">
           {/* Hero Section */}
           <section
-            className="bg-gradient-to-r from-orange-50 to-red-50"
+            className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section min-h-[400px]"
             style={getBackgroundStyle(
               cmsData.hero_bg_type,
               cmsData.hero_bg_color,
               cmsData.hero_bg_image_url,
             )}
           >
-            <div className="container-max section-padding">
+            {/* Sunrise Effect Background */}
+            <div className="sunrise-bg"></div>
+            <div className="sunrise-horizon-glow"></div>
+            <div className="sunrise-sun"></div>
+            <div className="sunrise-rays">
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+            </div>
+            <div className="sunrise-cloud sunrise-cloud-1"></div>
+            <div className="sunrise-cloud sunrise-cloud-2"></div>
+            <div className="sunrise-cloud sunrise-cloud-3"></div>
+
+            {/* Glossy Glass Background Layers */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
+
+            <div className="relative container-max section-padding z-[4] sunrise-content">
               <div className="text-center max-w-4xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
                   {cmsData.hero_title}{' '}

@@ -227,8 +227,34 @@ export default function CourseDetailPage() {
       />
       <div className="bg-gray-50 pb-12">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-orange-50 to-red-50">
-          <div className="max-w-[1200px] mx-auto py-12 px-6 sm:px-8 lg:px-10">
+        <div className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section min-h-[400px]">
+          {/* Sunrise Effect Background */}
+          <div className="sunrise-bg"></div>
+          <div className="sunrise-horizon-glow"></div>
+          <div className="sunrise-sun"></div>
+          <div className="sunrise-rays">
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+            <div className="sunrise-ray"></div>
+          </div>
+          <div className="sunrise-cloud sunrise-cloud-1"></div>
+          <div className="sunrise-cloud sunrise-cloud-2"></div>
+          <div className="sunrise-cloud sunrise-cloud-3"></div>
+
+          {/* Glossy Glass Background Layers */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
+
+          <div className="relative max-w-[1200px] mx-auto py-12 px-6 sm:px-8 lg:px-10 z-[4] sunrise-content">
             <div className="grid lg:grid-cols-3 gap-12">
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex flex-wrap items-center gap-3 sm:gap-6">
