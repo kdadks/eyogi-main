@@ -54,14 +54,11 @@ const AttendanceManagement: React.FC = () => {
   const canViewReports = canCreate
 
   const fetchBatches = useCallback(async () => {
-    console.log('AttendanceManagement: Fetching batches for profile:', profile)
-    console.log('AttendanceManagement: canCreate permission:', canCreate)
     try {
       const batchData = await getBatches({
         teacher_id: profile?.role === 'teacher' ? profile.id : undefined,
         is_active: true,
       })
-      console.log('AttendanceManagement: Received batches:', batchData)
       setBatches(batchData)
 
       // Auto-select first batch if available
@@ -194,15 +191,6 @@ const AttendanceManagement: React.FC = () => {
       </div>
     )
   }
-
-  // Debug logging
-  console.log('AttendanceManagement: Render state:', {
-    canCreate,
-    selectedBatch: selectedBatch?.name,
-    profile: profile?.role,
-    loading,
-    summary,
-  })
 
   return (
     <div className="space-y-6">
@@ -347,38 +335,32 @@ const AttendanceManagement: React.FC = () => {
       </Card>
 
       {/* Mark Attendance Button - Prominent placement */}
-      {(() => {
-        console.log('AttendanceManagement: Button visibility check:', {
-          canCreate,
-          hasSelectedBatch: !!selectedBatch,
-        })
-        return canCreate && selectedBatch ? (
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Ready to Mark Attendance?
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Mark attendance for {selectedBatch.name} -{' '}
-                    {new Date(selectedDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <Button
-                  onClick={handleMarkAttendance}
-                  variant="primary"
-                  size="lg"
-                  className="shadow-lg"
-                >
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  Mark Attendance
-                </Button>
+      {canCreate && selectedBatch && (
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Ready to Mark Attendance?
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Mark attendance for {selectedBatch.name} -{' '}
+                  {new Date(selectedDate).toLocaleDateString()}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ) : null
-      })()}
+              <Button
+                onClick={handleMarkAttendance}
+                variant="primary"
+                size="lg"
+                className="shadow-lg"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Mark Attendance
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistics Cards */}
       {summary && (

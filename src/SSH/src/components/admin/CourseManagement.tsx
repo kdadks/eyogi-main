@@ -71,11 +71,8 @@ function parseHtmlToOutcomes(htmlContent: string): string[] {
  * Recreates the bulleted list format that was originally used
  */
 function outcomesToHtml(outcomes: string[]): string {
-  console.log('🔵 outcomesToHtml - START', { outcomesCount: outcomes?.length || 0 })
-
   // Safety checks
   if (!outcomes || !Array.isArray(outcomes) || outcomes.length === 0) {
-    console.log('🟡 outcomesToHtml - Empty or invalid outcomes, returning empty string')
     return ''
   }
 
@@ -88,7 +85,6 @@ function outcomesToHtml(outcomes: string[]): string {
     })
 
     if (validOutcomes.length === 0) {
-      console.log('🟡 outcomesToHtml - No valid outcomes after filtering')
       return ''
     }
 
@@ -102,10 +98,6 @@ function outcomesToHtml(outcomes: string[]): string {
       .join('')
 
     const result = `<ul>${listItems}</ul>`
-    console.log('🟢 outcomesToHtml - COMPLETED', {
-      validOutcomesCount: validOutcomes.length,
-      resultLength: result.length,
-    })
     return result
   } catch (error) {
     console.error('🔴 outcomesToHtml - FATAL ERROR:', error)
@@ -254,19 +246,6 @@ export default function CourseManagement() {
     loadData()
   }, [])
 
-  // Debug useEffect to track modal state changes
-  useEffect(() => {
-    if (showEditModal && editingCourse) {
-      console.log('🟣 EDIT MODAL OPENED - useEffect triggered')
-      console.log('🟣 Editing course:', {
-        id: editingCourse.id,
-        title: editingCourse.title,
-        learningOutcomesCount: editingCourse.learning_outcomes?.length || 0,
-      })
-      console.log('🟣 FormData learning outcomes count:', formData.learning_outcomes?.length || 0)
-    }
-  }, [showEditModal, editingCourse])
-
   // Validate slug for uniqueness
   useEffect(() => {
     const validateSlug = async () => {
@@ -294,7 +273,6 @@ export default function CourseManagement() {
 
   // Handle learning outcomes change - update both editor value and formData
   const handleLearningOutcomesChange = useCallback((value: string) => {
-    console.log('🟡 Learning outcomes editor changed')
     setLearningOutcomesEditorValue(value)
     const newOutcomes = parseHtmlToOutcomes(value)
     setFormData((prevFormData) => ({
@@ -431,15 +409,9 @@ export default function CourseManagement() {
     }
   }
   const handleEditCourse = (course: Course) => {
-    console.log('🔵 handleEditCourse - START', { courseId: course.id, courseTitle: course.title })
-    console.log('🔵 Learning outcomes count:', course.learning_outcomes?.length || 0)
-    console.log('🔵 Learning outcomes sample:', course.learning_outcomes?.slice(0, 2))
-
     try {
-      console.log('🔵 Setting editingCourse...')
       setEditingCourse(course)
 
-      console.log('🔵 Preparing formData...')
       const formDataToSet = {
         gurukul_id: course.gurukul_id,
         course_number: course.course_number,
@@ -476,15 +448,11 @@ export default function CourseManagement() {
         // Note: teacher_id removed - use course_assignments
       }
 
-      console.log('🔵 Setting formData...')
       setFormData(formDataToSet)
 
-      console.log('🔵 Opening edit modal...')
       setShowEditModal(true)
-
-      console.log('🟢 handleEditCourse - COMPLETED')
     } catch (error) {
-      console.error('🔴 handleEditCourse - ERROR:', error)
+      console.error('handleEditCourse - ERROR:', error)
     }
   }
   const handleUpdateCourse = async () => {

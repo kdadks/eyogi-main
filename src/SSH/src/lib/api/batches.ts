@@ -1115,7 +1115,6 @@ async function updateBatchOverallProgress(batchId: string): Promise<void> {
       }
     }
 
-    console.log('Updating batch with data:', updateData)
     const { error: updateError } = await supabaseAdmin
       .from('batches')
       .update(updateData)

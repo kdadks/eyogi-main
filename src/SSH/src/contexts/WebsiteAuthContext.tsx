@@ -115,14 +115,12 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         // Load user permissions from database
         try {
           const permissions = await getUserPermissions(userId)
-          console.log('Raw permissions from database:', permissions)
           const permissionMap = permissions
             .map((perm) => ({
               resource: perm.permission?.resource || '',
               action: perm.permission?.action || '',
             }))
             .filter((perm) => perm.resource && perm.action)
-          console.log('Processed permission map:', permissionMap)
           setUserPermissions(permissionMap)
         } catch (error) {
           console.warn('Failed to load user permissions:', error)
@@ -178,23 +176,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
 
       // Load user permissions from database
       try {
-        console.log('Loading permissions for user ID (signIn):', userData.id)
-        console.log('User profile loaded:', {
-          id: userData.id,
-          email: userData.email,
-          role: userData.role,
-        })
-
         const permissions = await getUserPermissions(userData.id)
-        console.log('Raw permissions from database (signIn):', permissions)
-
-        if (permissions.length === 0) {
-          console.warn('No permissions found for user:', userData.id)
-          console.warn('This means either:')
-          console.warn('1. No permissions were granted to this user in the database')
-          console.warn('2. The user_id in user_permissions table does not match this user ID')
-          console.warn('3. The permissions are inactive (is_active = false)')
-        }
 
         const permissionMap = permissions
           .map((perm) => ({
@@ -202,11 +184,6 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
             action: perm.permission?.action || '',
           }))
           .filter((perm) => perm.resource && perm.action)
-        console.log('Processed permission map (signIn):', permissionMap)
-        console.log(`Available permissions for ${fullUserProfile.role}:`)
-        permissionMap.forEach((perm, index) => {
-          console.log(`  ${index + 1}. ${perm.resource}.${perm.action}`)
-        })
         setUserPermissions(permissionMap)
       } catch (error) {
         console.error('Failed to load user permissions during sign in:', error)
@@ -337,15 +314,6 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     const hasDbPermission = userPermissions.some(
       (perm) => perm.resource === resource && perm.action === action,
     )
-
-    // Debug logging for parent, student, and teacher roles
-    if (user.role === 'parent' || user.role === 'student' || user.role === 'teacher') {
-      console.log(`Permission check for ${resource}.${action}:`, {
-        userPermissions,
-        hasDbPermission,
-        userRole: user.role,
-      })
-    }
 
     return hasDbPermission
   }

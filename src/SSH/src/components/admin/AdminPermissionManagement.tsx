@@ -100,7 +100,6 @@ export default function AdminPermissionManagement() {
   const loadPermissions = async () => {
     try {
       setIsLoadingData(true)
-      console.log('Loading permissions from database...')
 
       // Load all permissions from database
       const { data: permissionsData, error: permError } = await supabaseAdmin
@@ -113,11 +112,6 @@ export default function AdminPermissionManagement() {
         throw permError
       }
 
-      console.log(
-        `Loaded ${permissionsData?.length || 0} permissions from database:`,
-        permissionsData,
-      )
-
       // Load all role permissions with menu visibility
       const { data: rolePermData, error: roleError } = await supabaseAdmin
         .from('role_permissions')
@@ -127,8 +121,6 @@ export default function AdminPermissionManagement() {
         console.error('Error loading role permissions:', roleError)
         throw roleError
       }
-
-      console.log(`Loaded ${rolePermData?.length || 0} role permissions:`, rolePermData)
 
       // Convert ALL database permissions to UI format
       const uiPermissions: Permission[] = (permissionsData || []).map((perm) => ({
@@ -140,7 +132,6 @@ export default function AdminPermissionManagement() {
         action: perm.action,
       }))
 
-      console.log(`Converted ${uiPermissions.length} UI permissions:`, uiPermissions)
       setPermissions(uiPermissions)
 
       // Group role permissions by role
@@ -171,8 +162,6 @@ export default function AdminPermissionManagement() {
         },
       )
 
-      console.log('Role permissions map:', rolePermissionMap)
-      console.log('Menu visibility map:', menuVisibilityMap)
       setRolePermissions(rolePermissionMap)
       setMenuVisibility(menuVisibilityMap)
 

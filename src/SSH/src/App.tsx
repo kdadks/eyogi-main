@@ -72,14 +72,6 @@ function App() {
   const isAdminRoute = location.pathname.startsWith('/admin')
   const isDashboardRoute = location.pathname.startsWith('/dashboard')
 
-  // Debug logging
-  useEffect(() => {
-    console.log('App.tsx - Current path:', location.pathname)
-    console.log('App.tsx - isAdminRoute:', isAdminRoute)
-    console.log('App.tsx - isDashboardRoute:', isDashboardRoute)
-    console.log('App.tsx - Should show banner:', !isAdminRoute && !isDashboardRoute)
-  }, [location.pathname, isAdminRoute, isDashboardRoute])
-
   // Load cache testing utilities in PRODUCTION only
   useEffect(() => {
     if (import.meta.env.PROD) {

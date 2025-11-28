@@ -113,8 +113,6 @@ export default function TeacherDetailView() {
       // Get the file URL
       const publicUrl = uploadResult.url
 
-      console.log('Avatar upload complete. URL:', publicUrl)
-
       if (!publicUrl) {
         throw new Error('Upload failed - no URL returned')
       }
@@ -124,8 +122,6 @@ export default function TeacherDetailView() {
 
       // Update local state
       setTeacher((prev) => (prev ? { ...prev, avatar_url: publicUrl } : null))
-
-      console.log('Avatar URL saved to profile:', publicUrl)
 
       toast.success('Photo uploaded successfully!')
 
@@ -150,18 +146,15 @@ export default function TeacherDetailView() {
       const avatarUrl = teacher.avatar_url
 
       // First, find the media file record by URL
-      console.log('Looking for media file with URL:', avatarUrl)
       const { data: mediaFiles } = await import('../../lib/supabase').then((mod) =>
         mod.supabaseAdmin.from('media_files').select('id').eq('file_url', avatarUrl).single(),
       )
 
       // Delete from media_files table if found
       if (mediaFiles?.id) {
-        console.log('Deleting media file record:', mediaFiles.id)
         await deleteMediaFile(mediaFiles.id)
       } else {
         // If not in media_files table, just delete from UploadThing
-        console.log('Media file not found in database, deleting from UploadThing only')
         await deleteFromUploadThing(avatarUrl)
       }
 

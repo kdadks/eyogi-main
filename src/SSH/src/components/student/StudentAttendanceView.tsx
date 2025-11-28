@@ -45,16 +45,13 @@ const StudentAttendanceView: React.FC<StudentAttendanceViewProps> = ({ studentId
 
   const fetchAttendanceSummary = async () => {
     if (!effectiveStudentId) {
-      console.log('StudentAttendanceView: No student ID available')
       setLoading(false)
       return
     }
 
-    console.log('StudentAttendanceView: Fetching attendance for student:', effectiveStudentId)
     setLoading(true)
     try {
       const data = await getStudentAttendanceSummary(effectiveStudentId)
-      console.log('StudentAttendanceView: Received attendance data:', data)
       setSummaries(data)
 
       // Auto-select first batch if available
@@ -370,9 +367,7 @@ const StudentAttendanceView: React.FC<StudentAttendanceViewProps> = ({ studentId
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {record.marked_by_user?.full_name || 'Unknown'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {record.notes || '-'}
-                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{record.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -62,11 +62,6 @@ export function usePermissions() {
           }
         })
 
-        console.log('[usePermissions] Loaded for role:', profile.role)
-        console.log('[usePermissions] Menu visibility map:', visibilityMap)
-        console.log('[usePermissions] Permissions map:', permissionsMap)
-        console.log('[usePermissions] Raw data from database:', data)
-
         setMenuVisibilityMap(visibilityMap)
         setRolePermissionsMap(permissionsMap)
       } catch (error) {
@@ -101,8 +96,6 @@ export function usePermissions() {
       // For all other roles (including business_admin), check database permissions
       const key = `${resource.toLowerCase()}.${action}`
       const hasPermission = rolePermissionsMap[key] ?? false
-
-      console.log(`[canAccessResource] Checking ${key}:`, hasPermission, { rolePermissionsMap })
 
       return hasPermission
     }
@@ -147,7 +140,6 @@ export function usePermissions() {
     // Check menu visibility from database
     const key = `${resource}.${action}`
     const visible = menuVisibilityMap[key] ?? false
-    console.log(`[canShowInMenu] Checking ${key}: ${visible}`, { menuVisibilityMap })
     return visible
   }
 

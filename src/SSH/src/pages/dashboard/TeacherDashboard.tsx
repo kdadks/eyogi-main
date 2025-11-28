@@ -166,19 +166,6 @@ const generateSlug = (text: string): string => {
 export default function TeacherDashboard() {
   const { user, canAccess } = useWebsiteAuth()
 
-  // Debug: Check if teacher_code is available
-  React.useEffect(() => {
-    if (user) {
-      console.log('Teacher Dashboard - User object:', {
-        id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        teacher_code: user.teacher_code,
-        role: user.role,
-      })
-    }
-  }, [user])
-
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([])
@@ -335,25 +322,15 @@ export default function TeacherDashboard() {
     if (!showTemplatePreviewModal) return
 
     const generatePreview = async () => {
-      console.log(
-        'generatePreview called. showTemplatePreviewModal:',
-        showTemplatePreviewModal,
-        'allTemplates length:',
-        allTemplates.length,
-        'currentTemplateIndex:',
-        currentTemplateIndex,
-      )
       if (allTemplates.length > currentTemplateIndex && allTemplates[currentTemplateIndex]) {
         // Skip preview generation for image-based templates (they already have images)
         if (allTemplates[currentTemplateIndex].template_data?.template_image) {
-          console.log('Template is image-based, skipping preview generation')
           setTemplatePreviewUrl(null)
           return
         }
 
         setLoadingPreview(true)
         try {
-          console.log('Generating preview with data...')
           const sampleData = {
             studentName: 'Sample Student Name',
             studentId: 'STU-001',
@@ -365,15 +342,7 @@ export default function TeacherDashboard() {
             verificationCode: 'VERIFY123',
           }
           const currentTemplate = allTemplates[currentTemplateIndex]
-          console.log('Sample data:', sampleData)
-          console.log('Current template:', currentTemplate)
           const preview = await generateCertificatePreview(sampleData, currentTemplate)
-          console.log(
-            'Preview generated successfully, type:',
-            typeof preview,
-            'length:',
-            preview?.length,
-          )
           setTemplatePreviewUrl(preview)
         } catch (error) {
           console.error('Failed to generate preview:', error)
@@ -389,7 +358,6 @@ export default function TeacherDashboard() {
     try {
       // Invalidate enrollment caches to ensure fresh data
       queryCache.invalidatePattern('enrollments:.*')
-      console.log('Starting dashboard data load...')
 
       const [
         coursesData,
@@ -412,30 +380,17 @@ export default function TeacherDashboard() {
         getCompletedBatchStudents(user!.id),
         getCertificatesFromTable(),
       ])
-      console.log('Dashboard data loaded:', {
-        coursesData: coursesData.length,
-        assignmentsData: assignmentsData.length,
-      })
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setPendingEnrollments(pendingEnrollmentsData)
 
-      // Debug logging
-      console.log('Dashboard Data Loaded:', {
-        totalEnrollments: enrollmentsData.length,
-        pendingEnrollments: pendingEnrollmentsData.length,
-        courses: coursesData.length,
-      })
-
       setGurukuls(gurukulData)
       setCertificateAssignments(assignmentsData)
-      console.log('Certificate assignments loaded:', assignmentsData.length, assignmentsData)
 
       // Fetch all available templates
       try {
         const templatesData = await getCertificateTemplates()
         setAllTemplates(templatesData)
-        console.log('All templates loaded:', templatesData.length, templatesData)
       } catch (error) {
         console.error('Error loading templates:', error)
         setAllTemplates([])
@@ -669,7 +624,6 @@ export default function TeacherDashboard() {
   }
 
   const handleIndividualCertificate = (student: BatchStudentWithInfo) => {
-    console.log('Issuing certificate for student:', student)
     // Implementation for individual certificate issuance
   }
 
@@ -1243,9 +1197,6 @@ export default function TeacherDashboard() {
                 ]
                   .filter((tab) => {
                     const hasPermission = canAccess(tab.permission.resource, tab.permission.action)
-                    console.log(
-                      `Teacher tab "${tab.name}" - ${tab.permission.resource}.${tab.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
-                    )
                     return hasPermission
                   })
                   .map((tab, index) => (
@@ -1353,9 +1304,6 @@ export default function TeacherDashboard() {
                     const hasPermission = canAccess(
                       stat.permission.resource,
                       stat.permission.action,
-                    )
-                    console.log(
-                      `Teacher stat "${stat.title}" - ${stat.permission.resource}.${stat.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
                     )
                     return hasPermission
                   })
@@ -2335,12 +2283,7 @@ export default function TeacherDashboard() {
                 <Card
                   className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
                   onClick={() => {
-                    console.log(
-                      'Available Templates card clicked. allTemplates:',
-                      allTemplates.length,
-                    )
                     if (allTemplates.length > 0) {
-                      console.log('Opening template preview modal...')
                       setCurrentTemplateIndex(0)
                       setShowTemplatePreviewModal(true)
                     }
@@ -5249,7 +5192,6 @@ const CreateBatchModal: React.FC<CreateBatchModalProps> = ({ teacherId, onClose,
         progress_percentage: 0,
       }
 
-      console.log('Creating batch with data:', batchData)
       const newBatch = await createBatch(batchData)
 
       // Assign the selected course to the batch

@@ -61,25 +61,17 @@ export default function TeacherStudentManagement() {
 
   const loadData = useCallback(async () => {
     if (!user) {
-      console.log('No user found')
       return
     }
 
     setLoading(true)
     try {
-      console.log('Loading data for teacher:', user.id)
-
       const [teacherCourses, teacherEnrollments, allUsers, teacherBatches] = await Promise.all([
         getTeacherCourses(user.id),
         getTeacherEnrollments(user.id),
         getAllUsers(),
         getBatches({ teacher_id: user.id }),
       ])
-
-      console.log('Teacher courses:', teacherCourses.length)
-      console.log('Teacher enrollments:', teacherEnrollments.length)
-      console.log('All users:', allUsers.length)
-      console.log('Teacher batches:', teacherBatches.length)
 
       setCourses(teacherCourses)
       setBatches(teacherBatches)
@@ -88,7 +80,6 @@ export default function TeacherStudentManagement() {
       let relevantEnrollments = teacherEnrollments
 
       if (teacherEnrollments.length === 0 && teacherCourses.length > 0) {
-        console.log('Fetching enrollments based on course IDs')
         // Get enrollments for teacher's courses
         const courseIds = teacherCourses.map((c) => c.id)
         const { data: courseEnrollments } = await supabaseAdmin
@@ -109,7 +100,6 @@ export default function TeacherStudentManagement() {
             ...e,
             profiles: e.profiles ? decryptProfileFields(e.profiles) : null,
           })) || []
-        console.log('Course enrollments found:', relevantEnrollments.length)
       }
 
       // Get unique student IDs from enrollments
@@ -119,8 +109,6 @@ export default function TeacherStudentManagement() {
       const enrolledStudents = allUsers.filter(
         (user) => user.role === 'student' && studentIds.has(user.id),
       )
-
-      console.log('Enrolled students found:', enrolledStudents.length)
 
       // Enrich students with their enrollments (batches loaded separately)
       const enrichedStudents = enrolledStudents.map((student) => {

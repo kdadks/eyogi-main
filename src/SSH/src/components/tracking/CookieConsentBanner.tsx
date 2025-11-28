@@ -29,14 +29,10 @@ export default function CookieConsentBanner() {
     // Check if user has already given consent
     const existingConsent = getTrackingConsent()
 
-    console.log('CookieConsentBanner: Checking consent', existingConsent)
-
     // Show banner if analytics consent hasn't been explicitly set
     if (!existingConsent.timestamp || existingConsent.analytics === undefined) {
-      console.log('CookieConsentBanner: No consent found, showing banner')
       setShowBanner(true)
     } else {
-      console.log('CookieConsentBanner: Consent already given, not showing banner')
       setPreferences(existingConsent)
 
       // Setup tracking if consent was given
@@ -100,12 +96,11 @@ export default function CookieConsentBanner() {
               </div>
 
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  We value your privacy
-                </h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">We value your privacy</h3>
                 <p className="text-sm text-gray-600 mb-1">
-                  We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.
-                  By clicking "Accept All", you consent to our use of cookies.
+                  We use cookies to enhance your browsing experience, serve personalized content,
+                  and analyze our traffic. By clicking "Accept All", you consent to our use of
+                  cookies.
                 </p>
                 <button
                   onClick={() => window.open('/legal/privacy-policy', '_blank')}
@@ -161,12 +156,11 @@ export default function CookieConsentBanner() {
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">
-                        Essential Cookies
-                      </h4>
+                      <h4 className="font-semibold text-gray-900 mb-1">Essential Cookies</h4>
                       <p className="text-sm text-gray-600">
-                        These cookies are necessary for the website to function and cannot be switched off.
-                        They are usually only set in response to actions made by you such as setting your privacy preferences, logging in or filling in forms.
+                        These cookies are necessary for the website to function and cannot be
+                        switched off. They are usually only set in response to actions made by you
+                        such as setting your privacy preferences, logging in or filling in forms.
                       </p>
                     </div>
                     <div className="ml-4">
@@ -181,12 +175,11 @@ export default function CookieConsentBanner() {
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">
-                        Analytics Cookies
-                      </h4>
+                      <h4 className="font-semibold text-gray-900 mb-1">Analytics Cookies</h4>
                       <p className="text-sm text-gray-600">
-                        These cookies allow us to count visits and traffic sources so we can measure and improve the performance of our site.
-                        They help us understand which pages are the most and least popular and see how visitors move around the site.
+                        These cookies allow us to count visits and traffic sources so we can measure
+                        and improve the performance of our site. They help us understand which pages
+                        are the most and least popular and see how visitors move around the site.
                       </p>
                     </div>
                     <div className="ml-4">
@@ -213,11 +206,7 @@ export default function CookieConsentBanner() {
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSettings(false)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setShowSettings(false)}>
                   Cancel
                 </Button>
                 <Button
@@ -298,7 +287,8 @@ export function CookieSettings() {
             <div className="flex-1">
               <h4 className="font-semibold text-gray-900 mb-1">Analytics Cookies</h4>
               <p className="text-sm text-gray-600">
-                Help us understand how visitors interact with our website by collecting and reporting information anonymously.
+                Help us understand how visitors interact with our website by collecting and
+                reporting information anonymously.
               </p>
             </div>
             <div className="ml-4">
@@ -343,7 +333,8 @@ export function CookieSettings() {
 
       <div className="mt-6 text-sm text-gray-600">
         <p>
-          Last updated: {preferences.timestamp ? new Date(preferences.timestamp).toLocaleString() : 'Never'}
+          Last updated:{' '}
+          {preferences.timestamp ? new Date(preferences.timestamp).toLocaleString() : 'Never'}
         </p>
       </div>
     </div>

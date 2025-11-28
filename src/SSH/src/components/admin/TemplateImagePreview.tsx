@@ -104,7 +104,6 @@ export default function TemplateImagePreview({
 
     // Set the source - this will trigger the load/error events
     // Using public URL from Supabase storage
-    console.log('Loading template image from URL:', templateImage?.substring(0, 100) + '...')
     imgElement.src = templateImage
 
     // Cleanup

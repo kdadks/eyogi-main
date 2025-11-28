@@ -154,19 +154,9 @@ export default function ComplianceManagement() {
 
     try {
       if (modalMode === 'add') {
-        // Let's copy an existing item structure exactly and only change what we need
-        if (items.length > 0) {
-          console.log('✅ Copying structure from existing item:', items[0])
-        }
-
         // Only include actual database columns, not relations like 'form'
         // Use exact values from existing items to ensure constraint compatibility
         const existingItem = items.length > 0 ? items[0] : null
-        console.log('🔍 Using exact field values from existing item:', {
-          type: existingItem?.type,
-          target_role: existingItem?.target_role,
-          created_by: existingItem?.created_by,
-        })
 
         const itemData = {
           title: formData.title,
@@ -183,11 +173,8 @@ export default function ComplianceManagement() {
             : '00000000-0000-0000-0000-000000000000',
         }
 
-        console.log('Creating compliance item with data:', itemData)
-
         const result = await createComplianceItem(itemData)
 
-        console.log('Create result:', result)
         toast.success('Compliance item created successfully')
       } else if (modalMode === 'edit' && selectedItem) {
         await updateComplianceItem(selectedItem.id, {
@@ -873,11 +860,6 @@ function SubmissionsTab({
 
     setReviewing(true)
     try {
-      console.log('🔄 Starting review process...', {
-        submissionId: selectedSubmission.id,
-        action: reviewAction,
-      })
-
       // Get current user ID - in a real app, this would come from auth context
       // For now, pass null since we don't have a valid reviewer ID
       const reviewerId = null
@@ -887,8 +869,6 @@ function SubmissionsTab({
         action: reviewAction,
         rejection_reason: reviewAction === 'reject' ? rejectionReason : undefined,
       })
-
-      console.log('✅ Review completed:', result)
 
       toast.success(
         `Submission ${reviewAction === 'approve' ? 'approved' : 'rejected'} successfully`,

@@ -124,7 +124,6 @@ export default function StudentDashboard() {
   const handleCertificateDownload = useCallback(async (certificate: Certificate) => {
     try {
       setDownloadingCertificateId(certificate.id)
-      console.log('Starting certificate download for:', certificate.certificate_number)
 
       const pdfBlob = await downloadCertificatePDF(certificate)
 
@@ -139,7 +138,6 @@ export default function StudentDashboard() {
       window.URL.revokeObjectURL(url)
 
       toast.success('Certificate downloaded successfully')
-      console.log('Certificate downloaded:', certificate.certificate_number)
     } catch (error) {
       console.error('Error downloading certificate:', error)
       toast.error('Failed to download certificate. Please try again.')
@@ -236,9 +234,6 @@ export default function StudentDashboard() {
         const courseId = enrollment.course?.id || enrollment.course_id
         const progress = courseProgressData[courseId] || 0
         const isCompleted = progress >= 100
-        if (isCompleted) {
-          console.log(`✅ Course completed: ${enrollment.course?.title} with ${progress}% progress`)
-        }
         return isCompleted // Only count courses with 100% actual progress
       }).length
 
@@ -546,10 +541,6 @@ export default function StudentDashboard() {
       : []),
     // Removed separate settings tab - Profile tab now serves as settings
   ].filter((tab) => {
-    if (tab.id !== 'home') {
-      // Skip logging for dashboard tab since it's always available
-      console.log(`Student tab "${tab.name}" (${tab.id}): ${tab.available ? 'ALLOWED' : 'DENIED'}`)
-    }
     return tab.available
   })
 
@@ -907,9 +898,6 @@ export default function StudentDashboard() {
                       const hasPermission = canAccess(
                         stat.permission.resource,
                         stat.permission.action,
-                      )
-                      console.log(
-                        `Student stat "${stat.title}" - ${stat.permission.resource}.${stat.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
                       )
                       return hasPermission
                     })

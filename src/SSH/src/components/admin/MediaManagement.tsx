@@ -134,35 +134,24 @@ export default function MediaManagement() {
 
   // Handle file upload (placeholder implementation)
   const handleFileUpload = async (files: File[]) => {
-    console.log(
-      'handleFileUpload called with files:',
-      files.length,
-      files.map((f) => f.name),
-    )
     if (!files.length) {
-      console.log('No files provided to upload')
       return
     }
 
     setUploading(true)
-    console.log('Starting upload process...')
 
     try {
       // Upload files to UploadThing and save metadata to database
-      console.log('Starting upload process...')
       const results = await uploadFilesToUploadThing(files)
 
-      console.log('Upload successful:', results)
       toast.success(`Successfully uploaded ${files.length} file(s)`)
 
       // Close the dialog after successful upload
       setShowUploadDialog(false)
 
       // Refresh media list to show new files
-      console.log('Refreshing media list...')
       await loadMedia()
       await loadStats()
-      console.log('Media refresh complete')
     } catch (error) {
       console.error('Upload error:', error)
       toast.error(error instanceof Error ? error.message : 'Upload failed')
@@ -799,13 +788,8 @@ function UploadDialog({ onClose, onUpload, uploading }: UploadDialogProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('File select triggered', e.target.files)
     if (e.target.files) {
       const newFiles = Array.from(e.target.files)
-      console.log(
-        'New files selected:',
-        newFiles.map((f) => f.name),
-      )
 
       // Filter out duplicate files based on name and size
       const uniqueNewFiles = newFiles.filter(
@@ -816,18 +800,9 @@ function UploadDialog({ onClose, onUpload, uploading }: UploadDialogProps) {
           ),
       )
 
-      console.log(
-        'Unique new files:',
-        uniqueNewFiles.map((f) => f.name),
-      )
-
       if (uniqueNewFiles.length > 0) {
         setSelectedFiles((prev) => {
           const updated = [...prev, ...uniqueNewFiles]
-          console.log(
-            'Updated selected files:',
-            updated.map((f) => f.name),
-          )
           return updated
         })
         toast.success(`Added ${uniqueNewFiles.length} file(s)`)
@@ -865,15 +840,8 @@ function UploadDialog({ onClose, onUpload, uploading }: UploadDialogProps) {
   }
 
   const handleUpload = () => {
-    console.log('Upload button clicked, selected files:', selectedFiles.length)
     if (selectedFiles.length > 0) {
-      console.log(
-        'Calling onUpload with files:',
-        selectedFiles.map((f) => f.name),
-      )
       onUpload(selectedFiles)
-    } else {
-      console.log('No files selected for upload')
     }
   }
 

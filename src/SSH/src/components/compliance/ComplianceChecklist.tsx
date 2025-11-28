@@ -68,7 +68,6 @@ export default function ComplianceChecklist({
     }
 
     try {
-      console.log('Marking compliance as complete:', { itemId: item.id, userId })
       await markComplianceAsComplete(item.id, userId)
       toast.success(
         'Thank you for completing this compliance item. Admin will check and provide confirmation.',

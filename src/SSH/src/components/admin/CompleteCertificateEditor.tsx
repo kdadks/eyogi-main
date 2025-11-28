@@ -79,7 +79,9 @@ export default function CompleteCertificateEditor({
   // Fields
   const [fields, setFields] = useState<DynamicField[]>([])
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
-  const [selectedElement, setSelectedElement] = useState<'secretary' | 'chancellor' | 'text' | null>(null)
+  const [selectedElement, setSelectedElement] = useState<
+    'secretary' | 'chancellor' | 'text' | null
+  >(null)
 
   // Signatures
   const [secretarySignature, setSecretarySignature] = useState<SignatureBox>({
@@ -225,7 +227,7 @@ export default function CompleteCertificateEditor({
   // Handle signature image upload
   const handleSignatureUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: 'secretary' | 'chancellor'
+    type: 'secretary' | 'chancellor',
   ) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -249,7 +251,7 @@ export default function CompleteCertificateEditor({
   }
 
   // Add preset field
-  const addField = (preset: typeof PRESET_FIELDS[0]) => {
+  const addField = (preset: (typeof PRESET_FIELDS)[0]) => {
     const newField: DynamicField = {
       id: `field-${Date.now()}`,
       name: preset.name,
@@ -275,7 +277,7 @@ export default function CompleteCertificateEditor({
   const handleDragStart = (
     e: React.MouseEvent,
     type: 'field' | 'secretary' | 'chancellor' | 'text',
-    id?: string
+    id?: string,
   ) => {
     e.preventDefault()
     e.stopPropagation()
@@ -286,8 +288,6 @@ export default function CompleteCertificateEditor({
       console.warn('Container not found for drag start')
       return
     }
-
-    console.log('Drag started:', { type, id, imageSize })
 
     // Calculate offset from element's position on the template
     setDragging({
@@ -313,10 +313,7 @@ export default function CompleteCertificateEditor({
   }
 
   // Handle click to select without dragging
-  const handleElementClick = (
-    e: React.MouseEvent,
-    type: 'secretary' | 'chancellor' | 'text'
-  ) => {
+  const handleElementClick = (e: React.MouseEvent, type: 'secretary' | 'chancellor' | 'text') => {
     e.stopPropagation()
     setSelectedElement(type)
     setSelectedFieldId(null)
@@ -331,8 +328,6 @@ export default function CompleteCertificateEditor({
       const newX = e.clientX - containerRect.left - dragging.offsetX
       const newY = e.clientY - containerRect.top - dragging.offsetY
 
-      console.log('Dragging:', { type: dragging.type, newX, newY, imageSize })
-
       if (dragging.type === 'field' && dragging.id) {
         setFields((prev) =>
           prev.map((f) =>
@@ -342,8 +337,8 @@ export default function CompleteCertificateEditor({
                   x: Math.max(0, Math.min(imageSize.width - f.width, newX)),
                   y: Math.max(0, Math.min(imageSize.height - 30, newY)),
                 }
-              : f
-          )
+              : f,
+          ),
         )
       } else if (dragging.type === 'secretary') {
         setSecretarySignature((prev) => ({
@@ -483,7 +478,11 @@ export default function CompleteCertificateEditor({
           <h2 className="text-2xl font-bold">
             {template ? 'Edit' : 'Create'} Certificate Template
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" disabled={loading}>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+            disabled={loading}
+          >
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
@@ -729,7 +728,7 @@ export default function CompleteCertificateEditor({
                         className="relative bg-gray-50 rounded-lg border-2 overflow-hidden"
                         style={{
                           userSelect: 'none',
-                          cursor: dragging ? 'grabbing' : 'default'
+                          cursor: dragging ? 'grabbing' : 'default',
                         }}
                       >
                         <img

@@ -1254,9 +1254,6 @@ function HomeTab({
   // Filter stats cards based on permissions
   const statCards = allStatCards.filter((card) => {
     const hasPermission = canAccess(card.permission.resource, card.permission.action)
-    console.log(
-      `Stat card "${card.title}" - ${card.permission.resource}.${card.permission.action}: ${hasPermission ? 'ALLOWED' : 'DENIED'}`,
-    )
     return hasPermission
   })
   return (

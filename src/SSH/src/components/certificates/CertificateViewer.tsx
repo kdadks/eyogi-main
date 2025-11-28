@@ -25,8 +25,6 @@ export default function CertificateViewer() {
         return
       }
 
-      console.log('Loading certificate:', certificateNumber)
-
       try {
         // Extract certificate info from the certificate number
         // Format: CERT-timestamp-enrollmentId

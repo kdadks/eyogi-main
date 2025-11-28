@@ -376,7 +376,6 @@ export default function UserFormModal({
           throw new Error('Update failed: No data returned')
         }
 
-        console.log('Profile updated successfully:', updatedData)
         toast.success('User updated successfully!')
       }
       onSuccess()
