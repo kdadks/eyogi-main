@@ -14,8 +14,17 @@ import { getGurukuls } from '@/lib/api/gurukuls'
 import { formatCurrency, getAgeGroupLabel, getLevelColor } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  XMarkIcon,
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '@/utils/sanitize'
+import MediaSelectorButton from '@/components/MediaSelectorButton'
+import type { MediaFile } from '@/types/media'
 
 /**
  * Generate a slug from text
@@ -901,10 +910,10 @@ export default function CourseManagement() {
       {/* Create Course Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Create New Course</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Create New Course</h2>
                 <button
                   onClick={closeModal}
                   className="p-1 text-gray-400 hover:text-gray-600 rounded"
@@ -913,270 +922,428 @@ export default function CourseManagement() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-6">
-              {/* Basic Information Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gurukul *</label>
-                  <select
-                    value={formData.gurukul_id}
-                    onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select a gurukul</option>
-                    {gurukuls.map((gurukul) => (
-                      <option key={gurukul.id} value={gurukul.id}>
-                        {gurukul.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Part (Optional)
-                    <span className="text-xs text-gray-500 ml-1">(A, B, C, D, etc.)</span>
-                  </label>
-                  <Input
-                    value={formData.part || ''}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase().slice(0, 1)
-                      setFormData({ ...formData, part: value })
-                    }}
-                    placeholder="A, B, C..."
-                    maxLength={1}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Course number will be auto-generated:
-                    {formData.gurukul_id &&
-                    formData.title &&
-                    gurukuls.find((g) => g.id === formData.gurukul_id) ? (
-                      <span className="font-semibold ml-1">
-                        {gurukuls
-                          .find((g) => g.id === formData.gurukul_id)
-                          ?.name.replace(/[^a-zA-Z]/g, '')
-                          .substring(0, 2)
-                          .toUpperCase()}
-                        {formData.title
-                          .replace(/[^a-zA-Z]/g, '')
-                          .charAt(0)
-                          .toUpperCase()}
-                        #{formData.part || ''}
-                      </span>
-                    ) : (
-                      ' [Select gurukul and enter title]'
-                    )}
-                  </p>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Course title"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slug <span className="text-xs text-gray-500">(auto-generated from title)</span>
-                  </label>
-                  <Input
-                    value={!formData.slug ? generateSlug(formData.title) : formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    placeholder="course-title"
-                    readOnly={!formData.title}
-                    className={!formData.title ? 'bg-gray-100 cursor-not-allowed' : ''}
-                  />
-                  {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
-                  {formData.title && !slugError && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {!formData.slug
-                        ? 'Auto-generated from title.'
-                        : 'You can edit or reset to auto-generate.'}
-                    </p>
-                  )}
-                  {formData.slug && formData.title && !slugError && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, slug: '' })}
-                      className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+            <div className="p-4 space-y-3">
+              {/* Basic Information Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Gurukul *
+                    </label>
+                    <select
+                      value={formData.gurukul_id}
+                      onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
+                      className="w-full p-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     >
-                      Reset to auto-generate
-                    </button>
-                  )}
+                      <option value="">Select a gurukul</option>
+                      {gurukuls.map((gurukul) => (
+                        <option key={gurukul.id} value={gurukul.id}>
+                          {gurukul.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Part
+                      <span className="text-xs text-gray-500 ml-1">(A, B, C...)</span>
+                    </label>
+                    <Input
+                      value={formData.part || ''}
+                      onChange={(e) => {
+                        const value = e.target.value.toUpperCase().slice(0, 1)
+                        setFormData({ ...formData, part: value })
+                      }}
+                      placeholder="A, B, C..."
+                      maxLength={1}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Course number will be auto-generated:
+                      {formData.gurukul_id &&
+                      formData.title &&
+                      gurukuls.find((g) => g.id === formData.gurukul_id) ? (
+                        <span className="font-semibold ml-1">
+                          {gurukuls
+                            .find((g) => g.id === formData.gurukul_id)
+                            ?.name.replace(/[^a-zA-Z]/g, '')
+                            .substring(0, 2)
+                            .toUpperCase()}
+                          {formData.title
+                            .replace(/[^a-zA-Z]/g, '')
+                            .charAt(0)
+                            .toUpperCase()}
+                          #{formData.part || ''}
+                        </span>
+                      ) : (
+                        ' [Select gurukul and enter title]'
+                      )}
+                    </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Title *
+                    </label>
+                    <Input
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Course title"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Slug <span className="text-xs text-gray-500">(auto-generated)</span>
+                    </label>
+                    <Input
+                      value={!formData.slug ? generateSlug(formData.title) : formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      placeholder="course-title"
+                      readOnly={!formData.title}
+                      className={!formData.title ? 'bg-gray-100 cursor-not-allowed' : ''}
+                    />
+                    {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
+                    {formData.title && !slugError && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {!formData.slug
+                          ? 'Auto-generated from title.'
+                          : 'You can edit or reset to auto-generate.'}
+                      </p>
+                    )}
+                    {formData.slug && formData.title && !slugError && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, slug: '' })}
+                        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                      >
+                        Reset to auto-generate
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Level</label>
+                    <select
+                      value={formData.level}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          level: e.target.value as CourseFormData['level'],
+                        })
+                      }
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="elementary">Elementary (4-7 years)</option>
+                      <option value="basic">Basic (8-11 years)</option>
+                      <option value="intermediate">Intermediate (12-15 years)</option>
+                      <option value="advanced">Advanced (16-19 years)</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="md:col-span-2">
+              </div>
+
+              {/* Course Descriptions Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Course Descriptions
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Short Description *
+                      </label>
+                      <MediaSelectorButton
+                        variant="compact"
+                        size="sm"
+                        buttonText="+ Insert Image/Video"
+                        accept={['image', 'video']}
+                        onSelect={(media: MediaFile[]) => {
+                          if (media.length > 0) {
+                            const file = media[0]
+                            let embedCode = ''
+                            if (file.file_type.startsWith('image/')) {
+                              embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                            } else if (file.file_type.startsWith('video/')) {
+                              embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
+                            }
+                            setFormData({
+                              ...formData,
+                              description: formData.description + embedCode,
+                            })
+                          }
+                        }}
+                      />
+                    </div>
+                    <SafeReactQuill
+                      value={formData.description}
+                      onChange={(value: string) => setFormData({ ...formData, description: value })}
+                      placeholder="Brief overview for course listings (plain text or formatted text)"
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Detailed Description
+                      </label>
+                      <MediaSelectorButton
+                        variant="compact"
+                        size="sm"
+                        buttonText="+ Insert Image/Video"
+                        accept={['image', 'video']}
+                        onSelect={(media: MediaFile[]) => {
+                          if (media.length > 0) {
+                            const file = media[0]
+                            let embedCode = ''
+                            if (file.file_type.startsWith('image/')) {
+                              embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                            } else if (file.file_type.startsWith('video/')) {
+                              embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
+                            }
+                            setFormData({
+                              ...formData,
+                              detailed_description:
+                                (formData.detailed_description || '') + embedCode,
+                            })
+                          }
+                        }}
+                      />
+                    </div>
+                    <SafeReactQuill
+                      value={formData.detailed_description || ''}
+                      onChange={(value: string) =>
+                        setFormData({ ...formData, detailed_description: value })
+                      }
+                      placeholder="Comprehensive course description with formatting (rich text editor)..."
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Details Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Course Details
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Delivery
+                    </label>
+                    <select
+                      value={formData.delivery_method}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          delivery_method: e.target.value as CourseFormData['delivery_method'],
+                        })
+                      }
+                      className="w-full p-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="hybrid">Hybrid</option>
+                      <option value="remote">Online</option>
+                      <option value="physical">In-person</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Weeks</label>
+                    <Input
+                      type="number"
+                      value={formData.duration_weeks}
+                      onChange={(e) =>
+                        setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })
+                      }
+                      min="1"
+                      placeholder="6"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Hours</label>
+                    <Input
+                      type="number"
+                      value={formData.duration_hours || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          duration_hours: parseInt(e.target.value) || undefined,
+                        })
+                      }
+                      min="1"
+                      placeholder="24"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Min Age
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.age_group_min}
+                      onChange={(e) =>
+                        setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })
+                      }
+                      min="0"
+                      placeholder="8"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Max Age
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.age_group_max}
+                      onChange={(e) =>
+                        setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })
+                      }
+                      min="0"
+                      placeholder="12"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Currency
+                    </label>
+                    <select
+                      value={formData.currency}
+                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                      className="w-full p-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="EUR">EUR (€)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="INR">INR (₹)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Price</label>
+                    <Input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                      }
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Max Students
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.max_students}
+                      onChange={(e) =>
+                        setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })
+                      }
+                      min="1"
+                      placeholder="20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Min Students
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.min_students || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          min_students: parseInt(e.target.value) || undefined,
+                        })
+                      }
+                      min="1"
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Prerequisites Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-base font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-5 w-5 mr-2 text-gray-600" />
+                  Prerequisites
+                </h3>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description *
+                    Prerequisites (Optional)
+                  </label>
+                  <textarea
+                    value={formData.prerequisites || ''}
+                    onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
+                    placeholder="Enter course prerequisites"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Learning Outcomes Section */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <PencilIcon className="h-5 w-5 mr-2 text-gray-600" />
+                  Learning Outcomes
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Learning Outcomes
                   </label>
                   <SafeReactQuill
-                    value={formData.description}
-                    onChange={(value: string) => setFormData({ ...formData, description: value })}
-                    placeholder="Course description"
+                    value={learningOutcomesEditorValue}
+                    onChange={handleLearningOutcomesChange}
+                    placeholder="Enter each outcome on a new line or create a bulleted list"
                     className="bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
-                  <select
-                    value={formData.level}
-                    onChange={(e) =>
-                      setFormData({ ...formData, level: e.target.value as CourseFormData['level'] })
-                    }
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="elementary">Elementary</option>
-                    <option value="basic">Basic</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Method
-                  </label>
-                  <select
-                    value={formData.delivery_method}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        delivery_method: e.target.value as CourseFormData['delivery_method'],
-                      })
-                    }
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="remote">Remote</option>
-                    <option value="physical">Physical</option>
-                    <option value="hybrid">Hybrid</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
-                  <Input
-                    type="number"
-                    value={formData.age_group_min}
-                    onChange={(e) =>
-                      setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
-                  <Input
-                    type="number"
-                    value={formData.age_group_max}
-                    onChange={(e) =>
-                      setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (weeks)
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.duration_weeks}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })
-                    }
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (hours)
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.duration_hours || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        duration_hours: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                    min="1"
-                    placeholder="Optional"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
-                    }
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                  <Input
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    placeholder="EUR"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Max Students
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.max_students}
-                    onChange={(e) =>
-                      setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })
-                    }
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Min Students
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.min_students || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        min_students: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                    min="1"
-                    placeholder="Optional"
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        ['clean'],
+                      ],
+                    }}
                   />
                 </div>
               </div>
-              {/* Learning Outcomes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Learning Outcomes
-                </label>
-                <SafeReactQuill
-                  value={learningOutcomesEditorValue}
-                  onChange={handleLearningOutcomesChange}
-                  placeholder="Enter each outcome on a new line or create a bulleted list"
-                  className="bg-white"
-                  modules={{
-                    toolbar: [
-                      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ list: 'ordered' }, { list: 'bullet' }],
-                      [{ indent: '-1' }, { indent: '+1' }],
-                      ['clean'],
-                    ],
-                  }}
-                />
+
+              {/* Tags Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-base font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-5 w-5 mr-2 text-gray-600" />
+                  Tags
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags (comma-separated)
+                  </label>
+                  <Input
+                    value={formData.tags?.join(', ') || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        tags: e.target.value
+                          .split(',')
+                          .map((tag) => tag.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                    placeholder="yoga, meditation, wellness"
+                  />
+                </div>
               </div>
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t">
+              <div className="flex justify-end space-x-2 pt-3 border-t">
                 <Button variant="danger" onClick={closeModal}>
                   Cancel
                 </Button>
@@ -1191,10 +1358,10 @@ export default function CourseManagement() {
       {/* Edit Course Modal */}
       {showEditModal && editingCourse && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Edit Course</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Edit Course</h2>
                 <button
                   onClick={closeModal}
                   className="p-1 text-gray-400 hover:text-gray-600 rounded"
@@ -1203,304 +1370,402 @@ export default function CourseManagement() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-6">
-              {/* Same form fields as create modal */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gurukul *</label>
-                  <select
-                    value={formData.gurukul_id}
-                    onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select a gurukul</option>
-                    {gurukuls.map((gurukul) => (
-                      <option key={gurukul.id} value={gurukul.id}>
-                        {gurukul.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Course Number
-                  </label>
-                  <Input
-                    value={formData.course_number}
-                    readOnly
-                    disabled
-                    className="bg-gray-100 cursor-not-allowed"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Will be regenerated if title or gurukul is changed
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Part (Optional)
-                    <span className="text-xs text-gray-500 ml-1">(A, B, C, D, etc.)</span>
-                  </label>
-                  <Input
-                    value={formData.part || ''}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase().slice(0, 1)
-                      setFormData({ ...formData, part: value })
-                    }}
-                    placeholder="A, B, C..."
-                    maxLength={1}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Course number preview:
-                    {formData.gurukul_id &&
-                    formData.title &&
-                    gurukuls.find((g) => g.id === formData.gurukul_id) ? (
-                      <span className="font-semibold ml-1">
-                        {gurukuls
-                          .find((g) => g.id === formData.gurukul_id)
-                          ?.name.replace(/[^a-zA-Z]/g, '')
-                          .substring(0, 2)
-                          .toUpperCase()}
-                        {formData.title
-                          .replace(/[^a-zA-Z]/g, '')
-                          .charAt(0)
-                          .toUpperCase()}
-                        #{formData.part || ''}
-                      </span>
-                    ) : (
-                      ' [Select gurukul and enter title]'
-                    )}
-                  </p>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Course title"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slug <span className="text-xs text-gray-500">(auto-generated from title)</span>
-                  </label>
-                  <Input
-                    value={!formData.slug ? generateSlug(formData.title) : formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    placeholder="course-title"
-                    readOnly={!formData.title}
-                    className={!formData.title ? 'bg-gray-100 cursor-not-allowed' : ''}
-                  />
-                  {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
-                  {formData.title && !slugError && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {!formData.slug
-                        ? 'Auto-generated from title.'
-                        : 'You can edit or reset to auto-generate.'}
-                    </p>
-                  )}
-                  {formData.slug && formData.title && !slugError && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, slug: '' })}
-                      className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+            <div className="p-4 space-y-3">
+              {/* Basic Information Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gurukul *
+                    </label>
+                    <select
+                      value={formData.gurukul_id}
+                      onChange={(e) => setFormData({ ...formData, gurukul_id: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     >
-                      Reset to auto-generate
-                    </button>
-                  )}
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description *
-                  </label>
-                  <SafeReactQuill
-                    value={formData.description}
-                    onChange={(value: string) => setFormData({ ...formData, description: value })}
-                    placeholder="Course description"
-                    className="bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
-                  <select
-                    value={formData.level}
-                    onChange={(e) =>
-                      setFormData({ ...formData, level: e.target.value as CourseFormData['level'] })
-                    }
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="elementary">Elementary</option>
-                    <option value="basic">Basic</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Method
-                  </label>
-                  <select
-                    value={formData.delivery_method}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        delivery_method: e.target.value as CourseFormData['delivery_method'],
-                      })
-                    }
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="remote">Remote</option>
-                    <option value="physical">Physical</option>
-                    <option value="hybrid">Hybrid</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
-                  <Input
-                    type="number"
-                    value={formData.age_group_min}
-                    onChange={(e) =>
-                      setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
-                  <Input
-                    type="number"
-                    value={formData.age_group_max}
-                    onChange={(e) =>
-                      setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })
-                    }
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (weeks)
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.duration_weeks}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })
-                    }
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Duration (hours)
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.duration_hours || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        duration_hours: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                    min="1"
-                    placeholder="Optional"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
-                    }
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                  <Input
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    placeholder="EUR"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Max Students
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.max_students}
-                    onChange={(e) =>
-                      setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })
-                    }
-                    min="1"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Min Students
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.min_students || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        min_students: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                    min="1"
-                    placeholder="Optional"
-                  />
-                </div>
-                <div className="md:col-span-2 flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="mr-2"
+                      <option value="">Select a gurukul</option>
+                      {gurukuls.map((gurukul) => (
+                        <option key={gurukul.id} value={gurukul.id}>
+                          {gurukul.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Course Number
+                    </label>
+                    <Input
+                      value={formData.course_number}
+                      readOnly
+                      disabled
+                      className="bg-gray-100 cursor-not-allowed"
                     />
-                    Active
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.featured || false}
-                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                      className="mr-2"
+                    <p className="text-xs text-gray-500 mt-1">
+                      Will be regenerated if title or gurukul is changed
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Part (Optional)
+                      <span className="text-xs text-gray-500 ml-1">(A, B, C, D, etc.)</span>
+                    </label>
+                    <Input
+                      value={formData.part || ''}
+                      onChange={(e) => {
+                        const value = e.target.value.toUpperCase().slice(0, 1)
+                        setFormData({ ...formData, part: value })
+                      }}
+                      placeholder="A, B, C..."
+                      maxLength={1}
                     />
-                    Featured
-                  </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Course number preview:
+                      {formData.gurukul_id &&
+                      formData.title &&
+                      gurukuls.find((g) => g.id === formData.gurukul_id) ? (
+                        <span className="font-semibold ml-1">
+                          {gurukuls
+                            .find((g) => g.id === formData.gurukul_id)
+                            ?.name.replace(/[^a-zA-Z]/g, '')
+                            .substring(0, 2)
+                            .toUpperCase()}
+                          {formData.title
+                            .replace(/[^a-zA-Z]/g, '')
+                            .charAt(0)
+                            .toUpperCase()}
+                          #{formData.part || ''}
+                        </span>
+                      ) : (
+                        ' [Select gurukul and enter title]'
+                      )}
+                    </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                    <Input
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Course title"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug{' '}
+                      <span className="text-xs text-gray-500">(auto-generated from title)</span>
+                    </label>
+                    <Input
+                      value={!formData.slug ? generateSlug(formData.title) : formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      placeholder="course-title"
+                      readOnly={!formData.title}
+                      className={!formData.title ? 'bg-gray-100 cursor-not-allowed' : ''}
+                    />
+                    {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
+                    {formData.title && !slugError && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {!formData.slug
+                          ? 'Auto-generated from title.'
+                          : 'You can edit or reset to auto-generate.'}
+                      </p>
+                    )}
+                    {formData.slug && formData.title && !slugError && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, slug: '' })}
+                        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                      >
+                        Reset to auto-generate
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-              {/* Learning Outcomes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+              {/* Course Descriptions Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Course Descriptions
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Short Description *
+                      </label>
+                      <MediaSelectorButton
+                        variant="compact"
+                        size="sm"
+                        buttonText="+ Insert Image/Video"
+                        accept={['image', 'video']}
+                        onSelect={(media: MediaFile[]) => {
+                          if (media.length > 0) {
+                            const file = media[0]
+                            let embedCode = ''
+                            if (file.file_type.startsWith('image/')) {
+                              embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                            } else if (file.file_type.startsWith('video/')) {
+                              embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
+                            }
+                            setFormData({
+                              ...formData,
+                              description: formData.description + embedCode,
+                            })
+                          }
+                        }}
+                      />
+                    </div>
+                    <SafeReactQuill
+                      value={formData.description}
+                      onChange={(value: string) => setFormData({ ...formData, description: value })}
+                      placeholder="Brief overview for course listings"
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Detailed Description
+                      </label>
+                      <MediaSelectorButton
+                        variant="compact"
+                        size="sm"
+                        buttonText="+ Insert Image/Video"
+                        accept={['image', 'video']}
+                        onSelect={(media: MediaFile[]) => {
+                          if (media.length > 0) {
+                            const file = media[0]
+                            let embedCode = ''
+                            if (file.file_type.startsWith('image/')) {
+                              embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                            } else if (file.file_type.startsWith('video/')) {
+                              embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
+                            }
+                            setFormData({
+                              ...formData,
+                              detailed_description:
+                                (formData.detailed_description || '') + embedCode,
+                            })
+                          }
+                        }}
+                      />
+                    </div>
+                    <SafeReactQuill
+                      value={formData.detailed_description || ''}
+                      onChange={(value: string) =>
+                        setFormData({ ...formData, detailed_description: value })
+                      }
+                      placeholder="Comprehensive course description with formatting"
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Details Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Course Details
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Level</label>
+                    <select
+                      value={formData.level}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          level: e.target.value as CourseFormData['level'],
+                        })
+                      }
+                      className="w-full p-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="elementary">Elementary</option>
+                      <option value="basic">Basic</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Delivery
+                    </label>
+                    <select
+                      value={formData.delivery_method}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          delivery_method: e.target.value as CourseFormData['delivery_method'],
+                        })
+                      }
+                      className="w-full p-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="remote">Online</option>
+                      <option value="physical">In-person</option>
+                      <option value="hybrid">Hybrid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Min Age
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.age_group_min}
+                      onChange={(e) =>
+                        setFormData({ ...formData, age_group_min: parseInt(e.target.value) || 0 })
+                      }
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
+                    <Input
+                      type="number"
+                      value={formData.age_group_max}
+                      onChange={(e) =>
+                        setFormData({ ...formData, age_group_max: parseInt(e.target.value) || 0 })
+                      }
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Duration (weeks)
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.duration_weeks}
+                      onChange={(e) =>
+                        setFormData({ ...formData, duration_weeks: parseInt(e.target.value) || 0 })
+                      }
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Duration (hours)
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.duration_hours || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          duration_hours: parseInt(e.target.value) || undefined,
+                        })
+                      }
+                      min="1"
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                    <Input
+                      type="number"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                      }
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                    <Input
+                      value={formData.currency}
+                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                      placeholder="EUR"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Max Students
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.max_students}
+                      onChange={(e) =>
+                        setFormData({ ...formData, max_students: parseInt(e.target.value) || 0 })
+                      }
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Min Students
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.min_students || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          min_students: parseInt(e.target.value) || undefined,
+                        })
+                      }
+                      min="1"
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex items-center space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_active}
+                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                        className="mr-2"
+                      />
+                      Active
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.featured || false}
+                        onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                        className="mr-2"
+                      />
+                      Featured
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Learning Outcomes Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
                   Learning Outcomes
-                </label>
-                <SafeReactQuill
-                  value={learningOutcomesEditorValue}
-                  onChange={handleLearningOutcomesChange}
-                  placeholder="Enter each outcome on a new line or create a bulleted list"
-                  className="bg-white"
-                  modules={{
-                    toolbar: [
-                      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ list: 'ordered' }, { list: 'bullet' }],
-                      [{ indent: '-1' }, { indent: '+1' }],
-                      ['clean'],
-                    ],
-                  }}
-                />
+                </h3>
+                <div>
+                  <SafeReactQuill
+                    value={learningOutcomesEditorValue}
+                    onChange={handleLearningOutcomesChange}
+                    placeholder="Enter each outcome on a new line or create a bulleted list"
+                    className="bg-white"
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        ['clean'],
+                      ],
+                    }}
+                  />
+                </div>
               </div>
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t">
+              <div className="flex justify-end space-x-2 pt-3 border-t">
                 <Button variant="danger" onClick={closeModal}>
                   Cancel
                 </Button>

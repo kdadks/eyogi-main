@@ -113,9 +113,13 @@ export default function MediaSelectorButton({
             )}
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={openSelector}>
-            <Plus className="h-3 w-3 mr-1" />
-            Add
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={openSelector}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+          >
+            {buttonText}
           </Button>
         )}
 
