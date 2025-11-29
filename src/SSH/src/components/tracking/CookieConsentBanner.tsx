@@ -19,20 +19,47 @@ import {
 export default function CookieConsentBanner() {
   const [showBanner, setShowBanner] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const [preferences, setPreferences] = useState<TrackingConsent>({
     analytics: false,
     functional: true,
     timestamp: new Date().toISOString(),
   })
 
+  // First effect: Mark that we're on the client
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Second effect: Check consent only on client side
+  useEffect(() => {
+    if (!isClient) return
+
+    // Skip cookie consent banner in development/localhost
+    const hostname = window.location.hostname
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
+      console.log('[CookieConsentBanner] Skipping banner in development environment')
+      return
+    }
+
     // Check if user has already given consent
     const existingConsent = getTrackingConsent()
+    console.log('[CookieConsentBanner] Existing consent:', existingConsent)
 
     // Show banner if analytics consent hasn't been explicitly set
-    if (!existingConsent.timestamp || existingConsent.analytics === undefined) {
+    // Check for both empty timestamp and undefined analytics
+    const hasValidConsent =
+      existingConsent.timestamp &&
+      existingConsent.timestamp.length > 0 &&
+      existingConsent.analytics !== undefined
+
+    console.log('[CookieConsentBanner] Has valid consent:', hasValidConsent)
+
+    if (!hasValidConsent) {
+      console.log('[CookieConsentBanner] Showing banner - no valid consent found')
       setShowBanner(true)
     } else {
+      console.log('[CookieConsentBanner] Hiding banner - valid consent exists')
       setPreferences(existingConsent)
 
       // Setup tracking if consent was given
@@ -40,9 +67,10 @@ export default function CookieConsentBanner() {
         setupAutoTracking()
       }
     }
-  }, [])
+  }, [isClient])
 
   const handleAcceptAll = () => {
+    console.log('[CookieConsentBanner] Accept All clicked')
     const consent: TrackingConsent = {
       analytics: true,
       functional: true,
@@ -50,12 +78,14 @@ export default function CookieConsentBanner() {
     }
     setTrackingConsent(consent)
     setShowBanner(false)
+    console.log('[CookieConsentBanner] Banner hidden after accept')
 
     // Setup tracking after consent
     setupAutoTracking()
   }
 
   const handleRejectAll = () => {
+    console.log('[CookieConsentBanner] Reject All clicked')
     const consent: TrackingConsent = {
       analytics: false,
       functional: true,
@@ -63,12 +93,15 @@ export default function CookieConsentBanner() {
     }
     setTrackingConsent(consent)
     setShowBanner(false)
+    console.log('[CookieConsentBanner] Banner hidden after reject')
   }
 
   const handleSavePreferences = () => {
+    console.log('[CookieConsentBanner] Save Preferences clicked:', preferences)
     setTrackingConsent(preferences)
     setShowBanner(false)
     setShowSettings(false)
+    console.log('[CookieConsentBanner] Banner hidden after save preferences')
 
     // Setup tracking if analytics was enabled
     if (preferences.analytics) {
@@ -80,7 +113,7 @@ export default function CookieConsentBanner() {
     setShowSettings(true)
   }
 
-  if (!showBanner) return null
+  if (!isClient || !showBanner) return null
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-slide-up">

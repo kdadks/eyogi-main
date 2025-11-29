@@ -29,6 +29,11 @@ export interface PageTrackingData {
 // ============================================
 
 export function hasAnalyticsConsent(): boolean {
+  // Guard for SSR - localStorage not available on server
+  if (typeof window === 'undefined') {
+    return false
+  }
+
   try {
     const consent = localStorage.getItem(CONSENT_KEY)
     if (!consent) return false
@@ -41,45 +46,84 @@ export function hasAnalyticsConsent(): boolean {
 }
 
 export function setTrackingConsent(consent: Partial<TrackingConsent>): void {
+  // Guard for SSR - localStorage not available on server
+  if (typeof window === 'undefined') {
+    console.warn('[CookieConsent] Cannot set consent - running on server')
+    return
+  }
+
   try {
     const existing = getTrackingConsent()
     const updated: TrackingConsent = {
       ...existing,
       ...consent,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }
-    localStorage.setItem(CONSENT_KEY, JSON.stringify(updated))
+
+    const serialized = JSON.stringify(updated)
+    localStorage.setItem(CONSENT_KEY, serialized)
+    console.log('[CookieConsent] Saved consent to localStorage:', serialized)
+
+    // Verify it was saved correctly
+    const verification = localStorage.getItem(CONSENT_KEY)
+    console.log('[CookieConsent] Verification read:', verification)
+
+    if (verification !== serialized) {
+      console.error('[CookieConsent] Verification failed! Saved and read values do not match.')
+    }
   } catch (error) {
-    console.error('Error setting tracking consent:', error)
+    console.error('[CookieConsent] Error setting tracking consent:', error)
   }
 }
 
 export function getTrackingConsent(): TrackingConsent {
-  try {
-    const consent = localStorage.getItem(CONSENT_KEY)
-    if (!consent) {
-      return {
-        analytics: false,
-        functional: true,
-        timestamp: '' // Empty timestamp means no consent given yet
-      }
-    }
-    return JSON.parse(consent)
-  } catch {
+  // Guard for SSR - localStorage not available on server
+  if (typeof window === 'undefined') {
     return {
       analytics: false,
       functional: true,
-      timestamp: '' // Empty timestamp means no consent given yet
+      timestamp: '', // Empty timestamp means no consent given yet
+    }
+  }
+
+  try {
+    const consent = localStorage.getItem(CONSENT_KEY)
+    console.log('[CookieConsent] Retrieved consent from localStorage:', consent)
+
+    if (!consent) {
+      console.log('[CookieConsent] No consent found in localStorage')
+      return {
+        analytics: false,
+        functional: true,
+        timestamp: '', // Empty timestamp means no consent given yet
+      }
+    }
+
+    const parsed = JSON.parse(consent)
+    console.log('[CookieConsent] Parsed consent:', parsed)
+    return parsed
+  } catch (error) {
+    console.error('[CookieConsent] Error reading consent from localStorage:', error)
+    return {
+      analytics: false,
+      functional: true,
+      timestamp: '', // Empty timestamp means no consent given yet
     }
   }
 }
 
 export function clearTrackingConsent(): void {
+  // Guard for SSR - localStorage not available on server
+  if (typeof window === 'undefined') {
+    return
+  }
+
   try {
     localStorage.removeItem(CONSENT_KEY)
     localStorage.removeItem(SESSION_KEY)
+    console.log('[CookieConsent] Cleared all tracking consent and session data')
   } catch (error) {
-    console.error('Error clearing tracking consent:', error)
+    console.error('[CookieConsent] Error clearing tracking consent:', error)
   }
 }
 
@@ -110,7 +154,11 @@ export function getDeviceType(): string {
   if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
     return 'tablet'
   }
-  if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+  if (
+    /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(
+      ua,
+    )
+  ) {
     return 'mobile'
   }
   return 'desktop'
@@ -149,8 +197,8 @@ export async function getCountry(): Promise<string | undefined> {
     try {
       const response = await fetch('https://ipapi.co/json/', {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       })
 
       if (response.ok) {
@@ -169,7 +217,7 @@ export async function getCountry(): Promise<string | undefined> {
       try {
         const fallbackResponse = await fetch('http://ip-api.com/json/', {
           method: 'GET',
-          signal: AbortSignal.timeout(5000)
+          signal: AbortSignal.timeout(5000),
         })
 
         if (fallbackResponse.ok) {
@@ -221,7 +269,8 @@ export function getReferrerSource(referrer: string): string {
     if (hostname.includes('baidu.com')) return 'Baidu'
 
     // Email
-    if (hostname.includes('mail.') || hostname.includes('outlook.') || hostname.includes('gmail.')) return 'Email'
+    if (hostname.includes('mail.') || hostname.includes('outlook.') || hostname.includes('gmail.'))
+      return 'Email'
 
     // Same domain - internal navigation
     if (hostname === window.location.hostname) return 'Internal'
@@ -255,7 +304,7 @@ export function startPageTracking(pagePath: string): void {
 export async function trackPageView(
   pagePath: string,
   userId?: string,
-  additionalData?: Partial<PageTrackingData>
+  additionalData?: Partial<PageTrackingData>,
 ): Promise<void> {
   if (!hasAnalyticsConsent()) {
     console.log('Analytics consent not given, skipping tracking')
@@ -292,7 +341,7 @@ export async function trackPageView(
       browser,
       country,
       duration_seconds: durationSeconds,
-      ...additionalData
+      ...additionalData,
     }
 
     console.log('Tracking page view:', trackingData)

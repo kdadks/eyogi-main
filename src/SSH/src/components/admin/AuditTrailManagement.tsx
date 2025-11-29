@@ -46,7 +46,7 @@ export default function AuditTrailManagement() {
 
   const [filters, setFilters] = useState<AuditTrailFilters>({
     page: 1,
-    limit: 25,
+    limit: 20,
   })
 
   const loadData = useCallback(async () => {
@@ -140,7 +140,7 @@ export default function AuditTrailManagement() {
   }
 
   const clearFilters = () => {
-    setFilters({ page: 1, limit: 25 })
+    setFilters({ page: 1, limit: 20 })
   }
 
   const getActionIcon = (action: string) => {
@@ -195,7 +195,7 @@ export default function AuditTrailManagement() {
       .join(' ')
   }
 
-  const totalPages = Math.ceil(total / (filters.limit || 25))
+  const totalPages = Math.ceil(total / (filters.limit || 20))
   const currentPage = filters.page || 1
 
   if (loading && entries.length === 0) {
@@ -425,7 +425,8 @@ export default function AuditTrailManagement() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -526,11 +527,102 @@ export default function AuditTrailManagement() {
                 </table>
               </div>
 
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4">
+                {entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            className={`${getActionColor(entry.action)} flex items-center gap-1`}
+                          >
+                            {getActionIcon(entry.action)}
+                            {entry.action}
+                          </Badge>
+                          <Badge className={getRoleColor(entry.changed_by_role)}>
+                            {entry.changed_by_role}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <ClockIcon className="h-3 w-3" />
+                          {new Date(entry.changed_at).toLocaleDateString()}{' '}
+                          {new Date(entry.changed_at).toLocaleTimeString()}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedEntry(entry)}
+                        className="ml-2"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="border-t pt-2">
+                        <p className="text-xs text-gray-500 mb-1">Changed By</p>
+                        <p className="text-sm font-medium text-gray-900">{entry.changed_by_name}</p>
+                        <p className="text-xs text-gray-500">{entry.changed_by_email}</p>
+                      </div>
+
+                      {entry.affected_user_name && (
+                        <div className="border-t pt-2">
+                          <p className="text-xs text-gray-500 mb-1">Affected User</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {entry.affected_user_name}
+                          </p>
+                          {entry.affected_user_email && (
+                            <p className="text-xs text-gray-500">{entry.affected_user_email}</p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="border-t pt-2">
+                        <p className="text-xs text-gray-500 mb-1">Field Changed</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatFieldName(entry.field_name)}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 border-t pt-2">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Old Value</p>
+                          <p className="text-sm text-gray-600 truncate">
+                            {entry.old_value_decrypted || (
+                              <span className="text-gray-400 italic">Empty</span>
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">New Value</p>
+                          <p className="text-sm text-gray-600 truncate">
+                            {entry.new_value_decrypted || (
+                              <span className="text-gray-400 italic">Empty</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
                   <div className="text-sm text-gray-600">
-                    Page {currentPage} of {totalPages}
+                    <span className="hidden sm:inline">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <span className="sm:hidden">
+                      Page {currentPage}/{totalPages}
+                    </span>
+                    <span className="ml-2">({total} total records)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -540,15 +632,16 @@ export default function AuditTrailManagement() {
                       disabled={currentPage <= 1}
                     >
                       <ChevronLeftIcon className="h-4 w-4" />
-                      Previous
+                      <span className="hidden sm:inline ml-1">Previous</span>
                     </Button>
+                    <span className="text-sm text-gray-600 px-2">{currentPage}</span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage >= totalPages}
                     >
-                      Next
+                      <span className="hidden sm:inline mr-1">Next</span>
                       <ChevronRightIcon className="h-4 w-4" />
                     </Button>
                   </div>

@@ -145,6 +145,7 @@ interface ParentProfile {
   id: string
   full_name: string
   phone?: string
+  date_of_birth?: string
   address_line_1?: string
   address_line_2?: string
   city?: string
@@ -191,7 +192,7 @@ export default function ParentsDashboard() {
   const { show: showConfirmDialog, Dialog: ConfirmDialogModal } = useConfirmDialog()
   const { user, canAccess } = useWebsiteAuth()
   const [activeTab, setActiveTab] = useState<
-    'home' | 'children' | 'enrollments' | 'progress' | 'attendance' | 'settings' | 'analytics'
+    'home' | 'children' | 'enrollments' | 'progress' | 'attendance' | 'profile' | 'analytics'
   >('home')
   const [children, setChildren] = useState<Child[]>([])
   const [courses, setCourses] = useState<AvailableCourse[]>([])
@@ -269,6 +270,7 @@ export default function ParentsDashboard() {
           id: profileWithAddress.id,
           full_name: profileWithAddress.full_name,
           phone: profileWithAddress.phone || undefined,
+          date_of_birth: (profile as any).date_of_birth || undefined,
           address_line_1: profileWithAddress.address_line_1 || undefined,
           address_line_2: profileWithAddress.address_line_2 || undefined,
           city: profileWithAddress.city || undefined,
@@ -761,8 +763,8 @@ export default function ParentsDashboard() {
       available: canAccess('batches', 'read'),
     },
     {
-      id: 'settings',
-      name: 'Settings',
+      id: 'profile',
+      name: 'Profile',
       icon: CogIcon,
       description: 'Account & preferences',
       gradient: 'from-gray-500 to-gray-600',
@@ -925,7 +927,7 @@ export default function ParentsDashboard() {
                             | 'enrollments'
                             | 'progress'
                             | 'attendance'
-                            | 'settings'
+                            | 'profile'
                             | 'analytics',
                         )
                         // Scroll to top of page
@@ -1021,8 +1023,8 @@ export default function ParentsDashboard() {
               </div>
             )}
             {activeTab === 'analytics' && <AnalyticsTab children={children} stats={stats} />}
-            {activeTab === 'settings' && (
-              <SettingsTab user={user} parentProfile={parentProfile} children={children} />
+            {activeTab === 'profile' && (
+              <ProfileTab user={user} parentProfile={parentProfile} children={children} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -2547,8 +2549,8 @@ function AnalyticsTab({ children, stats }: { children: Child[]; stats: ParentSta
     </div>
   )
 }
-// Settings Tab Component
-function SettingsTab({
+// Profile Tab Component
+function ProfileTab({
   user,
   parentProfile,
   children,
@@ -2557,444 +2559,296 @@ function SettingsTab({
   parentProfile: ParentProfile | null
   children: Child[]
 }) {
-  const [showEditProfile, setShowEditProfile] = useState(false)
-  const [addressData, setAddressData] = useState<AddressFormData>({
-    country: '',
-    state: '',
-    city: '',
-    address_line_1: '',
-    address_line_2: '',
-    zip_code: '',
-  })
-  const [personalInfo, setPersonalInfo] = useState({
-    full_name: user?.full_name || '',
-    phone: '',
-  })
-  // Track if form data has been loaded to prevent re-initialization while editing
-  const personalInfoLoadedRef = useRef(false)
-  const addressLoadedRef = useRef(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
 
-  // Load form data when modal opens
-  useEffect(() => {
-    if (showEditProfile && user && parentProfile) {
-      // Load personal info only once when modal opens
-      if (!personalInfoLoadedRef.current) {
-        setPersonalInfo({
-          full_name: user.full_name || '',
-          phone: parentProfile?.phone || '',
-        })
-        personalInfoLoadedRef.current = true
-      }
-      // Load address data only once when modal opens
-      if (!addressLoadedRef.current) {
-        setAddressData({
-          country: parentProfile.country || '',
-          state: parentProfile.state || '',
-          city: parentProfile.city || '',
-          address_line_1: parentProfile.address_line_1 || '',
-          address_line_2: parentProfile.address_line_2 || '',
-          zip_code: parentProfile.zip_code || '',
-        })
-        addressLoadedRef.current = true
-      }
-    } else if (!showEditProfile) {
-      // Reset the flags when modal closes so next open gets fresh data
-      personalInfoLoadedRef.current = false
-      addressLoadedRef.current = false
-    }
-  }, [showEditProfile, user, parentProfile])
-  const handleSaveProfile = async () => {
-    try {
-      if (!user?.id) {
-        toast.error('User not authenticated')
-        return
-      }
-      // Build changedBy info for audit trail - the parent is changing their own profile
-      const changedBy: ChangedByInfo = {
-        id: user.id,
-        email: user.email || '',
-        name: user.full_name || user.email || 'Unknown',
-        role: user.role || 'parent',
-      }
+  // Convert user and parentProfile to Profile type for ProfileEditModal
+  const profileForModal: Profile | null =
+    user && parentProfile
+      ? ({
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          role: user.role as any,
+          phone: parentProfile.phone,
+          date_of_birth: parentProfile.date_of_birth,
+          address_line_1: parentProfile.address_line_1,
+          address_line_2: parentProfile.address_line_2,
+          city: parentProfile.city,
+          state: parentProfile.state,
+          zip_code: parentProfile.zip_code,
+          country: parentProfile.country,
+          student_id: null,
+          teacher_code: null,
+          grade: null,
+          emergency_contact: null,
+          preferences: {},
+          created_at: '',
+          updated_at: '',
+        } as Profile)
+      : null
 
-      // Update user profile with personal info and address data
-      const updateData = {
-        full_name: personalInfo.full_name,
-        phone: personalInfo.phone,
-        address_line_1: addressData.address_line_1,
-        address_line_2: addressData.address_line_2,
-        city: addressData.city,
-        state: addressData.state,
-        zip_code: addressData.zip_code,
-        country: addressData.country,
-      }
-      await updateUserProfile(
-        user.id,
-        updateData as Parameters<typeof updateUserProfile>[1],
-        changedBy,
-      )
-      toast.success('Profile updated successfully!')
-      setShowEditProfile(false)
-    } catch {
-      toast.error('Failed to update profile')
-    }
+  const handleProfileUpdate = () => {
+    // Refresh page data after profile update
+    window.location.reload()
   }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
-        <motion.button
-          onClick={() => setShowEditProfile(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 cursor-pointer"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <User className="h-4 w-4" />
-          <span>Edit Profile</span>
-        </motion.button>
+    <div className="space-y-8">
+      <div className="text-center mb-6 sm:mb-8 lg:mb-10">
+        <h2 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-600 to-slate-600 bg-clip-text text-transparent">
+          My Profile 👤
+        </h2>
+        <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-2">
+          Manage your account preferences and information
+        </p>
       </div>
-      <motion.div
-        className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Full Name</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-              {user?.full_name || 'Not provided'}
-            </div>
+
+      {/* Account Profile Section */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 border border-white/20">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+            <CogIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-gray-600 flex-shrink-0" />
+            <h3 className="text-sm sm:text-base lg:text-xl font-semibold text-gray-900">
+              Account Information
+            </h3>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Email</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-              {user?.email || 'Not provided'}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Role</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 capitalize">
-              {user?.role || 'Parent'}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Phone</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-              {personalInfo.phone || 'Not provided'}
-            </div>
-          </div>
+          <button
+            onClick={() => setIsProfileModalOpen(true)}
+            className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap cursor-pointer"
+          >
+            <span>✏️</span>
+            <span>Edit</span>
+          </button>
         </div>
-      </motion.div>
-      <motion.div
-        className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-      >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
-        <div className="px-3 py-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
-          {addressData.address_line_1 ? (
-            <div className="space-y-1">
-              <div className="font-medium text-gray-900">
-                {addressData.address_line_1}
-                {addressData.address_line_2 && `, ${addressData.address_line_2}`}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+              Personal Information
+            </h4>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Full Name</label>
+                <p className="text-gray-900">{user?.full_name || 'Not provided'}</p>
               </div>
               <div>
-                {addressData.city}
-                {addressData.state &&
-                  `, ${getStateName(addressData.country, addressData.state)}`}{' '}
-                {addressData.zip_code}
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <p className="text-gray-900">{user?.email}</p>
               </div>
-              <div>{getCountryName(addressData.country)}</div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-4">
-              <div className="text-center">
-                <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">No address provided</p>
-                <button
-                  onClick={() => setShowEditProfile(true)}
-                  className="text-blue-600 hover:text-blue-800 text-sm mt-1"
-                >
-                  Add address
-                </button>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Role</label>
+                <p className="text-gray-900 capitalize">{user?.role || 'Parent'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Phone</label>
+                <p className="text-gray-900">{parentProfile?.phone || 'Not provided'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Date of Birth</label>
+                <p className="text-gray-900">
+                  {parentProfile?.date_of_birth
+                    ? new Date(parentProfile.date_of_birth).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : 'Not provided'}
+                </p>
               </div>
             </div>
-          )}
+          </div>
+          {/* Address Information */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-800 border-b pb-2">
+              Address Information
+            </h4>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Street Address</label>
+                <p className="text-gray-900">{parentProfile?.address_line_1 || 'Not provided'}</p>
+                {parentProfile?.address_line_2 && (
+                  <p className="text-gray-900">{parentProfile.address_line_2}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Show city only if available */}
+                {parentProfile?.city && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">City</label>
+                    <p className="text-gray-900">{parentProfile.city}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium text-gray-500">State</label>
+                  <p className="text-gray-900">
+                    {parentProfile?.state && parentProfile?.country
+                      ? getStateName(parentProfile.country, parentProfile.state) ||
+                        parentProfile.state
+                      : 'Not provided'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">ZIP Code</label>
+                  <p className="text-gray-900">{parentProfile?.zip_code || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Country</label>
+                  <p className="text-gray-900">
+                    {parentProfile?.country
+                      ? getCountryName(parentProfile.country) || parentProfile.country
+                      : 'Not provided'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </motion.div>
-      <motion.div
-        className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Preferences</h3>
-        <div className="space-y-3">
-          <label className="flex items-center space-x-3">
-            <input type="checkbox" className="rounded" defaultChecked />
-            <span className="text-gray-900">Email notifications for progress updates</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input type="checkbox" className="rounded" defaultChecked />
-            <span className="text-gray-900">SMS alerts for important events</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input type="checkbox" className="rounded" />
-            <span className="text-gray-900">Weekly progress reports</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input type="checkbox" className="rounded" />
-            <span className="text-gray-900">Course completion certificates</span>
-          </label>
-        </div>
-      </motion.div>
+      </div>
 
       {/* Compliance Section */}
-      <motion.div
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-      >
+      <div>
         <DashboardComplianceSection
           userId={user?.id || ''}
           userRole="parent"
           compactView={false}
           showNotifications={true}
         />
-      </motion.div>
+      </div>
 
       {/* GDPR Data Deletion Section */}
-      <motion.div
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <div className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <ShieldExclamationIcon className="h-6 w-6 text-red-600" />
-            <h3 className="text-lg font-semibold text-gray-900">GDPR Data Deletion & Privacy</h3>
-          </div>
-
-          {/* Consolidated GDPR Information - Show once for all */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex gap-3">
-              <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                  Your Right to Data Deletion
-                </h4>
-                <p className="text-xs text-blue-800 mb-2">
-                  Under GDPR Article 17, you have the right to request deletion of personal data for
-                  yourself and your children. This includes personal information, enrollment data,
-                  attendance records, consent records, and compliance submissions.
-                </p>
-                <p className="text-xs text-blue-800">
-                  Note: Certificates may be anonymized rather than deleted for legal compliance.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Critical Warning for Parent Account Deletion */}
-          {children.length > 0 && (
-            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-6">
-              <div className="flex gap-3">
-                <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-bold text-red-900 mb-2">
-                    ⚠️ CRITICAL WARNING - Parent Account Deletion
-                  </h4>
-                  <p className="text-xs text-red-800 font-semibold mb-2">
-                    If you request deletion of YOUR ACCOUNT (parent account), ALL {children.length}{' '}
-                    {children.length === 1 ? 'child account' : 'children accounts'} linked to you
-                    will be PERMANENTLY DELETED automatically.
-                  </p>
-                  <p className="text-xs text-red-800">
-                    This is irreversible. All children's data, enrollments, certificates, and
-                    progress will be lost forever. Please exercise utmost caution before requesting
-                    parent account deletion.
-                  </p>
-                  <p className="text-xs text-red-700 mt-2 font-medium">
-                    To delete only a specific child's account, use the individual deletion option
-                    for that child below.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Compact Account Deletion Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Parent's Own Account */}
-            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-200">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold">
-                  {(() => {
-                    if (!user?.full_name) return 'P'
-                    const nameParts = user.full_name.trim().split(/\s+/)
-                    return nameParts.length > 1
-                      ? (
-                          nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
-                        ).toUpperCase()
-                      : nameParts[0].charAt(0).toUpperCase()
-                  })()}
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-gray-900">Your Account</h5>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-              </div>
-              <DataDeletionRequest userId={user?.id || ''} userRole="parent" compactView={true} />
-            </div>
-
-            {/* Children Accounts */}
-            {children.map((child) => {
-              // Get initials from child's name (first letter of first and last name)
-              const nameParts = child.full_name.trim().split(/\s+/)
-              const childInitials =
-                nameParts.length > 1
-                  ? nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
-                  : nameParts[0].charAt(0)
-
-              return (
-                <div
-                  key={child.student_id}
-                  className="border border-gray-200 rounded-lg p-4 bg-white"
-                >
-                  <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-200">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                      {childInitials.toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="text-sm font-semibold text-gray-900">{child.full_name}</h5>
-                      <p className="text-xs text-gray-500">
-                        {child.display_student_id || `ID: ${child.student_id.slice(0, 8)}`}
-                      </p>
-                    </div>
-                  </div>
-                  <DataDeletionRequest
-                    userId={user?.id || ''}
-                    userRole="parent"
-                    targetUserId={child.student_id}
-                    targetUserName={child.full_name}
-                    compactView={true}
-                  />
-                </div>
-              )
-            })}
-          </div>
-
-          {children.length === 0 && (
-            <div className="text-center py-4 text-gray-500 mt-4 border-t border-gray-200">
-              <p className="text-sm">No children accounts found.</p>
-            </div>
-          )}
+      <div className="rounded-xl backdrop-blur-md bg-white/80 border border-white/20 shadow-lg p-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <ShieldExclamationIcon className="h-6 w-6 text-red-600" />
+          <h3 className="text-lg font-semibold text-gray-900">GDPR Data Deletion & Privacy</h3>
         </div>
-      </motion.div>
 
-      {/* Edit Profile Modal */}
-      <AnimatePresence>
-        {showEditProfile && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-y-auto"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Edit Profile</h3>
-                <button
-                  onClick={() => setShowEditProfile(false)}
-                  className="text-gray-500 hover:text-gray-700 cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+        {/* Consolidated GDPR Information - Show once for all */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex gap-3">
+            <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                Your Right to Data Deletion
+              </h4>
+              <p className="text-xs text-blue-800 mb-2">
+                Under GDPR Article 17, you have the right to request deletion of personal data for
+                yourself and your children. This includes personal information, enrollment data,
+                attendance records, consent records, and compliance submissions.
+              </p>
+              <p className="text-xs text-blue-800">
+                Note: Certificates may be anonymized rather than deleted for legal compliance.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Critical Warning for Parent Account Deletion */}
+        {children.length > 0 && (
+          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-6">
+            <div className="flex gap-3">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-bold text-red-900 mb-2">
+                  ⚠️ CRITICAL WARNING - Parent Account Deletion
+                </h4>
+                <p className="text-xs text-red-800 font-semibold mb-2">
+                  If you request deletion of YOUR ACCOUNT (parent account), ALL {children.length}{' '}
+                  {children.length === 1 ? 'child account' : 'children accounts'} linked to you will
+                  be PERMANENTLY DELETED automatically.
+                </p>
+                <p className="text-xs text-red-800">
+                  This is irreversible. All children's data, enrollments, certificates, and progress
+                  will be lost forever. Please exercise utmost caution before requesting parent
+                  account deletion.
+                </p>
+                <p className="text-xs text-red-700 mt-2 font-medium">
+                  To delete only a specific child's account, use the individual deletion option for
+                  that child below.
+                </p>
               </div>
-              <div className="p-6">
-                {/* Horizontal Layout with Two Columns */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column - Personal Information */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      Personal Information
-                    </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Full Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={personalInfo.full_name}
-                          onChange={(e) =>
-                            setPersonalInfo((prev) => ({ ...prev, full_name: e.target.value }))
-                          }
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter your full name"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number
-                        </label>
-                        <input
-                          type="tel"
-                          value={personalInfo.phone}
-                          onChange={(e) =>
-                            setPersonalInfo((prev) => ({ ...prev, phone: e.target.value }))
-                          }
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter your phone number"
-                        />
-                      </div>
-                    </div>
+            </div>
+          </div>
+        )}
+
+        {/* Compact Account Deletion Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Parent's Own Account */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-white">
+            <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-200">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold">
+                {(() => {
+                  if (!user?.full_name) return 'P'
+                  const nameParts = user.full_name.trim().split(/\s+/)
+                  return nameParts.length > 1
+                    ? (
+                        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+                      ).toUpperCase()
+                    : nameParts[0].charAt(0).toUpperCase()
+                })()}
+              </div>
+              <div className="flex-1">
+                <h5 className="text-sm font-semibold text-gray-900">Your Account</h5>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+            </div>
+            <DataDeletionRequest userId={user?.id || ''} userRole="parent" compactView={true} />
+          </div>
+
+          {/* Children Accounts */}
+          {children.map((child) => {
+            // Get initials from child's name (first letter of first and last name)
+            const nameParts = child.full_name.trim().split(/\s+/)
+            const childInitials =
+              nameParts.length > 1
+                ? nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+                : nameParts[0].charAt(0)
+
+            return (
+              <div
+                key={child.student_id}
+                className="border border-gray-200 rounded-lg p-4 bg-white"
+              >
+                <div className="flex items-center space-x-3 mb-3 pb-3 border-b border-gray-200">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                    {childInitials.toUpperCase()}
                   </div>
-                  {/* Right Column - Address Information */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                      🏠 Address Information
-                    </h4>
-                    <AddressForm
-                      data={addressData}
-                      onChange={setAddressData}
-                      showOptionalFields={true}
-                      required={true}
-                    />
+                  <div className="flex-1">
+                    <h5 className="text-sm font-semibold text-gray-900">{child.full_name}</h5>
+                    <p className="text-xs text-gray-500">
+                      {child.display_student_id || `ID: ${child.student_id.slice(0, 8)}`}
+                    </p>
                   </div>
                 </div>
+                <DataDeletionRequest
+                  userId={user?.id || ''}
+                  userRole="parent"
+                  targetUserId={child.student_id}
+                  targetUserName={child.full_name}
+                  compactView={true}
+                />
               </div>
-              <div className="flex justify-end space-x-3 p-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowEditProfile(false)}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 font-medium cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <motion.button
-                  onClick={handleSaveProfile}
-                  className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 cursor-pointer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Save Changes
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
+            )
+          })}
+        </div>
+
+        {children.length === 0 && (
+          <div className="text-center py-4 text-gray-500 mt-4 border-t border-gray-200">
+            <p className="text-sm">No children accounts found.</p>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Profile Edit Modal */}
+      {profileForModal && (
+        <ProfileEditModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          user={profileForModal}
+          onUpdate={handleProfileUpdate}
+        />
+      )}
     </div>
   )
 }
