@@ -556,16 +556,26 @@ export default function CourseDetailPage() {
                 </Card>
               )}
               {/* Prerequisites (for non-students or non-authenticated users) */}
-              {(!user || user.role !== 'student') && course.prerequisites && (
-                <Card>
-                  <CardHeader>
-                    <h2 className="text-2xl font-bold">Prerequisites</h2>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-700">{course.prerequisites}</p>
-                  </CardContent>
-                </Card>
-              )}
+              {(!user || user.role !== 'student') &&
+                course.prerequisites &&
+                Array.isArray(course.prerequisites) &&
+                course.prerequisites.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <h2 className="text-2xl font-bold">Prerequisites</h2>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 gap-4">
+                        {course.prerequisites.map((prereq, index) => (
+                          <div key={index} className="flex items-start space-x-3">
+                            <CheckCircleIcon className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-700">{prereq}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">

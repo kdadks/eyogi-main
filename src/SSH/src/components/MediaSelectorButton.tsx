@@ -68,13 +68,18 @@ export default function MediaSelectorButton({
   if (variant === 'button') {
     return (
       <div className={`inline-flex items-center space-x-2 ${className}`}>
-        <Button variant={hasSelection ? 'secondary' : 'outline'} size={size} onClick={openSelector}>
+        <Button
+          type="button"
+          variant={hasSelection ? 'secondary' : 'outline'}
+          size={size}
+          onClick={openSelector}
+        >
           <Plus className="h-4 w-4 mr-2" />
           {hasSelection ? formatSelectedMedia(selectedFiles) : buttonText}
         </Button>
 
         {hasSelection && showClearButton && (
-          <Button variant="ghost" size="sm" onClick={clearSelection}>
+          <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
             <X className="h-4 w-4" />
           </Button>
         )}
@@ -107,13 +112,14 @@ export default function MediaSelectorButton({
               {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''}
             </Badge>
             {showClearButton && (
-              <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
                 <X className="h-3 w-3" />
               </Button>
             )}
           </div>
         ) : (
           <Button
+            type="button"
             variant="primary"
             size="sm"
             onClick={openSelector}
@@ -227,12 +233,12 @@ export default function MediaSelectorButton({
 
             {/* Action buttons */}
             <div className="flex items-center space-x-2 mt-3">
-              <Button variant="outline" size="sm" onClick={openSelector}>
+              <Button type="button" variant="outline" size="sm" onClick={openSelector}>
                 <Eye className="h-3 w-3 mr-1" />
                 {multiple ? 'Change' : 'Replace'}
               </Button>
               {showClearButton && (
-                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
                   <X className="h-3 w-3 mr-1" />
                   Clear
                 </Button>

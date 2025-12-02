@@ -214,14 +214,29 @@ export default function CoursesPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredCourses.map((course) => (
                   <Card key={course.id} className="card-hover overflow-hidden flex flex-col">
-                    <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <span className="text-white font-bold text-lg">
-                            {course.course_number.slice(-2)}
-                          </span>
+                    <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 relative overflow-hidden">
+                      {course.cover_image_url || course.image_url ? (
+                        <img
+                          src={course.cover_image_url || course.image_url}
+                          alt={course.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <span className="text-white font-bold text-lg">
+                                {course.course_number.slice(-2)}
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium text-gray-700">
+                              {course.gurukul?.name}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-700">{course.gurukul?.name}</p>
+                      )}
+                      <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-gray-700">{course.gurukul?.name}</p>
                       </div>
                     </div>
                     <CardContent className="p-6 flex flex-col flex-grow">

@@ -13,7 +13,8 @@ import MediaSelectorButton from '@/components/MediaSelectorButton'
 import MediaSelector from '@/components/MediaSelector'
 import { Course, Enrollment, Certificate } from '@/types'
 import { MediaFile } from '@/lib/api/media'
-import { getTeacherCourses, createCourse, checkSlugExists } from '@/lib/api/courses'
+import { getTeacherCourses, createCourse, updateCourse, checkSlugExists } from '@/lib/api/courses'
+import { assignCourseToTeacher } from '@/lib/api/courseAssignments'
 import { sanitizeHtml } from '../../utils/sanitize'
 import {
   getTeacherEnrollments,
@@ -126,9 +127,9 @@ const courseSchema = z.object({
   prerequisites: z.array(z.string()).optional(),
   learning_outcomes: z.array(z.string()).min(1, 'At least one learning outcome is required'),
   includes_certificate: z.boolean().default(true),
-  image_url: z.string().optional(),
-  cover_image_url: z.string().optional(),
-  video_preview_url: z.string().optional(),
+  image_url: z.string().optional().nullable(),
+  cover_image_url: z.string().optional().nullable(),
+  video_preview_url: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
   meta_title: z.string().optional(),
   meta_description: z.string().optional(),
@@ -184,6 +185,9 @@ export default function TeacherDashboard() {
   const [selectedStudentNameForAudit, setSelectedStudentNameForAudit] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [showCreateCourse, setShowCreateCourse] = useState(false)
+  const [showEditCourse, setShowEditCourse] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [savingCourse, setSavingCourse] = useState(false)
   const [slugError, setSlugError] = useState<string>('')
   const [activeView, setActiveView] = useState<
     | 'overview'
@@ -298,16 +302,47 @@ export default function TeacherDashboard() {
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync learning outcomes with form
+  useEffect(() => {
+    setValue(
+      'learning_outcomes',
+      learningOutcomes.filter((outcome) => outcome.trim() !== ''),
+    )
+  }, [learningOutcomes, setValue])
+
+  // Sync prerequisites with form
+  useEffect(() => {
+    setValue(
+      'prerequisites',
+      prerequisites.filter((prereq) => prereq.trim() !== ''),
+    )
+  }, [prerequisites, setValue])
+
+  // Sync tags with form
+  useEffect(() => {
+    setValue(
+      'tags',
+      tags.filter((tag) => tag.trim() !== ''),
+    )
+  }, [tags, setValue])
+
   // Validate slug for uniqueness
   useEffect(() => {
     const validateSlug = async () => {
-      if (!watch('slug')) {
+      const slug = watch('slug')
+
+      if (!slug) {
         setSlugError('')
         return
       }
 
-      const slug = watch('slug')
-      if (!slug) return
+      // If editing and the slug hasn't changed from the original, no need to validate
+      if (editingCourse && slug === editingCourse.slug) {
+        setSlugError('')
+        return
+      }
+
+      // Check if slug exists in database
       const isDuplicate = await checkSlugExists(slug)
       setSlugError(isDuplicate ? 'This slug is already in use. Please choose a different one.' : '')
     }
@@ -315,7 +350,7 @@ export default function TeacherDashboard() {
     // Debounce slug validation
     const timer = setTimeout(validateSlug, 500)
     return () => clearTimeout(timer)
-  }, [watch('slug')])
+  }, [watch('slug'), editingCourse])
 
   // Generate certificate preview when modal opens or template changes
   useEffect(() => {
@@ -458,6 +493,7 @@ export default function TeacherDashboard() {
     }
   }, [user?.id, loadTeacherProfile])
   const handleCreateCourse = async (data: CourseForm) => {
+    setSavingCourse(true)
     try {
       // Generate slug from title if not provided
       const slug =
@@ -468,32 +504,46 @@ export default function TeacherDashboard() {
           .replace(/(^-|-$)/g, '')
 
       const courseData = {
-        ...data,
+        gurukul_id: data.gurukul_id,
+        title: data.title,
         slug,
+        description: data.description,
         detailed_description: detailedDescription,
-        teacher_id: user!.id,
-        created_by: user!.id,
-        is_active: data.is_active ?? true,
-        learning_outcomes: learningOutcomes.filter((outcome) => outcome.trim() !== ''),
-        prerequisites:
-          prerequisites.filter((prereq) => prereq.trim() !== '').length > 0
-            ? prerequisites.filter((prereq) => prereq.trim() !== '').join(', ')
-            : null,
-        tags: tags.filter((tag) => tag.trim() !== ''),
-        syllabus: null,
-        resources: [],
-        price: data.price || 0,
-        currency: data.currency || 'EUR',
+        level: data.level,
         age_group_min: data.age_group_min || 4,
         age_group_max: data.age_group_max || 18,
         duration_weeks: data.duration_weeks || 6,
         duration_hours: data.duration_hours || 24,
-        image_url: selectedCourseImage?.file_url || data.image_url,
-        cover_image_url: selectedCoverImage?.file_url || data.cover_image_url,
-        video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url,
+        price: data.price || 0,
+        currency: data.currency || 'EUR',
+        max_students: data.max_students || 20,
+        min_students: data.min_students || 10,
+        delivery_method: data.delivery_method,
+        // Note: teacher_id removed from courses table - use course_assignments instead
+        created_by: user!.id,
+        is_active: data.is_active ?? true,
+        learning_outcomes: data.learning_outcomes || [],
+        prerequisites:
+          data.prerequisites && data.prerequisites.length > 0 ? data.prerequisites : null,
+        tags: data.tags || [],
+        includes_certificate: data.includes_certificate ?? true,
+        image_url: selectedCourseImage?.file_url || data.image_url || undefined,
+        cover_image_url: selectedCoverImage?.file_url || data.cover_image_url || undefined,
+        video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url || undefined,
+        syllabus: null,
+        resources: [],
+        meta_title: data.meta_title || undefined,
+        meta_description: data.meta_description || undefined,
+        featured: data.featured || false,
         part: data.part || undefined,
       }
-      await createCourse(courseData)
+
+      // Create the course
+      const newCourse = await createCourse(courseData)
+
+      // Assign the teacher to the newly created course
+      await assignCourseToTeacher(newCourse.id, user!.id, user!.id, 'Course creator')
+
       await loadDashboardData()
       setShowCreateCourse(false)
       reset()
@@ -501,10 +551,147 @@ export default function TeacherDashboard() {
       setPrerequisites([''])
       setTags([''])
       setDetailedDescription('')
+      setSelectedCourseImage(null)
+      setSelectedCoverImage(null)
+      setSelectedVideoPreview(null)
       toast.success('Course created successfully!')
-    } catch {
-      toast.error('Failed to create course')
+    } catch (error) {
+      console.error('Error creating course:', error)
+      toast.error(
+        'Failed to create course: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      )
+    } finally {
+      setSavingCourse(false)
     }
+  }
+
+  const handleEditCourse = async (data: CourseForm) => {
+    console.log('handleEditCourse called', { editingCourse, data })
+    if (!editingCourse) {
+      console.log('No editing course, returning')
+      return
+    }
+
+    setSavingCourse(true)
+    try {
+      const slug =
+        data.slug ||
+        data.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+
+      const courseData = {
+        gurukul_id: data.gurukul_id,
+        title: data.title,
+        slug,
+        description: data.description,
+        detailed_description: detailedDescription,
+        level: data.level,
+        age_group_min: data.age_group_min || 4,
+        age_group_max: data.age_group_max || 18,
+        duration_weeks: data.duration_weeks || 6,
+        duration_hours: data.duration_hours || 24,
+        price: data.price || 0,
+        currency: data.currency || 'EUR',
+        max_students: data.max_students || 20,
+        min_students: data.min_students || 10,
+        delivery_method: data.delivery_method,
+        is_active: data.is_active ?? true,
+        learning_outcomes: data.learning_outcomes || [],
+        prerequisites:
+          data.prerequisites && data.prerequisites.length > 0 ? data.prerequisites : null,
+        tags: data.tags || [],
+        includes_certificate: data.includes_certificate ?? true,
+        image_url: selectedCourseImage?.file_url || data.image_url || undefined,
+        cover_image_url: selectedCoverImage?.file_url || data.cover_image_url || undefined,
+        video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url || undefined,
+        meta_title: data.meta_title || undefined,
+        meta_description: data.meta_description || undefined,
+        featured: data.featured || false,
+        part: data.part || undefined,
+      }
+
+      await updateCourse(editingCourse.id, courseData)
+
+      // Show success toast before closing modal
+      toast.success('Course updated successfully!')
+
+      // Wait a bit for toast to be visible before closing modal
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      await loadDashboardData()
+      setShowEditCourse(false)
+      setEditingCourse(null)
+      reset()
+      setLearningOutcomes([''])
+      setPrerequisites([''])
+      setTags([''])
+      setDetailedDescription('')
+      setSelectedCourseImage(null)
+      setSelectedCoverImage(null)
+      setSelectedVideoPreview(null)
+    } catch (error) {
+      console.error('Error updating course:', error)
+      toast.error(
+        'Failed to update course: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      )
+      // Wait a bit for error toast to be visible
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    } finally {
+      setSavingCourse(false)
+    }
+  }
+
+  const openEditCourse = (course: Course) => {
+    setEditingCourse(course)
+    reset({
+      gurukul_id: course.gurukul_id,
+      course_number: course.course_number,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      level: course.level,
+      age_group_min: course.age_group_min,
+      age_group_max: course.age_group_max,
+      duration_weeks: course.duration_weeks,
+      duration_hours: course.duration_hours,
+      delivery_method: course.delivery_method,
+      price: course.price,
+      currency: course.currency,
+      max_students: course.max_students,
+      min_students: course.min_students,
+      includes_certificate: course.includes_certificate,
+      image_url: course.image_url,
+      cover_image_url: course.cover_image_url,
+      video_preview_url: course.video_preview_url,
+      tags: course.tags,
+      meta_title: course.meta_title,
+      meta_description: course.meta_description,
+      featured: course.featured,
+      is_active: course.is_active,
+      part: course.course_number?.slice(-1).match(/[A-Z]/) ? course.course_number.slice(-1) : '',
+    })
+    setDetailedDescription(course.detailed_description || '')
+    setLearningOutcomes(
+      course.learning_outcomes && course.learning_outcomes.length > 0
+        ? course.learning_outcomes
+        : [''],
+    )
+    setPrerequisites(
+      course.prerequisites && Array.isArray(course.prerequisites) && course.prerequisites.length > 0
+        ? course.prerequisites
+        : [''],
+    )
+    setTags(course.tags && course.tags.length > 0 ? course.tags : [''])
+    setSelectedCourseImage(course.image_url ? ({ file_url: course.image_url } as MediaFile) : null)
+    setSelectedCoverImage(
+      course.cover_image_url ? ({ file_url: course.cover_image_url } as MediaFile) : null,
+    )
+    setSelectedVideoPreview(
+      course.video_preview_url ? ({ file_url: course.video_preview_url } as MediaFile) : null,
+    )
+    setShowEditCourse(true)
   }
 
   // State for media selector for ReactQuill
@@ -1554,10 +1741,18 @@ export default function TeacherDashboard() {
                         key={course.id}
                         className="border-0 shadow-xl bg-white/70 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group"
                       >
-                        <div className="h-12 sm:h-16 lg:h-20 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
-                          <div className="absolute inset-0 bg-black/20"></div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <p className="text-white text-xs sm:text-sm lg:text-base font-semibold">
+                        <div className="h-32 sm:h-40 lg:h-48 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-t-lg relative overflow-hidden">
+                          {course.cover_image_url || course.image_url ? (
+                            <img
+                              src={course.cover_image_url || course.image_url}
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-black/20"></div>
+                          )}
+                          <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded shadow-sm">
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900">
                               {course.course_number}
                             </p>
                           </div>
@@ -1609,6 +1804,16 @@ export default function TeacherDashboard() {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditCourse(course)}
+                              disabled={savingCourse}
+                              className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <PencilIcon className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
                             <Link to={generateCourseUrl(course)} className="flex-1">
                               <Button
                                 variant="outline"
@@ -1620,7 +1825,7 @@ export default function TeacherDashboard() {
                                 className="w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                               >
                                 <EyeIcon className="h-4 w-4 mr-1" />
-                                View Details
+                                View
                               </Button>
                             </Link>
                             {pendingCertificates > 0 && (
@@ -3280,9 +3485,26 @@ export default function TeacherDashboard() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Detailed Description
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Detailed Description
+                        </label>
+                        <MediaSelectorButton
+                          buttonText="Insert Media"
+                          onSelect={(media) => {
+                            if (media.length > 0) {
+                              const file = media[0]
+                              let embedCode = ''
+                              if (file.file_type.startsWith('image/')) {
+                                embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                              } else if (file.file_type.startsWith('video/')) {
+                                embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
+                              }
+                              setDetailedDescription((detailedDescription || '') + embedCode)
+                            }
+                          }}
+                        />
+                      </div>
                       <SafeReactQuill
                         key="course-description-editor"
                         value={detailedDescription}
@@ -3645,11 +3867,632 @@ export default function TeacherDashboard() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    disabled={savingCourse}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     size="sm"
                   >
-                    <SparklesIcon className="h-4 w-4 mr-2" />
-                    Create Course
+                    {savingCourse ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <SparklesIcon className="h-4 w-4 mr-2" />
+                        Create Course
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Edit Course Modal */}
+      {showEditCourse && editingCourse && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-6xl w-full max-h-[98vh] sm:max-h-[95vh] overflow-hidden flex flex-col"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-3 sm:p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold flex items-center">
+                    <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+                    <span className="truncate">Edit Course</span>
+                  </h2>
+                  <p className="text-emerald-100 text-xs sm:text-sm mt-1 hidden sm:block">
+                    Update course information
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditCourse(false)
+                    setEditingCourse(null)
+                    reset()
+                    setLearningOutcomes([''])
+                    setPrerequisites([''])
+                    setTags([''])
+                    setDetailedDescription('')
+                    setSelectedCourseImage(null)
+                    setSelectedCoverImage(null)
+                    setSelectedVideoPreview(null)
+                  }}
+                  className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 ml-2 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                  <XCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            <form
+              onSubmit={handleSubmit(handleEditCourse, (errors) => {
+                console.log('Form validation errors:', errors)
+                toast.error('Please fix the form errors before updating')
+              })}
+              className="flex-1 overflow-y-auto"
+            >
+              <div className="p-4 space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-yellow-800 flex items-center">
+                    <span className="font-semibold mr-2">Editing:</span> {editingCourse.title} (
+                    {editingCourse.course_number})
+                  </p>
+                </div>
+
+                {/* Basic Information */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <BookOpenIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Course Title"
+                        placeholder="Enter course title"
+                        {...register('title')}
+                        error={errors.title?.message}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Gurukul</label>
+                      <select
+                        {...register('gurukul_id')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="">Select Gurukul</option>
+                        {gurukuls.map((gurukul) => (
+                          <option key={gurukul.id} value={gurukul.id}>
+                            {gurukul.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.gurukul_id && (
+                        <p className="text-sm text-red-600">{errors.gurukul_id.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Part (Optional){' '}
+                        <span className="text-xs text-gray-500">(A, B, C, D, etc.)</span>
+                      </label>
+                      <Input
+                        placeholder="A, B, C..."
+                        {...register('part')}
+                        maxLength={1}
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase().slice(0, 1)
+                          setValue('part', value)
+                        }}
+                        error={errors.part?.message}
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Course number will be auto-regenerated:
+                        {watch('gurukul_id') &&
+                        watch('title') &&
+                        gurukuls.find((g) => g.id === watch('gurukul_id')) ? (
+                          <span className="font-semibold ml-1">
+                            {gurukuls
+                              .find((g) => g.id === watch('gurukul_id'))
+                              ?.name.replace(/[^a-zA-Z]/g, '')
+                              .substring(0, 2)
+                              .toUpperCase()}
+                            {watch('title')
+                              ?.replace(/[^a-zA-Z]/g, '')
+                              .charAt(0)
+                              .toUpperCase()}
+                            #{watch('part') || ''}
+                          </span>
+                        ) : (
+                          ' [Select gurukul and enter title]'
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Slug{' '}
+                        <span className="text-xs text-gray-500">(auto-generated from title)</span>
+                      </label>
+                      <Input
+                        value={
+                          !watch('slug') ? generateSlug(watch('title') || '') : watch('slug') || ''
+                        }
+                        onChange={(e) => setValue('slug', e.target.value)}
+                        placeholder="course-title"
+                        readOnly={!watch('title')}
+                        error={errors.slug?.message}
+                        className={`text-sm ${!watch('title') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      />
+                      {slugError && <p className="text-sm text-red-600 mt-1">{slugError}</p>}
+                      {watch('title') && !slugError && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {!watch('slug')
+                            ? 'Auto-generated from title.'
+                            : 'You can edit or reset to auto-generate.'}
+                        </p>
+                      )}
+                      {watch('slug') && watch('title') && !slugError && (
+                        <button
+                          type="button"
+                          onClick={() => setValue('slug', '')}
+                          className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                        >
+                          Reset to auto-generate
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Level</label>
+                      <select
+                        {...register('level')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="elementary">Elementary (4-7 years)</option>
+                        <option value="basic">Basic (8-11 years)</option>
+                        <option value="intermediate">Intermediate (12-15 years)</option>
+                        <option value="advanced">Advanced (16-19 years)</option>
+                      </select>
+                      {errors.level && (
+                        <p className="text-sm text-red-600">{errors.level.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descriptions */}
+                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <DocumentTextIcon className="h-4 w-4 mr-2 text-green-600" />
+                    Course Descriptions
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Short Description
+                      </label>
+                      <textarea
+                        {...register('description')}
+                        rows={3}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                        placeholder="Brief overview for course listings (plain text or formatted text)"
+                      />
+                      {errors.description && (
+                        <p className="text-sm text-red-600">{errors.description.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Detailed Description
+                        </label>
+                        <MediaSelectorButton
+                          buttonText="Insert Media"
+                          onSelect={(media) => {
+                            if (media.length > 0) {
+                              const file = media[0]
+                              let embedCode = ''
+                              if (file.file_type.startsWith('image/')) {
+                                embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                              } else if (file.file_type.startsWith('video/')) {
+                                embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
+                              }
+                              setDetailedDescription((detailedDescription || '') + embedCode)
+                            }
+                          }}
+                        />
+                      </div>
+                      <SafeReactQuill
+                        key="course-edit-description-editor"
+                        value={detailedDescription}
+                        onChange={setDetailedDescription}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="Comprehensive course description with formatting (rich text editor)..."
+                        className="bg-white text-sm"
+                        style={{ minHeight: '200px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Course Details */}
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <Cog6ToothIcon className="h-4 w-4 mr-2 text-orange-600" />
+                    Course Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Delivery Method
+                      </label>
+                      <select
+                        {...register('delivery_method')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="hybrid">Hybrid</option>
+                        <option value="remote">Online Only</option>
+                        <option value="physical">In-person Only</option>
+                      </select>
+                      {errors.delivery_method && (
+                        <p className="text-sm text-red-600">{errors.delivery_method.message}</p>
+                      )}
+                    </div>
+                    <Input
+                      label="Duration (weeks)"
+                      type="number"
+                      placeholder="6"
+                      {...register('duration_weeks', { valueAsNumber: true })}
+                      error={errors.duration_weeks?.message}
+                    />
+                    <Input
+                      label="Duration (hours)"
+                      type="number"
+                      placeholder="24"
+                      {...register('duration_hours', { valueAsNumber: true })}
+                      error={errors.duration_hours?.message}
+                    />
+                    <Input
+                      label="Minimum Age"
+                      type="number"
+                      placeholder="8"
+                      {...register('age_group_min', { valueAsNumber: true })}
+                      error={errors.age_group_min?.message}
+                    />
+                    <Input
+                      label="Maximum Age"
+                      type="number"
+                      placeholder="12"
+                      {...register('age_group_max', { valueAsNumber: true })}
+                      error={errors.age_group_max?.message}
+                    />
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Currency</label>
+                      <select
+                        {...register('currency')}
+                        className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-colors text-sm py-2 px-3"
+                      >
+                        <option value="EUR">EUR (€)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="INR">INR (₹)</option>
+                      </select>
+                    </div>
+                    <Input
+                      label="Course Price"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...register('price', { valueAsNumber: true })}
+                      error={errors.price?.message}
+                    />
+                    <Input
+                      label="Maximum Students"
+                      type="number"
+                      placeholder="20"
+                      {...register('max_students', { valueAsNumber: true })}
+                      error={errors.max_students?.message}
+                    />
+                    <Input
+                      label="Minimum Students"
+                      type="number"
+                      placeholder="10"
+                      {...register('min_students', { valueAsNumber: true })}
+                      error={errors.min_students?.message}
+                    />
+                  </div>
+                </div>
+
+                {/* Prerequisites */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <ClipboardDocumentCheckIcon className="h-4 w-4 mr-2 text-purple-600" />
+                      Prerequisites
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addPrerequisite}
+                      className="text-xs px-2 py-1"
+                    >
+                      <PlusIcon className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {prerequisites.map((prereq, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={prereq}
+                          onChange={(e) => updatePrerequisite(index, e.target.value)}
+                          placeholder={`Prerequisite ${index + 1}`}
+                          className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                        />
+                        {prerequisites.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removePrerequisite(index)}
+                            className="text-red-600 border-red-300 hover:bg-red-50 p-1"
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Learning Outcomes */}
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <LightBulbIcon className="h-4 w-4 mr-2 text-yellow-600" />
+                      Learning Outcomes
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addLearningOutcome}
+                      className="text-xs px-2 py-1"
+                    >
+                      <PlusIcon className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {learningOutcomes.map((outcome, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={outcome}
+                          onChange={(e) => updateLearningOutcome(index, e.target.value)}
+                          placeholder={`Learning outcome ${index + 1}`}
+                          className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                        />
+                        {learningOutcomes.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeLearningOutcome(index)}
+                            className="text-red-600 border-red-300 hover:bg-red-50 p-1"
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <TagIcon className="h-4 w-4 mr-2 text-indigo-600" />
+                      Tags
+                    </h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addTag}
+                      className="text-xs px-2 py-1"
+                    >
+                      <PlusIcon className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {tags.map((tag, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={tag}
+                          onChange={(e) => updateTag(index, e.target.value)}
+                          placeholder={`Tag ${index + 1}`}
+                          className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                        />
+                        {tags.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeTag(index)}
+                            className="text-red-600 border-red-300 hover:bg-red-50 p-1"
+                          >
+                            <XCircleIcon className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Media & SEO */}
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <PhotoIcon className="h-4 w-4 mr-2 text-gray-600" />
+                    Media & SEO (Optional)
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <MediaSelectorButton
+                        label="Course Image"
+                        accept={['image/*']}
+                        variant="field"
+                        onSelect={(files) => {
+                          setSelectedCourseImage(files[0] || null)
+                        }}
+                        placeholder="Select course thumbnail"
+                        showPreview
+                        size="sm"
+                      />
+                      <MediaSelectorButton
+                        label="Cover Image"
+                        accept={['image/*']}
+                        variant="field"
+                        onSelect={(files) => {
+                          setSelectedCoverImage(files[0] || null)
+                        }}
+                        placeholder="Select cover image"
+                        showPreview
+                        size="sm"
+                      />
+                      <MediaSelectorButton
+                        label="Video Preview"
+                        accept={['video/*']}
+                        variant="field"
+                        onSelect={(files) => {
+                          setSelectedVideoPreview(files[0] || null)
+                        }}
+                        placeholder="Select preview video"
+                        showPreview
+                        size="sm"
+                      />
+                      <Input
+                        label="Meta Title"
+                        placeholder="SEO title"
+                        {...register('meta_title')}
+                        error={errors.meta_title?.message}
+                        className="text-sm"
+                      />
+                    </div>
+                    <Input
+                      label="Meta Description"
+                      placeholder="SEO description"
+                      {...register('meta_description')}
+                      error={errors.meta_description?.message}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Course Settings */}
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <AdjustmentsHorizontalIcon className="h-4 w-4 mr-2 text-emerald-600" />
+                    Course Settings
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-6">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          {...register('includes_certificate')}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Include Certificate</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          {...register('featured')}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Featured Course</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          {...register('is_active')}
+                          className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Active Course</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-end space-x-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowEditCourse(false)
+                      setEditingCourse(null)
+                      reset()
+                      setLearningOutcomes([''])
+                      setPrerequisites([''])
+                      setTags([''])
+                      setDetailedDescription('')
+                      setSelectedCourseImage(null)
+                      setSelectedCoverImage(null)
+                      setSelectedVideoPreview(null)
+                    }}
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={savingCourse || !!slugError}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    size="sm"
+                    title={slugError ? 'Fix slug error before updating' : 'Update course'}
+                    onClick={() => {
+                      console.log('Update button clicked', {
+                        savingCourse,
+                        slugError,
+                        editingCourse,
+                      })
+                    }}
+                  >
+                    {savingCourse ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <PencilIcon className="h-4 w-4 mr-2" />
+                        Update Course
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
