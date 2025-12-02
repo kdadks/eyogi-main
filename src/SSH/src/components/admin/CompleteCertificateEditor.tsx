@@ -471,18 +471,14 @@ export default function CompleteCertificateEditor({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl my-8">
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-2xl border border-gray-300 w-full max-w-7xl my-8">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold">
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-500 to-purple-600">
+          <h2 className="text-2xl font-bold text-white">
             {template ? 'Edit' : 'Create'} Certificate Template
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={loading}
-          >
+          <button onClick={onClose} className="text-white/80 hover:text-white" disabled={loading}>
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>

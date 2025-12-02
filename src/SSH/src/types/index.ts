@@ -82,7 +82,7 @@ export interface Course {
   max_students: number
   min_students?: number
   delivery_method: 'physical' | 'remote' | 'hybrid'
-  prerequisites?: string[] | null // Array of prerequisite text
+  prerequisites?: string[] | null // Array of prerequisite text (can be HTML from rich editor)
   prerequisite_courses?: string[] // Array of course IDs that must be completed
   prerequisite_skills?: string[] // Array of skill requirements
   prerequisite_level?: 'elementary' | 'basic' | 'intermediate' | 'advanced' // Minimum level required

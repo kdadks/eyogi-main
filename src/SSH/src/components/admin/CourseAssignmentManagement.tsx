@@ -72,11 +72,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onAs
   }
   if (!isOpen) return null
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Assign Teacher to Course</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-300">
+        <div className="flex justify-between items-center bg-gradient-to-r from-blue-500 to-purple-600 -m-6 mb-4 p-6 rounded-t-lg">
+          <h3 className="text-lg font-semibold text-white">Assign Teacher to Course</h3>
+          <button onClick={onClose} className="text-white/80 hover:text-white cursor-pointer">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>

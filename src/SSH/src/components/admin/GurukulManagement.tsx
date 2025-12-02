@@ -425,7 +425,11 @@ export default function GurukulManagement() {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{gurukul.name}</div>
                             <div className="text-sm text-gray-500 line-clamp-2">
-                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(gurukul.description) }} />
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: sanitizeHtml(gurukul.description),
+                                }}
+                              />
                             </div>
                           </div>
                         </div>
@@ -493,13 +497,13 @@ export default function GurukulManagement() {
       </Card>
       {/* Gurukul Details Modal */}
       {viewingGurukul && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-900">Gurukul Details</h2>
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-300">
+            <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-500 to-purple-600">
+              <h2 className="text-xl font-bold text-white">Gurukul Details</h2>
               <button
                 onClick={() => setViewingGurukul(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-white/20 rounded-lg text-white/80 hover:text-white"
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -559,7 +563,11 @@ export default function GurukulManagement() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
                   <div className="text-sm text-gray-900 leading-relaxed">
                     {viewingGurukul.description ? (
-                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingGurukul.description) }} />
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(viewingGurukul.description),
+                        }}
+                      />
                     ) : (
                       'No description provided'
                     )}

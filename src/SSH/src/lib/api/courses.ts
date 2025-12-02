@@ -298,7 +298,8 @@ export async function updateCourse(
       .select()
       .single()
     if (error) {
-      throw new Error('Failed to update course')
+      console.error('Supabase update error:', error)
+      throw new Error(`Failed to update course: ${error.message}`)
     }
 
     // Invalidate all course-related caches

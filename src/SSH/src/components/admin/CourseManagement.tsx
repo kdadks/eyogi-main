@@ -238,6 +238,7 @@ export default function CourseManagement() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [formData, setFormData] = useState<CourseFormData>(initialFormData)
   const [learningOutcomesEditorValue, setLearningOutcomesEditorValue] = useState('')
+  const [prerequisitesEditorValue, setPrerequisitesEditorValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [slugError, setSlugError] = useState<string>('')
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -277,8 +278,13 @@ export default function CourseManagement() {
     if (showEditModal || showCreateModal) {
       const htmlValue = outcomesToHtml(formData.learning_outcomes)
       setLearningOutcomesEditorValue(htmlValue)
+      // Set prerequisites as plain HTML (not parsed into array)
+      // Ensure we always pass a string, never null/undefined
+      const prereqValue = formData.prerequisites || ''
+      console.log('Setting prerequisites editor value:', prereqValue)
+      setPrerequisitesEditorValue(typeof prereqValue === 'string' ? prereqValue : '')
     }
-  }, [showEditModal, showCreateModal])
+  }, [showEditModal, showCreateModal, formData.learning_outcomes, formData.prerequisites])
 
   // Handle learning outcomes change - update both editor value and formData
   const handleLearningOutcomesChange = useCallback((value: string) => {
@@ -287,6 +293,15 @@ export default function CourseManagement() {
     setFormData((prevFormData) => ({
       ...prevFormData,
       learning_outcomes: newOutcomes,
+    }))
+  }, [])
+
+  // Handle prerequisites change - update both editor value and formData
+  const handlePrerequisitesChange = useCallback((value: string) => {
+    setPrerequisitesEditorValue(value)
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      prerequisites: value,
     }))
   }, [])
 
@@ -362,6 +377,7 @@ export default function CourseManagement() {
       toast.error('Please fill in all required fields')
       return
     }
+    console.log('Creating course with formData:', formData)
     setSaving(true)
     try {
       const courseData = {
@@ -386,13 +402,18 @@ export default function CourseManagement() {
         currency: formData.currency || 'EUR',
         max_students: formData.max_students || 1,
         min_students: formData.min_students || undefined,
-        prerequisites: formData.prerequisites || undefined,
+        prerequisites:
+          formData.prerequisites && formData.prerequisites.trim() !== ''
+            ? [formData.prerequisites]
+            : undefined,
         learning_outcomes: formData.learning_outcomes.filter((outcome) => outcome.trim() !== ''),
         includes_certificate: formData.includes_certificate || false,
         certificate_template_id: formData.certificate_template_id || undefined,
-        image_url: formData.image_url || undefined,
-        cover_image_url: formData.cover_image_url || undefined,
-        video_preview_url: formData.video_preview_url || undefined,
+        image_url: formData.image_url === null ? null : formData.image_url || undefined,
+        cover_image_url:
+          formData.cover_image_url === null ? null : formData.cover_image_url || undefined,
+        video_preview_url:
+          formData.video_preview_url === null ? null : formData.video_preview_url || undefined,
         syllabus: formData.syllabus,
         resources: formData.resources || undefined,
         is_active: formData.is_active !== undefined ? formData.is_active : true,
@@ -408,6 +429,7 @@ export default function CourseManagement() {
       setShowCreateModal(false)
       setFormData(initialFormData)
       setLearningOutcomesEditorValue('')
+      setPrerequisitesEditorValue('')
       await loadData()
     } catch (error) {
       toast.error(
@@ -420,6 +442,20 @@ export default function CourseManagement() {
   const handleEditCourse = (course: Course) => {
     try {
       setEditingCourse(course)
+
+      // Handle prerequisites - convert array to string or use as is if already string
+      let prerequisitesValue = ''
+      if (course.prerequisites) {
+        if (Array.isArray(course.prerequisites)) {
+          // Convert array to HTML list
+          prerequisitesValue =
+            course.prerequisites.length > 0
+              ? `<ul>${course.prerequisites.map((p) => `<li>${p}</li>`).join('')}</ul>`
+              : ''
+        } else if (typeof course.prerequisites === 'string') {
+          prerequisitesValue = course.prerequisites
+        }
+      }
 
       const formDataToSet = {
         gurukul_id: course.gurukul_id,
@@ -438,7 +474,7 @@ export default function CourseManagement() {
         max_students: course.max_students,
         min_students: course.min_students || undefined,
         delivery_method: course.delivery_method,
-        prerequisites: course.prerequisites || '',
+        prerequisites: prerequisitesValue,
         prerequisite_courses: course.prerequisite_courses || [],
         prerequisite_skills: course.prerequisite_skills || [],
         learning_outcomes: course.learning_outcomes || [],
@@ -466,6 +502,7 @@ export default function CourseManagement() {
   }
   const handleUpdateCourse = async () => {
     if (!editingCourse) return
+    console.log('Updating course with formData:', formData)
     setSaving(true)
     try {
       const updates = {
@@ -489,13 +526,18 @@ export default function CourseManagement() {
         currency: formData.currency || 'EUR',
         max_students: formData.max_students || 1,
         min_students: formData.min_students || undefined,
-        prerequisites: formData.prerequisites || undefined,
+        prerequisites:
+          formData.prerequisites && formData.prerequisites.trim() !== ''
+            ? [formData.prerequisites]
+            : undefined,
         learning_outcomes: formData.learning_outcomes.filter((outcome) => outcome.trim() !== ''),
         includes_certificate: formData.includes_certificate || false,
         certificate_template_id: formData.certificate_template_id || undefined,
-        image_url: formData.image_url || undefined,
-        cover_image_url: formData.cover_image_url || undefined,
-        video_preview_url: formData.video_preview_url || undefined,
+        image_url: formData.image_url === null ? null : formData.image_url || undefined,
+        cover_image_url:
+          formData.cover_image_url === null ? null : formData.cover_image_url || undefined,
+        video_preview_url:
+          formData.video_preview_url === null ? null : formData.video_preview_url || undefined,
         syllabus: formData.syllabus,
         resources: formData.resources || undefined,
         is_active: formData.is_active !== undefined ? formData.is_active : true,
@@ -512,9 +554,13 @@ export default function CourseManagement() {
       setEditingCourse(null)
       setFormData(initialFormData)
       setLearningOutcomesEditorValue('')
+      setPrerequisitesEditorValue('')
       await loadData()
-    } catch {
-      toast.error('Failed to update course')
+    } catch (error) {
+      console.error('Failed to update course:', error)
+      toast.error(
+        'Failed to update course: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      )
     } finally {
       setSaving(false)
     }
@@ -525,6 +571,7 @@ export default function CourseManagement() {
     setEditingCourse(null)
     setFormData(initialFormData)
     setLearningOutcomesEditorValue('')
+    setPrerequisitesEditorValue('')
   }
   if (loading) {
     return (
@@ -683,42 +730,64 @@ export default function CourseManagement() {
       )}
       {/* Course View Modal */}
       {viewingCourse && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200">
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-purple-600">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Course Details</h2>
+                <h2 className="text-base font-semibold text-white">Course Details</h2>
                 <button
                   onClick={() => setViewingCourse(null)}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  className="p-1 text-white/80 hover:text-white rounded"
                 >
-                  <XMarkIcon className="h-5 w-5" />
+                  <XMarkIcon className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-3">
               {/* Course Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Course Title
+                </label>
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
                   {viewingCourse.title}
                 </div>
               </div>
               {/* Basic Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Gurukul</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                    {gurukuls.find((g) => g.id === viewingCourse.gurukul_id)?.name || 'N/A'}
+                  </div>
+                </div>
+                {viewingCourse.part && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Part</label>
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                      {viewingCourse.part}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Course Number
                   </label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
                     {viewingCourse.course_number}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Slug</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-900 font-mono">
+                    {viewingCourse.slug}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Level</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded">
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${getLevelColor(viewingCourse.level)}`}
+                      className={`px-2 py-0.5 text-xs font-medium rounded ${getLevelColor(viewingCourse.level)}`}
                     >
                       {viewingCourse.level.charAt(0).toUpperCase() +
                         viewingCourse.level.slice(1).toLowerCase()}
@@ -726,46 +795,66 @@ export default function CourseManagement() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Duration</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
                     {viewingCourse.duration_weeks} weeks
                     {viewingCourse.duration_hours && ` (${viewingCourse.duration_hours} hours)`}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 font-medium">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Price</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900 font-medium">
                     {formatCurrency(viewingCourse.price)} {viewingCourse.currency}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Age Group</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Age Group
+                  </label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
                     {getAgeGroupLabel(viewingCourse.age_group_min, viewingCourse.age_group_max)}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Max Students
                   </label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
                     {viewingCourse.max_students}
                   </div>
                 </div>
+                {viewingCourse.min_students && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Min Students
+                    </label>
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                      {viewingCourse.min_students}
+                    </div>
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Delivery Method
                   </label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
                     {viewingCourse.delivery_method}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Certificate
+                  </label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                    {viewingCourse.includes_certificate ? 'Yes' : 'No'}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Status</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded ${
+                        className={`px-2 py-0.5 text-xs font-medium rounded ${
                           viewingCourse.is_active
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
@@ -774,7 +863,7 @@ export default function CourseManagement() {
                         {viewingCourse.is_active ? 'Active' : 'Inactive'}
                       </span>
                       {viewingCourse.featured && (
-                        <span className="px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
+                        <span className="px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
                           Featured
                         </span>
                       )}
@@ -784,15 +873,17 @@ export default function CourseManagement() {
               </div>
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Description
+                </label>
                 <div
-                  className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px] whitespace-pre-wrap
-                  [&_p]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
-                  [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
-                  [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
-                  [&_a]:text-orange-600 [&_a]:hover:text-orange-700 [&_br]:block
-                  [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
-                  [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                  className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900
+                  [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul_li]:mb-0.5
+                  [&_ol]:list-decimal [&_ol]:ml-5 [&_ol_li]:mb-0.5
+                  [&_li]:mb-0.5 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                  [&_a]:text-orange-600 [&_a]:hover:text-orange-700
+                  [&_.ql-indent-1]:ml-6 [&_.ql-indent-2]:ml-12 [&_.ql-indent-3]:ml-18
+                  [&_li_ul]:ml-5 [&_li_ol]:ml-5"
                 >
                   <div
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(viewingCourse.description) }}
@@ -802,17 +893,17 @@ export default function CourseManagement() {
               {/* Detailed Description */}
               {viewingCourse.detailed_description && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Detailed Description
                   </label>
                   <div
-                    className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900 min-h-[80px] whitespace-pre-wrap
-                    [&_p]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
-                    [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
-                    [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
-                    [&_a]:text-orange-600 [&_a]:hover:text-orange-700 [&_br]:block
-                    [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
-                    [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                    className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900
+                    [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul_li]:mb-0.5
+                    [&_ol]:list-decimal [&_ol]:ml-5 [&_ol_li]:mb-0.5
+                    [&_li]:mb-0.5 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                    [&_a]:text-orange-600 [&_a]:hover:text-orange-700
+                    [&_.ql-indent-1]:ml-6 [&_.ql-indent-2]:ml-12 [&_.ql-indent-3]:ml-18
+                    [&_li_ul]:ml-5 [&_li_ol]:ml-5"
                   >
                     <div
                       dangerouslySetInnerHTML={{
@@ -823,23 +914,39 @@ export default function CourseManagement() {
                 </div>
               )}
               {/* Prerequisites */}
-              {viewingCourse.prerequisites && (
+              {viewingCourse.prerequisites && viewingCourse.prerequisites.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Prerequisites
                   </label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-900">
-                    {viewingCourse.prerequisites}
+                  <div
+                    className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900
+                    [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul_li]:mb-0.5
+                    [&_ol]:list-decimal [&_ol]:ml-5 [&_ol_li]:mb-0.5
+                    [&_li]:mb-0.5 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                    [&_a]:text-orange-600 [&_a]:hover:text-orange-700
+                    [&_.ql-indent-1]:ml-6 [&_.ql-indent-2]:ml-12 [&_.ql-indent-3]:ml-18
+                    [&_li_ul]:ml-5 [&_li_ol]:ml-5"
+                  >
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(
+                          Array.isArray(viewingCourse.prerequisites)
+                            ? viewingCourse.prerequisites[0] || ''
+                            : viewingCourse.prerequisites,
+                        ),
+                      }}
+                    />
                   </div>
                 </div>
               )}
               {/* Learning Outcomes */}
               {viewingCourse.learning_outcomes && viewingCourse.learning_outcomes.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Learning Outcomes
                   </label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded">
                     {(() => {
                       try {
                         const parsedOutcomes = parseLearningOutcomesForDisplay(
@@ -847,22 +954,24 @@ export default function CourseManagement() {
                         )
                         if (parsedOutcomes.length === 0) {
                           return (
-                            <p className="text-gray-500 italic">No learning outcomes available</p>
+                            <p className="text-xs text-gray-500 italic">
+                              No learning outcomes available
+                            </p>
                           )
                         }
                         return (
-                          <ul style={{ listStyleType: 'disc', paddingLeft: '24px' }}>
+                          <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
                             {parsedOutcomes.map((item, index) => (
                               <li
                                 key={index}
-                                className="text-gray-900 mb-2"
+                                className="text-sm text-gray-900 mb-1"
                                 style={{ display: 'list-item', listStylePosition: 'outside' }}
                               >
                                 {item.isHtml ? (
                                   <div
-                                    className="inline text-base
-                                      [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
-                                      [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                                    className="inline text-sm
+                                      [&_p]:mb-1 [&_ul]:list-disc [&_ul]:ml-4 [&_ul_li]:mb-0.5
+                                      [&_ol]:list-decimal [&_ol]:ml-4 [&_ol_li]:mb-0.5
                                       [&_strong]:font-bold [&_em]:italic [&_u]:underline"
                                     dangerouslySetInnerHTML={{
                                       __html: sanitizeHtml(item.content),
@@ -878,7 +987,9 @@ export default function CourseManagement() {
                       } catch (error) {
                         console.error('Failed to render learning outcomes:', error)
                         return (
-                          <p className="text-red-500 italic">Error loading learning outcomes</p>
+                          <p className="text-xs text-red-500 italic">
+                            Error loading learning outcomes
+                          </p>
                         )
                       }
                     })()}
@@ -888,18 +999,120 @@ export default function CourseManagement() {
               {/* Tags */}
               {viewingCourse.tags && viewingCourse.tags.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                    <div className="flex flex-wrap gap-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Tags</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded">
+                    <div className="flex flex-wrap gap-1">
                       {viewingCourse.tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+                          className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
+                  </div>
+                </div>
+              )}
+              {/* Media Section */}
+              {(viewingCourse.image_url ||
+                viewingCourse.cover_image_url ||
+                viewingCourse.video_preview_url) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Media</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {viewingCourse.image_url && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-0.5">
+                          Course Image
+                        </label>
+                        <div className="p-1.5 bg-gray-50 border border-gray-200 rounded">
+                          <img
+                            src={viewingCourse.image_url}
+                            alt="Course"
+                            className="w-full h-24 object-cover rounded"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {viewingCourse.cover_image_url && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-0.5">
+                          Cover Image
+                        </label>
+                        <div className="p-1.5 bg-gray-50 border border-gray-200 rounded">
+                          <img
+                            src={viewingCourse.cover_image_url}
+                            alt="Cover"
+                            className="w-full h-24 object-cover rounded"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {viewingCourse.video_preview_url && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-0.5">
+                          Video Preview
+                        </label>
+                        <div className="p-1.5 bg-gray-50 border border-gray-200 rounded">
+                          <video
+                            src={viewingCourse.video_preview_url}
+                            controls
+                            className="w-full h-24 object-cover rounded"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* Syllabus */}
+              {viewingCourse.syllabus && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Syllabus</label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900 whitespace-pre-wrap">
+                    {viewingCourse.syllabus}
+                  </div>
+                </div>
+              )}
+              {/* Resources */}
+              {viewingCourse.resources && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Resources
+                  </label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900 whitespace-pre-wrap">
+                    {viewingCourse.resources}
+                  </div>
+                </div>
+              )}
+              {/* SEO Meta Fields */}
+              {(viewingCourse.meta_title || viewingCourse.meta_description) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    SEO Metadata
+                  </label>
+                  <div className="space-y-2">
+                    {viewingCourse.meta_title && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-0.5">
+                          Meta Title
+                        </label>
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                          {viewingCourse.meta_title}
+                        </div>
+                      </div>
+                    )}
+                    {viewingCourse.meta_description && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-0.5">
+                          Meta Description
+                        </label>
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                          {viewingCourse.meta_description}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -909,15 +1122,12 @@ export default function CourseManagement() {
       )}
       {/* Create Course Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-4 py-3 border-b border-gray-200">
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-purple-600">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Create New Course</h2>
-                <button
-                  onClick={closeModal}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                >
+                <h2 className="text-lg font-semibold text-white">Create New Course</h2>
+                <button onClick={closeModal} className="p-1 text-white/80 hover:text-white rounded">
                   <XMarkIcon className="h-5 w-5" />
                 </button>
               </div>
@@ -1270,8 +1480,8 @@ export default function CourseManagement() {
               </div>
 
               {/* Prerequisites Section */}
-              <div className="border border-gray-200 rounded-lg p-3">
-                <h3 className="text-base font-semibold text-gray-800 mb-2 flex items-center">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                   <PencilIcon className="h-5 w-5 mr-2 text-gray-600" />
                   Prerequisites
                 </h3>
@@ -1279,12 +1489,20 @@ export default function CourseManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Prerequisites (Optional)
                   </label>
-                  <textarea
-                    value={formData.prerequisites || ''}
-                    onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                    placeholder="Enter course prerequisites"
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
+                  <SafeReactQuill
+                    value={prerequisitesEditorValue}
+                    onChange={handlePrerequisitesChange}
+                    placeholder="Enter course prerequisites - you can format text or create lists"
+                    className="bg-white"
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        ['clean'],
+                      ],
+                    }}
                   />
                 </div>
               </div>
@@ -1342,6 +1560,96 @@ export default function CourseManagement() {
                   />
                 </div>
               </div>
+
+              {/* Media & SEO Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-base font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-5 w-5 mr-2 text-gray-600" />
+                  Media & SEO (Optional)
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <MediaSelectorButton
+                      label="Course Image"
+                      accept={['image/*']}
+                      variant="field"
+                      value={formData.image_url || null}
+                      onSelect={(files) => {
+                        if (files.length > 0) {
+                          console.log('Selected course image:', files[0].file_url)
+                          setFormData((prev) => ({ ...prev, image_url: files[0].file_url }))
+                        } else {
+                          setFormData((prev) => ({ ...prev, image_url: null }))
+                        }
+                      }}
+                      placeholder="Select course thumbnail"
+                      showPreview
+                      size="sm"
+                    />
+                    <MediaSelectorButton
+                      label="Cover Image"
+                      accept={['image/*']}
+                      variant="field"
+                      value={formData.cover_image_url || null}
+                      onSelect={(files) => {
+                        if (files.length > 0) {
+                          console.log('Selected cover image:', files[0].file_url)
+                          setFormData((prev) => ({ ...prev, cover_image_url: files[0].file_url }))
+                        } else {
+                          setFormData((prev) => ({ ...prev, cover_image_url: null }))
+                        }
+                      }}
+                      placeholder="Select cover image"
+                      showPreview
+                      size="sm"
+                    />
+                    <MediaSelectorButton
+                      label="Video Preview"
+                      accept={['video/*']}
+                      variant="field"
+                      value={formData.video_preview_url || null}
+                      onSelect={(files) => {
+                        if (files.length > 0) {
+                          console.log('Selected video preview:', files[0].file_url)
+                          setFormData((prev) => ({ ...prev, video_preview_url: files[0].file_url }))
+                        } else {
+                          setFormData((prev) => ({ ...prev, video_preview_url: null }))
+                        }
+                      }}
+                      placeholder="Select preview video"
+                      showPreview
+                      size="sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Meta Title
+                      </label>
+                      <Input
+                        value={formData.meta_title || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, meta_title: e.target.value }))
+                        }
+                        placeholder="SEO title for search engines"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Meta Description
+                      </label>
+                      <Input
+                        value={formData.meta_description || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, meta_description: e.target.value }))
+                        }
+                        placeholder="SEO description for search engines"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-2 pt-3 border-t">
                 <Button variant="danger" onClick={closeModal}>
@@ -1357,15 +1665,12 @@ export default function CourseManagement() {
       )}
       {/* Edit Course Modal */}
       {showEditModal && editingCourse && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-4 py-3 border-b border-gray-200">
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-purple-600">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Edit Course</h2>
-                <button
-                  onClick={closeModal}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                >
+                <h2 className="text-lg font-semibold text-white">Edit Course</h2>
+                <button onClick={closeModal} className="p-1 text-white/80 hover:text-white rounded">
                   <XMarkIcon className="h-5 w-5" />
                 </button>
               </div>
@@ -1740,6 +2045,31 @@ export default function CourseManagement() {
                 </div>
               </div>
 
+              {/* Prerequisites Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Prerequisites
+                </h3>
+                <div>
+                  <SafeReactQuill
+                    value={prerequisitesEditorValue}
+                    onChange={handlePrerequisitesChange}
+                    placeholder="Enter course prerequisites - you can format text or create lists"
+                    className="bg-white"
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        [{ indent: '-1' }, { indent: '+1' }],
+                        ['clean'],
+                      ],
+                    }}
+                  />
+                </div>
+              </div>
+
               {/* Learning Outcomes Section */}
               <div className="border border-gray-200 rounded-lg p-3">
                 <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
@@ -1764,6 +2094,96 @@ export default function CourseManagement() {
                   />
                 </div>
               </div>
+
+              {/* Media & SEO Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Media & SEO (Optional)
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <MediaSelectorButton
+                      label="Course Image"
+                      accept={['image/*']}
+                      variant="field"
+                      value={formData.image_url || null}
+                      onSelect={(files) => {
+                        if (files.length > 0) {
+                          console.log('Selected course image:', files[0].file_url)
+                          setFormData((prev) => ({ ...prev, image_url: files[0].file_url }))
+                        } else {
+                          setFormData((prev) => ({ ...prev, image_url: null }))
+                        }
+                      }}
+                      placeholder="Select course thumbnail"
+                      showPreview
+                      size="sm"
+                    />
+                    <MediaSelectorButton
+                      label="Cover Image"
+                      accept={['image/*']}
+                      variant="field"
+                      value={formData.cover_image_url || null}
+                      onSelect={(files) => {
+                        if (files.length > 0) {
+                          console.log('Selected cover image:', files[0].file_url)
+                          setFormData((prev) => ({ ...prev, cover_image_url: files[0].file_url }))
+                        } else {
+                          setFormData((prev) => ({ ...prev, cover_image_url: null }))
+                        }
+                      }}
+                      placeholder="Select cover image"
+                      showPreview
+                      size="sm"
+                    />
+                    <MediaSelectorButton
+                      label="Video Preview"
+                      accept={['video/*']}
+                      variant="field"
+                      value={formData.video_preview_url || null}
+                      onSelect={(files) => {
+                        if (files.length > 0) {
+                          console.log('Selected video preview:', files[0].file_url)
+                          setFormData((prev) => ({ ...prev, video_preview_url: files[0].file_url }))
+                        } else {
+                          setFormData((prev) => ({ ...prev, video_preview_url: null }))
+                        }
+                      }}
+                      placeholder="Select preview video"
+                      showPreview
+                      size="sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Meta Title
+                      </label>
+                      <Input
+                        value={formData.meta_title || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, meta_title: e.target.value }))
+                        }
+                        placeholder="SEO title for search engines"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Meta Description
+                      </label>
+                      <Input
+                        value={formData.meta_description || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, meta_description: e.target.value }))
+                        }
+                        placeholder="SEO description for search engines"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-2 pt-3 border-t">
                 <Button variant="danger" onClick={closeModal}>

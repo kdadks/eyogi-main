@@ -34,6 +34,9 @@ interface MediaSelectorButtonProps extends UseMediaSelectorOptions {
   label?: string
   error?: string
   required?: boolean
+
+  // Value prop for displaying existing URL
+  value?: string | null
 }
 
 export default function MediaSelectorButton({
@@ -57,11 +60,14 @@ export default function MediaSelectorButton({
   label,
   error,
   required = false,
+  value,
 }: MediaSelectorButtonProps) {
   const { selectedFiles, isOpen, openSelector, closeSelector, handleSelect, clearSelection } =
     useMediaSelector({ multiple, maxSelection, accept, onSelect })
 
-  const hasSelection = selectedFiles.length > 0
+  // Use selectedFiles if available, otherwise fall back to value prop
+  const hasSelection = selectedFiles.length > 0 || (value && value.trim() !== '')
+  const displayUrl = selectedFiles.length > 0 ? selectedFiles[0].file_url : value
   const totalSize = getSelectedFilesSize(selectedFiles)
 
   // Button variant rendering
@@ -165,71 +171,91 @@ export default function MediaSelectorButton({
       >
         {hasSelection ? (
           <div className="p-3">
-            {/* Selected files preview */}
-            {showPreview && selectedFiles.length <= 3 ? (
-              <div className="space-y-2">
-                {selectedFiles.map((file) => (
-                  <div key={file.id} className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                      {file.file_category === 'image' ? (
-                        <img
-                          src={getThumbnailUrl(file)}
-                          alt={file.alt_text || file.title || file.original_name}
-                          className="w-full h-full object-cover rounded"
-                        />
-                      ) : (
-                        <FileIcon type={file.file_category} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {file.title || file.original_name}
+            {/* Show preview for selected files or value prop */}
+            {showPreview && (selectedFiles.length > 0 || displayUrl) ? (
+              selectedFiles.length > 0 ? (
+                // Display selected files from MediaSelector
+                <div className="space-y-2">
+                  {selectedFiles.map((file) => (
+                    <div key={file.id} className="flex items-center space-x-3">
+                      <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center flex-shrink-0 border border-gray-200">
+                        {file.file_category === 'image' ? (
+                          <img
+                            src={getThumbnailUrl(file)}
+                            alt={file.alt_text || file.title || file.original_name}
+                            className="w-full h-full object-cover rounded"
+                          />
+                        ) : file.file_category === 'video' ? (
+                          <div className="relative w-full h-full">
+                            <video
+                              src={file.file_url}
+                              className="w-full h-full object-cover rounded"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded">
+                              <svg
+                                className="w-8 h-8 text-white"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                              </svg>
+                            </div>
+                          </div>
+                        ) : (
+                          <FileIcon type={file.file_category} />
+                        )}
                       </div>
-                      {showFileSize && (
-                        <div className="text-xs text-gray-500">
-                          {formatFileSize(file.file_size)}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {file.title || file.original_name}
                         </div>
-                      )}
+                        {showFileSize && (
+                          <div className="text-xs text-gray-500">
+                            {formatFileSize(file.file_size)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {selectedFiles.length > 1 && showFileSize && (
-                  <div className="text-xs text-gray-500 border-t pt-2">
-                    Total: {formatFileSize(totalSize)}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {formatSelectedMedia(selectedFiles)}
-                  </div>
-                  {showFileSize && (
-                    <div className="text-xs text-gray-500">{formatFileSize(totalSize)}</div>
+                  {selectedFiles.length > 1 && showFileSize && (
+                    <div className="text-xs text-gray-500 border-t pt-2">
+                      Total: {formatFileSize(totalSize)}
+                    </div>
                   )}
                 </div>
-
-                {showPreview && selectedFiles.length === 1 && (
-                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                    {selectedFiles[0].file_category === 'image' ? (
-                      <img
-                        src={getThumbnailUrl(selectedFiles[0])}
-                        alt={
-                          selectedFiles[0].alt_text ||
-                          selectedFiles[0].title ||
-                          selectedFiles[0].original_name
-                        }
-                        className="w-full h-full object-cover rounded"
-                      />
-                    ) : (
-                      <FileIcon type={selectedFiles[0].file_category} />
-                    )}
+              ) : (
+                // Display existing value prop (URL)
+                <div className="flex items-center space-x-3">
+                  <div className="w-24 h-24 bg-gray-100 rounded flex items-center justify-center flex-shrink-0 border border-gray-200">
+                    {displayUrl &&
+                      (displayUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                        <div className="relative w-full h-full">
+                          <video src={displayUrl} className="w-full h-full object-cover rounded" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded">
+                            <svg
+                              className="w-8 h-8 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                            </svg>
+                          </div>
+                        </div>
+                      ) : (
+                        <img
+                          src={displayUrl}
+                          alt="Selected media"
+                          className="w-full h-full object-cover rounded"
+                        />
+                      ))}
                   </div>
-                )}
-              </div>
-            )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">Current media</div>
+                  </div>
+                </div>
+              )
+            ) : null}
 
             {/* Action buttons */}
             <div className="flex items-center space-x-2 mt-3">
@@ -238,7 +264,18 @@ export default function MediaSelectorButton({
                 {multiple ? 'Change' : 'Replace'}
               </Button>
               {showClearButton && (
-                <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    clearSelection()
+                    // Also notify parent that value was cleared
+                    if (onSelect) {
+                      onSelect([])
+                    }
+                  }}
+                >
                   <X className="h-3 w-3 mr-1" />
                   Clear
                 </Button>

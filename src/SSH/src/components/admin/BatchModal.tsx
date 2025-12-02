@@ -180,11 +180,13 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold">{batch ? 'Edit Batch' : 'Create New Batch'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300">
+        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-500 to-purple-600">
+          <h2 className="text-xl font-semibold text-white">
+            {batch ? 'Edit Batch' : 'Create New Batch'}
+          </h2>
+          <button onClick={onClose} className="text-white/80 hover:text-white">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>

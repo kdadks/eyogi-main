@@ -125,13 +125,13 @@ export default function BackgroundStylingField({
 
       {/* Media Selector Modal */}
       {showMediaSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="font-semibold text-gray-900">Select Background Image</h3>
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl border border-gray-300">
+            <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-500 to-purple-600">
+              <h3 className="font-semibold text-white">Select Background Image</h3>
               <button
                 onClick={() => setShowMediaSelector(false)}
-                className="text-gray-500 hover:text-gray-700 font-bold text-xl"
+                className="text-white/80 hover:text-white font-bold text-xl"
               >
                 ×
               </button>

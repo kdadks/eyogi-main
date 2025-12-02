@@ -443,13 +443,13 @@ function MissionSection({ settings, updateSetting }: SectionProps) {
 
       {/* Image Selector Modal */}
       {showImageSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Select Image</h3>
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col shadow-2xl border border-gray-300">
+            <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-500 to-purple-600">
+              <h3 className="text-lg font-semibold text-white">Select Image</h3>
               <button
                 onClick={() => setShowImageSelector(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                className="text-white/80 hover:text-white text-2xl leading-none"
               >
                 ×
               </button>
@@ -880,16 +880,16 @@ function TeamSection({ settings, updateSetting }: SectionProps) {
 
       {/* Image Selector Modal */}
       {showImageSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Select Image</h3>
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col shadow-2xl border border-gray-300">
+            <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-500 to-purple-600">
+              <h3 className="text-lg font-semibold text-white">Select Image</h3>
               <button
                 onClick={() => {
                   setShowImageSelector(false)
                   setSelectedMemberIndex(null)
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                className="text-white/80 hover:text-white text-2xl leading-none"
               >
                 ×
               </button>

@@ -169,16 +169,16 @@ const BulkCourseAssignmentModal: React.FC<BulkCourseAssignmentModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
+    <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-300">
+        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-500 to-purple-600">
           <div>
-            <h2 className="text-xl font-semibold">Assign Courses to Teachers</h2>
-            <p className="text-gray-600 text-sm">
+            <h2 className="text-xl font-semibold text-white">Assign Courses to Teachers</h2>
+            <p className="text-white/90 text-sm">
               Assigning courses to {teacherIds.length} teacher{teacherIds.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-white/80 hover:text-white">
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
