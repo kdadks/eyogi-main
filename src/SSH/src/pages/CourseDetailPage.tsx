@@ -38,11 +38,19 @@ function parseLearningOutcomes(outcomes: string[]): Array<{ content: string; isH
     const trimmed = outcome.trim()
     if (!trimmed) return
 
-    // Check if outcome contains HTML tags
-    if (
-      trimmed.includes('<ul>') ||
-      trimmed.includes('<ol>') ||
-      trimmed.includes('<li>') ||
+    // Check if outcome contains list tags - extract individual list items
+    if (trimmed.includes('<li>')) {
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = trimmed
+      const listItems = tempDiv.querySelectorAll('li')
+
+      listItems.forEach((li) => {
+        const content = li.innerHTML.trim()
+        if (content) {
+          parsedOutcomes.push({ content, isHtml: true })
+        }
+      })
+    } else if (
       trimmed.includes('<p>') ||
       trimmed.includes('<h') ||
       trimmed.includes('<strong>') ||
@@ -566,10 +574,24 @@ export default function CourseDetailPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 gap-4">
-                        {course.prerequisites.map((prereq, index) => (
+                        {parseLearningOutcomes(course.prerequisites).map((item, index) => (
                           <div key={index} className="flex items-start space-x-3">
                             <CheckCircleIcon className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-gray-700">{prereq}</span>
+                            {item.isHtml ? (
+                              <div
+                                className="text-gray-700 flex-1 text-base whitespace-pre-wrap
+                                  [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
+                                  [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
+                                  [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                                  [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
+                                  [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                                dangerouslySetInnerHTML={{
+                                  __html: sanitizeHtml(item.content),
+                                }}
+                              />
+                            ) : (
+                              <span className="text-gray-700">{item.content}</span>
+                            )}
                           </div>
                         ))}
                       </div>
