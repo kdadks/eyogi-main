@@ -241,6 +241,26 @@ export default function CourseManagement() {
   const [prerequisitesEditorValue, setPrerequisitesEditorValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [slugError, setSlugError] = useState<string>('')
+
+  // State for Syllabus Modules (matching database structure)
+  const [syllabusModules, setSyllabusModules] = useState<
+    Array<{
+      title: string
+      sessions: number
+    }>
+  >([])
+
+  // State for Resources (matching database structure with 'title' field)
+  const [resources, setResources] = useState<
+    Array<{
+      title: string
+      url: string
+      type: string
+    }>
+  >([])
+
+  // State for Tags (array of strings)
+  const [tags, setTags] = useState<string[]>([])
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -283,8 +303,38 @@ export default function CourseManagement() {
       const prereqValue = formData.prerequisites || ''
       console.log('Setting prerequisites editor value:', prereqValue)
       setPrerequisitesEditorValue(typeof prereqValue === 'string' ? prereqValue : '')
+
+      // Sync syllabus modules
+      if (formData.syllabus?.modules) {
+        setSyllabusModules(formData.syllabus.modules)
+      } else if (formData.syllabus?.classes) {
+        // Backward compatibility: convert classes to modules
+        setSyllabusModules(
+          formData.syllabus.classes.map((cls: any) => ({
+            title: `Class ${cls.number}: ${cls.title}`,
+            sessions: cls.duration ? 1 : 0,
+          })),
+        )
+      } else {
+        setSyllabusModules([])
+      }
+
+      // Sync resources
+      if (formData.resources) {
+        setResources(formData.resources)
+      } else {
+        setResources([])
+      }
+
+      // Sync tags
+      if (formData.tags && Array.isArray(formData.tags)) {
+        setTags(formData.tags)
+      } else {
+        setTags([])
+      }
     }
-  }, [showEditModal, showCreateModal, formData.learning_outcomes, formData.prerequisites])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showEditModal, showCreateModal])
 
   // Handle learning outcomes change - update both editor value and formData
   const handleLearningOutcomesChange = useCallback((value: string) => {
@@ -414,11 +464,11 @@ export default function CourseManagement() {
           formData.cover_image_url === null ? null : formData.cover_image_url || undefined,
         video_preview_url:
           formData.video_preview_url === null ? null : formData.video_preview_url || undefined,
-        syllabus: formData.syllabus,
-        resources: formData.resources || undefined,
+        syllabus: syllabusModules.length > 0 ? { modules: syllabusModules } : null,
+        resources: resources.length > 0 ? resources : undefined,
         is_active: formData.is_active !== undefined ? formData.is_active : true,
         featured: formData.featured || false,
-        tags: formData.tags || undefined,
+        tags: tags.length > 0 ? tags.filter((t) => t.trim() !== '') : undefined,
         meta_title: formData.meta_title || undefined,
         meta_description: formData.meta_description || undefined,
         teacher_id: formData.teacher_id || undefined,
@@ -538,11 +588,11 @@ export default function CourseManagement() {
           formData.cover_image_url === null ? null : formData.cover_image_url || undefined,
         video_preview_url:
           formData.video_preview_url === null ? null : formData.video_preview_url || undefined,
-        syllabus: formData.syllabus,
-        resources: formData.resources || undefined,
+        syllabus: syllabusModules.length > 0 ? { modules: syllabusModules } : null,
+        resources: resources.length > 0 ? resources : undefined,
         is_active: formData.is_active !== undefined ? formData.is_active : true,
         featured: formData.featured || false,
-        tags: formData.tags || undefined,
+        tags: tags.length > 0 ? tags.filter((t) => t.trim() !== '') : undefined,
         meta_title: formData.meta_title || undefined,
         meta_description: formData.meta_description || undefined,
         teacher_id: formData.teacher_id || undefined,
@@ -572,6 +622,9 @@ export default function CourseManagement() {
     setFormData(initialFormData)
     setLearningOutcomesEditorValue('')
     setPrerequisitesEditorValue('')
+    setSyllabusModules([])
+    setResources([])
+    setTags([])
   }
   if (loading) {
     return (
@@ -698,7 +751,12 @@ export default function CourseManagement() {
               {/* Actions */}
               <div className="col-span-2 flex items-center justify-end gap-2">
                 <button
-                  onClick={() => setViewingCourse(course)}
+                  onClick={() => {
+                    console.log('Course data:', course)
+                    console.log('Syllabus:', course.syllabus)
+                    console.log('Syllabus type:', typeof course.syllabus)
+                    setViewingCourse(course)
+                  }}
                   className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
                   title="View"
                 >
@@ -914,32 +972,35 @@ export default function CourseManagement() {
                 </div>
               )}
               {/* Prerequisites */}
-              {viewingCourse.prerequisites && viewingCourse.prerequisites.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                    Prerequisites
-                  </label>
-                  <div
-                    className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900
+              {viewingCourse.prerequisites &&
+                ((Array.isArray(viewingCourse.prerequisites) &&
+                  viewingCourse.prerequisites.length > 0) ||
+                  (!Array.isArray(viewingCourse.prerequisites) && viewingCourse.prerequisites)) && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Prerequisites
+                    </label>
+                    <div
+                      className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900
                     [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul_li]:mb-0.5
                     [&_ol]:list-decimal [&_ol]:ml-5 [&_ol_li]:mb-0.5
-                    [&_li]:mb-0.5 [&_strong]:font-bold [&_em]:italic [&_u]:underline
+                    [&_li]:mb-0.5 [&_li_p]:mb-0 [&_li_p]:inline [&_strong]:font-bold [&_em]:italic [&_u]:underline
                     [&_a]:text-orange-600 [&_a]:hover:text-orange-700
                     [&_.ql-indent-1]:ml-6 [&_.ql-indent-2]:ml-12 [&_.ql-indent-3]:ml-18
                     [&_li_ul]:ml-5 [&_li_ol]:ml-5"
-                  >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizeHtml(
-                          Array.isArray(viewingCourse.prerequisites)
-                            ? viewingCourse.prerequisites[0] || ''
-                            : viewingCourse.prerequisites,
-                        ),
-                      }}
-                    />
+                    >
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(
+                            Array.isArray(viewingCourse.prerequisites)
+                              ? viewingCourse.prerequisites[0] || ''
+                              : String(viewingCourse.prerequisites || ''),
+                          ),
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               {/* Learning Outcomes */}
               {viewingCourse.learning_outcomes && viewingCourse.learning_outcomes.length > 0 && (
                 <div>
@@ -970,8 +1031,8 @@ export default function CourseManagement() {
                                 {item.isHtml ? (
                                   <div
                                     className="inline text-sm
-                                      [&_p]:mb-1 [&_ul]:list-disc [&_ul]:ml-4 [&_ul_li]:mb-0.5
-                                      [&_ol]:list-decimal [&_ol]:ml-4 [&_ol_li]:mb-0.5
+                                      [&_p]:mb-0 [&_p]:inline [&_ul]:list-disc [&_ul]:ml-4 [&_ul_li]:mb-0.5
+                                      [&_ol]:list-decimal [&_ol]:ml-4 [&_ol_li]:mb-0.5 [&_li_p]:mb-0 [&_li_p]:inline
                                       [&_strong]:font-bold [&_em]:italic [&_u]:underline"
                                     dangerouslySetInnerHTML={{
                                       __html: sanitizeHtml(item.content),
@@ -1067,22 +1128,85 @@ export default function CourseManagement() {
                 </div>
               )}
               {/* Syllabus */}
-              {viewingCourse.syllabus && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Syllabus</label>
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900 whitespace-pre-wrap">
-                    {viewingCourse.syllabus}
+              {viewingCourse.syllabus &&
+                (viewingCourse.syllabus.classes || viewingCourse.syllabus.modules) && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Syllabus
+                    </label>
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                      {viewingCourse.syllabus.modules &&
+                      viewingCourse.syllabus.modules.length > 0 ? (
+                        <div className="space-y-2">
+                          {viewingCourse.syllabus.modules.map((module: any, index: number) => (
+                            <div
+                              key={index}
+                              className="border-b border-gray-200 pb-2 last:border-0"
+                            >
+                              <div className="font-medium">{module.title}</div>
+                              {module.sessions && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Sessions: {module.sessions}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : viewingCourse.syllabus.classes &&
+                        viewingCourse.syllabus.classes.length > 0 ? (
+                        <div className="space-y-2">
+                          {viewingCourse.syllabus.classes.map((cls: any, index: number) => (
+                            <div
+                              key={index}
+                              className="border-b border-gray-200 pb-2 last:border-0"
+                            >
+                              <div className="font-medium">
+                                Class {cls.number}: {cls.title}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                Duration: {cls.duration}
+                              </div>
+                              {cls.topics && cls.topics.length > 0 && (
+                                <ul className="list-disc list-inside text-xs text-gray-700 mt-1">
+                                  {cls.topics.map((topic: string, idx: number) => (
+                                    <li key={idx}>{topic}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               {/* Resources */}
-              {viewingCourse.resources && (
+              {viewingCourse.resources && viewingCourse.resources.length > 0 && (
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Resources
                   </label>
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900 whitespace-pre-wrap">
-                    {viewingCourse.resources}
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-900">
+                    <ul className="space-y-1">
+                      {viewingCourse.resources.map((resource: any, index: number) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="text-gray-600">•</span>
+                          <div className="flex-1">
+                            <a
+                              href={resource.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              {resource.title || resource.name || resource.url}
+                            </a>
+                            {resource.type && (
+                              <span className="ml-2 text-xs text-gray-500">({resource.type})</span>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               )}
@@ -1503,6 +1627,16 @@ export default function CourseManagement() {
                         ['clean'],
                       ],
                     }}
+                    formats={[
+                      'header',
+                      'bold',
+                      'italic',
+                      'underline',
+                      'strike',
+                      'list',
+                      'bullet',
+                      'indent',
+                    ]}
                   />
                 </div>
               </div>
@@ -1531,7 +1665,199 @@ export default function CourseManagement() {
                         ['clean'],
                       ],
                     }}
+                    formats={[
+                      'header',
+                      'bold',
+                      'italic',
+                      'underline',
+                      'strike',
+                      'list',
+                      'bullet',
+                      'indent',
+                    ]}
                   />
+                </div>
+              </div>
+
+              {/* Syllabus Section */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <DocumentTextIcon className="h-5 w-5 mr-2 text-gray-600" />
+                  Syllabus (Optional)
+                </h3>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    Add course syllabus modules with titles and session counts.
+                  </p>
+
+                  {syllabusModules.map((module, moduleIndex) => (
+                    <div
+                      key={moduleIndex}
+                      className="border border-gray-300 rounded-lg p-3 bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-gray-700">
+                          Module {moduleIndex + 1}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSyllabusModules(syllabusModules.filter((_, i) => i !== moduleIndex))
+                          }}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Module Title
+                          </label>
+                          <Input
+                            value={module.title}
+                            onChange={(e) => {
+                              const updated = [...syllabusModules]
+                              updated[moduleIndex].title = e.target.value
+                              setSyllabusModules(updated)
+                            }}
+                            placeholder="e.g., Introduction to Vedanta"
+                            className="text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Sessions
+                          </label>
+                          <Input
+                            type="number"
+                            value={module.sessions}
+                            onChange={(e) => {
+                              const updated = [...syllabusModules]
+                              updated[moduleIndex].sessions = parseInt(e.target.value) || 1
+                              setSyllabusModules(updated)
+                            }}
+                            min="1"
+                            placeholder="e.g., 3"
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSyllabusModules([
+                        ...syllabusModules,
+                        {
+                          title: '',
+                          sessions: 1,
+                        },
+                      ])
+                    }}
+                    className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    + Add Module
+                  </button>
+                </div>
+              </div>
+
+              {/* Resources Section */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <DocumentTextIcon className="h-5 w-5 mr-2 text-gray-600" />
+                  Resources (Optional)
+                </h3>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">Add external resources for students.</p>
+
+                  {resources.map((resource, resourceIndex) => (
+                    <div
+                      key={resourceIndex}
+                      className="border border-gray-300 rounded-lg p-3 bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-gray-700">
+                          Resource {resourceIndex + 1}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResources(resources.filter((_, i) => i !== resourceIndex))
+                          }}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Resource Title
+                          </label>
+                          <Input
+                            value={resource.title}
+                            onChange={(e) => {
+                              const updated = [...resources]
+                              updated[resourceIndex].title = e.target.value
+                              setResources(updated)
+                            }}
+                            placeholder="e.g., Bhagavad Gita Sanskrit Text"
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            URL
+                          </label>
+                          <Input
+                            value={resource.url}
+                            onChange={(e) => {
+                              const updated = [...resources]
+                              updated[resourceIndex].url = e.target.value
+                              setResources(updated)
+                            }}
+                            placeholder="https://example.com/resource.pdf"
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Type
+                          </label>
+                          <Input
+                            value={resource.type}
+                            onChange={(e) => {
+                              const updated = [...resources]
+                              updated[resourceIndex].type = e.target.value
+                              setResources(updated)
+                            }}
+                            placeholder="e.g., pdf, audio, video, text"
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResources([
+                        ...resources,
+                        {
+                          title: '',
+                          url: '',
+                          type: '',
+                        },
+                      ])
+                    }}
+                    className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    + Add Resource
+                  </button>
                 </div>
               </div>
 
@@ -1541,23 +1867,43 @@ export default function CourseManagement() {
                   <PencilIcon className="h-5 w-5 mr-2 text-gray-600" />
                   Tags
                 </h3>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tags (comma-separated)
-                  </label>
-                  <Input
-                    value={formData.tags?.join(', ') || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        tags: e.target.value
-                          .split(',')
-                          .map((tag) => tag.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                    placeholder="yoga, meditation, wellness"
-                  />
+                <div className="space-y-2">
+                  {tags.map((tag, tagIndex) => (
+                    <div key={tagIndex} className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <Input
+                          value={tag}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[,;\s]/g, '')
+                            const updated = [...tags]
+                            updated[tagIndex] = value
+                            setTags(updated)
+                          }}
+                          placeholder="e.g., yoga"
+                          className="text-sm"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTags(tags.filter((_, i) => i !== tagIndex))
+                        }}
+                        className="text-red-600 hover:text-red-800 text-sm px-2 py-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTags([...tags, ''])
+                    }}
+                    className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    + Add Tag
+                  </button>
                 </div>
               </div>
 
@@ -2066,6 +2412,16 @@ export default function CourseManagement() {
                         ['clean'],
                       ],
                     }}
+                    formats={[
+                      'header',
+                      'bold',
+                      'italic',
+                      'underline',
+                      'strike',
+                      'list',
+                      'bullet',
+                      'indent',
+                    ]}
                   />
                 </div>
               </div>
@@ -2091,7 +2447,245 @@ export default function CourseManagement() {
                         ['clean'],
                       ],
                     }}
+                    formats={[
+                      'header',
+                      'bold',
+                      'italic',
+                      'underline',
+                      'strike',
+                      'list',
+                      'bullet',
+                      'indent',
+                    ]}
                   />
+                </div>
+              </div>
+
+              {/* Syllabus Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Syllabus (Optional)
+                </h3>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-600">
+                    Add course syllabus modules with titles and session counts.
+                  </p>
+
+                  {syllabusModules.map((module, moduleIndex) => (
+                    <div
+                      key={moduleIndex}
+                      className="border border-gray-300 rounded-lg p-2 bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold text-gray-700">
+                          Module {moduleIndex + 1}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSyllabusModules(syllabusModules.filter((_, i) => i !== moduleIndex))
+                          }}
+                          className="text-red-600 hover:text-red-800 text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                            Module Title
+                          </label>
+                          <Input
+                            value={module.title}
+                            onChange={(e) => {
+                              const updated = [...syllabusModules]
+                              updated[moduleIndex].title = e.target.value
+                              setSyllabusModules(updated)
+                            }}
+                            placeholder="e.g., Introduction to Vedanta"
+                            className="text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                            Sessions
+                          </label>
+                          <Input
+                            type="number"
+                            value={module.sessions}
+                            onChange={(e) => {
+                              const updated = [...syllabusModules]
+                              updated[moduleIndex].sessions = parseInt(e.target.value) || 1
+                              setSyllabusModules(updated)
+                            }}
+                            min="1"
+                            placeholder="e.g., 3"
+                            className="text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSyllabusModules([
+                        ...syllabusModules,
+                        {
+                          title: '',
+                          sessions: 1,
+                        },
+                      ])
+                    }}
+                    className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    + Add Module
+                  </button>
+                </div>
+              </div>
+
+              {/* Resources Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Resources (Optional)
+                </h3>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-600">Add external resources for students.</p>
+
+                  {resources.map((resource, resourceIndex) => (
+                    <div
+                      key={resourceIndex}
+                      className="border border-gray-300 rounded-lg p-2 bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold text-gray-700">
+                          Resource {resourceIndex + 1}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResources(resources.filter((_, i) => i !== resourceIndex))
+                          }}
+                          className="text-red-600 hover:text-red-800 text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                            Resource Title
+                          </label>
+                          <Input
+                            value={resource.title}
+                            onChange={(e) => {
+                              const updated = [...resources]
+                              updated[resourceIndex].title = e.target.value
+                              setResources(updated)
+                            }}
+                            placeholder="e.g., Bhagavad Gita Sanskrit Text"
+                            className="text-xs"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                            URL
+                          </label>
+                          <Input
+                            value={resource.url}
+                            onChange={(e) => {
+                              const updated = [...resources]
+                              updated[resourceIndex].url = e.target.value
+                              setResources(updated)
+                            }}
+                            placeholder="https://example.com/resource.pdf"
+                            className="text-xs"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                            Type
+                          </label>
+                          <Input
+                            value={resource.type}
+                            onChange={(e) => {
+                              const updated = [...resources]
+                              updated[resourceIndex].type = e.target.value
+                              setResources(updated)
+                            }}
+                            placeholder="e.g., pdf, audio, video, text"
+                            className="text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResources([
+                        ...resources,
+                        {
+                          title: '',
+                          url: '',
+                          type: '',
+                        },
+                      ])
+                    }}
+                    className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    + Add Resource
+                  </button>
+                </div>
+              </div>
+
+              {/* Tags Section */}
+              <div className="border border-gray-200 rounded-lg p-3">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <PencilIcon className="h-4 w-4 mr-1.5 text-gray-600" />
+                  Tags
+                </h3>
+                <div className="space-y-2">
+                  {tags.map((tag, tagIndex) => (
+                    <div key={tagIndex} className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <Input
+                          value={tag}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[,;\s]/g, '')
+                            const updated = [...tags]
+                            updated[tagIndex] = value
+                            setTags(updated)
+                          }}
+                          placeholder="e.g., yoga"
+                          className="text-xs"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTags(tags.filter((_, i) => i !== tagIndex))
+                        }}
+                        className="text-red-600 hover:text-red-800 text-xs px-2 py-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTags([...tags, ''])
+                    }}
+                    className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    + Add Tag
+                  </button>
                 </div>
               </div>
 

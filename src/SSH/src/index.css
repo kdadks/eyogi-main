@@ -905,3 +905,36 @@ body {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* ReactQuill list item spacing fix - removes extra space in bulleted/numbered lists */
+.ql-editor li > p {
+  margin: 0 !important;
+  display: inline;
+}
+
+.ql-snow .ql-editor li > p {
+  margin: 0 !important;
+  display: inline;
+}
+
+/* Fix for nested list structures that create extra spacing */
+.ql-editor li > ul,
+.ql-editor li > ol {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Flatten indent classes to prevent double nesting spacing */
+.ql-editor .ql-indent-1 {
+  padding-left: 3em !important;
+}
+
+.ql-editor .ql-indent-2 {
+  padding-left: 6em !important;
+}
+
+.ql-editor .ql-indent-3 {
+  padding-left: 9em !important;
+}

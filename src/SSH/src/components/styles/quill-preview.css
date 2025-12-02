@@ -28,6 +28,11 @@
   display: list-item;
 }
 
+.ql-editor li > p {
+  margin: 0;
+  display: inline;
+}
+
 .ql-editor h1 {
   font-size: 2em;
   font-weight: bold;
