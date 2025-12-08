@@ -123,7 +123,8 @@ export default function CertificateManagement() {
       setTemplates(templatesData)
       setCourses(coursesData)
       setGurukuls(gurukulData)
-      setAssignments(assignmentsData)
+      setAssignments(assignmentsData) // Already decrypted in API
+
       // Set default template if available
       if (templatesData.length > 0 && !selectedTemplate) {
         setSelectedTemplate(templatesData[0].id)

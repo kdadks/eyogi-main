@@ -37,6 +37,7 @@ const FONT_FAMILIES = [
   'Courier New',
   'Verdana',
   'Trebuchet MS',
+  'League Spartan',
 ]
 
 export default function DynamicFieldEditor({
@@ -49,9 +50,9 @@ export default function DynamicFieldEditor({
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
   const [newField, setNewField] = useState<Partial<DynamicField>>({
     type: 'text',
-    fontSize: 14,
+    fontSize: 35,
     fontColor: '#000000',
-    fontFamily: 'Arial',
+    fontFamily: 'League Spartan',
     textAlign: 'left',
     isBold: false,
     isItalic: false,
@@ -79,9 +80,9 @@ export default function DynamicFieldEditor({
       y: newField.y || 50,
       width: newField.width || 200,
       height: newField.height || 40,
-      fontSize: newField.fontSize || 14,
+      fontSize: newField.fontSize || 35,
       fontColor: newField.fontColor || '#000000',
-      fontFamily: newField.fontFamily || 'Arial',
+      fontFamily: newField.fontFamily || 'League Spartan',
       textAlign: newField.textAlign || 'left',
       isBold: newField.isBold || false,
       isItalic: newField.isItalic || false,
@@ -92,9 +93,9 @@ export default function DynamicFieldEditor({
     onFieldsChange([...fields, field])
     setNewField({
       type: 'text',
-      fontSize: 14,
+      fontSize: 35,
       fontColor: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: 'League Spartan',
       textAlign: 'left',
       isBold: false,
       isItalic: false,
@@ -226,7 +227,7 @@ export default function DynamicFieldEditor({
                     type="number"
                     min="8"
                     max="72"
-                    value={newField.fontSize || 14}
+                    value={newField.fontSize || 35}
                     onChange={(e) =>
                       setNewField({ ...newField, fontSize: parseInt(e.target.value) })
                     }
@@ -294,9 +295,11 @@ export default function DynamicFieldEditor({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Font Family</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Font Family
+                  </label>
                   <select
-                    value={newField.fontFamily || 'Arial'}
+                    value={newField.fontFamily || 'League Spartan'}
                     onChange={(e) => setNewField({ ...newField, fontFamily: e.target.value })}
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -312,7 +315,10 @@ export default function DynamicFieldEditor({
                   <select
                     value={newField.textAlign || 'left'}
                     onChange={(e) =>
-                      setNewField({ ...newField, textAlign: e.target.value as 'left' | 'center' | 'right' })
+                      setNewField({
+                        ...newField,
+                        textAlign: e.target.value as 'left' | 'center' | 'right',
+                      })
                     }
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >

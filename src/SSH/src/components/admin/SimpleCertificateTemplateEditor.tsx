@@ -117,7 +117,7 @@ export default function SimpleCertificateTemplateEditor({
   }
 
   // Add preset field
-  const addField = (preset: typeof PRESET_FIELDS[0]) => {
+  const addField = (preset: (typeof PRESET_FIELDS)[0]) => {
     const newField: DynamicField = {
       id: `field-${Date.now()}`,
       name: preset.name,
@@ -129,7 +129,7 @@ export default function SimpleCertificateTemplateEditor({
       height: 40,
       fontSize: preset.fontSize,
       fontColor: preset.fontColor,
-      fontFamily: 'Arial',
+      fontFamily: 'League Spartan',
       textAlign: 'center',
       isBold: true,
       isItalic: false,
@@ -168,8 +168,8 @@ export default function SimpleCertificateTemplateEditor({
                 x: Math.max(0, Math.min(imageSize.width - f.width, newX)),
                 y: Math.max(0, Math.min(imageSize.height - 30, newY)),
               }
-            : f
-        )
+            : f,
+        ),
       )
     }
 
@@ -536,6 +536,24 @@ export default function SimpleCertificateTemplateEditor({
                             }
                             className="w-full h-9 border rounded cursor-pointer"
                           />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-700">Font Family</label>
+                          <select
+                            value={selectedField.fontFamily}
+                            onChange={(e) =>
+                              updateField(selectedField.id, { fontFamily: e.target.value })
+                            }
+                            className="w-full px-2 py-1 text-sm border rounded"
+                          >
+                            <option value="Arial">Arial</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Trebuchet MS">Trebuchet MS</option>
+                            <option value="League Spartan">League Spartan</option>
+                          </select>
                         </div>
                         <div>
                           <label className="text-xs font-medium text-gray-700">Align</label>

@@ -215,7 +215,7 @@ export async function getCountry(): Promise<string | undefined> {
 
       // Fallback to ip-api.com (free, 45 requests/minute)
       try {
-        const fallbackResponse = await fetch('http://ip-api.com/json/', {
+        const fallbackResponse = await fetch('https://ipapi.co/json/', {
           method: 'GET',
           signal: AbortSignal.timeout(5000),
         })

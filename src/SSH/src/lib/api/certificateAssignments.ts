@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../supabase'
 import { getGurukuls } from './gurukuls'
 import { getCourses } from './courses'
+import { decryptProfileFields } from '../encryption'
 import type { CertificateTemplate, Gurukul, Course, User } from '../../types'
 
 interface CourseAssignmentWithCourse {
@@ -71,7 +72,15 @@ export const getCertificateAssignments = async (filters?: {
       }
       throw error
     }
-    return data as CertificateAssignment[]
+
+    // Decrypt profile fields
+    const decryptedData = data.map((assignment) => ({
+      ...assignment,
+      teacher: assignment.teacher ? decryptProfileFields(assignment.teacher) : assignment.teacher,
+      creator: assignment.creator ? decryptProfileFields(assignment.creator) : assignment.creator,
+    }))
+
+    return decryptedData as CertificateAssignment[]
   } catch {
     // Return empty array if there's any database issue
     return []
@@ -197,7 +206,14 @@ export const getTeacherCertificateAssignments = async (teacherId: string) => {
         ),
     )
 
-    return uniqueAssignments
+    // Decrypt profile fields
+    const decryptedAssignments = uniqueAssignments.map((assignment) => ({
+      ...assignment,
+      teacher: assignment.teacher ? decryptProfileFields(assignment.teacher) : assignment.teacher,
+      creator: assignment.creator ? decryptProfileFields(assignment.creator) : assignment.creator,
+    }))
+
+    return decryptedAssignments
   } catch (error) {
     console.error('Error getting teacher certificate assignments:', error)
     return []
@@ -393,12 +409,15 @@ export const getAvailableTeachers = async () => {
     throw error
   }
 
-  return teachers.map((teacher) => ({
-    id: teacher.id,
-    name: teacher.full_name,
-    email: teacher.email,
-    status: 'active',
-  }))
+  return teachers.map((teacher) => {
+    const decrypted = decryptProfileFields(teacher)
+    return {
+      id: decrypted.id,
+      name: decrypted.full_name,
+      email: decrypted.email,
+      status: 'active',
+    }
+  })
 }
 
 interface EnrollmentData {

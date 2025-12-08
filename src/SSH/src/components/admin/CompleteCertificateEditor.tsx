@@ -62,6 +62,7 @@ const FONT_FAMILIES = [
   'Courier New',
   'Verdana',
   'Trebuchet MS',
+  'League Spartan',
 ]
 
 export default function CompleteCertificateEditor({
@@ -106,9 +107,9 @@ export default function CompleteCertificateEditor({
     width: 600,
     height: 40,
     text: 'This certifies successful completion of the above course',
-    fontSize: 14,
+    fontSize: 35,
     fontColor: '#000000',
-    fontFamily: 'Arial',
+    fontFamily: 'League Spartan',
     textAlign: 'center',
     isBold: false,
     isItalic: false,
@@ -263,7 +264,7 @@ export default function CompleteCertificateEditor({
       height: 40,
       fontSize: preset.fontSize,
       fontColor: preset.fontColor,
-      fontFamily: 'Arial',
+      fontFamily: 'League Spartan',
       textAlign: 'center',
       isBold: true,
       isItalic: false,

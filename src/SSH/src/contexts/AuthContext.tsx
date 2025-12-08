@@ -99,6 +99,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           session = result.data.session
           if (result.error) {
             console.error('Session error:', result.error)
+            // Clear invalid session from storage
+            await supabase.auth.signOut({ scope: 'local' })
             session = null
           }
         } catch (error) {
@@ -107,6 +109,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             error: errorMessage,
             pathname: location.pathname,
           })
+          // Clear potentially invalid session from storage
+          try {
+            await supabase.auth.signOut({ scope: 'local' })
+          } catch {}
           session = null
         }
         if (!isMounted) return

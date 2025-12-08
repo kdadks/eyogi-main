@@ -160,7 +160,15 @@ export default function VisualFieldPositioner({
         document.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  }, [dragging, signatureDragging, fields, signatures, imageSize, onFieldsChange, onSignaturesChange])
+  }, [
+    dragging,
+    signatureDragging,
+    fields,
+    signatures,
+    imageSize,
+    onFieldsChange,
+    onSignaturesChange,
+  ])
 
   const handleDeleteField = (fieldId: string) => {
     onFieldsChange(fields.filter((f) => f.id !== fieldId))
@@ -236,7 +244,9 @@ export default function VisualFieldPositioner({
                     width: `${signatures.secretary.width}px`,
                     height: `${signatures.secretary.height}px`,
                   }}
-                  onMouseDown={(e) => handleSignatureMouseDown(e, 'secretary', signatures.secretary)}
+                  onMouseDown={(e) =>
+                    handleSignatureMouseDown(e, 'secretary', signatures.secretary)
+                  }
                 >
                   <span className="text-xs font-semibold text-gray-700">Secretary</span>
                 </div>
@@ -370,6 +380,27 @@ export default function VisualFieldPositioner({
                       }}
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                     />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-700">Font Family</label>
+                    <select
+                      value={selectedField.fontFamily}
+                      onChange={(e) => {
+                        const updatedFields = fields.map((f) =>
+                          f.id === selectedField.id ? { ...f, fontFamily: e.target.value } : f,
+                        )
+                        onFieldsChange(updatedFields)
+                      }}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    >
+                      <option value="Arial">Arial</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Courier New">Courier New</option>
+                      <option value="Verdana">Verdana</option>
+                      <option value="Trebuchet MS">Trebuchet MS</option>
+                      <option value="League Spartan">League Spartan</option>
+                    </select>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-700">Text Color</label>
