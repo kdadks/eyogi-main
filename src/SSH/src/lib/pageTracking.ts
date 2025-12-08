@@ -28,6 +28,20 @@ export interface PageTrackingData {
 // CONSENT MANAGEMENT
 // ============================================
 
+// Check if consent has expired (365 days)
+function isConsentExpired(timestamp: string): boolean {
+  if (!timestamp) return true
+
+  try {
+    const consentDate = new Date(timestamp)
+    const now = new Date()
+    const daysSinceConsent = (now.getTime() - consentDate.getTime()) / (1000 * 60 * 60 * 24)
+    return daysSinceConsent >= 365
+  } catch {
+    return true
+  }
+}
+
 export function hasAnalyticsConsent(): boolean {
   // Guard for SSR - localStorage not available on server
   if (typeof window === 'undefined') {
@@ -39,6 +53,12 @@ export function hasAnalyticsConsent(): boolean {
     if (!consent) return false
 
     const parsed: TrackingConsent = JSON.parse(consent)
+
+    // Check if consent has expired
+    if (isConsentExpired(parsed.timestamp)) {
+      return false
+    }
+
     return parsed.analytics === true
   } catch {
     return false
@@ -101,6 +121,18 @@ export function getTrackingConsent(): TrackingConsent {
 
     const parsed = JSON.parse(consent)
     console.log('[CookieConsent] Parsed consent:', parsed)
+
+    // Check if consent has expired (365 days)
+    if (isConsentExpired(parsed.timestamp)) {
+      console.log('[CookieConsent] Consent has expired, clearing it')
+      clearTrackingConsent()
+      return {
+        analytics: false,
+        functional: true,
+        timestamp: '',
+      }
+    }
+
     return parsed
   } catch (error) {
     console.error('[CookieConsent] Error reading consent from localStorage:', error)
