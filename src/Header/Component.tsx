@@ -28,7 +28,7 @@ const links: NavLink[] = [
     href: '/hinduism',
   },
   {
-    name: 'SSH Portal',
+    name: 'University',
     href: '/ssh-app/',
   },
   {
@@ -76,7 +76,7 @@ const linksDesktop: DesktopNavLink[] = [
     subLinks: [],
   },
   {
-    name: 'SSH Portal',
+    name: 'University',
     href: '/ssh-app/',
     subLinks: [],
   },

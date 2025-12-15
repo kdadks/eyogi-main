@@ -143,7 +143,7 @@ export default function CertificateViewer() {
         <div className="bg-white shadow-2xl rounded-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-white text-center">
-            <h1 className="text-3xl font-bold mb-2">eYogi SSH Gurukul</h1>
+            <h1 className="text-3xl font-bold mb-2">eYogi University</h1>
             <h2 className="text-xl font-semibold">Certificate of Completion</h2>
           </div>
 

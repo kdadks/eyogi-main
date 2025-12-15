@@ -168,6 +168,28 @@ export default function CompleteCertificateEditor({
       if (template.template_data?.text_message) {
         setTextMessage(template.template_data.text_message)
       }
+    } else {
+      // Reset to default state when template is undefined (creating new template)
+      setTemplateName('')
+      setTemplateImage('')
+      setFields([])
+      setSecretarySignature({
+        x: 20,
+        y: 70,
+        width: 15,
+        height: 8,
+        name: 'President',
+        image: '',
+      })
+      setChancellorSignature({
+        x: 70,
+        y: 70,
+        width: 15,
+        height: 8,
+        name: 'Chancellor',
+        image: '',
+      })
+      setTextMessage('')
     }
   }, [template])
 

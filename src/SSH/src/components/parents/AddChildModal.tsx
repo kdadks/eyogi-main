@@ -6,7 +6,8 @@ import { countries, normalizeToCountryCode } from '../../lib/address-utils'
 import { supabase } from '../../lib/supabase'
 
 interface ChildFormData {
-  fullName: string
+  firstName: string
+  lastName: string
   date_of_birth: string
   grade: string
   email?: string
@@ -113,7 +114,8 @@ export default function AddChildModal({
   }
 
   const [formData, setFormData] = useState<ChildFormData>({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     date_of_birth: '',
     grade: '',
     email: '',
@@ -135,39 +137,48 @@ export default function AddChildModal({
     if (!isOpen) return
 
     if (isEditMode && initialData) {
-      // Edit mode: populate with child data
+      // Edit mode: populate with child data but use parent's address
       const formattedDate = formatDateForDisplay(initialData.date_of_birth)
-      const countryCode = normalizeToCountryCode(initialData.address.country)
+      // Split fullName into firstName and lastName if available
+      const nameParts = (initialData as any).fullName
+        ? (initialData as any).fullName.split(' ')
+        : [initialData.firstName || '', initialData.lastName || '']
+      const firstName = initialData.firstName || nameParts[0] || ''
+      const lastName =
+        initialData.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '')
+
       setFormData({
-        fullName: initialData.fullName,
+        firstName,
+        lastName,
         date_of_birth: formattedDate,
         grade: initialData.grade,
         email: initialData.email || '',
         phone: initialData.phone || '',
         address: {
-          address_line_1: initialData.address.address_line_1,
-          address_line_2: initialData.address.address_line_2 || '',
-          city: initialData.address.city,
-          state: initialData.address.state,
-          zip_code: initialData.address.zip_code,
-          country: countryCode,
+          address_line_1: parentInfo?.address?.street || '',
+          address_line_2: '',
+          city: parentInfo?.address?.city || '',
+          state: parentInfo?.address?.state || '',
+          zip_code: parentInfo?.address?.postal_code || '',
+          country: getCountryCodeByName(parentInfo?.address?.country) || 'US',
         },
       })
     } else {
-      // Add mode: reset to defaults
+      // Add mode: auto-populate with parent's address
       setFormData({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         date_of_birth: '',
         grade: '',
         email: '',
         phone: '',
         address: {
-          address_line_1: '',
+          address_line_1: parentInfo?.address?.street || '',
           address_line_2: '',
-          city: '',
-          state: '',
-          zip_code: '',
-          country: 'US',
+          city: parentInfo?.address?.city || '',
+          state: parentInfo?.address?.state || '',
+          zip_code: parentInfo?.address?.postal_code || '',
+          country: getCountryCodeByName(parentInfo?.address?.country) || 'US',
         },
       })
     }
@@ -178,8 +189,12 @@ export default function AddChildModal({
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required'
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required'
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required'
     }
 
     if (!formData.date_of_birth) {
@@ -194,29 +209,7 @@ export default function AddChildModal({
       }
     }
 
-    if (!formData.grade.trim()) {
-      newErrors.grade = 'Grade is required'
-    }
-
-    if (!formData.address.address_line_1.trim()) {
-      newErrors.address_line_1 = 'Address is required'
-    }
-
-    if (!formData.address.city.trim()) {
-      newErrors.city = 'City is required'
-    }
-
-    if (!formData.address.country || !formData.address.country.trim()) {
-      newErrors.country = 'Country is required (needed for student ID generation)'
-    }
-
-    if (!formData.address.state.trim()) {
-      newErrors.state = 'State/County is required (needed for student ID generation)'
-    }
-
-    if (!formData.address.zip_code.trim()) {
-      newErrors.zip_code = 'ZIP code is required'
-    }
+    // Class/Grade is now optional - no validation needed
 
     // Email validation - only in edit mode
     if (isEditMode) {
@@ -272,10 +265,13 @@ export default function AddChildModal({
 
     try {
       // Convert date format for database storage (MM/DD/YYYY -> YYYY-MM-DD)
+      const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim()
       const dataToSubmit = {
-        fullName: formData.fullName,
+        fullName,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         date_of_birth: parseDateFromInput(formData.date_of_birth),
-        grade: formData.grade,
+        grade: formData.grade || '', // Allow empty grade/class
         phone: formData.phone,
         address: formData.address,
         // Only include email in edit mode, let API auto-generate in add mode
@@ -284,7 +280,8 @@ export default function AddChildModal({
       await onAddChild(dataToSubmit)
       // Reset form after successful submission
       setFormData({
-        fullName: '',
+        firstName: '',
+        lastName: '',
         date_of_birth: '',
         grade: '',
         email: '',
@@ -315,38 +312,7 @@ export default function AddChildModal({
     }
   }
 
-  const handleAddressChange = (field: keyof ChildFormData['address'], value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [field]: value,
-      },
-    }))
-
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }))
-    }
-  }
   if (!isOpen) return null
-
-  const gradeOptions = [
-    'Pre-K',
-    'Kindergarten',
-    '1st Grade',
-    '2nd Grade',
-    '3rd Grade',
-    '4th Grade',
-    '5th Grade',
-    '6th Grade',
-    '7th Grade',
-    '8th Grade',
-    '9th Grade',
-    '10th Grade',
-    '11th Grade',
-    '12th Grade',
-  ]
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -378,8 +344,8 @@ export default function AddChildModal({
                     <p className="font-medium mb-1">Student ID Generation</p>
                     <p>
                       A unique student ID will be automatically generated based on the country and
-                      state/county you provide (e.g., IRLDU202500001 for Dublin, Ireland). Please
-                      ensure these fields are accurate.
+                      state/county from your parent profile address (e.g., IRLDU202500001 for
+                      Dublin, Ireland). The address will be automatically copied from your profile.
                     </p>
                   </div>
                 </div>
@@ -388,24 +354,46 @@ export default function AddChildModal({
 
             {/* Basic Information Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {/* Full Name */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+              {/* First Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
                 <input
                   type="text"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.fullName ? 'border-red-300' : 'border-gray-300'
+                    errors.firstName ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Enter child's full name"
+                  placeholder="First name"
                   disabled={loading}
                   required
                 />
-                {errors.fullName && (
+                {errors.firstName && (
                   <p className="text-red-600 text-sm mt-1 flex items-center">
                     <AlertCircle className="h-4 w-4 mr-1" />
-                    {errors.fullName}
+                    {errors.firstName}
+                  </p>
+                )}
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.lastName ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Last name"
+                  disabled={loading}
+                  required
+                />
+                {errors.lastName && (
+                  <p className="text-red-600 text-sm mt-1 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {errors.lastName}
                   </p>
                 )}
               </div>
@@ -441,31 +429,19 @@ export default function AddChildModal({
                 )}
               </div>
 
-              {/* Grade */}
+              {/* Class (formerly Grade) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Grade *</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Class (Optional)
+                </label>
+                <input
+                  type="text"
                   value={formData.grade}
                   onChange={(e) => handleInputChange('grade', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.grade ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 5th Grade, Year 10"
                   disabled={loading}
-                  required
-                >
-                  <option value="">Select Grade</option>
-                  {gradeOptions.map((grade) => (
-                    <option key={grade} value={grade}>
-                      {grade}
-                    </option>
-                  ))}
-                </select>
-                {errors.grade && (
-                  <p className="text-red-600 text-sm mt-1 flex items-center">
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    {errors.grade}
-                  </p>
-                )}
+                />
               </div>
 
               {/* Phone */}
@@ -509,145 +485,30 @@ export default function AddChildModal({
               )}
             </div>
 
-            {/* Address Information Row */}
+            {/* Address Information - Auto-copied from Parent */}
             <div className="space-y-3">
-              <h4 className="text-md font-medium text-gray-900">Address Information</h4>
-
-              {/* Address Lines */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address Line 1 *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address.address_line_1}
-                    onChange={(e) => handleAddressChange('address_line_1', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.address_line_1 ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter street address"
-                    disabled={loading}
-                    required
-                  />
-                  {errors.address_line_1 && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.address_line_1}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address Line 2 (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address.address_line_2}
-                    onChange={(e) => handleAddressChange('address_line_2', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Apartment, suite, etc."
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* City, State, Country, ZIP */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-                  <input
-                    type="text"
-                    value={formData.address.city}
-                    onChange={(e) => handleAddressChange('city', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.city ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="City"
-                    disabled={loading}
-                    required
-                  />
-                  {errors.city && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.city}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
-                  <CountrySelect
-                    value={formData.address.country}
-                    onChange={(countryCode) => handleAddressChange('country', countryCode)}
-                    disabled={loading}
-                    required
-                    className={errors.country ? 'border-red-300' : ''}
-                  />
-                  {errors.country && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.country}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {formData.address.country === 'US'
-                      ? 'State'
-                      : formData.address.country === 'CA'
-                        ? 'Province'
-                        : 'State/Province'}{' '}
-                    *
-                  </label>
-                  <StateSelect
-                    countryCode={formData.address.country}
-                    value={formData.address.state}
-                    onChange={(stateCode) => handleAddressChange('state', stateCode)}
-                    disabled={loading}
-                    required
-                    className={errors.state ? 'border-red-300' : ''}
-                  />
-                  {errors.state && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.state}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {formData.address.country === 'US'
-                      ? 'ZIP Code'
-                      : formData.address.country === 'CA'
-                        ? 'Postal Code'
-                        : 'ZIP/Postal Code'}{' '}
-                    *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address.zip_code}
-                    onChange={(e) => handleAddressChange('zip_code', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.zip_code ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder={
-                      formData.address.country === 'US'
-                        ? 'ZIP Code'
-                        : formData.address.country === 'CA'
-                          ? 'Postal Code'
-                          : 'ZIP/Postal Code'
-                    }
-                    disabled={loading}
-                    required
-                  />
-                  {errors.zip_code && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      {errors.zip_code}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">
+                  Address (Automatically copied from Parent Profile)
+                </h4>
+                <div className="text-sm text-blue-800 space-y-1">
+                  {formData.address.address_line_1 ? (
+                    <>
+                      <p>{formData.address.address_line_1}</p>
+                      {formData.address.address_line_2 && <p>{formData.address.address_line_2}</p>}
+                      <p>
+                        {formData.address.city}
+                        {formData.address.state && `, ${formData.address.state}`}
+                        {formData.address.zip_code && ` ${formData.address.zip_code}`}
+                      </p>
+                      <p>
+                        {countries.find((c) => c.code === formData.address.country)?.name ||
+                          formData.address.country}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-amber-700">
+                      No address found in parent profile. Please update your profile first.
                     </p>
                   )}
                 </div>

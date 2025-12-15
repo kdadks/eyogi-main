@@ -282,6 +282,20 @@ export async function updateBatch(id: string, updates: Partial<Batch>): Promise<
       throw new Error('Failed to update batch')
     }
 
+    // Fetch the course assigned to this batch
+    const { data: courseData } = await supabaseAdmin
+      .from('batch_courses')
+      .select('course:courses(*)')
+      .eq('batch_id', id)
+      .eq('is_active', true)
+      .limit(1)
+      .single()
+
+    // Add the course to the batch data if it exists
+    if (courseData && courseData.course) {
+      data.course = courseData.course as Course
+    }
+
     return data
   } catch (error) {
     console.error('Error in updateBatch:', error)

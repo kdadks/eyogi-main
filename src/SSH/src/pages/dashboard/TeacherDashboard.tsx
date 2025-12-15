@@ -1099,40 +1099,38 @@ export default function TeacherDashboard() {
         transition={{ duration: 0.6 }}
         className="bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40 shadow-lg"
       >
-        <div className="container-max py-3 sm:py-4 lg:py-8">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
-            <div className="flex items-center gap-2 sm:gap-3 lg:gap-8 min-w-0">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-8">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0"
+            >
+              <AcademicCapIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-white" />
+            </motion.div>
+            <div className="flex-1 min-w-0">
               <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center gap-2 mb-1"
               >
-                <AcademicCapIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-white" />
+                <TimeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 flex-shrink-0" />
+                <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent truncate">
+                  {greeting}, {user?.full_name?.split(' ')[0] || 'Teacher'}! 👋
+                </h1>
               </motion.div>
-              <div className="min-w-0">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="flex items-center gap-2 mb-1 sm:mb-2 min-w-0"
-                >
-                  <TimeIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-amber-500 flex-shrink-0" />
-                  <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent truncate">
-                    {greeting}, {user?.full_name?.split(' ')[0] || 'Teacher'}! 👋
-                  </h1>
-                </motion.div>
-                <motion.p
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-gray-600 text-xs sm:text-sm lg:text-base hidden sm:block"
-                >
-                  Ready to inspire minds today?
-                </motion.p>
-              </div>
+              <motion.p
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-xs sm:text-sm text-gray-600 font-medium truncate"
+              >
+                Ready to inspire minds today?
+              </motion.p>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 lg:gap-8 flex-shrink-0">
+            <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1318,7 +1316,7 @@ export default function TeacherDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-4 sm:mt-6 lg:mt-8 w-full relative"
+            className="mt-3 sm:mt-4 lg:mt-8 w-full relative"
           >
             {/* Scroll indicator for mobile */}
             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-100 to-transparent pointer-events-none sm:hidden z-10 rounded-r-lg" />
@@ -1409,15 +1407,14 @@ export default function TeacherDashboard() {
                         // Scroll to top of page
                         window.scrollTo({ top: 0, behavior: 'smooth' })
                       }}
-                      className={`relative flex items-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm lg:text-base transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
+                      title={tab.name}
+                      className={`relative flex items-center justify-center gap-2 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-lg lg:rounded-xl font-semibold text-xs sm:text-sm lg:text-sm transition-all duration-300 cursor-pointer whitespace-nowrap min-h-[44px] ${
                         activeView === tab.id
-                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-md'
                       }`}
                     >
-                      <tab.icon
-                        className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${activeView === tab.id ? 'text-white' : ''}`}
-                      />
+                      <tab.icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 lg:h-5 lg:w-5 flex-shrink-0" />
                       <span className="hidden sm:inline">{tab.name}</span>
                       {tab.badge && (
                         <motion.span

@@ -58,7 +58,7 @@ const AdminLogin: React.FC = () => {
       <div className="max-w-md w-full p-8">
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">eYogi Gurukul SSH University</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">eYogi Gurukul University</h1>
             <p className="text-gray-600">Admin Console</p>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-8">

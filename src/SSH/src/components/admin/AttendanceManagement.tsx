@@ -194,26 +194,52 @@ const AttendanceManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Management</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Track and manage student attendance for your batches
-          </p>
+      {/* Header with Instructions */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 text-white">
+        <h1 className="text-3xl font-bold mb-2">Attendance Management</h1>
+        <p className="text-blue-100 text-lg mb-4">
+          Track and manage student attendance for your batches
+        </p>
+        {/* Step-by-step guide */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <h3 className="font-semibold text-sm mb-3 flex items-center">
+            <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">
+              📋
+            </span>
+            How to Mark Attendance
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-blue-50">
+            <div className="flex items-start">
+              <span className="bg-white/30 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0">
+                1
+              </span>
+              <span>Select the batch from the dropdown below</span>
+            </div>
+            <div className="flex items-start">
+              <span className="bg-white/30 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0">
+                2
+              </span>
+              <span>Choose the date for taking attendance</span>
+            </div>
+            <div className="flex items-start">
+              <span className="bg-white/30 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0">
+                3
+              </span>
+              <span>Click "Mark Attendance" button below</span>
+            </div>
+          </div>
         </div>
-        {canCreate && selectedBatch && (
-          <Button onClick={handleMarkAttendance} variant="primary" size="md">
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Mark Attendance
-          </Button>
-        )}
       </div>
 
-      {/* Batch Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Batch</CardTitle>
+      {/* Step 1: Batch Selector */}
+      <Card className="border-2 border-blue-200">
+        <CardHeader className="bg-blue-50">
+          <div className="flex items-center">
+            <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
+              1
+            </span>
+            <CardTitle>Step 1: Select Your Batch</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {batches.length === 0 ? (
@@ -227,136 +253,170 @@ const AttendanceManagement: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Choose Batch <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={selectedBatch?.id || ''}
                   onChange={(e) => {
                     const batch = batches.find((b) => b.id === e.target.value)
                     setSelectedBatch(batch || null)
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
-                  <option value="">Select a batch...</option>
+                  <option value="">-- Select a batch to manage attendance --</option>
                   {batches.map((batch) => (
                     <option key={batch.id} value={batch.id}>
-                      {batch.name} - {batch.gurukul?.name}
+                      {batch.name} ({batch.gurukul?.name}) - {batch.student_count || 0} students
                     </option>
                   ))}
                 </select>
+                {!selectedBatch && (
+                  <p className="text-sm text-gray-500 mt-2">Please select a batch to continue</p>
+                )}
               </div>
+            </div>
+          )}
+
+          {/* Batch Information & Date Selection */}
+          {selectedBatch && (
+            <div className="mt-4 space-y-4">
+              <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-green-900 mb-2 flex items-center">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  Batch Selected: {selectedBatch.name}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">Status:</span>{' '}
+                    <Badge
+                      variant={
+                        selectedBatch.status === 'active' || selectedBatch.status === 'in_progress'
+                          ? 'success'
+                          : selectedBatch.status === 'completed'
+                            ? 'default'
+                            : 'warning'
+                      }
+                      size="sm"
+                    >
+                      {selectedBatch.status.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Students:</span>{' '}
+                    <span className="font-medium text-gray-900">
+                      {selectedBatch.student_count || 0}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Gurukul:</span>{' '}
+                    <span className="font-medium text-gray-900">
+                      {selectedBatch.gurukul?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Step 2 & 3: Date Selection and Mark Attendance */}
+      {selectedBatch && canCreate && (
+        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
+          <CardHeader className="bg-green-50">
+            <div className="flex items-center">
+              <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
+                2
+              </span>
+              <CardTitle>Step 2: Choose Date & Mark Attendance</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Attendance Date <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full"
+                  className="w-full px-4 py-3 text-base border-2"
+                  max={new Date().toISOString().split('T')[0]}
                 />
-              </div>
-            </div>
-          )}
-
-          {/* Batch Information */}
-          {selectedBatch && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="text-sm font-semibold text-gray-900 mb-2">Batch Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-600">Status:</span>{' '}
-                  <Badge
-                    variant={
-                      selectedBatch.status === 'active' || selectedBatch.status === 'in_progress'
-                        ? 'success'
-                        : selectedBatch.status === 'completed'
-                          ? 'default'
-                          : 'warning'
-                    }
-                    size="sm"
-                  >
-                    {selectedBatch.status.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-                {selectedBatch.start_date && (
-                  <div>
-                    <span className="text-gray-600">Start Date:</span>{' '}
-                    <span className="font-medium text-gray-900">
-                      {new Date(selectedBatch.start_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-                {selectedBatch.end_date && (
-                  <div>
-                    <span className="text-gray-600">End Date:</span>{' '}
-                    <span className="font-medium text-gray-900">
-                      {new Date(selectedBatch.end_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Date Range Filter */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter Start Date
-              </label>
-              <Input
-                type="date"
-                value={dateFilter.start}
-                onChange={(e) => setDateFilter({ ...dateFilter, start: e.target.value })}
-                placeholder={
-                  selectedBatch?.start_date
-                    ? new Date(selectedBatch.start_date).toISOString().split('T')[0]
-                    : undefined
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter End Date
-              </label>
-              <Input
-                type="date"
-                value={dateFilter.end}
-                onChange={(e) => setDateFilter({ ...dateFilter, end: e.target.value })}
-                placeholder={
-                  selectedBatch?.end_date
-                    ? new Date(selectedBatch.end_date).toISOString().split('T')[0]
-                    : undefined
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mark Attendance Button - Prominent placement */}
-      {canCreate && selectedBatch && (
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Ready to Mark Attendance?
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Mark attendance for {selectedBatch.name} -{' '}
-                  {new Date(selectedDate).toLocaleDateString()}
+                <p className="text-sm text-gray-500 mt-1">
+                  Attendance for:{' '}
+                  {new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
                 </p>
               </div>
-              <Button
-                onClick={handleMarkAttendance}
-                variant="primary"
-                size="lg"
-                className="shadow-lg"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Mark Attendance
-              </Button>
+              <div>
+                <Button
+                  onClick={handleMarkAttendance}
+                  variant="primary"
+                  size="lg"
+                  className="w-full shadow-lg bg-green-600 hover:bg-green-700 text-white py-4"
+                >
+                  <span className="bg-white/30 rounded-full w-6 h-6 inline-flex items-center justify-center text-xs font-bold mr-2">
+                    3
+                  </span>
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Mark Attendance for {selectedBatch.name}
+                </Button>
+                <p className="text-xs text-gray-600 mt-2 text-center">
+                  Opens a form to record attendance for all students in this batch
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* View Historical Records - Date Range Filter */}
+      {selectedBatch && (
+        <Card>
+          <CardHeader>
+            <CardTitle>View Historical Attendance Records (Optional)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter Start Date
+                </label>
+                <Input
+                  type="date"
+                  value={dateFilter.start}
+                  onChange={(e) => setDateFilter({ ...dateFilter, start: e.target.value })}
+                  placeholder={
+                    selectedBatch?.start_date
+                      ? new Date(selectedBatch.start_date).toISOString().split('T')[0]
+                      : undefined
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter End Date
+                </label>
+                <Input
+                  type="date"
+                  value={dateFilter.end}
+                  onChange={(e) => setDateFilter({ ...dateFilter, end: e.target.value })}
+                  placeholder={
+                    selectedBatch?.end_date
+                      ? new Date(selectedBatch.end_date).toISOString().split('T')[0]
+                      : undefined
+                  }
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

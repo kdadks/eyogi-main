@@ -181,8 +181,13 @@ export default function CertificateManagement() {
     template?: CertificateTemplate,
   ) => {
     if (action === 'create') {
+      // Ensure we close the modal first, then reset and open with a clean state
+      setTemplateEditorOpen(false)
       setEditingTemplate(undefined)
-      setTemplateEditorOpen(true)
+      // Use setTimeout to ensure state is properly reset before reopening
+      setTimeout(() => {
+        setTemplateEditorOpen(true)
+      }, 50)
     } else if (action === 'edit' && template) {
       setEditingTemplate(template)
       setTemplateEditorOpen(true)
@@ -353,9 +358,7 @@ export default function CertificateManagement() {
             { id: 'certificates', name: 'Recent Certificates', icon: DocumentTextIcon },
             { id: 'templates', name: 'Templates', icon: DocumentTextIcon },
             { id: 'issue', name: 'Issue Certificates', icon: PlusIcon },
-            ...(canAssignTemplates
-              ? [{ id: 'assignments', name: 'Template Assignments', icon: FunnelIcon }]
-              : []),
+            { id: 'assignments', name: 'Template Assignments', icon: FunnelIcon },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -821,7 +824,7 @@ export default function CertificateManagement() {
         </Card>
       )}
       {/* Template Assignments Tab */}
-      {activeTab === 'assignments' && canAssignTemplates && (
+      {activeTab === 'assignments' && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-end">
@@ -871,18 +874,25 @@ export default function CertificateManagement() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {assignments.map((assignment) => {
-                      const gurukul = gurukuls.find((g) => g.id === assignment.gurukul_id)
-                      const course = courses.find((c) => c.id === assignment.course_id)
+                      const template =
+                        assignment.template ||
+                        templates.find((t) => t.id === assignment.template_id)
+                      const course =
+                        assignment.course || courses.find((c) => c.id === assignment.course_id)
+                      // For course assignments, get gurukul from the course's gurukul_id
+                      // For gurukul assignments, get from assignment's gurukul_id
+                      const gurukul =
+                        assignment.gurukul ||
+                        (course ? gurukuls.find((g) => g.id === course.gurukul_id) : null) ||
+                        gurukuls.find((g) => g.id === assignment.gurukul_id)
                       const teacher = assignment.teacher
                       return (
                         <tr key={assignment.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
-                              {assignment.template?.name || 'Unknown Template'}
+                              {template?.name || 'Unknown Template'}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {assignment.template?.type || 'N/A'}
-                            </div>
+                            <div className="text-sm text-gray-500">{template?.type || 'N/A'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge

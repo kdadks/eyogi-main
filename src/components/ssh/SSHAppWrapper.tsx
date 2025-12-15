@@ -29,63 +29,64 @@ const SSHAppWrapper: React.FC = () => {
   const courses: Course[] = [
     {
       id: 1,
-      title: "Vedic Sanskrit Foundations",
-      description: "Learn the fundamentals of Sanskrit language and Vedic texts",
-      image: "/ssh-app/Images/course1.jpg",
-      duration: "12 weeks",
-      level: "Beginner",
-      students: 150
+      title: 'Vedic Sanskrit Foundations',
+      description: 'Learn the fundamentals of Sanskrit language and Vedic texts',
+      image: '/ssh-app/Images/course1.jpg',
+      duration: '12 weeks',
+      level: 'Beginner',
+      students: 150,
     },
     {
       id: 2,
-      title: "Hindu Philosophy & Ethics",
-      description: "Explore the core principles of Hindu philosophy and ethical teachings",
-      image: "/ssh-app/Images/course2.jpg",
-      duration: "16 weeks",
-      level: "Intermediate",
-      students: 98
+      title: 'Hindu Philosophy & Ethics',
+      description: 'Explore the core principles of Hindu philosophy and ethical teachings',
+      image: '/ssh-app/Images/course2.jpg',
+      duration: '16 weeks',
+      level: 'Intermediate',
+      students: 98,
     },
     {
       id: 3,
-      title: "Mantra & Meditation Practices",
-      description: "Master traditional mantras and meditation techniques",
-      image: "/ssh-app/Images/course3.jpg",
-      duration: "8 weeks",
-      level: "All Levels",
-      students: 245
-    }
+      title: 'Mantra & Meditation Practices',
+      description: 'Master traditional mantras and meditation techniques',
+      image: '/ssh-app/Images/course3.jpg',
+      duration: '8 weeks',
+      level: 'All Levels',
+      students: 245,
+    },
   ]
 
   const gurukuls: Gurukul[] = [
     {
       id: 1,
-      name: "Himalayan Vedic Center",
-      description: "Traditional Vedic learning in the serene Himalayas",
-      location: "Rishikesh, India",
-      established: "1995",
+      name: 'Himalayan Vedic Center',
+      description: 'Traditional Vedic learning in the serene Himalayas',
+      location: 'Rishikesh, India',
+      established: '1995',
       courses: 25,
-      teachers: 12
+      teachers: 12,
     },
     {
       id: 2,
-      name: "Sacred Texts Institute",
-      description: "Specialized in ancient Sanskrit texts and their interpretations",
-      location: "Varanasi, India",
-      established: "1988",
+      name: 'Sacred Texts Institute',
+      description: 'Specialized in ancient Sanskrit texts and their interpretations',
+      location: 'Varanasi, India',
+      established: '1988',
       courses: 18,
-      teachers: 8
-    }
+      teachers: 8,
+    },
   ]
 
   const renderHome = () => (
     <div className="space-y-12">
       <div className="text-center">
         <h2 className="text-4xl font-bold text-gray-900 mb-4">
-          Welcome to eYogi Gurukul SSH Portal
+          Welcome to eYogi Gurukul University
         </h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Discover the ancient wisdom of Hindu traditions through our comprehensive online learning platform. 
-          Connect with authentic teachings, experienced gurus, and a community of spiritual seekers.
+          Discover the ancient wisdom of Hindu traditions through our comprehensive online learning
+          platform. Connect with authentic teachings, experienced gurus, and a community of
+          spiritual seekers.
         </p>
       </div>
 
@@ -96,10 +97,11 @@ const SSHAppWrapper: React.FC = () => {
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Ancient Wisdom</h3>
           <p className="text-gray-600">
-            Learn from authenticated Vedic texts and traditional Hindu scriptures with expert guidance.
+            Learn from authenticated Vedic texts and traditional Hindu scriptures with expert
+            guidance.
           </p>
         </div>
-        
+
         <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
           <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
             <span className="text-white font-bold text-xl">🧘</span>
@@ -109,7 +111,7 @@ const SSHAppWrapper: React.FC = () => {
             Master meditation, yoga, and mantra practices rooted in authentic Hindu traditions.
           </p>
         </div>
-        
+
         <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
           <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
             <span className="text-white font-bold text-xl">👨‍🏫</span>
@@ -127,12 +129,17 @@ const SSHAppWrapper: React.FC = () => {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Courses</h2>
-        <p className="text-gray-600">Explore our comprehensive curriculum designed for spiritual growth</p>
+        <p className="text-gray-600">
+          Explore our comprehensive curriculum designed for spiritual growth
+        </p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {courses.map((course) => (
-          <div key={course.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+          <div
+            key={course.id}
+            className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+          >
             <div className="h-48 bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
               <span className="text-white text-6xl">🕉️</span>
             </div>
@@ -160,10 +167,13 @@ const SSHAppWrapper: React.FC = () => {
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Gurukuls</h2>
         <p className="text-gray-600">Traditional centers of learning preserving ancient wisdom</p>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {gurukuls.map((gurukul) => (
-          <div key={gurukul.id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <div
+            key={gurukul.id}
+            className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+          >
             <h3 className="text-2xl font-semibold text-gray-900 mb-3">{gurukul.name}</h3>
             <p className="text-gray-600 mb-4">{gurukul.description}</p>
             <div className="space-y-2 text-sm text-gray-500">
@@ -205,11 +215,9 @@ const SSHAppWrapper: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  eYogi Gurukul - SSH Portal
+                  eYogi Gurukul University
                 </h1>
-                <p className="mt-2 text-gray-600">
-                  Ancient Hindu Wisdom, Modern Vedic Learning
-                </p>
+                <p className="mt-2 text-gray-600">Ancient Hindu Wisdom, Modern Vedic Learning</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -234,7 +242,7 @@ const SSHAppWrapper: React.FC = () => {
             {[
               { id: 'home', label: 'Home', icon: '🏠' },
               { id: 'courses', label: 'Courses', icon: '📚' },
-              { id: 'gurukuls', label: 'Gurukuls', icon: '🏛️' }
+              { id: 'gurukuls', label: 'Gurukuls', icon: '🏛️' },
             ].map((tab) => (
               <button
                 key={tab.id}
