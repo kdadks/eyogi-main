@@ -24,6 +24,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '@/utils/sanitize'
 import MediaSelectorButton from '@/components/MediaSelectorButton'
+import CourseImageSelector from '@/components/CourseImageSelector'
 import type { MediaFile } from '@/types/media'
 
 /**
@@ -459,7 +460,6 @@ export default function CourseManagement() {
         learning_outcomes: formData.learning_outcomes.filter((outcome) => outcome.trim() !== ''),
         includes_certificate: formData.includes_certificate || false,
         certificate_template_id: formData.certificate_template_id || undefined,
-        image_url: formData.image_url === null ? null : formData.image_url || undefined,
         cover_image_url:
           formData.cover_image_url === null ? null : formData.cover_image_url || undefined,
         video_preview_url:
@@ -530,7 +530,6 @@ export default function CourseManagement() {
         learning_outcomes: course.learning_outcomes || [],
         includes_certificate: course.includes_certificate || false,
         certificate_template_id: course.certificate_template_id || '',
-        image_url: course.image_url || '',
         cover_image_url: course.cover_image_url || '',
         video_preview_url: course.video_preview_url || '',
         syllabus: course.syllabus,
@@ -583,7 +582,6 @@ export default function CourseManagement() {
         learning_outcomes: formData.learning_outcomes.filter((outcome) => outcome.trim() !== ''),
         includes_certificate: formData.includes_certificate || false,
         certificate_template_id: formData.certificate_template_id || undefined,
-        image_url: formData.image_url === null ? null : formData.image_url || undefined,
         cover_image_url:
           formData.cover_image_url === null ? null : formData.cover_image_url || undefined,
         video_preview_url:
@@ -1914,59 +1912,26 @@ export default function CourseManagement() {
                   Media & SEO (Optional)
                 </h3>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <MediaSelectorButton
-                      label="Course Image"
-                      accept={['image/*']}
-                      variant="field"
-                      value={formData.image_url || null}
-                      onSelect={(files) => {
-                        if (files.length > 0) {
-                          console.log('Selected course image:', files[0].file_url)
-                          setFormData((prev) => ({ ...prev, image_url: files[0].file_url }))
-                        } else {
-                          setFormData((prev) => ({ ...prev, image_url: null }))
-                        }
-                      }}
-                      placeholder="Select course thumbnail"
-                      showPreview
-                      size="sm"
-                    />
-                    <MediaSelectorButton
-                      label="Cover Image"
-                      accept={['image/*']}
-                      variant="field"
-                      value={formData.cover_image_url || null}
-                      onSelect={(files) => {
-                        if (files.length > 0) {
-                          console.log('Selected cover image:', files[0].file_url)
-                          setFormData((prev) => ({ ...prev, cover_image_url: files[0].file_url }))
-                        } else {
-                          setFormData((prev) => ({ ...prev, cover_image_url: null }))
-                        }
-                      }}
-                      placeholder="Select cover image"
-                      showPreview
-                      size="sm"
-                    />
-                    <MediaSelectorButton
-                      label="Video Preview"
-                      accept={['video/*']}
-                      variant="field"
-                      value={formData.video_preview_url || null}
-                      onSelect={(files) => {
-                        if (files.length > 0) {
-                          console.log('Selected video preview:', files[0].file_url)
-                          setFormData((prev) => ({ ...prev, video_preview_url: files[0].file_url }))
-                        } else {
-                          setFormData((prev) => ({ ...prev, video_preview_url: null }))
-                        }
-                      }}
-                      placeholder="Select preview video"
-                      showPreview
-                      size="sm"
-                    />
-                  </div>
+                  <CourseImageSelector
+                    coverImageUrl={formData.cover_image_url}
+                    videoPreviewUrl={formData.video_preview_url}
+                    onCoverImageSelect={(files) => {
+                      if (files.length > 0) {
+                        console.log('Selected cover image:', files[0].file_url)
+                        setFormData((prev) => ({ ...prev, cover_image_url: files[0].file_url }))
+                      } else {
+                        setFormData((prev) => ({ ...prev, cover_image_url: null }))
+                      }
+                    }}
+                    onVideoPreviewSelect={(files) => {
+                      if (files.length > 0) {
+                        console.log('Selected video preview:', files[0].file_url)
+                        setFormData((prev) => ({ ...prev, video_preview_url: files[0].file_url }))
+                      } else {
+                        setFormData((prev) => ({ ...prev, video_preview_url: null }))
+                      }
+                    }}
+                  />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2696,59 +2661,26 @@ export default function CourseManagement() {
                   Media & SEO (Optional)
                 </h3>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <MediaSelectorButton
-                      label="Course Image"
-                      accept={['image/*']}
-                      variant="field"
-                      value={formData.image_url || null}
-                      onSelect={(files) => {
-                        if (files.length > 0) {
-                          console.log('Selected course image:', files[0].file_url)
-                          setFormData((prev) => ({ ...prev, image_url: files[0].file_url }))
-                        } else {
-                          setFormData((prev) => ({ ...prev, image_url: null }))
-                        }
-                      }}
-                      placeholder="Select course thumbnail"
-                      showPreview
-                      size="sm"
-                    />
-                    <MediaSelectorButton
-                      label="Cover Image"
-                      accept={['image/*']}
-                      variant="field"
-                      value={formData.cover_image_url || null}
-                      onSelect={(files) => {
-                        if (files.length > 0) {
-                          console.log('Selected cover image:', files[0].file_url)
-                          setFormData((prev) => ({ ...prev, cover_image_url: files[0].file_url }))
-                        } else {
-                          setFormData((prev) => ({ ...prev, cover_image_url: null }))
-                        }
-                      }}
-                      placeholder="Select cover image"
-                      showPreview
-                      size="sm"
-                    />
-                    <MediaSelectorButton
-                      label="Video Preview"
-                      accept={['video/*']}
-                      variant="field"
-                      value={formData.video_preview_url || null}
-                      onSelect={(files) => {
-                        if (files.length > 0) {
-                          console.log('Selected video preview:', files[0].file_url)
-                          setFormData((prev) => ({ ...prev, video_preview_url: files[0].file_url }))
-                        } else {
-                          setFormData((prev) => ({ ...prev, video_preview_url: null }))
-                        }
-                      }}
-                      placeholder="Select preview video"
-                      showPreview
-                      size="sm"
-                    />
-                  </div>
+                  <CourseImageSelector
+                    coverImageUrl={formData.cover_image_url}
+                    videoPreviewUrl={formData.video_preview_url}
+                    onCoverImageSelect={(files) => {
+                      if (files.length > 0) {
+                        console.log('Selected cover image:', files[0].file_url)
+                        setFormData((prev) => ({ ...prev, cover_image_url: files[0].file_url }))
+                      } else {
+                        setFormData((prev) => ({ ...prev, cover_image_url: null }))
+                      }
+                    }}
+                    onVideoPreviewSelect={(files) => {
+                      if (files.length > 0) {
+                        console.log('Selected video preview:', files[0].file_url)
+                        setFormData((prev) => ({ ...prev, video_preview_url: files[0].file_url }))
+                      } else {
+                        setFormData((prev) => ({ ...prev, video_preview_url: null }))
+                      }
+                    }}
+                  />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

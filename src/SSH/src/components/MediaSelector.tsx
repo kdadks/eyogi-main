@@ -165,6 +165,51 @@ export default function MediaSelector({
         toast.success(`Successfully uploaded ${fileArray.length} file(s)`)
         // Reload media list to show new files
         await loadMedia()
+
+        // Auto-select the newly uploaded files
+        const newSelectedFiles = new Set(selectedFiles)
+        results.forEach((result) => {
+          if (result && result.id) {
+            newSelectedFiles.add(result.id)
+          }
+        })
+        setSelectedFiles(newSelectedFiles)
+
+        // Auto-confirm selection with the newly uploaded files
+        // The results from uploadFilesToUploadThing contain id, filename, url, size, type
+        // We need to convert them to MediaFile format for onSelect callback
+        const selectedMedia = results
+          .filter((file): file is (typeof results)[0] => file !== null && file !== undefined)
+          .map(
+            (result) =>
+              ({
+                id: result.id,
+                filename: result.filename,
+                original_name: result.filename,
+                file_url: result.url,
+                file_size: result.size,
+                mime_type: result.type,
+                file_category: result.type.startsWith('image/')
+                  ? 'image'
+                  : result.type.startsWith('video/')
+                    ? 'video'
+                    : result.type.startsWith('audio/')
+                      ? 'audio'
+                      : 'document',
+                title: result.filename.split('.')[0],
+                alt_text: result.filename.split('.')[0],
+                uploaded_by: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }) as MediaFile,
+          )
+
+        if (selectedMedia.length > 0) {
+          // Use setTimeout to ensure state updates complete before calling onSelect
+          setTimeout(() => {
+            onSelect(selectedMedia)
+          }, 100)
+        }
       }
       // Reset file input
       if (fileInputRef.current) {

@@ -11,6 +11,7 @@ import 'react-quill/dist/quill.snow.css'
 import { SafeReactQuill } from '../../components/ui/SafeReactQuill'
 import MediaSelectorButton from '@/components/MediaSelectorButton'
 import MediaSelector from '@/components/MediaSelector'
+import CourseImageSelector from '@/components/CourseImageSelector'
 import { Course, Enrollment, Certificate } from '@/types'
 import { MediaFile } from '@/lib/api/media'
 import { getTeacherCourses, createCourse, updateCourse, checkSlugExists } from '@/lib/api/courses'
@@ -206,7 +207,6 @@ export default function TeacherDashboard() {
   const [prerequisites, setPrerequisites] = useState<string[]>([''])
   const [tags, setTags] = useState<string[]>([''])
   const [detailedDescription, setDetailedDescription] = useState('')
-  const [selectedCourseImage, setSelectedCourseImage] = useState<MediaFile | null>(null)
   const [selectedCoverImage, setSelectedCoverImage] = useState<MediaFile | null>(null)
   const [selectedVideoPreview, setSelectedVideoPreview] = useState<MediaFile | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
@@ -492,6 +492,19 @@ export default function TeacherDashboard() {
       loadTeacherProfile()
     }
   }, [user?.id, loadTeacherProfile])
+
+  // Helper function to reset form state for new course creation
+  const openCreateCourseModal = () => {
+    reset()
+    setLearningOutcomes([''])
+    setPrerequisites([''])
+    setTags([''])
+    setDetailedDescription('')
+    setSelectedCoverImage(null)
+    setSelectedVideoPreview(null)
+    setShowCreateCourse(true)
+  }
+
   const handleCreateCourse = async (data: CourseForm) => {
     setSavingCourse(true)
     try {
@@ -527,7 +540,6 @@ export default function TeacherDashboard() {
           data.prerequisites && data.prerequisites.length > 0 ? data.prerequisites : null,
         tags: data.tags || [],
         includes_certificate: data.includes_certificate ?? true,
-        image_url: selectedCourseImage?.file_url || data.image_url || undefined,
         cover_image_url: selectedCoverImage?.file_url || data.cover_image_url || undefined,
         video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url || undefined,
         syllabus: null,
@@ -551,7 +563,6 @@ export default function TeacherDashboard() {
       setPrerequisites([''])
       setTags([''])
       setDetailedDescription('')
-      setSelectedCourseImage(null)
       setSelectedCoverImage(null)
       setSelectedVideoPreview(null)
       toast.success('Course created successfully!')
@@ -603,7 +614,6 @@ export default function TeacherDashboard() {
           data.prerequisites && data.prerequisites.length > 0 ? data.prerequisites : null,
         tags: data.tags || [],
         includes_certificate: data.includes_certificate ?? true,
-        image_url: selectedCourseImage?.file_url || data.image_url || undefined,
         cover_image_url: selectedCoverImage?.file_url || data.cover_image_url || undefined,
         video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url || undefined,
         meta_title: data.meta_title || undefined,
@@ -628,7 +638,6 @@ export default function TeacherDashboard() {
       setPrerequisites([''])
       setTags([''])
       setDetailedDescription('')
-      setSelectedCourseImage(null)
       setSelectedCoverImage(null)
       setSelectedVideoPreview(null)
     } catch (error) {
@@ -684,7 +693,6 @@ export default function TeacherDashboard() {
         : [''],
     )
     setTags(course.tags && course.tags.length > 0 ? course.tags : [''])
-    setSelectedCourseImage(course.image_url ? ({ file_url: course.image_url } as MediaFile) : null)
     setSelectedCoverImage(
       course.cover_image_url ? ({ file_url: course.cover_image_url } as MediaFile) : null,
     )
@@ -1027,7 +1035,7 @@ export default function TeacherDashboard() {
       title: 'Create New Course',
       description: 'Design and launch a new course',
       icon: PlusIcon,
-      action: () => setShowCreateCourse(true),
+      action: () => openCreateCourseModal(),
       color: 'bg-gradient-to-r from-blue-500 to-blue-600',
       highlight: true,
     },
@@ -1698,7 +1706,7 @@ export default function TeacherDashboard() {
                   </p>
                 </div>
                 <Button
-                  onClick={() => setShowCreateCourse(true)}
+                  onClick={() => openCreateCourseModal()}
                   className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
@@ -1714,7 +1722,7 @@ export default function TeacherDashboard() {
                       Create your first course to start teaching!
                     </p>
                     <Button
-                      onClick={() => setShowCreateCourse(true)}
+                      onClick={() => openCreateCourseModal()}
                       className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
                     >
                       <PlusIcon className="h-5 w-5 mr-2" />
@@ -3743,49 +3751,17 @@ export default function TeacherDashboard() {
                     Media & SEO (Optional)
                   </h3>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <MediaSelectorButton
-                        label="Course Image"
-                        accept={['image/*']}
-                        variant="field"
-                        onSelect={(files) => {
-                          setSelectedCourseImage(files[0] || null)
-                          if (files[0]) {
-                            // Set the URL in the form - not needed as we handle in courseData
-                          }
-                        }}
-                        placeholder="Select course thumbnail"
-                        showPreview
-                        size="sm"
-                      />
-                      <MediaSelectorButton
-                        label="Cover Image"
-                        accept={['image/*']}
-                        variant="field"
-                        onSelect={(files) => {
-                          setSelectedCoverImage(files[0] || null)
-                          if (files[0]) {
-                            // Set the URL in the form - not needed as we handle in courseData
-                          }
-                        }}
-                        placeholder="Select cover image"
-                        showPreview
-                        size="sm"
-                      />
-                      <MediaSelectorButton
-                        label="Video Preview"
-                        accept={['video/*']}
-                        variant="field"
-                        onSelect={(files) => {
-                          setSelectedVideoPreview(files[0] || null)
-                          if (files[0]) {
-                            // Set the URL in the form - not needed as we handle in courseData
-                          }
-                        }}
-                        placeholder="Select preview video"
-                        showPreview
-                        size="sm"
-                      />
+                    <CourseImageSelector
+                      coverImageUrl={selectedCoverImage?.file_url}
+                      videoPreviewUrl={selectedVideoPreview?.file_url}
+                      onCoverImageSelect={(files) => {
+                        setSelectedCoverImage(files[0] || null)
+                      }}
+                      onVideoPreviewSelect={(files) => {
+                        setSelectedVideoPreview(files[0] || null)
+                      }}
+                    />
+                    <div className="grid grid-cols-1 gap-4">
                       <Input
                         label="Meta Title"
                         placeholder="SEO title"
@@ -3854,7 +3830,6 @@ export default function TeacherDashboard() {
                       setPrerequisites([''])
                       setTags([''])
                       setDetailedDescription('')
-                      setSelectedCourseImage(null)
                       setSelectedCoverImage(null)
                       setSelectedVideoPreview(null)
                     }}
@@ -3922,7 +3897,6 @@ export default function TeacherDashboard() {
                     setPrerequisites([''])
                     setTags([''])
                     setDetailedDescription('')
-                    setSelectedCourseImage(null)
                     setSelectedCoverImage(null)
                     setSelectedVideoPreview(null)
                   }}
@@ -4354,40 +4328,17 @@ export default function TeacherDashboard() {
                     Media & SEO (Optional)
                   </h3>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <MediaSelectorButton
-                        label="Course Image"
-                        accept={['image/*']}
-                        variant="field"
-                        onSelect={(files) => {
-                          setSelectedCourseImage(files[0] || null)
-                        }}
-                        placeholder="Select course thumbnail"
-                        showPreview
-                        size="sm"
-                      />
-                      <MediaSelectorButton
-                        label="Cover Image"
-                        accept={['image/*']}
-                        variant="field"
-                        onSelect={(files) => {
-                          setSelectedCoverImage(files[0] || null)
-                        }}
-                        placeholder="Select cover image"
-                        showPreview
-                        size="sm"
-                      />
-                      <MediaSelectorButton
-                        label="Video Preview"
-                        accept={['video/*']}
-                        variant="field"
-                        onSelect={(files) => {
-                          setSelectedVideoPreview(files[0] || null)
-                        }}
-                        placeholder="Select preview video"
-                        showPreview
-                        size="sm"
-                      />
+                    <CourseImageSelector
+                      coverImageUrl={selectedCoverImage?.file_url}
+                      videoPreviewUrl={selectedVideoPreview?.file_url}
+                      onCoverImageSelect={(files) => {
+                        setSelectedCoverImage(files[0] || null)
+                      }}
+                      onVideoPreviewSelect={(files) => {
+                        setSelectedVideoPreview(files[0] || null)
+                      }}
+                    />
+                    <div className="grid grid-cols-1 gap-4">
                       <Input
                         label="Meta Title"
                         placeholder="SEO title"
@@ -4457,7 +4408,6 @@ export default function TeacherDashboard() {
                       setPrerequisites([''])
                       setTags([''])
                       setDetailedDescription('')
-                      setSelectedCourseImage(null)
                       setSelectedCoverImage(null)
                       setSelectedVideoPreview(null)
                     }}

@@ -459,6 +459,39 @@ export default function CourseDetailPage() {
         <div className="container-max py-0 pb-8 px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
+              {/* Course Media */}
+              {(course.cover_image_url || course.video_preview_url) && (
+                <Card>
+                  <CardHeader>
+                    <h2 className="text-2xl font-bold">Course Media</h2>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {course.cover_image_url && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 mb-3">Course Cover</p>
+                        <img
+                          src={course.cover_image_url}
+                          alt={`${course.title} cover`}
+                          className="w-full h-auto rounded-lg object-cover max-h-96"
+                        />
+                      </div>
+                    )}
+                    {course.video_preview_url && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 mb-3">Preview Video</p>
+                        <video
+                          controls
+                          className="w-full h-auto rounded-lg bg-black max-h-96"
+                          poster={course.cover_image_url || undefined}
+                        >
+                          <source src={course.video_preview_url} type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
               {/* Detailed Description */}
               {course.detailed_description && (
                 <Card>
