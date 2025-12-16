@@ -495,7 +495,37 @@ export default function TeacherDashboard() {
 
   // Helper function to reset form state for new course creation
   const openCreateCourseModal = () => {
-    reset()
+    // Reset form to pristine state with empty/default values
+    reset({
+      gurukul_id: '',
+      course_number: '',
+      title: '',
+      slug: '',
+      description: '',
+      detailed_description: '',
+      level: 'basic',
+      age_group_min: undefined,
+      age_group_max: undefined,
+      duration_weeks: undefined,
+      duration_hours: undefined,
+      delivery_method: 'hybrid',
+      price: 0,
+      currency: 'EUR',
+      max_students: 20,
+      min_students: 10,
+      prerequisites: [],
+      learning_outcomes: [],
+      includes_certificate: true,
+      image_url: undefined,
+      cover_image_url: undefined,
+      video_preview_url: undefined,
+      tags: [],
+      meta_title: '',
+      meta_description: '',
+      featured: false,
+      is_active: true,
+      part: '',
+    })
     setLearningOutcomes([''])
     setPrerequisites([''])
     setTags([''])
@@ -675,8 +705,8 @@ export default function TeacherDashboard() {
       cover_image_url: course.cover_image_url,
       video_preview_url: course.video_preview_url,
       tags: course.tags,
-      meta_title: course.meta_title,
-      meta_description: course.meta_description,
+      meta_title: course.meta_title || '',
+      meta_description: course.meta_description || '',
       featured: course.featured,
       is_active: course.is_active,
       part: course.course_number?.slice(-1).match(/[A-Z]/) ? course.course_number.slice(-1) : '',
