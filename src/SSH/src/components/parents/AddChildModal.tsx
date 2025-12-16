@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { X, UserPlus, AlertCircle } from 'lucide-react'
 import CountrySelect from '../forms/CountrySelect'
 import StateSelect from '../forms/StateSelect'
-import { countries, normalizeToCountryCode } from '../../lib/address-utils'
+import { getStateName } from '../../lib/address-utils'
+import { normalizeCountryToISO3, getCountryNameFromISO3 } from '../../lib/iso-utils'
 import { supabase } from '../../lib/supabase'
 
 interface ChildFormData {
@@ -52,23 +53,6 @@ export default function AddChildModal({
   initialData,
   isEditMode = false,
 }: AddChildModalProps) {
-  // Helper function to get country code from country name
-  const getCountryCodeByName = (countryName?: string): string => {
-    if (!countryName) return 'US'
-
-    // If it's already a code (2 characters), return as is
-    if (countryName.length === 2) return countryName
-
-    // Find country by name
-    const country = countries.find(
-      (c) =>
-        c.name.toLowerCase() === countryName.toLowerCase() ||
-        c.name.toLowerCase().includes(countryName.toLowerCase()) ||
-        countryName.toLowerCase().includes(c.name.toLowerCase()),
-    )
-    return country?.code || 'US'
-  }
-
   // Helper function to format date for MM/DD/YYYY display
   const formatDateForDisplay = (dateString?: string): string => {
     if (!dateString || dateString === 'null') return ''
@@ -126,7 +110,7 @@ export default function AddChildModal({
       city: '',
       state: '',
       zip_code: '',
-      country: 'US',
+      country: 'USA',
     },
   })
 
@@ -160,7 +144,7 @@ export default function AddChildModal({
           city: parentInfo?.address?.city || '',
           state: parentInfo?.address?.state || '',
           zip_code: parentInfo?.address?.postal_code || '',
-          country: getCountryCodeByName(parentInfo?.address?.country) || 'US',
+          country: normalizeCountryToISO3(parentInfo?.address?.country || 'USA'),
         },
       })
     } else {
@@ -178,7 +162,7 @@ export default function AddChildModal({
           city: parentInfo?.address?.city || '',
           state: parentInfo?.address?.state || '',
           zip_code: parentInfo?.address?.postal_code || '',
-          country: getCountryCodeByName(parentInfo?.address?.country) || 'US',
+          country: normalizeCountryToISO3(parentInfo?.address?.country || 'USA'),
         },
       })
     }
@@ -273,7 +257,7 @@ export default function AddChildModal({
         date_of_birth: parseDateFromInput(formData.date_of_birth),
         grade: formData.grade || '', // Allow empty grade/class
         phone: formData.phone,
-        address: formData.address,
+        address: formData.address, // Already in 3-letter ISO code format
         // Only include email in edit mode, let API auto-generate in add mode
         ...(isEditMode && formData.email ? { email: formData.email } : {}),
       }
@@ -292,7 +276,7 @@ export default function AddChildModal({
           city: parentInfo?.address?.city || '',
           state: parentInfo?.address?.state || '',
           zip_code: parentInfo?.address?.postal_code || '',
-          country: getCountryCodeByName(parentInfo?.address?.country), // Convert name to code
+          country: normalizeCountryToISO3(parentInfo?.address?.country || 'USA'),
         },
       })
       setErrors({})
@@ -498,11 +482,16 @@ export default function AddChildModal({
                       {formData.address.address_line_2 && <p>{formData.address.address_line_2}</p>}
                       <p>
                         {formData.address.city}
-                        {formData.address.state && `, ${formData.address.state}`}
+                        {formData.address.state &&
+                          `, ${
+                            getStateName(formData.address.country, formData.address.state) ||
+                            formData.address.state
+                          }`}
                         {formData.address.zip_code && ` ${formData.address.zip_code}`}
                       </p>
                       <p>
-                        {countries.find((c) => c.code === formData.address.country)?.name ||
+                        {/* Display country name from 3-letter ISO code */}
+                        {getCountryNameFromISO3(formData.address.country) ||
                           formData.address.country}
                       </p>
                     </>

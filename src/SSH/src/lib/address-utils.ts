@@ -1,5 +1,7 @@
 // Country and State/Province utility for address forms
 // Centralized data and functions for use across the SSH University application
+import { convertISO3ToISO2, convertISO2ToISO3 } from './iso-utils'
+
 export interface Country {
   code: string
   name: string
@@ -628,12 +630,18 @@ export const normalizeToCountryCode = (countryInput: string): string => {
 
 /**
  * Get state/province name by country code and state code
- * @param countryCode - The 2-letter country code
+ * @param countryCode - The 2-letter or 3-letter country code
  * @param stateCode - The state/province code
  * @returns The state/province name or empty string if not found
  */
 export const getStateName = (countryCode: string, stateCode: string): string => {
-  const states = statesProvinces[countryCode] || []
+  // statesProvinces uses 3-letter country codes as keys
+  let countryCode3 = countryCode
+  if (countryCode.length === 2) {
+    // Convert 2-letter to 3-letter if needed
+    countryCode3 = convertISO2ToISO3(countryCode)
+  }
+  const states = statesProvinces[countryCode3] || []
   const state = states.find((s) => s.code === stateCode)
   return state?.name || ''
 }

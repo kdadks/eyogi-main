@@ -4,6 +4,13 @@ import SEOHead from '../components/seo/SEOHead'
 import { generateBreadcrumbSchema } from '../components/seo/StructuredData'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '../components/ui/Carousel'
 import { getBackgroundStyle } from '../utils/backgroundStyler'
 import '../components/styles/quill-preview.css'
 import {
@@ -94,12 +101,6 @@ export default function AboutPage() {
       </div>
     )
   }
-
-  const values = (cmsData.values_items || []) as Array<{
-    title: string
-    description: string
-    icon: string
-  }>
 
   const team = (cmsData.team_members || []) as Array<{
     name: string
@@ -207,7 +208,7 @@ export default function AboutPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
 
-            <div className="relative container-max section-padding z-[4] sunrise-content">
+            <div className="relative section-padding z-[4] sunrise-content px-4 md:px-8 lg:px-12">
               <div className="text-center max-w-4xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
                   {cmsData.hero_title}{' '}
@@ -243,7 +244,7 @@ export default function AboutPage() {
               cmsData.mission_bg_image_url,
             )}
           >
-            <div className="container-max">
+            <div className="px-4 md:px-8 lg:px-12">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
                   <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
@@ -295,12 +296,12 @@ export default function AboutPage() {
                 cmsData.stats_bg_image_url,
               )}
             >
-              <div className="container-max">
+              <div className="px-4 md:px-8 lg:px-12">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl md:text-4xl font-bold mb-4">{cmsData.stats_title}</h2>
                   <p className="text-xl opacity-90">{cmsData.stats_subtitle}</p>
                 </div>
-                <div className="grid md:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
                   {stats.map((stat, index) => (
                     <div key={index} className="text-center">
                       <div className="text-4xl md:text-5xl font-bold mb-2">{stat.number}</div>
@@ -312,41 +313,6 @@ export default function AboutPage() {
             </section>
           )}
 
-          {/* Values Section */}
-          <section
-            className="section-padding bg-white"
-            style={getBackgroundStyle(
-              cmsData.values_bg_type,
-              cmsData.values_bg_color,
-              cmsData.values_bg_image_url,
-            )}
-          >
-            <div className="container-max">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                  {cmsData.values_title}
-                </h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">{cmsData.values_subtitle}</p>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {values.map((value, index) => {
-                  const IconComponent = getIcon(value.icon)
-                  return (
-                    <Card key={index} className="text-center card-hover">
-                      <CardContent className="pt-8">
-                        <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <IconComponent className="h-8 w-8 text-white" />
-                        </div>
-                        <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
-                        <p className="text-gray-600">{value.description}</p>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
-          </section>
-
           {/* Team Section */}
           {cmsData.team_visible && (
             <section
@@ -357,7 +323,7 @@ export default function AboutPage() {
                 cmsData.team_bg_image_url,
               )}
             >
-              <div className="container-max">
+              <div className="px-4 md:px-8 lg:px-12">
                 <div className="text-center mb-16">
                   <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
                     {cmsData.team_title}
@@ -397,7 +363,7 @@ export default function AboutPage() {
               cmsData.vision_bg_image_url,
             )}
           >
-            <div className="container-max">
+            <div className="px-4 md:px-8 lg:px-12">
               <div className="text-center max-w-4xl mx-auto">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
                   {cmsData.vision_title}
@@ -410,20 +376,46 @@ export default function AboutPage() {
                     }}
                   />
                 )}
-                <div className="grid md:grid-cols-3 gap-8 mt-12">
-                  {visionItems.map((item, index) => {
-                    const IconComponent = getIcon(item.icon)
-                    return (
-                      <div key={index} className="text-center">
-                        <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <IconComponent className="h-6 w-6 text-white" />
+
+                {visionItems.length <= 4 ? (
+                  // Show 4 in one line if 4 or fewer items
+                  <div className="grid md:grid-cols-4 gap-8 mt-12">
+                    {visionItems.map((item, index) => {
+                      const IconComponent = getIcon(item.icon)
+                      return (
+                        <div key={index} className="text-center">
+                          <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <IconComponent className="h-6 w-6 text-white" />
+                          </div>
+                          <h3 className="font-semibold mb-2">{item.title}</h3>
+                          <p className="text-gray-600 text-sm">{item.description}</p>
                         </div>
-                        <h3 className="font-semibold mb-2">{item.title}</h3>
-                        <p className="text-gray-600 text-sm">{item.description}</p>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  // Show carousel if more than 4 items
+                  <Carousel className="mt-12">
+                    <CarouselContent>
+                      {visionItems.map((item, index) => {
+                        const IconComponent = getIcon(item.icon)
+                        return (
+                          <CarouselItem key={index} className="md:basis-1/4">
+                            <div className="text-center p-4">
+                              <div className="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <IconComponent className="h-6 w-6 text-white" />
+                              </div>
+                              <h3 className="font-semibold mb-2">{item.title}</h3>
+                              <p className="text-gray-600 text-sm">{item.description}</p>
+                            </div>
+                          </CarouselItem>
+                        )
+                      })}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
+                )}
               </div>
             </div>
           </section>
@@ -438,7 +430,7 @@ export default function AboutPage() {
                 cmsData.cta_bg_image_url,
               )}
             >
-              <div className="container-max text-center">
+              <div className="px-4 md:px-8 lg:px-12 text-center">
                 {cmsData.cta_title && (
                   <h2 className="text-3xl md:text-4xl font-bold mb-4">{cmsData.cta_title}</h2>
                 )}

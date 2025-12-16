@@ -223,3 +223,67 @@ export function isValidISO2CountryCode(code: string): boolean {
   const normalized = code.trim().toUpperCase()
   return normalized.length === 2 && ISO2_TO_ISO3[normalized] !== undefined
 }
+/**
+ * Get country name from 3-letter ISO code
+ * @param iso3Code - 3-letter ISO country code (e.g., 'USA')
+ * @returns Full country name (e.g., 'United States')
+ */
+export function getCountryNameFromISO3(iso3Code: string): string {
+  if (!iso3Code) return ''
+
+  const normalized = iso3Code.trim().toUpperCase()
+
+  const countryNames: Record<string, string> = {
+    IRL: 'Ireland',
+    GBR: 'United Kingdom',
+    USA: 'United States of America',
+    CAN: 'Canada',
+    AUS: 'Australia',
+    NZL: 'New Zealand',
+    IND: 'India',
+    BRA: 'Brazil',
+    DEU: 'Germany',
+    FRA: 'France',
+    ESP: 'Spain',
+    ITA: 'Italy',
+    NLD: 'Netherlands',
+    BEL: 'Belgium',
+    CHE: 'Switzerland',
+    AUT: 'Austria',
+    POL: 'Poland',
+    SWE: 'Sweden',
+    NOR: 'Norway',
+    DNK: 'Denmark',
+    FIN: 'Finland',
+    PRT: 'Portugal',
+    GRC: 'Greece',
+    MEX: 'Mexico',
+    JPN: 'Japan',
+    CHN: 'China',
+    KOR: 'South Korea',
+    RUS: 'Russia',
+    ZAF: 'South Africa',
+    EGY: 'Egypt',
+    NGA: 'Nigeria',
+    KEN: 'Kenya',
+    ARG: 'Argentina',
+    CHL: 'Chile',
+    COL: 'Colombia',
+    PER: 'Peru',
+    VEN: 'Venezuela',
+    THA: 'Thailand',
+    VNM: 'Vietnam',
+    PHL: 'Philippines',
+    MYS: 'Malaysia',
+    SGP: 'Singapore',
+    IDN: 'Indonesia',
+    PAK: 'Pakistan',
+    BGD: 'Bangladesh',
+    TUR: 'Turkey',
+    SAU: 'Saudi Arabia',
+    ARE: 'United Arab Emirates',
+    ISR: 'Israel',
+  }
+
+  return countryNames[normalized] || normalized
+}
