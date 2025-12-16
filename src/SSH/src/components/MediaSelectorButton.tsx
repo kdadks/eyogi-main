@@ -91,8 +91,14 @@ export default function MediaSelectorButton({
         )}
 
         {isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={closeSelector}
+          >
+            <div
+              className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <MediaSelector
                 multiple={multiple}
                 maxSelection={maxSelection}
@@ -136,8 +142,14 @@ export default function MediaSelectorButton({
         )}
 
         {isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-3xl max-h-[80vh] overflow-hidden">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={closeSelector}
+          >
+            <div
+              className="bg-white rounded-lg w-full max-w-3xl max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <MediaSelector
                 multiple={multiple}
                 maxSelection={maxSelection}
@@ -299,8 +311,14 @@ export default function MediaSelectorButton({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeSelector}
+        >
+          <div
+            className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <MediaSelector
               multiple={multiple}
               maxSelection={maxSelection}

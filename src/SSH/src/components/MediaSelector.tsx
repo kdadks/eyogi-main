@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from './ui/Button'
 import { Badge } from './ui/Badge'
 import { Input } from './ui/Input'
@@ -27,6 +27,7 @@ import {
   type MediaFile,
   type MediaFilters,
 } from '../lib/api/media'
+import { uploadFilesToUploadThing } from '../lib/uploadthing-client'
 import FileIcon from './ui/FileIcon'
 
 const CATEGORIES = [
@@ -77,6 +78,8 @@ export default function MediaSelector({
 }: MediaSelectorProps) {
   const [media, setMedia] = useState<MediaFile[]>([])
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(
     new Set(initialSelection.map((f) => f.id)),
   )
@@ -150,6 +153,36 @@ export default function MediaSelector({
     }
   }, [filters, accept])
 
+  // Handle file upload
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    try {
+      const fileArray = Array.from(files)
+      const results = await uploadFilesToUploadThing(fileArray)
+      if (results && results.length > 0) {
+        toast.success(`Successfully uploaded ${fileArray.length} file(s)`)
+        // Reload media list to show new files
+        await loadMedia()
+      }
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error(error instanceof Error ? error.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Trigger file input click
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
   useEffect(() => {
     loadMedia()
   }, [loadMedia])
@@ -220,7 +253,7 @@ export default function MediaSelector({
   const canConfirm = selectedCount > 0 && (!maxSelection || selectedCount <= maxSelection)
 
   return (
-    <div className={`bg-white ${className}`}>
+    <div className={`bg-white ${className}`} onClick={(e) => e.stopPropagation()}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-2">
@@ -258,10 +291,24 @@ export default function MediaSelector({
 
             {/* Upload button */}
             {showUpload && (
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
-              </Button>
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUploadClick}
+                  disabled={uploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </>
             )}
           </div>
 
