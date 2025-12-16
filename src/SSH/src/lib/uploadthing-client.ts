@@ -67,7 +67,12 @@ export async function deleteFromUploadThing(fileUrl: string): Promise<boolean> {
 
 export async function uploadFilesToUploadThing(files: File[]): Promise<UploadResult[]> {
   console.log('uploadFilesToUploadThing called with', files.length, 'files')
-  const results = []
+  const results: UploadResult[] = []
+
+  if (!files || files.length === 0) {
+    console.warn('No files provided to upload')
+    return results
+  }
 
   try {
     // Use UploadThing client SDK to upload files
@@ -76,12 +81,27 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
 
     console.log('UploadThing upload completed:', uploadResults)
 
+    if (!uploadResults || uploadResults.length === 0) {
+      throw new Error('UploadThing returned no results')
+    }
+
     for (let i = 0; i < uploadResults.length; i++) {
       const uploadResult = uploadResults[i]
       const originalFile = files[i]
 
+      if (!uploadResult) {
+        console.error(`Upload result ${i} is null/undefined`)
+        continue
+      }
+
       // UploadResult is now directly the file data
       const fileUrl = uploadResult.ufsUrl || uploadResult.url // Use ufsUrl (new) or fallback to url
+
+      if (!fileUrl) {
+        console.error('No file URL in upload result:', uploadResult)
+        continue
+      }
+
       console.log('File uploaded successfully to UploadThing:', fileUrl)
 
       // Determine file category
@@ -145,9 +165,13 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
         throw new Error(`Failed to save ${uploadResult.name} to database: ${dbError.message}`)
       }
 
+      if (!mediaData) {
+        throw new Error(`Failed to save ${uploadResult.name}: No data returned from database`)
+      }
+
       console.log('Database record saved:', mediaData)
 
-      const result = {
+      const result: UploadResult = {
         id: mediaData.id,
         filename: uploadResult.name,
         url: fileUrl,

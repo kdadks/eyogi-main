@@ -160,64 +160,84 @@ export default function MediaSelector({
     setUploading(true)
     try {
       const fileArray = Array.from(files)
+      console.log('Starting upload of', fileArray.length, 'files')
+
       const results = await uploadFilesToUploadThing(fileArray)
-      if (results && results.length > 0) {
-        toast.success(`Successfully uploaded ${fileArray.length} file(s)`)
-        // Reload media list to show new files
-        await loadMedia()
+      console.log('Upload results:', results)
 
-        // Auto-select the newly uploaded files
-        const newSelectedFiles = new Set(selectedFiles)
-        results.forEach((result) => {
-          if (result && result.id) {
-            newSelectedFiles.add(result.id)
-          }
-        })
-        setSelectedFiles(newSelectedFiles)
-
-        // Auto-confirm selection with the newly uploaded files
-        // The results from uploadFilesToUploadThing contain id, filename, url, size, type
-        // We need to convert them to MediaFile format for onSelect callback
-        const selectedMedia = results
-          .filter((file): file is (typeof results)[0] => file !== null && file !== undefined)
-          .map(
-            (result) =>
-              ({
-                id: result.id,
-                filename: result.filename,
-                original_name: result.filename,
-                file_url: result.url,
-                file_size: result.size,
-                mime_type: result.type,
-                file_category: result.type.startsWith('image/')
-                  ? 'image'
-                  : result.type.startsWith('video/')
-                    ? 'video'
-                    : result.type.startsWith('audio/')
-                      ? 'audio'
-                      : 'document',
-                title: result.filename.split('.')[0],
-                alt_text: result.filename.split('.')[0],
-                uploaded_by: null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }) as MediaFile,
-          )
-
-        if (selectedMedia.length > 0) {
-          // Use setTimeout to ensure state updates complete before calling onSelect
-          setTimeout(() => {
-            onSelect(selectedMedia)
-          }, 100)
-        }
+      if (!results) {
+        throw new Error('Upload failed: No results returned from server')
       }
+
+      if (results.length === 0) {
+        toast.error('Upload failed: No files were processed')
+        return
+      }
+
+      toast.success(`Successfully uploaded ${fileArray.length} file(s)`)
+
+      // Reload media list to show new files
+      console.log('Reloading media list...')
+      await loadMedia()
+      console.log('Media list reloaded')
+
+      // Auto-select the newly uploaded files
+      const newSelectedFiles = new Set(selectedFiles)
+      results.forEach((result) => {
+        if (result && result.id) {
+          console.log('Adding to selected files:', result.id)
+          newSelectedFiles.add(result.id)
+        }
+      })
+      setSelectedFiles(newSelectedFiles)
+
+      // Auto-confirm selection with the newly uploaded files
+      // The results from uploadFilesToUploadThing contain id, filename, url, size, type
+      // We need to convert them to MediaFile format for onSelect callback
+      const selectedMedia = results
+        .filter((file): file is (typeof results)[0] => file !== null && file !== undefined)
+        .map(
+          (result) =>
+            ({
+              id: result.id,
+              filename: result.filename,
+              original_name: result.filename,
+              file_url: result.url,
+              file_size: result.size,
+              mime_type: result.type,
+              file_category: result.type.startsWith('image/')
+                ? 'image'
+                : result.type.startsWith('video/')
+                  ? 'video'
+                  : result.type.startsWith('audio/')
+                    ? 'audio'
+                    : 'document',
+              title: result.filename.split('.')[0],
+              alt_text: result.filename.split('.')[0],
+              uploaded_by: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }) as MediaFile,
+        )
+
+      console.log('Converted media for selection:', selectedMedia)
+
+      if (selectedMedia.length > 0) {
+        // Call onSelect immediately to close modal
+        console.log('Calling onSelect with', selectedMedia.length, 'files')
+        onSelect(selectedMedia)
+      } else {
+        toast.error('Upload succeeded but files could not be processed')
+      }
+
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
     } catch (error) {
       console.error('Upload error:', error)
-      toast.error(error instanceof Error ? error.message : 'Upload failed')
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
+      toast.error(errorMessage)
     } finally {
       setUploading(false)
     }

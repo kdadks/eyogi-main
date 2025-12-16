@@ -39,8 +39,8 @@ export default defineConfig(({ command }) => {
           manualChunks: (id) => {
             // Core React libraries - MUST be first and keep ALL React code together
             if (
-              id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/react') ||
+              id.includes('node_modules/react-dom') ||
               id.includes('node_modules/scheduler') ||
               id.includes('node_modules/react-is') ||
               id.includes('node_modules/prop-types') ||
@@ -49,17 +49,20 @@ export default defineConfig(({ command }) => {
             ) {
               return 'vendor-react'
             }
-            
+
             // Router - also React-related
-            if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run')) {
+            if (
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/@remix-run')
+            ) {
               return 'vendor-react'
             }
-            
+
             // Framer Motion - uses React context heavily
             if (id.includes('node_modules/framer-motion')) {
               return 'vendor-react'
             }
-            
+
             // UI Component libraries
             if (
               id.includes('node_modules/@headlessui') ||
@@ -68,12 +71,12 @@ export default defineConfig(({ command }) => {
             ) {
               return 'vendor-ui'
             }
-            
+
             // Rich text editor (large dependency)
             if (id.includes('node_modules/react-quill') || id.includes('node_modules/quill')) {
               return 'vendor-editor'
             }
-            
+
             // PDF libraries - split into separate chunks
             if (id.includes('node_modules/pdfjs-dist')) {
               return 'vendor-pdfjs'
@@ -84,12 +87,12 @@ export default defineConfig(({ command }) => {
             if (id.includes('node_modules/jspdf')) {
               return 'vendor-jspdf'
             }
-            
+
             // Supabase (database client)
             if (id.includes('node_modules/@supabase')) {
               return 'vendor-supabase'
             }
-            
+
             // Form libraries
             if (
               id.includes('node_modules/react-hook-form') ||
@@ -98,12 +101,12 @@ export default defineConfig(({ command }) => {
             ) {
               return 'vendor-forms'
             }
-            
+
             // Date libraries
             if (id.includes('node_modules/date-fns') || id.includes('node_modules/dayjs')) {
               return 'vendor-dates'
             }
-            
+
             // Charts and visualization - MUST stay with React due to circular dependencies
             // Recharts has internal circular dependencies that cause issues when split separately
             if (
@@ -113,12 +116,12 @@ export default defineConfig(({ command }) => {
             ) {
               return 'vendor-react'
             }
-            
+
             // Toast/notifications - also React context based
             if (id.includes('node_modules/sonner') || id.includes('node_modules/react-hot-toast')) {
               return 'vendor-react'
             }
-            
+
             // Admin dashboard components - more granular splitting
             if (id.includes('src/components/admin') || id.includes('src/pages/dashboard')) {
               // Core admin components
@@ -138,7 +141,11 @@ export default defineConfig(({ command }) => {
                 return 'admin-batch'
               }
               // Teacher and student management
-              if (id.includes('TeacherManagement') || id.includes('StudentManagement') || id.includes('TeacherDetail')) {
+              if (
+                id.includes('TeacherManagement') ||
+                id.includes('StudentManagement') ||
+                id.includes('TeacherDetail')
+              ) {
                 return 'admin-people'
               }
               // Resources (certificates, media)
@@ -160,7 +167,7 @@ export default defineConfig(({ command }) => {
               // Catch-all for remaining admin components
               return 'admin-misc'
             }
-            
+
             // Dashboard pages - split by user role
             if (id.includes('src/pages/dashboard')) {
               if (id.includes('TeacherDashboard')) {
@@ -176,17 +183,17 @@ export default defineConfig(({ command }) => {
                 return 'dashboard-main'
               }
             }
-            
+
             // Teacher components (separate from teacher dashboard)
             if (id.includes('src/components/teacher')) {
               return 'features-teacher'
             }
-            
+
             // Don't separate contexts or hooks - keep with main app code
             if (id.includes('src/contexts/') || id.includes('src/hooks/')) {
               return undefined // Let Vite decide, usually bundles with main
             }
-            
+
             // Other large node_modules
             if (id.includes('node_modules')) {
               return 'vendor-misc'
@@ -195,13 +202,12 @@ export default defineConfig(({ command }) => {
         },
       },
       chunkSizeWarningLimit: 2000, // Raised to 2MB since gzipped sizes are much smaller and recharts is now in vendor-react
-      minify: !isDev ? 'terser' : false, // Use terser for better console removal
+      minify: !isDev ? 'terser' : false,
       terserOptions: !isDev
         ? {
             compress: {
-              drop_console: true, // Remove all console statements
+              drop_console: false, // Keep console logs for debugging in production
               drop_debugger: true, // Remove debugger statements
-              pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'], // Remove specific console methods
             },
           }
         : undefined,
@@ -228,20 +234,26 @@ export default defineConfig(({ command }) => {
       },
       dedupe: ['react', 'react-dom'], // Ensure only one instance of React
     },
-    // Development-specific optimizations and production console removal
+    // Development-specific optimizations
     esbuild: isDev
       ? {
           // Faster rebuilds in development
           target: 'es2020',
         }
       : {
-          // Remove console logs in production builds only
-          drop: ['console', 'debugger'],
+          // Keep console logs visible in production for debugging
+          drop: [],
         },
     optimizeDeps: {
       // Force reload dependencies in development
       force: isDev, // Set to true in dev to force dep optimization
-      include: ['react', 'react-dom', 'react-router-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+      ],
       exclude: ['lucide-react'],
       esbuildOptions: {
         // Ensure React is treated as a single module
