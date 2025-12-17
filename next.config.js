@@ -70,6 +70,7 @@ const nextConfig = {
         }
       }),
       { protocol: 'https', hostname: 'eyogigurukul.com' },
+      { protocol: 'https', hostname: 'www.eyogigurukul.com' },
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'localhost' },
       // Vercel deployment domains
