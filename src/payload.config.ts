@@ -69,6 +69,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || 'postgresql://localhost:5432/payload',
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     },
+    push: false, // Disable automatic schema push to avoid prompts
   }),
   collections: [Pages, Posts, Media, Categories, CategoriesFaq, Faq, Users, Membership, FormLinks],
   cors: [getServerSideURL()].filter(Boolean),
