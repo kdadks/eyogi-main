@@ -15,14 +15,22 @@ const getUploadThingUrl = () => {
   if (import.meta.env.PROD) {
     // In production, use the production domain's API
     // Priority: custom env var > hardcoded production URL
-    return import.meta.env.VITE_API_URL || 'https://www.eyogigurukul.com/api/uploadthing'
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://www.eyogigurukul.com/api'
+    const uploadUrl = `${apiUrl}/uploadthing`
+    console.log('UploadThing URL (production):', uploadUrl)
+    return uploadUrl
   }
   // In development, use the local Express server
-  return 'http://localhost:3001/api/uploadthing'
+  const devUrl = 'http://localhost:3001/api/uploadthing'
+  console.log('UploadThing URL (development):', devUrl)
+  return devUrl
 }
 
+const uploadThingUrl = getUploadThingUrl()
+console.log('Initializing UploadThing client with URL:', uploadThingUrl)
+
 const { uploadFiles } = genUploader({
-  url: getUploadThingUrl(),
+  url: uploadThingUrl,
 })
 
 // Extract UploadThing file key from URL

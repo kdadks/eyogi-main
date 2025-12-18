@@ -1,7 +1,16 @@
 import { createUploadthing } from 'uploadthing/next'
+import type { FileRouter } from 'uploadthing/next'
 
-// Create a UploadThing router for SSH app compatibility
-const f = createUploadthing()
+// Initialize UploadThing with configuration
+const f = createUploadthing({
+  errorFormatter: (err) => {
+    console.error('UploadThing error:', err)
+    return {
+      message: err.message,
+      code: err.code,
+    }
+  },
+})
 
 // Router that matches SSH app expectations with multiple file types
 export const ourFileRouter = {
