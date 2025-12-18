@@ -3,13 +3,15 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
+  label?: React.ReactNode
   error?: string
   helperText?: string
 }
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, helperText, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
+    // Generate ID from label only if label is a string
+    const inputId =
+      id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
     return (
       <div className="space-y-1">
         {label && (

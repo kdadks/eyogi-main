@@ -35,6 +35,9 @@ interface WebsiteAuthContextType {
     phone?: string
     date_of_birth?: string
     age?: number
+    country?: string
+    state?: string
+    city?: string
     emergency_contact?: {
       name?: string
       phone?: string
@@ -202,6 +205,9 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     phone?: string
     date_of_birth?: string
     age?: number
+    country?: string
+    state?: string
+    city?: string
     emergency_contact?: {
       name?: string
       phone?: string
@@ -223,7 +229,12 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       const passwordHash = await hashPassword(userData.password)
 
       // Generate the appropriate ID based on role using the new system
-      const roleIds = await generateRoleId(userData.role, null, null)
+      const roleIds = await generateRoleId(
+        userData.role,
+        userData.country,
+        userData.state,
+        userData.city,
+      )
 
       // Create user profile
       const profileData = {
@@ -238,10 +249,10 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         preferences: {},
         address_line_1: null,
         address_line_2: null,
-        city: null,
-        state: null,
+        city: userData.city || null,
+        state: userData.state || null,
         zip_code: null,
-        country: null,
+        country: userData.country || null,
         emergency_contact: userData.emergency_contact || null,
         avatar_url: null,
         parent_id: null,

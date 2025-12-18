@@ -8,33 +8,40 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
+import CountrySelect from '../../components/forms/CountrySelect'
+import StateSelect from '../../components/forms/StateSelect'
+import { countryHasStates } from '../../lib/address-utils'
+
 const signUpSchema = z
   .object({
-    email: z.string().email('Please enter a valid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string(),
+    email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one digit')
+      .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character')
+      .refine((val) => !/\s/.test(val), 'Password must not contain spaces'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
     full_name: z
       .string()
       .min(2, 'Full name must be at least 2 characters')
       .regex(/^[a-zA-Z\s']+$/, 'Full name can only contain letters, spaces, and apostrophes'),
-    age: z.number().min(4, 'Age must be at least 4').max(100, 'Age must be less than 100'),
-    role: z.enum(['student', 'teacher', 'parent']),
+    role: z.enum(['student', 'teacher', 'parent'], { required_error: 'Role is required' }),
     phone: z
       .string()
       .optional()
       .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
-    parent_guardian_name: z
+    date_of_birth: z.string().min(1, 'Date of birth is required'),
+    country: z.string().min(1, 'Country is required'),
+    state: z.string().optional(),
+    city: z
       .string()
       .optional()
       .refine(
-        (val) => !val || /^[a-zA-Z\s']+$/.test(val),
-        'Name can only contain letters, spaces, and apostrophes',
+        (val) => !val || /^[a-zA-Z\s]+$/.test(val),
+        'City can only contain letters and spaces',
       ),
-    parent_guardian_email: z.string().email().optional().or(z.literal('')),
-    parent_guardian_phone: z
-      .string()
-      .optional()
-      .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -42,14 +49,59 @@ const signUpSchema = z
   })
   .refine(
     (data) => {
-      if (data.age < 18 && data.role === 'student') {
-        return data.parent_guardian_name && data.parent_guardian_email
+      if (!data.country) return true
+      if (countryHasStates(data.country)) {
+        return !!data.state
+      } else {
+        return !!data.city && /^[a-zA-Z\s]+$/.test(data.city)
+      }
+    },
+    {
+      message: 'This field is required',
+      path: ['city'],
+    },
+  )
+  .refine(
+    (data) => {
+      // Calculate age from date of birth
+      const today = new Date()
+      const birthDate = new Date(data.date_of_birth)
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      
+      // Validate age range
+      if (age < 4 || age > 100) {
+        return false
       }
       return true
     },
     {
-      message: 'Parent/Guardian information is required for students under 18',
-      path: ['parent_guardian_name'],
+      message: 'You must be between 4 and 100 years old',
+      path: ['date_of_birth'],
+    },
+  )
+  .refine(
+    (data) => {
+      // Calculate age from date of birth for student validation
+      const today = new Date()
+      const birthDate = new Date(data.date_of_birth)
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+
+      if (data.role === 'student' && age < 18) {
+        return false
+      }
+      return true
+    },
+    {
+      message: 'Ask your parent to register for you',
+      path: ['date_of_birth'],
     },
   )
 type SignUpForm = z.infer<typeof signUpSchema>
@@ -62,38 +114,41 @@ export default function SignUpPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
     mode: 'onChange',
     defaultValues: {
       role: 'student',
+      country: '',
+      state: '',
+      city: '',
     },
   })
-  const watchAge = watch('age')
-  const watchRole = watch('role')
   const onSubmit = async (data: SignUpForm) => {
     setLoading(true)
     try {
-      // Build emergency contact object if parent/guardian info provided
-      const emergencyContact =
-        data.parent_guardian_name || data.parent_guardian_email || data.parent_guardian_phone
-          ? {
-              name: data.parent_guardian_name || '',
-              email: data.parent_guardian_email || '',
-              phone: data.parent_guardian_phone || '',
-              relationship: 'Parent/Guardian',
-            }
-          : undefined
-
+      // Calculate age from date of birth
+      const today = new Date()
+      const birthDate = new Date(data.date_of_birth)
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      
       const { error } = await signUp({
         email: data.email,
         password: data.password,
         full_name: data.full_name,
         role: data.role as 'student' | 'teacher' | 'parent',
         phone: data.phone,
-        age: data.age,
-        emergency_contact: emergencyContact,
+        date_of_birth: data.date_of_birth,
+        age: age,
+        country: data.country,
+        state: data.state,
+        city: data.city,
       })
       if (error) {
         // Check if it's actually a success message that needs email confirmation
@@ -162,14 +217,14 @@ export default function SignUpPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
-                    label="Full Name"
+                    label={<>Full Name <span className="text-red-500">*</span></>}
                     placeholder="Enter your full name"
                     className="h-12 text-base"
                     {...register('full_name')}
                     error={errors.full_name?.message}
                   />
                   <Input
-                    label="Email Address"
+                    label={<>Email Address <span className="text-red-500">*</span></>}
                     type="email"
                     autoComplete="email"
                     placeholder="your@email.com"
@@ -178,15 +233,16 @@ export default function SignUpPage() {
                     error={errors.email?.message}
                   />
                   <Input
-                    label="Age"
-                    type="number"
-                    placeholder="Your age"
+                    label={<>Date of Birth <span className="text-red-500">*</span></>}
+                    type="date"
                     className="h-12 text-base"
-                    {...register('age', { valueAsNumber: true })}
-                    error={errors.age?.message}
+                    {...register('date_of_birth')}
+                    error={errors.date_of_birth?.message}
                   />
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700">Role</label>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Role <span className="text-red-500">*</span>
+                    </label>
                     <select
                       {...register('role')}
                       className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3 h-12 bg-white"
@@ -206,62 +262,84 @@ export default function SignUpPage() {
                     error={errors.phone?.message}
                   />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Country <span className="text-red-500">*</span>
+                    </label>
+                    <CountrySelect
+                      value={watch('country') || ''}
+                      onChange={(value) => {
+                        setValue('country', value)
+                        setValue('state', '')
+                        setValue('city', '')
+                      }}
+                      required
+                      placeholder="Select Country"
+                      className="h-12"
+                    />
+                    {errors.country && (
+                      <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
+                    )}
+                  </div>
+                  {watch('country') && countryHasStates(watch('country')) ? (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        State/Province <span className="text-red-500">*</span>
+                      </label>
+                      <StateSelect
+                        countryCode={watch('country') || ''}
+                        value={watch('state') || ''}
+                        onChange={(value) => setValue('state', value)}
+                        placeholder="Select State/Province"
+                        className="h-12"
+                        required
+                      />
+                      {errors.state && (
+                        <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
+                      )}
+                    </div>
+                  ) : watch('country') ? (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="Enter your city"
+                        className="h-12 text-base"
+                        {...register('city')}
+                        error={errors.city?.message}
+                      />
+                    </div>
+                  ) : (
+                    <div />
+                  )}
+                </div>
               </div>
 
-              {/* Parent/Guardian Information for Minors */}
-              {watchAge < 18 && watchRole === 'student' && (
-                <div className="space-y-6 border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Parent/Guardian Information
-                    <span className="text-sm font-normal text-gray-600 ml-2">
-                      (Required for students under 18)
-                    </span>
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-orange-50/50 p-6 rounded-lg">
-                    <Input
-                      label="Parent/Guardian Name"
-                      placeholder="Full name"
-                      className="h-12 text-base"
-                      {...register('parent_guardian_name')}
-                      error={errors.parent_guardian_name?.message}
-                    />
-                    <Input
-                      label="Parent/Guardian Email"
-                      type="email"
-                      placeholder="parent@email.com"
-                      className="h-12 text-base"
-                      {...register('parent_guardian_email')}
-                      error={errors.parent_guardian_email?.message}
-                    />
-                    <Input
-                      label="Parent/Guardian Phone"
-                      type="tel"
-                      placeholder="Phone number"
-                      className="h-12 text-base"
-                      {...register('parent_guardian_phone')}
-                      error={errors.parent_guardian_phone?.message}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Password Section */}
+              {/* Password Section */
               <div className="space-y-6 border-t border-gray-200 pt-6">
                 <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
                   Security
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Input
+                      label={<>Password <span className="text-red-500">*</span></>}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Create a strong password"
+                      className="h-12 text-base"
+                      {...register('password')}
+                      error={errors.password?.message}
+                    />
+                    <p className="mt-1 text-xs text-gray-600">
+                      Must be 8+ characters with 1 uppercase, 1 digit, 1 special character (!@#$%^&*), no spaces
+                    </p>
+                  </div>
                   <Input
-                    label="Password"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Create a strong password"
-                    className="h-12 text-base"
-                    {...register('password')}
-                    error={errors.password?.message}
-                  />
-                  <Input
-                    label="Confirm Password"
+                    label={<>Confirm Password <span className="text-red-500">*</span></>}
                     type="password"
                     autoComplete="new-password"
                     placeholder="Confirm your password"

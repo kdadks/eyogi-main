@@ -22,6 +22,7 @@ const GurukulDetailPage = lazy(() => import('./pages/GurukulDetailPage'))
 const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'))
 const LegalPageDisplay = lazy(() => import('./components/legal/LegalPageDisplay'))
 const CertificateViewer = lazy(() => import('./components/certificates/CertificateViewer'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
 
 // Lazy load Dashboard Components
 const StudentDashboard = lazy(() => import('./pages/dashboard/StudentDashboard'))
@@ -67,7 +68,9 @@ const LoadingFallback = () => (
 function App() {
   const location = useLocation()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin')
+  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup' | 'forgot-password'>(
+    'signin',
+  )
 
   // Check if current path is admin route
   const isAdminRoute = location.pathname.startsWith('/admin')
@@ -83,7 +86,7 @@ function App() {
     }
   }, [])
 
-  const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
+  const openAuthModal = (mode: 'signin' | 'signup' | 'forgot-password' = 'signin') => {
     setAuthModalMode(mode)
     setIsAuthModalOpen(true)
   }
@@ -107,6 +110,8 @@ function App() {
             <Route path="/legal/:slug" element={<LegalPageDisplay />} />
             {/* Auth Redirects - Opens modals instead of separate pages */}
             <Route path="/auth/*" element={<AuthRedirect openModal={openAuthModal} />} />
+            {/* Reset Password Page - Direct page (not modal) */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             {/* User Dashboard Routes */}
             <Route
               path="/dashboard"

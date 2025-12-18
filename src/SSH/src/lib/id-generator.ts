@@ -11,12 +11,18 @@ import { supabaseAdmin } from './supabase'
  * Generate Student ID based on location and year
  * Format: CCCCCYYYY##### (e.g., IRLDU202500001)
  * @param country - 3-letter country code (already normalized, e.g., IRL, USA, AUS)
- * @param state - 2-letter state code (already normalized, e.g., DU, CA, NS)
+ * @param state - 2-letter state code (already normalized, e.g., DU, CA, NS) or null
+ * @param city - City name to use if state is not available
  */
-export async function generateStudentId(country: string, state: string): Promise<string> {
+export async function generateStudentId(
+  country: string,
+  state: string | null,
+  city?: string,
+): Promise<string> {
   // Use the codes directly from the database - they're already in correct format
   const countryCode = country.toUpperCase()
-  const stateCode = state.toUpperCase()
+  // If state is not available, use first 2 letters of city (uppercase)
+  const stateCode = state ? state.toUpperCase() : city ? city.substring(0, 2).toUpperCase() : 'XX'
   const year = new Date().getFullYear()
 
   // Get the count of existing students with the same location prefix for this year
@@ -114,6 +120,7 @@ export async function generateRoleId(
   role: string,
   country?: string,
   state?: string,
+  city?: string,
 ): Promise<{
   student_id?: string
   teacher_code?: string
@@ -122,10 +129,13 @@ export async function generateRoleId(
 }> {
   switch (role) {
     case 'student':
-      if (!country || !state) {
-        throw new Error('Country and state are required for student ID generation')
+      if (!country) {
+        throw new Error('Country is required for student ID generation')
       }
-      return { student_id: await generateStudentId(country, state) }
+      if (!state && !city) {
+        throw new Error('Either state or city is required for student ID generation')
+      }
+      return { student_id: await generateStudentId(country, state || null, city) }
 
     case 'teacher':
       return { teacher_code: await generateTeacherId() }

@@ -8,6 +8,12 @@ interface RegistrationEmailData {
   status: string
 }
 
+interface PasswordResetEmailData {
+  email: string
+  resetUrl: string
+  fullName?: string
+}
+
 // Create transporter once to reuse
 let transporter: nodemailer.Transporter | null = null
 
@@ -653,6 +659,191 @@ function generateContactFormEmailHTML(data: ContactFormEmailData): string {
             <div class="footer">
               <p>EYogi Gurukul Contact Form System</p>
               <p>© 2025 EYogi Gurukul. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+}
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordResetEmail(data: PasswordResetEmailData): Promise<boolean> {
+  try {
+    const transporter = getTransporter()
+
+    if (!transporter) {
+      console.error('Email service is not configured')
+      return false
+    }
+
+    const htmlContent = generatePasswordResetEmailHTML(data)
+
+    const mailOptions = {
+      from: `${process.env.SMTP_FROM_NAME || 'EYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      to: data.email,
+      subject: 'Reset Your Password - EYogi Gurukul',
+      html: htmlContent,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+
+    console.log('Password reset email sent successfully:', {
+      messageId: info.messageId,
+      email: data.email,
+      timestamp: new Date().toISOString(),
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error sending password reset email:', error)
+    return false
+  }
+}
+
+function generatePasswordResetEmailHTML(data: PasswordResetEmailData): string {
+  const greeting = data.fullName ? `Dear ${data.fullName}` : 'Hello'
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9fafb;
+          }
+          .header {
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            color: white;
+            padding: 30px 20px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+          }
+          .content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .greeting {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 20px;
+          }
+          .message {
+            color: #4b5563;
+            margin-bottom: 25px;
+            line-height: 1.7;
+          }
+          .reset-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            color: white;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: all 0.3s;
+          }
+          .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3);
+          }
+          .button-container {
+            text-align: center;
+            margin: 30px 0;
+          }
+          .alternative-link {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f3f4f6;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #6b7280;
+            word-break: break-all;
+          }
+          .warning {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #92400e;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 12px;
+            text-align: center;
+          }
+          .footer p {
+            margin: 5px 0;
+          }
+          .highlight {
+            color: #f97316;
+            font-weight: 600;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Password Reset Request</h1>
+          </div>
+          <div class="content">
+            <p class="greeting">${greeting},</p>
+            
+            <p class="message">
+              We received a request to reset your password for your EYogi Gurukul account. 
+              If you made this request, click the button below to create a new password.
+            </p>
+
+            <div class="button-container">
+              <a href="${data.resetUrl}" class="reset-button">Reset Your Password</a>
+            </div>
+
+            <div class="warning">
+              <strong>⚠️ Important:</strong> This link will expire in <span class="highlight">24 hours</span> for security reasons.
+            </div>
+
+            <p class="message">
+              If the button above doesn't work, you can copy and paste this link into your browser:
+            </p>
+            
+            <div class="alternative-link">
+              ${data.resetUrl}
+            </div>
+
+            <p class="message" style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #e5e7eb;">
+              <strong>Didn't request this?</strong><br>
+              If you didn't request a password reset, you can safely ignore this email. 
+              Your password will remain unchanged.
+            </p>
+
+            <div class="footer">
+              <p><strong>EYogi Gurukul</strong></p>
+              <p>Your journey to Vedic learning</p>
+              <p style="margin-top: 15px;">© 2025 EYogi Gurukul. All rights reserved.</p>
             </div>
           </div>
         </div>
