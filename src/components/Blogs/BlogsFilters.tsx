@@ -1,6 +1,6 @@
 'use client'
 import { Input } from '@/components/ui/input'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { z } from 'zod'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
@@ -21,6 +21,7 @@ export type CustomSelectProps = {
 
 function BlogsFilters({ data, defaultSearch, defaultCategory }: CustomSelectProps) {
   const router = useRouter()
+  const pathname = usePathname()
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(BlogsFiltersSchema),
@@ -33,7 +34,7 @@ function BlogsFilters({ data, defaultSearch, defaultCategory }: CustomSelectProp
   const values = useWatch({ control: form.control })
 
   const onSubmit = (values: FormSchema) => {
-    let path = `${window.location.pathname}?`
+    let path = `${pathname}?`
     for (const [key, value] of Object.entries(values)) {
       if (value !== '') {
         path += `${key}=${value}&`
