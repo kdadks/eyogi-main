@@ -13,8 +13,10 @@ interface UploadResult {
 // Create UploadThing client with environment-based URL
 const getUploadThingUrl = () => {
   if (import.meta.env.PROD) {
-    // In production, use the production domain's API
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://www.eyogigurukul.com/api'
+    // In production, use the current domain's API to avoid CORS issues
+    const currentOrigin =
+      typeof window !== 'undefined' ? window.location.origin : 'https://www.eyogigurukul.com'
+    const apiUrl = import.meta.env.VITE_API_URL || `${currentOrigin}/api`
     const uploadUrl = `${apiUrl}/uploadthing`
     console.log('UploadThing URL (production):', uploadUrl)
     return uploadUrl
