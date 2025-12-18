@@ -3,6 +3,8 @@ import type { FileRouter } from 'uploadthing/next'
 
 // Initialize UploadThing with configuration
 const f = createUploadthing({
+  apiKey: process.env.UPLOADTHING_TOKEN,
+  isDev: process.env.NODE_ENV === 'development',
   errorFormatter: (err) => {
     console.error('UploadThing error:', err)
     return {

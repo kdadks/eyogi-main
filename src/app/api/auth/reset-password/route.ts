@@ -1,4 +1,4 @@
-import { sendPasswordResetEmail } from '@/lib/email/emailService'
+import { sendPasswordResetEmail } from '@/lib/email/graphEmailService'
 
 export interface PasswordResetEmailPayload {
   email: string

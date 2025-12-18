@@ -1,4 +1,4 @@
-import { sendRegistrationEmail } from '@/lib/email/emailService'
+import { sendRegistrationEmail } from '@/lib/email/graphEmailService'
 
 export interface RegistrationEmailPayload {
   email: string
