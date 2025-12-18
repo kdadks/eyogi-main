@@ -365,6 +365,7 @@ export default function MediaSelector({
                   onChange={(e) => handleFileUpload(e.target.files)}
                 />
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleUploadClick}
@@ -382,6 +383,7 @@ export default function MediaSelector({
             {!compact && (
               <div className="flex border rounded-lg">
                 <Button
+                  type="button"
                   variant={viewMode === 'grid' ? 'primary' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
@@ -389,6 +391,7 @@ export default function MediaSelector({
                   <Grid className="h-4 w-4" />
                 </Button>
                 <Button
+                  type="button"
                   variant={viewMode === 'list' ? 'primary' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
@@ -407,6 +410,7 @@ export default function MediaSelector({
               const IconComponent = category.icon
               return (
                 <Button
+                  type="button"
                   key={category.value}
                   variant={filters.category === category.value ? 'primary' : 'outline'}
                   size="sm"
@@ -483,6 +487,7 @@ export default function MediaSelector({
                 </div>
                 <div className="flex space-x-2">
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     disabled={pagination.page === 1}
@@ -495,6 +500,7 @@ export default function MediaSelector({
                     if (page > pagination.totalPages) return null
                     return (
                       <Button
+                        type="button"
                         key={page}
                         variant={page === pagination.page ? 'primary' : 'outline'}
                         size="sm"
@@ -505,6 +511,7 @@ export default function MediaSelector({
                     )
                   })}
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     disabled={pagination.page === pagination.totalPages}
@@ -536,11 +543,11 @@ export default function MediaSelector({
 
         <div className="flex space-x-2">
           {onClose && (
-            <Button variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
           )}
-          <Button onClick={handleConfirmSelection} disabled={!canConfirm}>
+          <Button type="button" onClick={handleConfirmSelection} disabled={!canConfirm}>
             <Check className="h-4 w-4 mr-2" />
             {multiple ? `Select ${selectedCount}` : 'Select'}
           </Button>
@@ -625,7 +632,7 @@ function MediaGridItem({
               onPreview()
             }}
           >
-            <Button size="sm" variant="secondary">
+            <Button type="button" size="sm" variant="secondary">
               <Eye className="h-4 w-4" />
             </Button>
           </div>
@@ -699,6 +706,7 @@ function MediaListItem({ file, selected, onSelect, onPreview }: MediaListItemPro
       {/* Preview button */}
       {canPreview(file) && (
         <Button
+          type="button"
           size="sm"
           variant="ghost"
           onClick={(e) => {
@@ -725,7 +733,7 @@ function MediaPreviewModal({ media, onClose }: MediaPreviewModalProps) {
       <div className="bg-white rounded-lg max-w-4xl max-h-full overflow-auto">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-medium truncate">{media.title || media.original_name}</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
