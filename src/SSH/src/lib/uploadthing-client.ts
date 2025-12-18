@@ -14,14 +14,13 @@ interface UploadResult {
 const getUploadThingUrl = () => {
   if (import.meta.env.PROD) {
     // In production, use the production domain's API
-    // Priority: custom env var > hardcoded production URL
     const apiUrl = import.meta.env.VITE_API_URL || 'https://www.eyogigurukul.com/api'
     const uploadUrl = `${apiUrl}/uploadthing`
     console.log('UploadThing URL (production):', uploadUrl)
     return uploadUrl
   }
-  // In development, use the local Express server
-  const devUrl = 'http://localhost:3001/api/uploadthing'
+  // In development, use the local Next.js server
+  const devUrl = 'http://localhost:3000/api/uploadthing'
   console.log('UploadThing URL (development):', devUrl)
   return devUrl
 }

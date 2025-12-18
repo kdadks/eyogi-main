@@ -5,3 +5,7 @@ import { ourFileRouter } from '@/lib/uploadthing'
 export const { GET, POST } = createRouteHandler({
   router: ourFileRouter,
 })
+
+// Configure runtime for serverless functions
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
