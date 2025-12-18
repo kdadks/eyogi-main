@@ -42,31 +42,36 @@ export default function CookieConsentBanner() {
       return
     }
 
-    // Check if user has already given consent
-    const existingConsent = getTrackingConsent()
-    console.log('[CookieConsentBanner] Existing consent:', existingConsent)
+    // Small delay to ensure localStorage is ready
+    const timer = setTimeout(() => {
+      // Check if user has already given consent
+      const existingConsent = getTrackingConsent()
+      console.log('[CookieConsentBanner] Existing consent:', existingConsent)
 
-    // Show banner if analytics consent hasn't been explicitly set
-    // Check for both empty timestamp and undefined analytics
-    const hasValidConsent =
-      existingConsent.timestamp &&
-      existingConsent.timestamp.length > 0 &&
-      existingConsent.analytics !== undefined
+      // Show banner if analytics consent hasn't been explicitly set
+      // Check for both empty timestamp and undefined analytics
+      const hasValidConsent =
+        existingConsent.timestamp &&
+        existingConsent.timestamp.length > 0 &&
+        existingConsent.analytics !== undefined
 
-    console.log('[CookieConsentBanner] Has valid consent:', hasValidConsent)
+      console.log('[CookieConsentBanner] Has valid consent:', hasValidConsent)
 
-    if (!hasValidConsent) {
-      console.log('[CookieConsentBanner] Showing banner - no valid consent found')
-      setShowBanner(true)
-    } else {
-      console.log('[CookieConsentBanner] Hiding banner - valid consent exists')
-      setPreferences(existingConsent)
+      if (!hasValidConsent) {
+        console.log('[CookieConsentBanner] Showing banner - no valid consent found')
+        setShowBanner(true)
+      } else {
+        console.log('[CookieConsentBanner] Hiding banner - valid consent exists')
+        setPreferences(existingConsent)
 
-      // Setup tracking if consent was given
-      if (existingConsent.analytics) {
-        setupAutoTracking()
+        // Setup tracking if consent was given
+        if (existingConsent.analytics) {
+          setupAutoTracking()
+        }
       }
-    }
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [isClient])
 
   const handleAcceptAll = () => {
