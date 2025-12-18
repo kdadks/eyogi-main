@@ -420,7 +420,8 @@ export async function watermarkMediaFiles(
 
         // Send to server for watermarking (production only)
         const watermarkUrl = import.meta.env.PROD
-          ? 'https://eyogi-main.vercel.app/api/watermark/preview'
+          ? (import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://www.eyogigurukul.com') +
+            '/api/watermark/preview'
           : '/api/watermark/preview'
 
         const watermarkResponse = await fetch(watermarkUrl, {
@@ -449,9 +450,8 @@ export async function watermarkMediaFiles(
         const watermarkedBuffer = await watermarkResponse.arrayBuffer()
 
         // Delete the original file from UploadThing first
-        const { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } = await import(
-          '../uploadthing-client'
-        )
+        const { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } =
+          await import('../uploadthing-client')
 
         console.log(
           'Deleting original file from UploadThing before uploading watermarked version:',

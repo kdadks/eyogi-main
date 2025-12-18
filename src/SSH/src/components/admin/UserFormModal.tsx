@@ -199,11 +199,22 @@ export default function UserFormModal({
         ...prev,
         [name]: value,
       }
-      // Auto-generate email when full name changes in create mode
-      if (mode === 'create' && name === 'full_name' && value) {
+      // Auto-generate email when full name changes in create mode - ONLY for students
+      if (mode === 'create' && name === 'full_name' && value && prevData.role === 'student') {
         updated.email = generateEmailFromName(value)
+      } // Auto-generate email when role changes to student in create mode
+      if (mode === 'create' && name === 'role' && value === 'student' && prevData.full_name) {
+        updated.email = generateEmailFromName(prevData.full_name)
       }
-      // Auto-calculate age when date of birth changes
+      // Clear auto-generated email when role changes away from student
+      if (
+        mode === 'create' &&
+        name === 'role' &&
+        value !== 'student' &&
+        prevData.email?.includes('@eyogi-student.com')
+      ) {
+        updated.email = ''
+      } // Auto-calculate age when date of birth changes
       if (name === 'date_of_birth' && value) {
         const calculatedAge = calculateAgeFromDateOfBirth(value)
         updated.age = calculatedAge !== null ? String(calculatedAge) : ''

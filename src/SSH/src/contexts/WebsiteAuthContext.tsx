@@ -225,6 +225,9 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       if (existingUser) {
         return { error: 'An account with this email already exists' }
       }
+
+      console.log('Creating user with email:', userData.email.toLowerCase())
+
       // Hash password
       const passwordHash = await hashPassword(userData.password)
 

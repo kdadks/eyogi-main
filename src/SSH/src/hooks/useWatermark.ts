@@ -81,7 +81,8 @@ export function useWatermark(): UseWatermarkReturn {
         const arrayBuffer = await file.arrayBuffer()
 
         const watermarkUrl = import.meta.env.PROD
-          ? 'https://eyogi-main.vercel.app/api/watermark/preview'
+          ? (import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://www.eyogigurukul.com') +
+            '/api/watermark/preview'
           : '/api/watermark/preview'
 
         const response = await fetch(watermarkUrl, {
