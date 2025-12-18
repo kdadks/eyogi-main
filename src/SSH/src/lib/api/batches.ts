@@ -1197,3 +1197,21 @@ export async function getStudentProgressInBatch(
     return null
   }
 }
+
+/**
+ * Clear all progress for a batch (used when resetting a batch)
+ */
+export async function clearBatchProgress(batchId: string): Promise<void> {
+  try {
+    // Delete all progress records for this batch
+    const { error } = await supabaseAdmin.from('batch_progress').delete().eq('batch_id', batchId)
+
+    if (error) {
+      console.error('Error clearing batch progress:', error)
+      throw new Error('Failed to clear batch progress')
+    }
+  } catch (error) {
+    console.error('Error in clearBatchProgress:', error)
+    throw error
+  }
+}

@@ -54,6 +54,7 @@ import {
   assignCourseToBatch,
   updateStudentProgress,
   getStudentProgressInBatch,
+  clearBatchProgress,
 } from '@/lib/api/batches'
 import { Batch, BatchStudentWithInfo } from '@/types'
 import { getCountryName, getStateName } from '@/lib/address-utils'
@@ -106,6 +107,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PencilIcon,
+  CalendarIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
@@ -209,6 +212,8 @@ export default function TeacherDashboard() {
   const [detailedDescription, setDetailedDescription] = useState('')
   const [selectedCoverImage, setSelectedCoverImage] = useState<MediaFile | null>(null)
   const [selectedVideoPreview, setSelectedVideoPreview] = useState<MediaFile | null>(null)
+  const [coverImageCleared, setCoverImageCleared] = useState(false)
+  const [videoPreviewCleared, setVideoPreviewCleared] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const quillRef = useRef<ReactQuill>(null)
   const [showIssuanceModal, setShowIssuanceModal] = useState(false)
@@ -644,8 +649,12 @@ export default function TeacherDashboard() {
           data.prerequisites && data.prerequisites.length > 0 ? data.prerequisites : null,
         tags: data.tags || [],
         includes_certificate: data.includes_certificate ?? true,
-        cover_image_url: selectedCoverImage?.file_url || data.cover_image_url || undefined,
-        video_preview_url: selectedVideoPreview?.file_url || data.video_preview_url || undefined,
+        cover_image_url: coverImageCleared
+          ? null
+          : selectedCoverImage?.file_url || data.cover_image_url || null,
+        video_preview_url: videoPreviewCleared
+          ? null
+          : selectedVideoPreview?.file_url || data.video_preview_url || null,
         meta_title: data.meta_title || undefined,
         meta_description: data.meta_description || undefined,
         featured: data.featured || false,
@@ -670,6 +679,8 @@ export default function TeacherDashboard() {
       setDetailedDescription('')
       setSelectedCoverImage(null)
       setSelectedVideoPreview(null)
+      setCoverImageCleared(false)
+      setVideoPreviewCleared(false)
     } catch (error) {
       console.error('Error updating course:', error)
       toast.error(
@@ -729,6 +740,8 @@ export default function TeacherDashboard() {
     setSelectedVideoPreview(
       course.video_preview_url ? ({ file_url: course.video_preview_url } as MediaFile) : null,
     )
+    setCoverImageCleared(false)
+    setVideoPreviewCleared(false)
     setShowEditCourse(true)
   }
 
@@ -3365,6 +3378,10 @@ export default function TeacherDashboard() {
                     setPrerequisites([''])
                     setTags([''])
                     setDetailedDescription('')
+                    setSelectedCoverImage(null)
+                    setSelectedVideoPreview(null)
+                    setCoverImageCleared(false)
+                    setVideoPreviewCleared(false)
                   }}
                   className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 ml-2 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
@@ -3786,9 +3803,19 @@ export default function TeacherDashboard() {
                       videoPreviewUrl={selectedVideoPreview?.file_url}
                       onCoverImageSelect={(files) => {
                         setSelectedCoverImage(files[0] || null)
+                        if (!files[0]) {
+                          setCoverImageCleared(true)
+                        } else {
+                          setCoverImageCleared(false)
+                        }
                       }}
                       onVideoPreviewSelect={(files) => {
                         setSelectedVideoPreview(files[0] || null)
+                        if (!files[0]) {
+                          setVideoPreviewCleared(true)
+                        } else {
+                          setVideoPreviewCleared(false)
+                        }
                       }}
                     />
                     <div className="grid grid-cols-1 gap-4">
@@ -3929,6 +3956,8 @@ export default function TeacherDashboard() {
                     setDetailedDescription('')
                     setSelectedCoverImage(null)
                     setSelectedVideoPreview(null)
+                    setCoverImageCleared(false)
+                    setVideoPreviewCleared(false)
                   }}
                   className="text-white/80 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 ml-2 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
@@ -4363,9 +4392,19 @@ export default function TeacherDashboard() {
                       videoPreviewUrl={selectedVideoPreview?.file_url}
                       onCoverImageSelect={(files) => {
                         setSelectedCoverImage(files[0] || null)
+                        if (!files[0]) {
+                          setCoverImageCleared(true)
+                        } else {
+                          setCoverImageCleared(false)
+                        }
                       }}
                       onVideoPreviewSelect={(files) => {
                         setSelectedVideoPreview(files[0] || null)
+                        if (!files[0]) {
+                          setVideoPreviewCleared(true)
+                        } else {
+                          setVideoPreviewCleared(false)
+                        }
                       }}
                     />
                     <div className="grid grid-cols-1 gap-4">
@@ -6327,6 +6366,8 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const [batchToRestart, setBatchToRestart] = useState<Batch | null>(null)
   const [loadingWeeks, setLoadingWeeks] = useState<Set<number>>(new Set())
   const [showBatchViewModal, setShowBatchViewModal] = useState(false)
   const [selectedBatchForView, setSelectedBatchForView] = useState<Batch | null>(null)
@@ -6338,6 +6379,10 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
     { id: string; full_name: string; email: string; isInBatch: boolean }[]
   >([])
   const [loadingStudentData, setLoadingStudentData] = useState(false)
+  const [showEditDatesModal, setShowEditDatesModal] = useState(false)
+  const [batchToEditDates, setBatchToEditDates] = useState<Batch | null>(null)
+  const [editingStartDate, setEditingStartDate] = useState('')
+  const [editingEndDate, setEditingEndDate] = useState('')
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -6470,10 +6515,101 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
 
       // Refresh the batches list
       loadBatches()
-      loadStats()
     } catch (error) {
       console.error('Error starting batch:', error)
       toast.error('Failed to start batch')
+    }
+  }
+
+  const handleRestartBatch = (batch: Batch) => {
+    setBatchToRestart(batch)
+    setShowRestartConfirm(true)
+  }
+
+  const confirmRestartBatch = async () => {
+    if (!batchToRestart) return
+
+    try {
+      // Clear all week progress records
+      await clearBatchProgress(batchToRestart.id)
+
+      // Reset batch to not_started status and clear dates and progress
+      await updateBatch(batchToRestart.id, {
+        status: 'not_started',
+        start_date: null,
+        end_date: null,
+        progress_percentage: 0,
+        updated_at: new Date().toISOString(),
+      })
+
+      toast.success('Batch has been reset to "Not Started" status')
+
+      setShowRestartConfirm(false)
+      setBatchToRestart(null)
+
+      // Refresh the batches list
+      loadBatches()
+    } catch (error) {
+      console.error('Error restarting batch:', error)
+      toast.error('Failed to restart batch')
+    }
+  }
+
+  const handleOpenEditDates = (batch: Batch) => {
+    setBatchToEditDates(batch)
+    // Pre-fill with existing dates if available
+    if (batch.start_date) {
+      setEditingStartDate(new Date(batch.start_date).toISOString().split('T')[0])
+    } else {
+      setEditingStartDate('')
+    }
+    if (batch.end_date) {
+      setEditingEndDate(new Date(batch.end_date).toISOString().split('T')[0])
+    } else {
+      // Calculate default end date based on course duration
+      if (batch.start_date && batch.course) {
+        const endDate = new Date(batch.start_date)
+        endDate.setDate(endDate.getDate() + (batch.course.duration_weeks || 8) * 7)
+        setEditingEndDate(endDate.toISOString().split('T')[0])
+      } else {
+        setEditingEndDate('')
+      }
+    }
+    setShowEditDatesModal(true)
+  }
+
+  const handleSaveDates = async () => {
+    if (!batchToEditDates) return
+
+    if (!editingStartDate || !editingEndDate) {
+      toast.error('Please select both start and end dates')
+      return
+    }
+
+    const startDate = new Date(editingStartDate)
+    const endDate = new Date(editingEndDate)
+
+    if (endDate <= startDate) {
+      toast.error('End date must be after start date')
+      return
+    }
+
+    try {
+      await updateBatch(batchToEditDates.id, {
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        // If batch is not_started and we're setting dates, activate it
+        status: batchToEditDates.status === 'not_started' ? 'active' : batchToEditDates.status,
+        updated_at: new Date().toISOString(),
+      })
+
+      toast.success('Batch dates updated successfully')
+      setShowEditDatesModal(false)
+      setBatchToEditDates(null)
+      loadBatches()
+    } catch (error) {
+      console.error('Error updating batch dates:', error)
+      toast.error('Failed to update batch dates')
     }
   }
 
@@ -6745,120 +6881,145 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {batches.map((batch) => (
             <Card
               key={batch.id}
               className="hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm border-white/20 shadow-xl"
             >
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{batch.name}</h3>
-                    <p className="text-sm text-gray-600">{batch.gurukul?.name}</p>
-                    {batch.course && (
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{batch.course.title}</span>
-                        <span className="text-xs text-gray-400">-</span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                          {(batch.course.level || 'Basic').charAt(0).toUpperCase() +
-                            (batch.course.level || 'Basic').slice(1).toLowerCase()}
-                        </span>
+              <CardContent className="p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                  {/* Batch Info Section */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          {batch.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">{batch.gurukul?.name}</p>
                       </div>
-                    )}
-                  </div>
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(batch.status)}`}
-                  >
-                    {batch.status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center">
-                      <UserGroupIcon className="h-4 w-4 text-gray-400 mr-1" />
-                      <span className="text-gray-600">{batch.student_count || 0} students</span>
+                      <span
+                        className={`ml-2 text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${getStatusColor(batch.status)}`}
+                      >
+                        {batch.status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </span>
                     </div>
-                    {batch.course && (
+
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      {batch.course && (
+                        <>
+                          <div className="flex items-center">
+                            <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1.5" />
+                            <span className="text-gray-700">{batch.course.title}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                              {(batch.course.level || 'Basic').charAt(0).toUpperCase() +
+                                (batch.course.level || 'Basic').slice(1).toLowerCase()}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <ClockIcon className="h-4 w-4 text-gray-400 mr-1.5" />
+                            <span className="text-gray-600">
+                              {batch.course.duration_weeks} weeks
+                            </span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex items-center">
-                        <BookOpenIcon className="h-4 w-4 text-gray-400 mr-1" />
-                        <span className="text-gray-600">{batch.course.duration_weeks} weeks</span>
+                        <UserGroupIcon className="h-4 w-4 text-gray-400 mr-1.5" />
+                        <span className="text-gray-600">{batch.student_count || 0} students</span>
+                      </div>
+                      {batch.status !== 'not_started' && (batch.start_date || batch.end_date) && (
+                        <>
+                          {batch.start_date && (
+                            <div className="flex items-center text-xs text-gray-500">
+                              <CalendarIcon className="h-3 w-3 mr-1" />
+                              {formatDate(batch.start_date)} →{' '}
+                              {batch.end_date ? formatDate(batch.end_date) : 'TBD'}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Progress Bar - Show on separate line for started batches */}
+                    {batch.course && batch.status !== 'not_started' && (
+                      <div className="mt-3 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Progress:</span>
+                          <span className="font-medium text-gray-700">
+                            {batch.progress_percentage || 0}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${batch.progress_percentage || 0}%` }}
+                          ></div>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Progress Bar */}
-                  {batch.course && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">Course Progress</span>
-                        <span className="text-xs font-medium text-gray-700">
-                          {batch.progress_percentage || 0}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${batch.progress_percentage || 0}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {batch.progress?.filter((p) => p.is_completed).length || 0} of{' '}
-                        {batch.course.duration_weeks} weeks completed
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Show dates only if batch is started */}
-                  {batch.status !== 'not_started' && (batch.start_date || batch.end_date) && (
-                    <div className="pt-2 border-t">
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>
-                          Start: {batch.start_date ? formatDate(batch.start_date) : 'TBD'}
-                        </span>
-                        <span>End: {batch.end_date ? formatDate(batch.end_date) : 'TBD'}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Batch Actions */}
-                  <div className="flex gap-3 pt-4">
+                  {/* Action Buttons Section */}
+                  <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 lg:ml-4">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                      className="text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white border-0"
                       onClick={() => handleViewBatch(batch)}
                     >
-                      <EyeIcon className="h-3 w-3 mr-1.5" />
-                      View Details
+                      <EyeIcon className="h-3.5 w-3.5 mr-1.5" />
+                      View
                     </Button>
 
-                    {/* Show Start button for not_started batches */}
+                    {/* Show Start/Set Dates for not_started batches */}
                     {batch.status === 'not_started' ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                        onClick={() => handleStartBatch(batch)}
-                      >
-                        <ClockIcon className="h-3 w-3 mr-1.5" />
-                        Start Batch
-                      </Button>
-                    ) : (
-                      /* Show Progress button for started batches */
-                      batch.course && (
+                      <>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                          onClick={() => handleEditProgress(batch)}
+                          className="text-xs font-medium bg-green-500 hover:bg-green-600 text-white border-0"
+                          onClick={() => handleStartBatch(batch)}
                         >
-                          <Cog6ToothIcon className="h-3 w-3 mr-1.5" />
-                          Progress
+                          <PlayIcon className="h-3.5 w-3.5 mr-1.5" />
+                          Start Now
                         </Button>
-                      )
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white border-0"
+                          onClick={() => handleOpenEditDates(batch)}
+                        >
+                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                          Set Dates
+                        </Button>
+                      </>
+                    ) : (
+                      /* Show Progress and Edit Dates for started batches */
+                      <>
+                        {batch.course && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+                            onClick={() => handleEditProgress(batch)}
+                          >
+                            <Cog6ToothIcon className="h-3.5 w-3.5 mr-1.5" />
+                            Progress
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white border-0"
+                          onClick={() => handleOpenEditDates(batch)}
+                        >
+                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                          Dates
+                        </Button>
+                      </>
                     )}
 
                     {/* Edit Students button */}
@@ -6866,21 +7027,36 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 text-xs font-semibold bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                        className="text-xs font-medium bg-purple-500 hover:bg-purple-600 text-white border-0"
                         onClick={() => handleEditStudents(batch)}
                       >
-                        <UserGroupIcon className="h-3 w-3 mr-1.5" />
-                        Edit Students
+                        <UserGroupIcon className="h-3.5 w-3.5 mr-1.5" />
+                        Students
+                      </Button>
+                    )}
+
+                    {/* Show Restart button for active batches */}
+                    {batch.status !== 'not_started' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs font-medium bg-yellow-500 hover:bg-yellow-600 text-white border-0"
+                        onClick={() => handleRestartBatch(batch)}
+                        title="Reset batch to Not Started status"
+                      >
+                        <ArrowPathIcon className="h-3.5 w-3.5 mr-1.5" />
+                        Reset
                       </Button>
                     )}
 
                     <Button
                       variant="danger"
                       size="sm"
-                      className="px-3 font-semibold bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                      className="text-xs font-medium bg-red-500 hover:bg-red-600 text-white border-0"
                       onClick={() => handleDeleteConfirmation(batch.id)}
                     >
-                      <TrashIcon className="h-3 w-3" />
+                      <TrashIcon className="h-3.5 w-3.5 mr-1.5" />
+                      Delete
                     </Button>
                   </div>
                 </div>
@@ -7299,6 +7475,155 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
                   </Button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restart Batch Confirmation Modal */}
+      {showRestartConfirm && batchToRestart && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                  <svg
+                    className="h-6 w-6 text-yellow-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Restart Batch</h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  <strong>{batchToRestart.name}</strong>
+                </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  This will reset the batch to "Not Started" status and clear all progress, dates,
+                  and completion records. Students will remain enrolled. This action cannot be
+                  undone.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowRestartConfirm(false)
+                      setBatchToRestart(null)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white"
+                    onClick={confirmRestartBatch}
+                  >
+                    Restart Batch
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Dates Modal */}
+      {showEditDatesModal && batchToEditDates && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Edit Batch Dates</h2>
+                  <p className="text-gray-600">{batchToEditDates.name}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditDatesModal(false)
+                    setBatchToEditDates(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>💡 Tip:</strong> Setting dates will automatically activate the batch if
+                  it's not started.
+                  {batchToEditDates.course && (
+                    <span> Suggested duration: {batchToEditDates.course.duration_weeks} weeks</span>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                <Input
+                  type="date"
+                  value={editingStartDate}
+                  onChange={(e) => setEditingStartDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date *</label>
+                <Input
+                  type="date"
+                  value={editingEndDate}
+                  onChange={(e) => setEditingEndDate(e.target.value)}
+                  className="w-full"
+                  min={editingStartDate}
+                />
+              </div>
+
+              {editingStartDate && editingEndDate && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Duration:{' '}
+                    <strong>
+                      {Math.ceil(
+                        (new Date(editingEndDate).getTime() -
+                          new Date(editingStartDate).getTime()) /
+                          (1000 * 60 * 60 * 24 * 7),
+                      )}
+                    </strong>{' '}
+                    weeks
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditDatesModal(false)
+                  setBatchToEditDates(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveDates}
+                disabled={!editingStartDate || !editingEndDate}
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300"
+              >
+                Save Dates
+              </Button>
             </div>
           </div>
         </div>

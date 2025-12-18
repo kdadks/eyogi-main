@@ -258,87 +258,52 @@ function generateRegistrationEmailHTML(data: RegistrationEmailData): string {
 }
 
 function generatePasswordResetEmailHTML(data: PasswordResetEmailData): string {
+  const firstName = data.fullName ? data.fullName.split(' ')[0] : 'User'
+
   return `
     <!DOCTYPE html>
     <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Password Reset Request</title>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-        <table role="presentation" style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td align="center" style="padding: 40px 0;">
-              <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                <!-- Header -->
-                <tr>
-                  <td style="padding: 40px 40px 30px; background: linear-gradient(135deg, #FB7E3F 0%, #FA573C 100%);">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">Password Reset Request</h1>
-                  </td>
-                </tr>
-                
-                <!-- Content -->
-                <tr>
-                  <td style="padding: 40px;">
-                    <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.5; color: #333333;">
-                      ${data.fullName ? `Hello ${data.fullName},` : 'Hello,'}
-                    </p>
-                    
-                    <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.5; color: #333333;">
-                      We received a request to reset your password for your eYogi Gurukul account.
-                    </p>
-                    
-                    <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.5; color: #333333;">
-                      Click the button below to reset your password:
-                    </p>
-                    
-                    <table role="presentation" style="margin: 0 0 30px;">
-                      <tr>
-                        <td style="border-radius: 4px; background: linear-gradient(135deg, #FB7E3F 0%, #FA573C 100%);">
-                          <a href="${data.resetUrl}" target="_blank" style="display: inline-block; padding: 16px 36px; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;">
-                            Reset Password
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-                    
-                    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.5; color: #6c757d;">
-                      Or copy and paste this URL into your browser:
-                    </p>
-                    
-                    <p style="margin: 0 0 30px; font-size: 14px; line-height: 1.5; color: #007bff; word-break: break-all;">
-                      ${data.resetUrl}
-                    </p>
-                    
-                    <div style="padding: 20px; background-color: #fff3cd; border-left: 4px solid #ffc107; margin: 30px 0;">
-                      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #856404;">
-                        <strong>⚠️ Important:</strong> This password reset link will expire in 24 hours. If you didn't request this, please ignore this email.
-                      </p>
-                    </div>
-                    
-                    <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.5; color: #6c757d;">
-                      If you're having trouble clicking the button, you can also reset your password by visiting our website and clicking "Forgot Password".
-                    </p>
-                  </td>
-                </tr>
-                
-                <!-- Footer -->
-                <tr>
-                  <td style="padding: 30px 40px; background-color: #f8f9fa; text-align: center; border-top: 1px solid #e9ecef;">
-                    <p style="margin: 0 0 10px; font-size: 14px; color: #6c757d;">
-                      © ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
-                    </p>
-                    <p style="margin: 0; font-size: 12px; color: #adb5bd;">
-                      This is an automated email. Please do not reply to this message.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
+    <head>
+      <meta charset="UTF-8">
+      <title>Password Reset</title>
+    </head>
+    <body style="background:#f5f5f5; margin:0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif;">
+              <tr>
+                <td align="center">
+                  <img src="https://eyogigurukul.com/logo.png" width="140" alt="eYogi Gurukul">
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <h2 style="color:#2c5f2d;">Reset Your Password</h2>
+                  <p>Hello ${firstName},</p>
+                  <p>
+                    We received a request to reset your eYogi Gurukul account password.
+                  </p>
+                  <p style="text-align:center;">
+                    <a href="${data.resetUrl}" style="background:#2c5f2d; color:#fff; padding:12px 22px; text-decoration:none; border-radius:4px;">
+                      Reset Password
+                    </a>
+                  </p>
+                  <p>
+                    If you did not request this, please ignore this email.
+                  </p>
+                  <p>
+                    For help, contact
+                    <a href="mailto:eyogiurukul@gmail.com">eyogiurukul@gmail.com</a>.
+                  </p>
+                  <p>— Team eYogi Gurukul</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
     </html>
   `
 }
