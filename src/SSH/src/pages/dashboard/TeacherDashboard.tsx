@@ -332,9 +332,10 @@ export default function TeacherDashboard() {
   }, [tags, setValue])
 
   // Validate slug for uniqueness
+  const currentSlug = watch('slug')
   useEffect(() => {
     const validateSlug = async () => {
-      const slug = watch('slug')
+      const slug = currentSlug
 
       if (!slug) {
         setSlugError('')
@@ -355,7 +356,7 @@ export default function TeacherDashboard() {
     // Debounce slug validation
     const timer = setTimeout(validateSlug, 500)
     return () => clearTimeout(timer)
-  }, [watch('slug'), editingCourse])
+  }, [currentSlug, editingCourse])
 
   // Generate certificate preview when modal opens or template changes
   useEffect(() => {
