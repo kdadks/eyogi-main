@@ -609,7 +609,7 @@ function generateWelcomeEmailHTML(data: WelcomeEmailData): string {
               <!-- Logo Header -->
               <tr>
                 <td align="center" style="padding: 40px 40px 20px 40px; background: linear-gradient(135deg, #2c5f2d 0%, #3d7f3e 100%);">
-                  <img src="https://eyogigurukul.com/logo.png" alt="eYogi Gurukul" width="150" style="display: block; max-width: 150px; height: auto;" />
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
                 </td>
               </tr>
 
@@ -652,7 +652,7 @@ function generateWelcomeEmailHTML(data: WelcomeEmailData): string {
               <tr>
                 <td style="padding: 0 40px 40px 40px;">
                   <p style="margin: 0 0 10px 0; padding: 0; color: #666666; font-size: 14px; line-height: 21px; font-family: Arial, Helvetica, sans-serif;">
-                    If you need any help, contact us at <a href="mailto:eyogigurukul@gmail.com" style="color: #2c5f2d; text-decoration: none;">eyogigurukul@gmail.com</a>.
+                    If you need any help, contact us at <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>.
                   </p>
                   <p style="margin: 0; padding: 0; color: #333333; font-size: 14px; line-height: 21px; font-family: Arial, Helvetica, sans-serif;">
                     Warm regards,<br />

@@ -942,7 +942,7 @@ function generateCertificateIssuedEmailHTML(data: CertificateIssuedEmailData): s
             <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial;">
               <tr>
                 <td align="center">
-                  <img src="https://eyogigurukul.com/logo.png" width="140" alt="eYogi Gurukul Logo">
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul Logo">
                 </td>
               </tr>
               <tr>
@@ -1053,7 +1053,7 @@ function generateWelcomeEmailHTML(data: WelcomeEmailData): string {
         <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif;">
           <tr>
             <td align="center">
-              <img src="https://eyogigurukul.com/logo.png" alt="eYogi Gurukul" width="150">
+              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul">
             </td>
           </tr>
           <tr>
@@ -1069,7 +1069,7 @@ function generateWelcomeEmailHTML(data: WelcomeEmailData): string {
               </p>
               <p>
                 If you need any help, contact us at
-                <a href="mailto:eyogigurukul@gmail.com">eyogigurukul@gmail.com</a>.
+                <a href="mailto:office@eyogigurukul.com">office@eyogigurukul.com</a>.
               </p>
               <p>Warm regards,<br><strong>Team eYogi Gurukul</strong></p>
             </td>
