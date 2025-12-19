@@ -46,30 +46,40 @@ function generateSlug(text: string): string {
  * Handles both HTML lists and plain text input
  */
 function parseHtmlToOutcomes(htmlContent: string): string[] {
-  if (!htmlContent || htmlContent.trim() === '') return []
+  try {
+    if (!htmlContent || htmlContent.trim() === '') return []
 
-  // If content contains HTML list tags, parse them
-  if (
-    htmlContent.includes('<ul>') ||
-    htmlContent.includes('<ol>') ||
-    htmlContent.includes('<li>')
-  ) {
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = sanitizeHtml(htmlContent)
+    // If content contains HTML list tags, parse them
+    if (
+      htmlContent.includes('<ul>') ||
+      htmlContent.includes('<ol>') ||
+      htmlContent.includes('<li>')
+    ) {
+      try {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = sanitizeHtml(htmlContent)
 
-    const listItems = tempDiv.querySelectorAll('li')
-    if (listItems.length > 0) {
-      return Array.from(listItems)
-        .map((li) => li.textContent?.trim())
-        .filter((text): text is string => !!text)
+        const listItems = tempDiv.querySelectorAll('li')
+        if (listItems.length > 0) {
+          return Array.from(listItems)
+            .map((li) => li.textContent?.trim())
+            .filter((text): text is string => !!text)
+        }
+      } catch (error) {
+        console.error('Error parsing HTML list:', error)
+        // Fall through to plain text parsing
+      }
     }
-  }
 
-  // Fall back to splitting by newlines for plain text
-  return htmlContent
-    .split('\n')
-    .map((line) => line.replace(/<[^>]*>/g, '').trim()) // Strip any HTML tags
-    .filter((line) => line !== '')
+    // Fall back to splitting by newlines for plain text
+    return htmlContent
+      .split('\n')
+      .map((line) => line.replace(/<[^>]*>/g, '').trim()) // Strip any HTML tags
+      .filter((line) => line !== '')
+  } catch (error) {
+    console.error('Error in parseHtmlToOutcomes:', error)
+    return []
+  }
 }
 
 /**
@@ -339,21 +349,33 @@ export default function CourseManagement() {
 
   // Handle learning outcomes change - update both editor value and formData
   const handleLearningOutcomesChange = useCallback((value: string) => {
-    setLearningOutcomesEditorValue(value)
-    const newOutcomes = parseHtmlToOutcomes(value)
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      learning_outcomes: newOutcomes,
-    }))
+    try {
+      setLearningOutcomesEditorValue(value)
+      const newOutcomes = parseHtmlToOutcomes(value)
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        learning_outcomes: newOutcomes,
+      }))
+    } catch (error) {
+      console.error('Error in handleLearningOutcomesChange:', error)
+      // Keep the editor value but don't update formData to prevent cascading errors
+      setLearningOutcomesEditorValue(value)
+    }
   }, [])
 
   // Handle prerequisites change - update both editor value and formData
   const handlePrerequisitesChange = useCallback((value: string) => {
-    setPrerequisitesEditorValue(value)
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      prerequisites: value,
-    }))
+    try {
+      setPrerequisitesEditorValue(value)
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        prerequisites: value,
+      }))
+    } catch (error) {
+      console.error('Error in handlePrerequisitesChange:', error)
+      // Keep the editor value but don't update formData to prevent cascading errors
+      setPrerequisitesEditorValue(value)
+    }
   }, [])
 
   const filterCourses = useCallback(() => {

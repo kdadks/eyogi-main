@@ -1,5 +1,4 @@
 import { supabaseAdmin } from './supabase'
-import { genUploader } from 'uploadthing/client'
 
 // Upload result interface
 interface UploadResult {
@@ -10,29 +9,53 @@ interface UploadResult {
   type: string
 }
 
-// Create UploadThing client with environment-based URL
-const getUploadThingUrl = () => {
-  if (import.meta.env.PROD) {
-    // In production, use the current domain's API to avoid CORS issues
-    const currentOrigin =
-      typeof window !== 'undefined' ? window.location.origin : 'https://www.eyogigurukul.com'
-    const apiUrl = import.meta.env.VITE_API_URL || `${currentOrigin}/api`
-    const uploadUrl = `${apiUrl}/uploadthing`
-    console.log('UploadThing URL (production):', uploadUrl)
-    return uploadUrl
+// Helper function to upload files directly to Supabase storage
+async function uploadToSupabaseStorage(
+  files: File[],
+): Promise<Array<{ url: string; filename: string }>> {
+  const results = []
+
+  for (const file of files) {
+    // Generate unique filename
+    const timestamp = Date.now()
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const filename = `${timestamp}-${sanitizedName}`
+
+    // Determine storage path based on file type
+    const fileType = file.type.startsWith('image/')
+      ? 'images'
+      : file.type.startsWith('video/')
+        ? 'videos'
+        : file.type.startsWith('audio/')
+          ? 'audio'
+          : 'documents'
+
+    const filePath = `${fileType}/${filename}`
+
+    console.log('Uploading to Supabase storage:', filePath)
+
+    // Upload to Supabase storage bucket
+    const { data, error } = await supabaseAdmin.storage.from('media').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    })
+
+    if (error) {
+      console.error('Supabase storage upload error:', error)
+      throw new Error(`Failed to upload ${file.name}: ${error.message}`)
+    }
+
+    // Get public URL
+    const { data: urlData } = supabaseAdmin.storage.from('media').getPublicUrl(filePath)
+
+    results.push({
+      url: urlData.publicUrl,
+      filename: filename,
+    })
   }
-  // In development, use the SSH app's own UploadThing server
-  const devUrl = 'http://localhost:3001/api/uploadthing'
-  console.log('UploadThing URL (development):', devUrl)
-  return devUrl
+
+  return results
 }
-
-const uploadThingUrl = getUploadThingUrl()
-console.log('Initializing UploadThing client with URL:', uploadThingUrl)
-
-const { uploadFiles } = genUploader({
-  url: uploadThingUrl,
-})
 
 // Extract UploadThing file key from URL
 export function extractUploadThingKey(url: string): string | null {
@@ -46,37 +69,38 @@ export function extractUploadThingKey(url: string): string | null {
   }
 }
 
-// Delete file from UploadThing
-export async function deleteFromUploadThing(fileUrl: string): Promise<boolean> {
+// Delete file from Supabase storage
+export async function deleteFromStorage(fileUrl: string): Promise<boolean> {
   try {
-    const fileKey = extractUploadThingKey(fileUrl)
-    if (!fileKey) {
-      console.error('Could not extract file key from URL:', fileUrl)
+    // Extract file path from Supabase URL
+    // Format: https://[PROJECT].supabase.co/storage/v1/object/public/media/[path]
+    const url = new URL(fileUrl)
+    const pathParts = url.pathname.split('/public/media/')
+    if (pathParts.length < 2) {
+      console.error('Could not extract file path from URL:', fileUrl)
       return false
     }
 
-    console.log('Deleting from UploadThing:', fileKey)
+    const filePath = pathParts[1]
+    console.log('Deleting from Supabase storage:', filePath)
 
-    // Call our backend to delete from UploadThing
-    const response = await fetch(`${getUploadThingUrl()}?actionType=delete&fileKey=${fileKey}`, {
-      method: 'DELETE',
-    })
+    const { error } = await supabaseAdmin.storage.from('media').remove([filePath])
 
-    if (response.ok) {
-      console.log('Successfully deleted from UploadThing:', fileKey)
-      return true
-    } else {
-      console.error('Failed to delete from UploadThing:', response.status, response.statusText)
+    if (error) {
+      console.error('Failed to delete from Supabase storage:', error)
       return false
     }
+
+    console.log('Successfully deleted from Supabase storage:', filePath)
+    return true
   } catch (error) {
-    console.error('Error deleting from UploadThing:', error)
+    console.error('Error deleting from Supabase storage:', error)
     return false
   }
 }
 
-export async function uploadFilesToUploadThing(files: File[]): Promise<UploadResult[]> {
-  console.log('uploadFilesToUploadThing called with', files.length, 'files')
+export async function uploadFilesToStorage(files: File[]): Promise<UploadResult[]> {
+  console.log('uploadFilesToStorage called with', files.length, 'files')
   const results: UploadResult[] = []
 
   if (!files || files.length === 0) {
@@ -85,14 +109,14 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
   }
 
   try {
-    // Use UploadThing client SDK to upload files
-    console.log('Starting UploadThing upload...')
-    const uploadResults = await uploadFiles('imageUploader', { files })
+    // Use direct Supabase storage upload instead of UploadThing to avoid API issues
+    console.log('Starting Supabase storage upload...')
+    const uploadResults = await uploadToSupabaseStorage(files)
 
-    console.log('UploadThing upload completed:', uploadResults)
+    console.log('Supabase storage upload completed:', uploadResults)
 
     if (!uploadResults || uploadResults.length === 0) {
-      throw new Error('UploadThing returned no results')
+      throw new Error('Storage upload returned no results')
     }
 
     for (let i = 0; i < uploadResults.length; i++) {
@@ -104,15 +128,15 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
         continue
       }
 
-      // UploadResult is now directly the file data
-      const fileUrl = uploadResult.ufsUrl || uploadResult.url // Use ufsUrl (new) or fallback to url
+      // Supabase storage result
+      const fileUrl = uploadResult.url
 
       if (!fileUrl) {
         console.error('No file URL in upload result:', uploadResult)
         continue
       }
 
-      console.log('File uploaded successfully to UploadThing:', fileUrl)
+      console.log('File uploaded successfully to Supabase storage:', fileUrl)
 
       // Determine file category
       const getFileCategory = (type: string): string => {
@@ -123,7 +147,7 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
       }
 
       // Generate filename for database
-      const filename = `${Date.now()}-${uploadResult.name}`
+      const filename = uploadResult.filename || `${Date.now()}-${originalFile.name}`
 
       // Get a valid user ID from profiles table
       console.log('Finding valid user ID from profiles table...')
@@ -147,18 +171,20 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
       console.log('Saving file metadata to database...')
       const mediaRecord = {
         filename: filename,
-        original_name: uploadResult.name,
+        original_name: originalFile.name,
         file_type: originalFile.type,
         file_category: getFileCategory(originalFile.type),
         mime_type: originalFile.type,
-        file_size: uploadResult.size,
+        file_size: originalFile.size,
         file_url: fileUrl,
-        title: uploadResult.name.split('.')[0],
-        alt_text: uploadResult.name.split('.')[0],
+        title: originalFile.name.split('.')[0],
+        alt_text: originalFile.name.split('.')[0],
         ...(uploadedBy && { uploaded_by: uploadedBy }), // Only include if we have a valid ID
         metadata: {
-          uploadType: 'uploadthing',
-          originalName: uploadResult.name,
+          uploadType: 'supabase-storage',
+          storageProvider: 'supabase',
+          storageBucket: 'media',
+          originalName: originalFile.name,
           uploadedAt: new Date().toISOString(),
         },
       }
@@ -172,20 +198,20 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
 
       if (dbError) {
         console.error('Database insertion error:', dbError)
-        throw new Error(`Failed to save ${uploadResult.name} to database: ${dbError.message}`)
+        throw new Error(`Failed to save ${uploadResult.filename} to database: ${dbError.message}`)
       }
 
       if (!mediaData) {
-        throw new Error(`Failed to save ${uploadResult.name}: No data returned from database`)
+        throw new Error(`Failed to save ${uploadResult.filename}: No data returned from database`)
       }
 
       console.log('Database record saved:', mediaData)
 
       const result: UploadResult = {
         id: mediaData.id,
-        filename: uploadResult.name,
+        filename: originalFile.name,
         url: fileUrl,
-        size: uploadResult.size,
+        size: originalFile.size,
         type: originalFile.type,
       }
 
@@ -201,16 +227,20 @@ export async function uploadFilesToUploadThing(files: File[]): Promise<UploadRes
   return results
 }
 
+// Backward compatibility aliases
+export const uploadFilesToUploadThing = uploadFilesToStorage
+export const deleteFromUploadThing = deleteFromStorage
+
 export async function uploadWatermarkedFilesToUploadThing(files: File[]): Promise<UploadResult[]> {
   console.log('uploadWatermarkedFilesToUploadThing called with', files.length, 'files')
   const results = []
 
   try {
-    // Use UploadThing client SDK to upload watermarked files
-    console.log('Starting UploadThing watermark upload...')
-    const uploadResults = await uploadFiles('watermarkUploader', { files })
+    // Use direct Supabase storage for watermarked files
+    console.log('Starting Supabase watermark upload...')
+    const uploadResults = await uploadToSupabaseStorage(files)
 
-    console.log('UploadThing watermark upload completed:', uploadResults)
+    console.log('Supabase watermark upload completed:', uploadResults)
 
     for (let i = 0; i < uploadResults.length; i++) {
       const uploadResult = uploadResults[i]
@@ -219,10 +249,10 @@ export async function uploadWatermarkedFilesToUploadThing(files: File[]): Promis
       // For watermarked files, we just return the upload result without database insertion
       // The database update will be handled by the calling function
       results.push({
-        id: uploadResult.key || `watermark-${Date.now()}-${i}`,
-        filename: uploadResult.name,
-        url: uploadResult.ufsUrl || uploadResult.url, // Use ufsUrl (new) or fallback to url
-        size: uploadResult.size,
+        id: `watermark-${Date.now()}-${i}`,
+        filename: uploadResult.filename,
+        url: uploadResult.url,
+        size: originalFile.size,
         type: originalFile.type, // Preserve original file type
       })
     }

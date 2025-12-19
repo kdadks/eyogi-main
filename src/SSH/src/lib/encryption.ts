@@ -36,9 +36,6 @@ if (!ENCRYPTION_KEY) {
   console.error(
     '🔧 Action required: Set VITE_ENCRYPTION_KEY in Vercel environment variables and redeploy.',
   )
-} else {
-  console.log('✅ Encryption key loaded successfully')
-  console.log(`🔑 Key length: ${ENCRYPTION_KEY.length} characters`)
 }
 
 /**
@@ -131,8 +128,15 @@ export function encryptProfileFields<T extends ProfileFieldsToEncrypt>(
   if (profile.full_name) {
     ;(encrypted as ProfileFieldsToEncrypt).full_name = encryptField(profile.full_name, customKey)
   }
-  // NOTE: Email is NOT encrypted to allow database queries for authentication
-  // This is acceptable under GDPR as email is necessary for account access
+
+  // IMPORTANT: Email is NEVER encrypted - it must remain in plain text for:
+  // 1. Authentication and login functionality
+  // 2. Password reset email lookups
+  // 3. Welcome email delivery
+  // 4. Database queries and user lookups
+  // Email remains in plain text as it's necessary for account access (GDPR compliant)
+  // The email field is intentionally NOT processed here
+
   if (profile.phone) {
     ;(encrypted as ProfileFieldsToEncrypt).phone = encryptField(profile.phone, customKey)
   }

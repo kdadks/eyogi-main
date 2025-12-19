@@ -38,7 +38,7 @@ import {
   type MediaFile,
   type MediaFilters,
 } from '../../lib/api/media'
-import { uploadFilesToUploadThing } from '../../lib/uploadthing-client'
+import { uploadFilesToUploadThing } from '../../lib/storage-client'
 import { canBeWatermarked } from '../../hooks/useWatermark'
 import WatermarkDialog from './WatermarkDialog'
 import FileIcon from '../ui/FileIcon'
@@ -96,7 +96,7 @@ export default function MediaManagement() {
     totalPages: 0,
   })
 
-  // File upload handling will be integrated with UploadThing later
+  // File upload handling integrated with Supabase storage
 
   // Load media files
   const loadMedia = useCallback(async () => {
@@ -141,7 +141,7 @@ export default function MediaManagement() {
     setUploading(true)
 
     try {
-      // Upload files to UploadThing and save metadata to database
+      // Upload files to Supabase storage and save metadata to database
       const results = await uploadFilesToUploadThing(files)
 
       toast.success(`Successfully uploaded ${files.length} file(s)`)

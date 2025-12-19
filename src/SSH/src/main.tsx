@@ -8,14 +8,29 @@ import { PermissionProvider } from './contexts/PermissionContext'
 import { SessionManager } from './lib/sessionManager'
 import './index.css'
 
-// Suppress ReactQuill findDOMNode warning in development
+// Suppress ReactQuill warnings in development
 if (import.meta.env.DEV) {
   const originalError = console.error
+  const originalWarn = console.warn
+
   console.error = (...args) => {
     if (typeof args[0] === 'string' && args[0].includes('findDOMNode is deprecated')) {
       return
     }
     originalError.call(console, ...args)
+  }
+
+  // Suppress react-quill passive event listener warnings
+  // This is a known issue with react-quill v2.0.0 - the library adds touchstart listeners
+  // See: https://github.com/zenoamaro/react-quill/issues/791
+  console.warn = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('[Violation] Added non-passive event listener')
+    ) {
+      return
+    }
+    originalWarn.call(console, ...args)
   }
 }
 // Initialize session management before rendering (only in production or when needed)

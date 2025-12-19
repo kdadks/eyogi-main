@@ -1,6 +1,6 @@
 // Media Management API Functions
 import { supabaseAdmin } from '../supabase'
-import { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } from '../uploadthing-client'
+import { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } from '../storage-client'
 
 export interface MediaFile {
   id: string
@@ -155,12 +155,12 @@ export async function deleteMediaFile(id: string): Promise<void> {
       throw new Error('Media file not found')
     }
 
-    // Delete from UploadThing first
-    console.log('Deleting file from UploadThing:', mediaFile.original_name)
-    const uploadThingDeleted = await deleteFromUploadThing(mediaFile.file_url)
+    // Delete from Supabase storage first
+    console.log('Deleting file from Supabase storage:', mediaFile.original_name)
+    const storageDeleted = await deleteFromUploadThing(mediaFile.file_url)
 
-    if (!uploadThingDeleted) {
-      console.warn('Failed to delete from UploadThing, but continuing with database deletion')
+    if (!storageDeleted) {
+      console.warn('Failed to delete from Supabase storage, but continuing with database deletion')
     }
 
     // Then delete from database
@@ -196,12 +196,12 @@ export async function bulkDeleteMediaFiles(ids: string[]): Promise<void> {
       throw new Error('No media files found for deletion')
     }
 
-    // Delete from UploadThing first (in parallel for better performance)
-    console.log(`Deleting ${mediaFiles.length} files from UploadThing`)
+    // Delete from Supabase storage first (in parallel for better performance)
+    console.log(`Deleting ${mediaFiles.length} files from Supabase storage`)
     const deletePromises = mediaFiles.map(async (file) => {
       const deleted = await deleteFromUploadThing(file.file_url)
       if (!deleted) {
-        console.warn(`Failed to delete ${file.original_name} from UploadThing`)
+        console.warn(`Failed to delete ${file.original_name} from Supabase storage`)
       }
       return { id: file.id, deleted }
     })
@@ -324,12 +324,10 @@ export function getThumbnailUrl(media: MediaFile): string {
   if (media.file_category === 'image') {
     const fileUrl = media.file_url
 
-    // Fix broken UploadThing URLs that are incomplete
-    if (fileUrl === 'https://uploadthing-prod-sea1.s3.us-west-2.amazonaws.com/') {
-      console.warn('Broken UploadThing URL detected for file:', media.original_name)
-      // For now, return a placeholder or try to reconstruct
-      // You might want to re-upload this file or update the database
-      return '/placeholder-gallery.png' // Use existing placeholder
+    // Check for broken or missing URLs
+    if (!fileUrl || fileUrl.trim() === '' || fileUrl.includes('undefined')) {
+      console.warn('Invalid storage URL detected for file:', media.original_name)
+      return '/placeholder-gallery.png' // Use placeholder for broken URLs
     }
 
     return fileUrl
@@ -449,19 +447,19 @@ export async function watermarkMediaFiles(
 
         const watermarkedBuffer = await watermarkResponse.arrayBuffer()
 
-        // Delete the original file from UploadThing first
+        // Delete the original file from Supabase storage first
         const { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } =
-          await import('../uploadthing-client')
+          await import('../storage-client')
 
         console.log(
-          'Deleting original file from UploadThing before uploading watermarked version:',
-          mediaFile.original_name,
+          'Deleting original file from Supabase storage before uploading watermarked version:',
+          mediaFile.file_url,
         )
         const deleted = await deleteFromUploadThing(mediaFile.file_url)
 
         if (!deleted) {
           console.warn(
-            'Failed to delete original file from UploadThing, but continuing with watermark upload',
+            'Failed to delete original file from Supabase storage, but continuing with watermark upload',
           )
         }
 

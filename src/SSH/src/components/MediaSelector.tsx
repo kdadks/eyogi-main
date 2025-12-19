@@ -27,7 +27,7 @@ import {
   type MediaFile,
   type MediaFilters,
 } from '../lib/api/media'
-import { uploadFilesToUploadThing } from '../lib/uploadthing-client'
+import { uploadFilesToUploadThing } from '../lib/storage-client'
 import FileIcon from './ui/FileIcon'
 
 const CATEGORIES = [

@@ -168,8 +168,6 @@ export async function deletePermission(id: string): Promise<void> {
 
 export async function getUserPermissions(userId: string): Promise<UserPermission[]> {
   try {
-    console.log('getUserPermissions called with userId:', userId)
-
     // First, get the user's role
     const { data: userProfile, error: userError } = await supabaseAdmin
       .from('profiles')
@@ -181,8 +179,6 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       console.error('Error fetching user profile:', userError)
       return []
     }
-
-    console.log('User role found:', userProfile.role)
 
     // Then get permissions for that role from role_permissions table
     const { data: rolePermissions, error: roleError } = await supabaseAdmin
@@ -202,8 +198,6 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       `,
       )
       .eq('role', userProfile.role)
-
-    console.log('Database query result:', { data: rolePermissions, error: roleError })
 
     if (roleError) {
       console.error('Error fetching role permissions:', roleError)
@@ -237,7 +231,6 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
         updated_at: new Date().toISOString(),
       }))
 
-    console.log('Returning converted permissions data:', userPermissions)
     return userPermissions
   } catch (error) {
     console.error('Error in getUserPermissions:', error)

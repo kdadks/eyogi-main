@@ -338,15 +338,17 @@ export default function SignUpPage() {
                       Must be 8+ characters with 1 uppercase, 1 digit, 1 special character (!@#$%^&*), no spaces
                     </p>
                   </div>
-                  <Input
-                    label={<>Confirm Password <span className="text-red-500">*</span></>}
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Confirm your password"
-                    className="h-12 text-base"
-                    {...register('confirmPassword')}
-                    error={errors.confirmPassword?.message}
-                  />
+                  <div>
+                    <Input
+                      label={<>Confirm Password <span className="text-red-500">*</span></>}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Confirm your password"
+                      className="h-12 text-base"
+                      {...register('confirmPassword')}
+                      error={errors.confirmPassword?.message}
+                    />
+                  </div>
                 </div>
               </div>
 

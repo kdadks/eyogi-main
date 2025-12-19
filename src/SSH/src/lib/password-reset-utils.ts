@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabase'
+import { decryptField } from './encryption'
 
 /**
  * Generate a secure random token for password reset using Web Crypto API
@@ -60,6 +61,9 @@ export async function requestPasswordReset(
 
     // Send email with reset link via API
     try {
+      // Decrypt full_name before sending to email service
+      const decryptedFullName = profile.full_name ? decryptField(profile.full_name) : null
+
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
@@ -68,7 +72,7 @@ export async function requestPasswordReset(
         body: JSON.stringify({
           email: profile.email,
           resetToken,
-          fullName: profile.full_name,
+          fullName: decryptedFullName,
         }),
       })
 

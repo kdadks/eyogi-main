@@ -8,61 +8,33 @@ interface UploadResult {
   type: string
 }
 
+// Direct Supabase storage upload - Primary upload method
 export async function uploadFiles(files: File[]): Promise<UploadResult[]> {
-  try {
-    // For now, we'll use a direct approach to upload to UploadThing
-    // This is a placeholder for the actual UploadThing client integration
-
-    const uploadPromises = files.map(async (file): Promise<UploadResult> => {
-      // Create form data for UploadThing
-      const formData = new FormData()
-      formData.append('files', file)
-
-      // Upload to UploadThing mediaUploader endpoint
-      const response = await fetch('/api/uploadthing?slug=mediaUploader', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const error = await response.text()
-        throw new Error(`Upload failed for ${file.name}: ${error}`)
-      }
-
-      const result = await response.json()
-
-      // Return standardized format
-      return {
-        id: result.mediaId || `upload-${Date.now()}`,
-        filename: file.name,
-        url: result.url || result.fileUrl,
-        size: file.size,
-        type: file.type,
-      }
-    })
-
-    const results = await Promise.all(uploadPromises)
-    return results
-  } catch (error) {
-    console.error('Upload error:', error)
-    throw error
-  }
-}
-
-// Alternative: Direct Supabase storage upload (if UploadThing is not available)
-export async function uploadFilesDirectly(files: File[]): Promise<UploadResult[]> {
   try {
     const results: UploadResult[] = []
 
     for (const file of files) {
       // Generate unique filename
-      const fileExt = file.name.split('.').pop()
-      const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filepath = `media/${filename}`
+      const timestamp = Date.now()
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const filename = `${timestamp}-${sanitizedName}`
 
-      // Upload to Supabase Storage
+      // Determine storage path based on file type
+      const fileType = file.type.startsWith('image/')
+        ? 'images'
+        : file.type.startsWith('video/')
+          ? 'videos'
+          : file.type.startsWith('audio/')
+            ? 'audio'
+            : 'documents'
+
+      const filepath = `${fileType}/${filename}`
+
+      console.log('Uploading to Supabase storage:', filepath)
+
+      // Upload to Supabase Storage bucket 'media'
       const { error: uploadError } = await supabaseAdmin.storage
-        .from('media-files')
+        .from('media')
         .upload(filepath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -75,7 +47,7 @@ export async function uploadFilesDirectly(files: File[]): Promise<UploadResult[]
       // Get public URL
       const {
         data: { publicUrl },
-      } = supabaseAdmin.storage.from('media-files').getPublicUrl(filepath)
+      } = supabaseAdmin.storage.from('media').getPublicUrl(filepath)
 
       // Determine file category
       const getFileCategory = (type: string): string => {
@@ -100,7 +72,9 @@ export async function uploadFilesDirectly(files: File[]): Promise<UploadResult[]
           alt_text: file.name.split('.')[0],
           uploaded_by: 'admin', // TODO: Get actual user ID
           metadata: {
-            uploadType: 'media_management',
+            uploadType: 'supabase-storage',
+            storageProvider: 'supabase',
+            storageBucket: 'media',
             originalName: file.name,
             uploadedAt: new Date().toISOString(),
           },

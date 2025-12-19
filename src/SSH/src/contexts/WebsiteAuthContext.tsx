@@ -4,7 +4,7 @@ import { generateRoleId } from '../lib/id-generator'
 import { getUserProfile } from '../lib/api/users'
 import { getUserPermissions } from '../lib/api/permissions'
 import { queryCache } from '../lib/cache'
-import { encryptProfileFields } from '../lib/encryption'
+import { encryptProfileFields, decryptField } from '../lib/encryption'
 import type { Database } from '../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 // Simple password hashing function (for development - use bcrypt in production)
@@ -271,81 +271,95 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       // Encrypt sensitive profile fields before inserting
       const encryptedProfileData = encryptProfileFields(profileData)
 
-      const { error: createError } = await supabaseAdmin
+      const { data: newProfile, error: createError } = await supabaseAdmin
         .from('profiles')
         .insert(encryptedProfileData)
         .select()
         .single()
-      if (createError) {
-        return { error: `Failed to create account: ${createError.message || 'Unknown error'}` }
+
+      if (createError || !newProfile) {
+        console.error('Profile creation failed:', createError)
+        return { error: `Failed to create account: ${createError?.message || 'Unknown error'}` }
       }
+
+      console.log('Profile created successfully:', newProfile.id)
 
       // Send welcome email to user (non-blocking)
-      try {
-        const loginLink = `${window.location.origin}/ssh-app/`
-        const apiBaseUrl = window.location.origin
-        console.log(
-          'Sending welcome email to:',
-          userData.email.toLowerCase(),
-          'via API:',
-          `${apiBaseUrl}/api/auth/welcome`,
-        )
-        const welcomeResponse = await fetch(`${apiBaseUrl}/api/auth/welcome`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: userData.email.toLowerCase(),
-            fullName: userData.full_name,
-            loginLink: loginLink,
-            role: userData.role,
-          }),
-        })
+      // Wait to ensure database transaction is fully committed before sending email
+      setTimeout(async () => {
+        try {
+          // Decrypt the full name from the stored profile before sending email
+          const decryptedFullName = newProfile.full_name
+            ? decryptField(newProfile.full_name)
+            : userData.full_name
 
-        if (!welcomeResponse.ok) {
-          console.warn('Failed to send welcome email to user:', {
-            status: welcomeResponse.status,
-            statusText: welcomeResponse.statusText,
-            email: userData.email.toLowerCase(),
+          const loginLink = `${window.location.origin}/ssh-app/`
+          const apiBaseUrl = window.location.origin
+          console.log(
+            'Sending welcome email to:',
+            userData.email.toLowerCase(),
+            'via API:',
+            `${apiBaseUrl}/api/auth/welcome`,
+          )
+          const welcomeResponse = await fetch(`${apiBaseUrl}/api/auth/welcome`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userData.email.toLowerCase(),
+              fullName: decryptedFullName,
+              loginLink: loginLink,
+              role: userData.role,
+            }),
           })
-          const errorText = await welcomeResponse.text()
-          console.warn('Welcome email API error response:', errorText)
-        } else {
-          console.log('Welcome email API call successful for:', userData.email.toLowerCase())
+
+          if (!welcomeResponse.ok) {
+            console.warn('Failed to send welcome email to user:', {
+              status: welcomeResponse.status,
+              statusText: welcomeResponse.statusText,
+              email: userData.email.toLowerCase(),
+            })
+            const errorText = await welcomeResponse.text()
+            console.warn('Welcome email API error response:', errorText)
+          } else {
+            console.log('Welcome email API call successful for:', userData.email.toLowerCase())
+          }
+        } catch (emailError) {
+          console.warn('Error sending welcome email to user:', emailError)
         }
-      } catch (emailError) {
-        console.warn('Error sending welcome email to user:', emailError)
-      }
+      }, 10000) // Wait 10 seconds to ensure DB transaction is committed
 
-      // Send registration notification email (non-blocking)
-      // Email will be sent asynchronously without affecting user registration
-      try {
-        const apiBaseUrl = window.location.origin
-        const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: userData.email.toLowerCase(),
-            fullName: userData.full_name,
-            role: userData.role,
-            status: 'active',
-          }),
-        })
-
-        if (!response.ok) {
-          console.warn('Failed to send registration email notification:', {
-            status: response.status,
-            statusText: response.statusText,
+      // Send registration notification email to admin (non-blocking)
+      // Wait a brief moment to ensure database transaction is committed
+      setTimeout(async () => {
+        try {
+          const apiBaseUrl = window.location.origin
+          const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: userData.email.toLowerCase(),
+              fullName: userData.full_name,
+              role: userData.role,
+              status: 'pending_verification',
+            }),
           })
-          // Don't return error - let registration succeed even if email fails
+
+          if (!response.ok) {
+            console.warn('Failed to send registration email notification:', {
+              status: response.status,
+              statusText: response.statusText,
+            })
+          } else {
+            console.log('Registration notification email sent successfully')
+          }
+        } catch (emailError) {
+          console.warn('Error sending registration email:', emailError)
         }
-      } catch (emailError) {
-        console.warn('Error sending registration email:', emailError)
-        // Don't return error - email is optional notification
-      }
+      }, 2500) // Wait 2.5 seconds, slightly after welcome email
 
       return { error: null }
     } catch (error) {

@@ -15,13 +15,15 @@ import {
 import { getUserProfile, updateUserProfile } from '../../lib/api/users'
 import { getComplianceStats, getUserComplianceStatus } from '../../lib/api/compliance'
 import { getTeacherCourseAssignments } from '../../lib/api/courseAssignments'
-import { uploadFilesToUploadThing, deleteFromUploadThing } from '../../lib/uploadthing-client'
+import { uploadFilesToUploadThing, deleteFromUploadThing } from '../../lib/storage-client'
 import { deleteMediaFile } from '../../lib/api/media'
 import type { Database } from '../../types/database'
 import type { Course, CourseAssignment } from '../../types'
 import type { ComplianceStats, ComplianceChecklistItem } from '../../types/compliance'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Badge } from '../ui/Badge'
+import MediaSelector from '../MediaSelector'
+import type { MediaFile } from '../../lib/api/media'
 import toast from 'react-hot-toast'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -36,6 +38,7 @@ export default function TeacherDetailView() {
   const [assignedCourses, setAssignedCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [showMediaSelector, setShowMediaSelector] = useState(false)
 
   useEffect(() => {
     if (teacherId) {
@@ -78,7 +81,49 @@ export default function TeacherDetailView() {
   }
 
   const handleAvatarClick = () => {
-    fileInputRef.current?.click()
+    console.log('Avatar clicked, opening media selector')
+    setShowMediaSelector(true)
+  }
+
+  const handleMediaSelect = async (selectedMedia: any[]) => {
+    console.log('Media selected:', selectedMedia)
+
+    // Close modal immediately to prevent flickering
+    setShowMediaSelector(false)
+
+    if (!selectedMedia || selectedMedia.length === 0) {
+      console.log('No media selected, ignoring')
+      return
+    }
+
+    if (!teacherId) {
+      console.log('No teacher ID')
+      return
+    }
+
+    try {
+      setUploadingPhoto(true)
+      const publicUrl = selectedMedia[0].file_url
+
+      if (!publicUrl) {
+        throw new Error('No URL found in selected media')
+      }
+
+      console.log('Updating teacher avatar to:', publicUrl)
+
+      // Update profile with new avatar URL
+      await updateUserProfile(teacherId, { avatar_url: publicUrl })
+
+      // Update local state
+      setTeacher((prev) => (prev ? { ...prev, avatar_url: publicUrl } : null))
+
+      toast.success('Photo updated successfully!')
+    } catch (error) {
+      console.error('Error updating photo:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update photo')
+    } finally {
+      setUploadingPhoto(false)
+    }
   }
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +146,7 @@ export default function TeacherDetailView() {
     try {
       setUploadingPhoto(true)
 
-      // Upload to UploadThing using the same method as Media Management
+      // Upload to Supabase storage using the same method as Media Management
       const uploadResults = await uploadFilesToUploadThing([file])
 
       if (!uploadResults || uploadResults.length === 0) {
@@ -154,7 +199,7 @@ export default function TeacherDetailView() {
       if (mediaFiles?.id) {
         await deleteMediaFile(mediaFiles.id)
       } else {
-        // If not in media_files table, just delete from UploadThing
+        // If not in media_files table, just delete from Supabase storage
         await deleteFromUploadThing(avatarUrl)
       }
 
@@ -243,10 +288,10 @@ export default function TeacherDetailView() {
               <button
                 onClick={handleAvatarClick}
                 disabled={uploadingPhoto}
-                className={`h-24 w-24 rounded-full overflow-hidden relative cursor-pointer border-2 border-gray-200 hover:border-gray-300 transition-colors ${
+                className={`h-24 w-24 rounded-full overflow-hidden relative cursor-pointer border-2 border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center ${
                   !teacher.avatar_url ? 'bg-gradient-to-r from-orange-400 to-red-400' : 'bg-white'
                 }`}
-                title="Click to upload photo"
+                title="Click to select photo from media library"
               >
                 {teacher.avatar_url ? (
                   <img
@@ -507,6 +552,31 @@ export default function TeacherDetailView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Media Selector Modal */}
+      {showMediaSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Select Teacher Photo</h3>
+              <button
+                onClick={() => setShowMediaSelector(false)}
+                className="text-gray-500 hover:text-gray-700 font-bold text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="px-4 py-3 overflow-y-auto flex-1">
+              <MediaSelector
+                accept={['image/*']}
+                maxSelection={1}
+                showUpload={true}
+                onSelect={handleMediaSelect}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

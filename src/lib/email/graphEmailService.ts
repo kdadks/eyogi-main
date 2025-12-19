@@ -258,45 +258,60 @@ function generateRegistrationEmailHTML(data: RegistrationEmailData): string {
 }
 
 function generatePasswordResetEmailHTML(data: PasswordResetEmailData): string {
-  const firstName = data.fullName ? data.fullName.split(' ')[0] : 'User'
+  // fullName should be passed already decrypted from the calling context
+  const fullName = data.fullName || 'User'
+  const firstName = fullName ? fullName.split(' ')[0] : 'User'
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Password Reset</title>
     </head>
-    <body style="background:#f5f5f5; margin:0;">
-      <table width="100%" cellpadding="0" cellspacing="0">
+    <body style="background:#f5f5f5; margin:0; padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;">
         <tr>
-          <td align="center">
-            <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif;">
+          <td align="center" style="padding:40px 20px;">
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
               <tr>
-                <td align="center">
-                  <img src="https://eyogigurukul.com/logo.png" width="140" alt="eYogi Gurukul">
+                <td align="center" style="padding:30px 20px 20px;">
+                  <img src="https://eyogigurukul.com/wp-content/uploads/2024/08/cropped-EYogi-Gurukul-Logo.png" width="180" alt="eYogi Gurukul" style="max-width:100%; height:auto;">
                 </td>
               </tr>
               <tr>
-                <td>
-                  <h2 style="color:#2c5f2d;">Reset Your Password</h2>
-                  <p>Hello ${firstName},</p>
-                  <p>
+                <td style="padding:20px 40px;">
+                  <h2 style="color:#2c5f2d; margin:0 0 20px 0; font-size:24px;">Reset Your Password</h2>
+                  <p style="margin:0 0 15px 0; line-height:1.6; color:#333;">Hello ${firstName},</p>
+                  <p style="margin:0 0 25px 0; line-height:1.6; color:#333;">
                     We received a request to reset your eYogi Gurukul account password.
+                    Click the button below to create a new password.
                   </p>
-                  <p style="text-align:center;">
-                    <a href="${data.resetUrl}" style="background:#2c5f2d; color:#fff; padding:12px 22px; text-decoration:none; border-radius:4px;">
-                      Reset Password
-                    </a>
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td align="center" style="padding:20px 0;">
+                        <a href="${data.resetUrl}" style="display:inline-block; background:#2c5f2d; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">Reset Password</a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:25px 0 15px 0; line-height:1.6; color:#333; font-size:14px;">
+                    If the button doesn't work, copy and paste this link into your browser:
                   </p>
-                  <p>
-                    If you did not request this, please ignore this email.
+                  <p style="margin:0 0 25px 0; padding:12px; background:#f8f9fa; border-radius:4px; word-break:break-all; font-size:13px; color:#666;">
+                    ${data.resetUrl}
                   </p>
-                  <p>
-                    For help, contact
-                    <a href="mailto:eyogiurukul@gmail.com">eyogiurukul@gmail.com</a>.
+                  <p style="margin:25px 0 15px 0; line-height:1.6; color:#333;">
+                    <strong>This link will expire in 24 hours.</strong>
                   </p>
-                  <p>— Team eYogi Gurukul</p>
+                  <p style="margin:0 0 15px 0; line-height:1.6; color:#333;">
+                    If you did not request this password reset, please ignore this email. Your password will remain unchanged.
+                  </p>
+                  <p style="margin:25px 0 10px 0; line-height:1.6; color:#333;">
+                    For help, contact us at
+                    <a href="mailto:office@eyogigurukul.com" style="color:#2c5f2d; text-decoration:none;">office@eyogigurukul.com</a>
+                  </p>
+                  <p style="margin:20px 0 0 0; color:#666; font-size:14px;">— Team eYogi Gurukul</p>
                 </td>
               </tr>
             </table>
