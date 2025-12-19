@@ -20,7 +20,14 @@ const utapi = new UTApi({
 
 // Define the upload router
 const uploadRouter = {
-  imageUploader: f({ image: { maxFileSize: '4MB', maxFileCount: 10 } })
+  imageUploader: f({
+    image: { maxFileSize: '8MB', maxFileCount: 10 },
+    video: { maxFileSize: '32MB', maxFileCount: 5 },
+    audio: { maxFileSize: '16MB', maxFileCount: 5 },
+    'application/pdf': { maxFileSize: '8MB', maxFileCount: 5 },
+    'text/plain': { maxFileSize: '2MB', maxFileCount: 5 },
+    blob: { maxFileSize: '8MB', maxFileCount: 10 },
+  })
     .middleware(async () => {
       console.log('UploadThing middleware - processing request')
       return { uploadedBy: 'system' }
