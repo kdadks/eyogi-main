@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { sendEmail as sendGraphEmail } from './graphEmailService'
 
 interface RegistrationEmailData {
   email: string
@@ -475,24 +476,44 @@ interface ContactFormEmailData {
 
 export async function sendContactFormEmail(data: ContactFormEmailData): Promise<boolean> {
   try {
-    const transporter = getTransporter()
+    // Try Microsoft Graph first (if configured)
+    const hasMicrosoftGraph =
+      process.env.MICROSOFT_TENANT_ID &&
+      process.env.MICROSOFT_CLIENT_ID &&
+      process.env.MICROSOFT_CLIENT_SECRET
 
-    if (!transporter) {
-      console.error('Email service is not configured')
-      return false
-    }
-
-    const recipientEmail = process.env.REGISTRATION_EMAIL_TO || process.env.SMTP_USER
+    const recipientEmail =
+      process.env.REGISTRATION_EMAIL_TO || process.env.MICROSOFT_FROM_EMAIL || process.env.SMTP_USER
 
     if (!recipientEmail) {
-      console.error('REGISTRATION_EMAIL_TO or SMTP_USER not configured')
+      console.error(
+        'No recipient email configured (REGISTRATION_EMAIL_TO, MICROSOFT_FROM_EMAIL, or SMTP_USER)',
+      )
       return false
     }
 
     const htmlContent = generateContactFormEmailHTML(data)
 
+    // Use Microsoft Graph if available
+    if (hasMicrosoftGraph) {
+      console.log('Sending contact form email via Microsoft Graph API')
+      return await sendGraphEmail({
+        to: recipientEmail,
+        subject: `Contact Form: ${data.subject}`,
+        body: htmlContent,
+      })
+    }
+
+    // Fallback to SMTP
+    const transporter = getTransporter()
+
+    if (!transporter) {
+      console.error('Email service is not configured (neither Microsoft Graph nor SMTP)')
+      return false
+    }
+
     const mailOptions = {
-      from: `${process.env.SMTP_FROM_NAME || 'EYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      from: `${process.env.SMTP_FROM_NAME || 'eYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
       to: recipientEmail,
       subject: `Contact Form: ${data.subject}`,
       html: htmlContent,
@@ -501,7 +522,7 @@ export async function sendContactFormEmail(data: ContactFormEmailData): Promise<
 
     const info = await transporter.sendMail(mailOptions)
 
-    console.log('Contact form email sent successfully:', {
+    console.log('Contact form email sent successfully via SMTP:', {
       messageId: info.messageId,
       senderEmail: data.senderEmail,
       subject: data.subject,
@@ -848,6 +869,99 @@ function generatePasswordResetEmailHTML(data: PasswordResetEmailData): string {
           </div>
         </div>
       </body>
+    </html>
+  `
+}
+
+// Certificate Issued Email Interface
+interface CertificateIssuedEmailData {
+  parentEmail: string
+  studentName: string
+  courseName: string
+  certificateUrl: string
+}
+
+export async function sendCertificateIssuedEmail(
+  data: CertificateIssuedEmailData,
+): Promise<boolean> {
+  try {
+    const transporter = getTransporter()
+
+    if (!transporter) {
+      console.error('Email service is not configured')
+      return false
+    }
+
+    const htmlContent = generateCertificateIssuedEmailHTML(data)
+
+    const mailOptions = {
+      from: `${process.env.SMTP_FROM_NAME || 'eYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      to: data.parentEmail,
+      subject: `Certificate Issued - ${data.courseName}`,
+      html: htmlContent,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+
+    console.log('Certificate issued email sent successfully:', {
+      messageId: info.messageId,
+      parentEmail: data.parentEmail,
+      courseName: data.courseName,
+      timestamp: new Date().toISOString(),
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error sending certificate issued email:', error)
+    return false
+  }
+}
+
+function generateCertificateIssuedEmailHTML(data: CertificateIssuedEmailData): string {
+  // Extract first name from full name
+  const firstName = data.studentName.split(' ')[0]
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Certificate Issued</title>
+    </head>
+    <body style="background:#f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial;">
+              <tr>
+                <td align="center">
+                  <img src="https://eyogigurukul.com/logo.png" width="140" alt="eYogi Gurukul Logo">
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <h2 style="color:#2c5f2d;">Your Certificate Is Ready 🎉</h2>
+                  <p>Dear ${firstName},</p>
+                  <p>
+                    Congratulations on successfully completing
+                    <strong>${data.courseName}</strong>.
+                  </p>
+                  <p style="text-align:center;">
+                    <a href="${data.certificateUrl}" style="background:#2c5f2d; color:#fff; padding:12px 22px; text-decoration:none; border-radius:4px;">
+                      Download Certificate
+                    </a>
+                  </p>
+                  <p>
+                    We are proud of your dedication and achievement.
+                  </p>
+                  <p>With blessings,<br><strong>Team eYogi Gurukul</strong></p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
     </html>
   `
 }

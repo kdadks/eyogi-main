@@ -3,6 +3,50 @@ import { Certificate, CertificateTemplate } from '@/types'
 import { generateCertificatePDF, CertificateData } from '../pdf/certificateGenerator'
 import { decryptProfileFields } from '../encryption'
 
+/**
+ * Send certificate issued email notification to parent
+ * This is a wrapper to call the main app's email service
+ */
+async function sendCertificateEmailNotification(
+  studentName: string,
+  courseName: string,
+  certificateUrl: string,
+  parentEmail?: string | null,
+): Promise<void> {
+  try {
+    if (!parentEmail) {
+      console.log('No parent email available, skipping certificate notification')
+      return
+    }
+
+    // Call the Next.js API endpoint to send the email
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/certificate-issued`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          parentEmail,
+          studentName,
+          courseName,
+          certificateUrl,
+        }),
+      },
+    )
+
+    if (!response.ok) {
+      console.error('Failed to send certificate email:', await response.text())
+    } else {
+      console.log('Certificate email notification sent successfully to:', parentEmail)
+    }
+  } catch (error) {
+    console.error('Error sending certificate email notification:', error)
+    // Don't throw - email failure shouldn't prevent certificate issuance
+  }
+}
+
 // NEW: Functions for working with the certificates table
 
 /**
@@ -459,14 +503,17 @@ export async function getChildrenCertificates(
 }
 
 export async function issueCertificate(enrollmentId: string): Promise<Certificate> {
-  // Get enrollment details
+  // Get enrollment details with parent email (via parent_id relationship)
   const { data: enrollment, error: enrollmentError } = await supabaseAdmin
     .from('enrollments')
     .select(
       `
         *,
         courses (*),
-        profiles!enrollments_student_id_fkey (*)
+        profiles!enrollments_student_id_fkey (
+          *,
+          parent:profiles!profiles_parent_id_fkey(email, full_name)
+        )
       `,
     )
     .eq('id', enrollmentId)
@@ -575,6 +622,14 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
       return certificate
     }
 
+    // Send email notification to parent
+    await sendCertificateEmailNotification(
+      enrollment.profiles?.full_name || 'Student',
+      enrollment.courses?.title || 'Course',
+      pdfUrl,
+      enrollment.profiles?.parent?.email,
+    )
+
     return {
       ...updatedCert,
       issued_at: updatedCert.issue_date,
@@ -595,14 +650,17 @@ export async function issueCertificateWithTemplate(
 ): Promise<Certificate> {
   console.log('issueCertificateWithTemplate called with:', { enrollmentId, templateId })
 
-  // Get enrollment details
+  // Get enrollment details with parent email (via parent_id relationship)
   const { data: enrollment, error: enrollmentError } = await supabaseAdmin
     .from('enrollments')
     .select(
       `
       *,
       courses (*),
-      profiles!enrollments_student_id_fkey (*)
+      profiles!enrollments_student_id_fkey (
+        *,
+        parent:profiles!profiles_parent_id_fkey(email, full_name)
+      )
     `,
     )
     .eq('id', enrollmentId)
@@ -711,6 +769,14 @@ export async function issueCertificateWithTemplate(
       // Still return the certificate even if PDF upload failed
       return certificate
     }
+
+    // Send email notification to parent
+    await sendCertificateEmailNotification(
+      enrollment.profiles?.full_name || 'Student',
+      enrollment.courses?.title || 'Course',
+      pdfUrl,
+      enrollment.profiles?.parent?.email,
+    )
 
     return {
       ...updatedCert,

@@ -89,15 +89,35 @@ export default function ContactPage() {
     }
     fetchCMSData()
   }, [])
-  const onSubmit = async () => {
+  const onSubmit = async (data: ContactForm) => {
     setLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Send to the main app's contact form API endpoint
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send message')
+      }
+
       toast.success("Message sent successfully! We'll get back to you soon.")
       reset()
-    } catch {
-      toast.error('Failed to send message. Please try again.')
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send message'
+      console.error('Contact form error:', error)
+      toast.error(errorMsg)
     } finally {
       setLoading(false)
     }
