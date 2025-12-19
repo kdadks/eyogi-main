@@ -160,9 +160,13 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       if (!isValidPassword) {
         return { error: 'Invalid email or password' }
       }
-      // Check account status
-      if (userData.status !== 'active') {
-        return { error: 'Account is not active. Please contact support.' }
+      // Allow login for all statuses except suspended
+      // Users with pending_verification can log in but will see appropriate banners
+      if (userData.status === 'suspended') {
+        return {
+          error:
+            'Your account has been suspended. For activation, kindly get in touch with the administrator.',
+        }
       }
 
       // Invalidate user profile cache to ensure fresh decrypted data
@@ -240,12 +244,13 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       )
 
       // Create user profile
+      // All new registrations require admin approval before activation
       const profileData = {
         email: userData.email.toLowerCase(),
         password_hash: passwordHash,
         full_name: userData.full_name,
         role: userData.role,
-        status: 'active',
+        status: 'pending_verification',
         phone: userData.phone || null,
         date_of_birth: userData.date_of_birth || null,
         age: userData.age || null,
@@ -273,6 +278,32 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         .single()
       if (createError) {
         return { error: `Failed to create account: ${createError.message || 'Unknown error'}` }
+      }
+
+      // Send welcome email to user (non-blocking)
+      try {
+        const loginLink = `${window.location.origin}/dashboard`
+        const welcomeResponse = await fetch('/api/auth/welcome', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: userData.email.toLowerCase(),
+            fullName: userData.full_name,
+            loginLink: loginLink,
+            role: userData.role,
+          }),
+        })
+
+        if (!welcomeResponse.ok) {
+          console.warn('Failed to send welcome email to user:', {
+            status: welcomeResponse.status,
+            statusText: welcomeResponse.statusText,
+          })
+        }
+      } catch (emailError) {
+        console.warn('Error sending welcome email to user:', emailError)
       }
 
       // Send registration notification email (non-blocking)

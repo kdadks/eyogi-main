@@ -15,6 +15,13 @@ interface PasswordResetEmailData {
   fullName?: string
 }
 
+interface WelcomeEmailData {
+  email: string
+  fullName: string
+  loginLink: string
+  role: 'student' | 'teacher' | 'parent' | 'admin' | 'business_admin' | 'super_admin'
+}
+
 // Create transporter once to reuse
 let transporter: nodemailer.Transporter | null = null
 
@@ -963,5 +970,120 @@ function generateCertificateIssuedEmailHTML(data: CertificateIssuedEmailData): s
       </table>
     </body>
     </html>
+  `
+}
+
+// Welcome email function
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
+  try {
+    const transporter = getTransporter()
+
+    if (!transporter) {
+      console.error('Email service is not configured')
+      return false
+    }
+
+    const htmlContent = generateWelcomeEmailHTML(data)
+
+    const mailOptions = {
+      from: `${process.env.SMTP_FROM_NAME || 'eYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+      to: data.email,
+      subject: 'Welcome to eYogi Gurukul - Your Learning Journey Begins!',
+      html: htmlContent,
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+
+    console.log('Welcome email sent successfully:', {
+      messageId: info.messageId,
+      recipient: data.email,
+      timestamp: new Date().toISOString(),
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error sending welcome email:', error)
+    return false
+  }
+}
+
+function generateWelcomeEmailHTML(data: WelcomeEmailData): string {
+  const firstName = data.fullName.split(' ')[0]
+  const currentYear = new Date().getFullYear()
+
+  // Customize greeting and message based on role
+  let roleGreeting = ''
+  let roleMessage = ''
+
+  switch (data.role) {
+    case 'student':
+      roleGreeting = 'Welcome to Your Learning Journey'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as a student. You are now part of a vibrant learning community rooted in ancient wisdom and modern understanding. Explore courses in Yoga, Meditation, Sanskrit, Indian Knowledge Systems, and more to enrich your knowledge and spiritual growth.`
+      break
+    case 'teacher':
+      roleGreeting = 'Welcome to the Teaching Community'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as a teacher. We are honored to have you as part of our esteemed faculty. Your expertise and dedication will help shape the minds of students seeking knowledge in Yoga, Meditation, Sanskrit, and Indian Knowledge Systems. Once your account is approved by an admin, you can start creating and managing courses.`
+      break
+    case 'parent':
+      roleGreeting = 'Welcome to the eYogi Gurukul Family'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as a parent. You are now part of a caring community dedicated to nurturing young minds with ancient wisdom and modern education. Monitor your child's learning journey, track their progress in courses like Yoga, Meditation, Sanskrit, and Indian Knowledge Systems, and be an active part of their educational growth.`
+      break
+    case 'admin':
+    case 'business_admin':
+    case 'super_admin':
+      roleGreeting = 'Welcome to the Admin Team'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as an administrator. You now have access to manage and oversee the platform, ensuring a smooth learning experience for all users. Your role is crucial in maintaining the quality and integrity of our educational community.`
+      break
+    default:
+      roleGreeting = 'Welcome to eYogi Gurukul'
+      roleMessage = `Thank you for signing up with <strong>eYogi Gurukul</strong>. You are now part of a learning community rooted in ancient wisdom and modern understanding.`
+  }
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to eYogi Gurukul</title>
+</head>
+<body style="margin:0; padding:0; background:#f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif;">
+          <tr>
+            <td align="center">
+              <img src="https://eyogigurukul.com/logo.png" alt="eYogi Gurukul" width="150">
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <h2 style="color:#2c5f2d;">${roleGreeting}, ${firstName}!</h2>
+              <p>
+                ${roleMessage}
+              </p>
+              <p style="text-align:center;">
+                <a href="${data.loginLink}" style="background:#2c5f2d; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:4px;">
+                  Go to Dashboard
+                </a>
+              </p>
+              <p>
+                If you need any help, contact us at
+                <a href="mailto:eyogigurukul@gmail.com">eyogigurukul@gmail.com</a>.
+              </p>
+              <p>Warm regards,<br><strong>Team eYogi Gurukul</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="font-size:12px; color:#777;">
+              © ${currentYear} eYogi Gurukul. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
   `
 }

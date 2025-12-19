@@ -271,16 +271,9 @@ export default function WebsiteAuthModal({
     }
   }
   if (!isOpen) return null
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
+
   return (
-    <div
-      className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-md flex items-center justify-center z-[60] p-4 overflow-y-auto animate-in fade-in duration-300"
-      onClick={handleOverlayClick}
-    >
+    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-md flex items-center justify-center z-[60] p-4 overflow-y-auto animate-in fade-in duration-300">
       <div className="max-w-md w-full my-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
         <Card className="shadow-2xl border border-orange-100/20 bg-white/98 backdrop-blur-xl rounded-2xl overflow-hidden">
           {/* Gradient Header Bar */}

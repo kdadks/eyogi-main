@@ -109,6 +109,7 @@ import {
   PencilIcon,
   CalendarIcon,
   ArrowPathIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
   gurukul_id: z.string().min(1, 'Please select a Gurukul'),
@@ -542,6 +543,12 @@ export default function TeacherDashboard() {
   }
 
   const handleCreateCourse = async (data: CourseForm) => {
+    // Check if teacher is approved
+    if (user?.status !== 'active') {
+      toast.error('Your teacher role must be approved by an admin before you can create courses')
+      return
+    }
+
     setSavingCourse(true)
     try {
       // Generate slug from title if not provided
@@ -1077,11 +1084,23 @@ export default function TeacherDashboard() {
   const quickActions = [
     {
       title: 'Create New Course',
-      description: 'Design and launch a new course',
+      description:
+        user?.status !== 'active'
+          ? 'Requires teacher role approval'
+          : 'Design and launch a new course',
       icon: PlusIcon,
-      action: () => openCreateCourseModal(),
+      action: () => {
+        if (user?.status !== 'active') {
+          toast.error(
+            'Your teacher role must be approved by an admin before you can create courses',
+          )
+          return
+        }
+        openCreateCourseModal()
+      },
       color: 'bg-gradient-to-r from-blue-500 to-blue-600',
-      highlight: true,
+      highlight: user?.status === 'active',
+      disabled: user?.status !== 'active',
     },
     {
       title: 'Review Enrollments',
@@ -1172,6 +1191,19 @@ export default function TeacherDashboard() {
                 <h1 className="text-base sm:text-lg lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent truncate">
                   {greeting}, {user?.full_name?.split(' ')[0] || 'Teacher'}! 👋
                 </h1>
+                {user?.status === 'active' && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-3 py-1 shadow-sm"
+                  >
+                    <CheckCircleIcon className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span className="text-xs font-semibold text-green-700 whitespace-nowrap">
+                      Account Active
+                    </span>
+                  </motion.div>
+                )}
               </motion.div>
               <motion.p
                 initial={{ opacity: 0, x: -20 }}
@@ -1363,6 +1395,36 @@ export default function TeacherDashboard() {
               </motion.div>
             </div>
           </div>
+
+          {/* Teacher Approval Status Banner */}
+          {user?.status !== 'active' && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75 }}
+              className="mt-4"
+            >
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 rounded-lg p-4 shadow-md">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-yellow-900 mb-1">
+                      Teacher Role Pending Approval
+                    </h3>
+                    <p className="text-sm text-yellow-800">
+                      Your teacher account is currently under review. Once a Business Admin or Super
+                      Admin approves your role, you'll have full access to create and manage
+                      courses. In the meantime, you can explore the dashboard and familiarize
+                      yourself with the platform.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Enhanced Navigation Pills - Mobile Optimized */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1632,7 +1694,11 @@ export default function TeacherDashboard() {
                         <div
                           key={index}
                           onClick={action.action}
-                          className={`relative p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg ${action.color} text-white group min-h-[100px] sm:min-h-[120px]`}
+                          className={`relative p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl transition-all duration-300 ${action.color} text-white group min-h-[100px] sm:min-h-[120px] ${
+                            action.disabled
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'cursor-pointer hover:scale-105 hover:shadow-lg'
+                          }`}
                         >
                           {action.highlight && (
                             <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
@@ -1644,7 +1710,9 @@ export default function TeacherDashboard() {
                               {action.badge}
                             </div>
                           )}
-                          <action.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mb-2 sm:mb-3 group-hover:scale-110 transition-transform" />
+                          <action.icon
+                            className={`h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mb-2 sm:mb-3 transition-transform ${!action.disabled ? 'group-hover:scale-110' : ''}`}
+                          />
                           <h3 className="text-sm sm:text-base font-semibold mb-1">
                             {action.title}
                           </h3>
@@ -1748,10 +1816,24 @@ export default function TeacherDashboard() {
                   <p className="text-xs sm:text-sm text-gray-600">
                     Manage and create your educational content
                   </p>
+                  {user?.status !== 'active' && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        ⚠️ Your teacher role is pending approval. You can create courses once
+                        approved by a Business Admin or Super Admin.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <Button
                   onClick={() => openCreateCourseModal()}
-                  className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
+                  disabled={user?.status !== 'active'}
+                  className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  title={
+                    user?.status !== 'active'
+                      ? 'Your teacher role must be approved before you can create courses'
+                      : ''
+                  }
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Create New Course
@@ -1762,16 +1844,32 @@ export default function TeacherDashboard() {
                   <CardContent className="text-center py-16">
                     <BookOpenIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses yet</h3>
-                    <p className="text-gray-600 mb-6">
-                      Create your first course to start teaching!
-                    </p>
-                    <Button
-                      onClick={() => openCreateCourseModal()}
-                      className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
-                    >
-                      <PlusIcon className="h-5 w-5 mr-2" />
-                      Create Your First Course
-                    </Button>
+                    {user?.status !== 'active' ? (
+                      <div className="max-w-md mx-auto">
+                        <p className="text-gray-600 mb-4">
+                          Your teacher role is currently pending approval.
+                        </p>
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            ⏳ Once a Business Admin or Super Admin approves your teacher role,
+                            you'll be able to create and manage courses.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-gray-600 mb-6">
+                          Create your first course to start teaching!
+                        </p>
+                        <Button
+                          onClick={() => openCreateCourseModal()}
+                          className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 font-semibold"
+                        >
+                          <PlusIcon className="h-5 w-5 mr-2" />
+                          Create Your First Course
+                        </Button>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               ) : (
