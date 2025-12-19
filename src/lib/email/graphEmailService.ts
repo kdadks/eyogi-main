@@ -150,6 +150,24 @@ export async function sendPasswordResetEmail(data: PasswordResetEmailData): Prom
   }
 }
 
+export async function sendPasswordResetConfirmationEmail(
+  email: string,
+  fullName: string,
+): Promise<boolean> {
+  try {
+    const htmlContent = generatePasswordResetConfirmationHTML(fullName)
+
+    return await sendEmail({
+      to: email,
+      subject: 'Password Successfully Reset - eYogi Gurukul',
+      body: htmlContent,
+    })
+  } catch (error) {
+    console.error('Error sending password reset confirmation email:', error)
+    return false
+  }
+}
+
 function generateRegistrationEmailHTML(data: RegistrationEmailData): string {
   const roleDisplay =
     data.role.replace(/_/g, ' ').charAt(0).toUpperCase() + data.role.replace(/_/g, ' ').slice(1)
@@ -163,78 +181,94 @@ function generateRegistrationEmailHTML(data: RegistrationEmailData): string {
   })
 
   return `
-    <!DOCTYPE html>
-    <html>
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
       <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="x-apple-disable-message-reformatting" />
         <title>New User Registration</title>
+        <!--[if mso]>
+        <style type="text/css">
+          body, table, td {font-family: Arial, sans-serif !important;}
+        </style>
+        <![endif]-->
       </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
           <tr>
-            <td align="center" style="padding: 40px 0;">
-              <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <td align="center" style="padding: 40px 10px;">
+              <!--[if mso]>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+              <tr>
+              <td>
+              <![endif]-->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
                 <!-- Header -->
                 <tr>
-                  <td style="padding: 40px 40px 30px; background: linear-gradient(135deg, #FB7E3F 0%, #FA573C 100%);">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">New User Registration</h1>
+                  <td style="padding: 40px 40px 30px 40px; background-color: #FB7E3F;">
+                    <h1 style="margin: 0; padding: 0; color: #ffffff; font-size: 28px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">New User Registration</h1>
                   </td>
                 </tr>
                 
                 <!-- Content -->
                 <tr>
-                  <td style="padding: 40px;">
-                    <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.5; color: #333333;">
+                  <td style="padding: 40px 40px 40px 40px;">
+                    <p style="margin: 0; padding: 0 0 20px 0; font-size: 16px; line-height: 24px; color: #333333; font-family: Arial, Helvetica, sans-serif;">
                       A new user has registered on the eYogi Gurukul platform.
                     </p>
                     
-                    <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 30px 0;">
+                    <!-- User Details Table -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 30px 0;">
                       <tr>
-                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
-                          <strong style="color: #495057;">Full Name:</strong>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif;">
+                          <strong style="color: #495057; font-size: 14px;">Full Name:</strong>
                         </td>
-                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif; color: #333333; font-size: 14px;">
                           ${data.fullName}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
-                          <strong style="color: #495057;">Email:</strong>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif;">
+                          <strong style="color: #495057; font-size: 14px;">Email:</strong>
                         </td>
-                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif; color: #333333; font-size: 14px;">
                           ${data.email}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
-                          <strong style="color: #495057;">Role:</strong>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif;">
+                          <strong style="color: #495057; font-size: 14px;">Role:</strong>
                         </td>
-                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif; color: #333333; font-size: 14px;">
                           ${roleDisplay}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
-                          <strong style="color: #495057;">Registration Date:</strong>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif;">
+                          <strong style="color: #495057; font-size: 14px;">Registration Date:</strong>
                         </td>
-                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 15px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; font-family: Arial, Helvetica, sans-serif; color: #333333; font-size: 14px;">
                           ${registrationDateTime}
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 15px; background-color: #f8f9fa;">
-                          <strong style="color: #495057;">Status:</strong>
+                        <td style="padding: 15px; background-color: #f8f9fa; font-family: Arial, Helvetica, sans-serif;">
+                          <strong style="color: #495057; font-size: 14px;">Status:</strong>
                         </td>
-                        <td style="padding: 15px; background-color: #ffffff;">
-                          <span style="padding: 4px 12px; background-color: #28a745; color: #ffffff; border-radius: 4px; font-size: 14px;">
-                            ${data.status}
-                          </span>
+                        <td style="padding: 15px; background-color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                              <td style="padding: 8px 16px; background-color: #28a745; color: #ffffff; font-size: 14px; font-family: Arial, Helvetica, sans-serif; font-weight: bold;">
+                                ${data.status}
+                              </td>
+                            </tr>
+                          </table>
                         </td>
                       </tr>
                     </table>
                     
-                    <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.5; color: #6c757d;">
+                    <p style="margin: 0; padding: 30px 0 0 0; font-size: 14px; line-height: 21px; color: #6c757d; font-family: Arial, Helvetica, sans-serif;">
                       This is an automated notification from the eYogi Gurukul platform.
                     </p>
                   </td>
@@ -243,12 +277,17 @@ function generateRegistrationEmailHTML(data: RegistrationEmailData): string {
                 <!-- Footer -->
                 <tr>
                   <td style="padding: 30px 40px; background-color: #f8f9fa; text-align: center; border-top: 1px solid #e9ecef;">
-                    <p style="margin: 0; font-size: 14px; color: #6c757d;">
-                      © ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
+                    <p style="margin: 0; padding: 0; font-size: 14px; color: #6c757d; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">
+                      &copy; ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
                     </p>
                   </td>
                 </tr>
               </table>
+              <!--[if mso]>
+              </td>
+              </tr>
+              </table>
+              <![endif]-->
             </td>
           </tr>
         </table>
@@ -263,58 +302,225 @@ function generatePasswordResetEmailHTML(data: PasswordResetEmailData): string {
   const firstName = fullName ? fullName.split(' ')[0] : 'User'
 
   return `
-    <!DOCTYPE html>
-    <html>
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="x-apple-disable-message-reformatting" />
       <title>Password Reset</title>
+      <!--[if mso]>
+      <style type="text/css">
+        body, table, td, a {font-family: Arial, sans-serif !important;}
+      </style>
+      <![endif]-->
     </head>
-    <body style="background:#f5f5f5; margin:0; padding:0;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;">
+    <body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
         <tr>
-          <td align="center" style="padding:40px 20px;">
-            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+          <td align="center" style="padding: 40px 10px;">
+            <!--[if mso]>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+            <tr>
+            <td>
+            <![endif]-->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+              <!-- Logo -->
               <tr>
-                <td align="center" style="padding:30px 20px 20px;">
-                  <img src="https://www.eyogigurukul.com/wp-content/uploads/2024/08/cropped-EYogi-Gurukul-Logo.png" width="180" alt="eYogi Gurukul" style="max-width:100%; height:auto;">
+                <td align="center" style="padding: 30px 20px 20px 20px;">
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
                 </td>
               </tr>
+              <!-- Content -->
               <tr>
-                <td style="padding:20px 40px;">
-                  <h2 style="color:#2c5f2d; margin:0 0 20px 0; font-size:24px;">Reset Your Password</h2>
-                  <p style="margin:0 0 15px 0; line-height:1.6; color:#333;">Hello ${firstName},</p>
-                  <p style="margin:0 0 25px 0; line-height:1.6; color:#333;">
-                    We received a request to reset your eYogi Gurukul account password.
-                    Click the button below to create a new password.
+                <td style="padding: 20px 40px 40px 40px;">
+                  <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">Reset Your Password</h2>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Hello ${firstName},</p>
+                  <p style="margin: 0; padding: 0 0 25px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    We received a request to reset your eYogi Gurukul account password. Click the button below to create a new password.
                   </p>
-                  <table width="100%" cellpadding="0" cellspacing="0">
+                  
+                  <!-- Button -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
-                      <td align="center" style="padding:20px 0;">
-                        <a href="${data.resetUrl}" style="display:inline-block; background:#2c5f2d; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">Reset Password</a>
+                      <td align="center" style="padding: 20px 0;">
+                        <!--[if mso]>
+                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${data.resetUrl}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                          <w:anchorlock/>
+                          <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">Reset Password</center>
+                        </v:roundrect>
+                        <![endif]-->
+                        <![if !mso]>
+                        <a href="${data.resetUrl}" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">Reset Password</a>
+                        <![endif]>
                       </td>
                     </tr>
                   </table>
-                  <p style="margin:25px 0 15px 0; line-height:1.6; color:#333; font-size:14px;">
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
                     If the button doesn't work, copy and paste this link into your browser:
                   </p>
-                  <p style="margin:0 0 25px 0; padding:12px; background:#f8f9fa; border-radius:4px; word-break:break-all; font-size:13px; color:#666;">
-                    ${data.resetUrl}
-                  </p>
-                  <p style="margin:25px 0 15px 0; line-height:1.6; color:#333;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td style="padding: 12px; background-color: #f8f9fa; word-break: break-all;">
+                        <p style="margin: 0; padding: 0; font-size: 13px; color: #666666; font-family: Arial, Helvetica, sans-serif; line-height: 19px;">
+                          <a href="${data.resetUrl}" target="_blank" style="color: #2c5f2d; text-decoration: underline; word-break: break-all;">${data.resetUrl}</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
                     <strong>This link will expire in 24 hours.</strong>
                   </p>
-                  <p style="margin:0 0 15px 0; line-height:1.6; color:#333;">
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
                     If you did not request this password reset, please ignore this email. Your password will remain unchanged.
                   </p>
-                  <p style="margin:25px 0 10px 0; line-height:1.6; color:#333;">
+                  <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
                     For help, contact us at
-                    <a href="mailto:office@eyogigurukul.com" style="color:#2c5f2d; text-decoration:none;">office@eyogigurukul.com</a>
+                    <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
                   </p>
-                  <p style="margin:20px 0 0 0; color:#666; font-size:14px;">— Team eYogi Gurukul</p>
+                  <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; Team eYogi Gurukul</p>
                 </td>
               </tr>
             </table>
+            <!--[if mso]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `
+}
+
+function generatePasswordResetConfirmationHTML(fullName: string): string {
+  // fullName should be passed already decrypted from the calling context
+  const firstName = fullName ? fullName.split(' ')[0] : 'User'
+
+  return `
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="x-apple-disable-message-reformatting" />
+      <title>Password Reset Successful</title>
+      <!--[if mso]>
+      <style type="text/css">
+        body, table, td, a {font-family: Arial, sans-serif !important;}
+      </style>
+      <![endif]-->
+    </head>
+    <body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+        <tr>
+          <td align="center" style="padding: 40px 10px;">
+            <!--[if mso]>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+            <tr>
+            <td>
+            <![endif]-->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+              <!-- Logo -->
+              <tr>
+                <td align="center" style="padding: 30px 20px 20px 20px;">
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
+                </td>
+              </tr>
+              <!-- Content -->
+              <tr>
+                <td style="padding: 20px 40px 40px 40px;">
+                  <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">Password Successfully Reset</h2>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Hello ${firstName},</p>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    Your password has been successfully reset for your eYogi Gurukul account.
+                  </p>
+                  
+                  <!-- Success Box -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
+                    <tr>
+                      <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                        <p style="margin: 0; padding: 0; line-height: 24px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 16px;">
+                          &#10003; Your password change was successful
+                        </p>
+                        <p style="margin: 0; padding: 10px 0 0 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
+                          Date: ${new Date().toLocaleString('en-US', {
+                            dateStyle: 'long',
+                            timeStyle: 'short',
+                            timeZone: 'Asia/Kolkata',
+                          })} IST
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    You can now use your new password to log in to your account.
+                  </p>
+                  
+                  <!-- Button -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td align="center" style="padding: 20px 0;">
+                        <!--[if mso]>
+                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://eyogigurukul.com/ssh-app/signin" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                          <w:anchorlock/>
+                          <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">Go to Login</center>
+                        </v:roundrect>
+                        <![endif]-->
+                        <![if !mso]>
+                        <a href="https://eyogigurukul.com/ssh-app/signin" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">Go to Login</a>
+                        <![endif]>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
+                    <strong>Security Reminder:</strong>
+                  </p>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td style="padding: 0 0 8px 20px; line-height: 24px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
+                        &bull; If you did not request this password change, please contact us immediately
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 0 8px 20px; line-height: 24px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
+                        &bull; Never share your password with anyone
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 0 25px 20px; line-height: 24px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
+                        &bull; Use a strong, unique password for your account
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    For help or to report suspicious activity, contact us at
+                    <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
+                  </p>
+                  <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; Team eYogi Gurukul</p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+                  <p style="margin: 0; padding: 0; font-size: 12px; color: #6c757d; line-height: 18px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
+                    This is an automated security notification. If you believe you received this email in error, please contact our support team.
+                  </p>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
           </td>
         </tr>
       </table>

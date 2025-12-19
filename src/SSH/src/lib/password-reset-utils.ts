@@ -152,6 +152,18 @@ export async function resetPasswordWithToken(
       return { success: false, error: validationError || 'Invalid token' }
     }
 
+    // Get user profile to retrieve email and full name for confirmation email
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('Error fetching user profile:', profileError)
+      return { success: false, error: 'Failed to retrieve user information' }
+    }
+
     // Hash password using same method as signup
     const hashedPassword = await hashPassword(newPassword)
 
@@ -159,7 +171,7 @@ export async function resetPasswordWithToken(
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({
-        password: hashedPassword,
+        password_hash: hashedPassword,
         reset_token: null,
         reset_token_expiry: null,
       })
@@ -168,6 +180,31 @@ export async function resetPasswordWithToken(
     if (updateError) {
       console.error('Error resetting password:', updateError)
       return { success: false, error: 'Failed to reset password' }
+    }
+
+    // Send confirmation email
+    try {
+      // Decrypt full_name before sending to email service
+      const decryptedFullName = profile.full_name ? decryptField(profile.full_name) : 'User'
+
+      const response = await fetch('/api/auth/password-reset-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: profile.email,
+          fullName: decryptedFullName,
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Failed to send confirmation email')
+        // Don't fail the whole operation if email fails
+      }
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError)
+      // Continue even if email fails - password reset was successful
     }
 
     return { success: true }

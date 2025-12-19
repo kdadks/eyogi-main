@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
       if (result.success) {
         toast.success('Password reset successful! You can now sign in with your new password.')
         setTimeout(() => {
-          navigate('/auth/signin')
+          navigate('/signin')
         }, 2000)
       } else {
         toast.error(result.error || 'Failed to reset password')
