@@ -295,13 +295,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
 
           const loginLink = `${window.location.origin}/ssh-app/`
           const apiBaseUrl = window.location.origin
-          console.log(
-            'Sending welcome email to:',
-            userData.email.toLowerCase(),
-            'via API:',
-            `${apiBaseUrl}/api/auth/welcome`,
-          )
-          const welcomeResponse = await fetch(`${apiBaseUrl}/api/auth/welcome`, {
+          await fetch(`${apiBaseUrl}/api/auth/welcome`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -313,20 +307,8 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
               role: userData.role,
             }),
           })
-
-          if (!welcomeResponse.ok) {
-            console.warn('Failed to send welcome email to user:', {
-              status: welcomeResponse.status,
-              statusText: welcomeResponse.statusText,
-              email: userData.email.toLowerCase(),
-            })
-            const errorText = await welcomeResponse.text()
-            console.warn('Welcome email API error response:', errorText)
-          } else {
-            console.log('Welcome email API call successful for:', userData.email.toLowerCase())
-          }
         } catch (emailError) {
-          console.warn('Error sending welcome email to user:', emailError)
+          // Silent error - don't block user registration
         }
       }, 10000) // Wait 10 seconds to ensure DB transaction is committed
 

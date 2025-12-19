@@ -79,8 +79,7 @@ if (typeof window !== 'undefined') {
     clear: clearCache,
   }
 
-  console.log('✅ Cache utilities loaded!')
-  console.log('Try: cacheTest.test()')
+  // Development only - cache utilities loaded
 }
 
 export { testCache, showStats, clearCache }

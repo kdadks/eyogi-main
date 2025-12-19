@@ -1,4 +1,4 @@
-import { sendWelcomeEmail } from '@/lib/email/emailService'
+import { sendWelcomeEmail } from '@/lib/email/graphEmailService'
 
 export interface WelcomeEmailPayload {
   email: string
@@ -11,13 +11,6 @@ export async function POST(req: Request) {
   try {
     const payload: WelcomeEmailPayload = await req.json()
 
-    console.log('Welcome email API called with payload:', {
-      email: payload.email,
-      fullName: payload.fullName,
-      role: payload.role,
-      loginLink: payload.loginLink,
-    })
-
     const result = await sendWelcomeEmail({
       email: payload.email,
       fullName: payload.fullName,
@@ -26,7 +19,6 @@ export async function POST(req: Request) {
     })
 
     if (result) {
-      console.log('Welcome email sent successfully to:', payload.email)
       return new Response(
         JSON.stringify({
           success: true,
@@ -38,7 +30,6 @@ export async function POST(req: Request) {
         },
       )
     } else {
-      console.error('Failed to send welcome email to:', payload.email)
       return new Response(
         JSON.stringify({
           success: false,

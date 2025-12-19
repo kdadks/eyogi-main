@@ -83,6 +83,7 @@ export interface ComplianceSubmission {
     id: string
     email: string
     full_name: string
+    role?: string
   }
   reviewer?: {
     id: string

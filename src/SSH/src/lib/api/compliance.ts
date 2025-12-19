@@ -284,7 +284,7 @@ export async function getComplianceSubmissions(filters: {
         // Parallel queries
         const [usersResult, itemsResult, filesResult] = await Promise.all([
           userIds.length > 0
-            ? supabaseAdmin.from('profiles').select('id, email, full_name').in('id', userIds)
+            ? supabaseAdmin.from('profiles').select('id, email, full_name, role').in('id', userIds)
             : Promise.resolve({ data: [] }),
           itemIds.length > 0
             ? supabaseAdmin.from('compliance_items').select('id, title, type').in('id', itemIds)

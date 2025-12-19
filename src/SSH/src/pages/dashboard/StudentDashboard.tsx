@@ -441,6 +441,10 @@ export default function StudentDashboard() {
       toast.error('Please log in to enroll in courses')
       return
     }
+    if (user?.status !== 'active') {
+      toast.error('Your account must be activated by an admin before you can enroll in courses')
+      return
+    }
     try {
       setEnrollingCourseId(courseId)
       await enrollInCourse(courseId, user.id)
@@ -1424,8 +1428,17 @@ export default function StudentDashboard() {
                           </span>
                           <button
                             onClick={() => handleEnrollment(course.id)}
-                            disabled={enrollingCourseId === course.id}
-                            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex-shrink-0 ml-2"
+                            disabled={enrollingCourseId === course.id || user?.status !== 'active'}
+                            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 ml-2 ${
+                              user?.status === 'active'
+                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:shadow-lg cursor-pointer'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                            title={
+                              user?.status !== 'active'
+                                ? 'Your account must be activated before you can enroll'
+                                : ''
+                            }
                           >
                             {enrollingCourseId === course.id ? 'Enrolling...' : 'Enrol Now'}
                           </button>

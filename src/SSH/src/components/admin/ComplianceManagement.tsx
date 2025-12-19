@@ -12,6 +12,7 @@ import {
   DocumentTextIcon,
   UserGroupIcon,
   ChartBarIcon,
+  XCircleIcon,
 } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -836,12 +837,19 @@ function SubmissionsTab({
   const [filter, setFilter] = useState<'all' | 'submitted' | 'approved' | 'rejected'>('all')
   const [reviewing, setReviewing] = useState(false)
   const [submissionPage, setSubmissionPage] = useState(1)
-  const submissionsPerPage = 15
+  const submissionsPerPage = 25
 
   const filteredSubmissions = submissions.filter((sub) => {
     if (filter === 'all') return true
     return sub.status === filter
   })
+
+  const paginatedSubmissions = filteredSubmissions.slice(
+    (submissionPage - 1) * submissionsPerPage,
+    submissionPage * submissionsPerPage,
+  )
+
+  const totalPages = Math.ceil(filteredSubmissions.length / submissionsPerPage)
 
   const handleReview = (submission: ComplianceSubmission, action: 'approve' | 'reject') => {
     setSelectedSubmission(submission)
@@ -899,6 +907,32 @@ function SubmissionsTab({
     }
   }
 
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      submitted: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      approved: 'bg-green-100 text-green-800 border-green-300',
+      rejected: 'bg-red-100 text-red-800 border-red-300',
+    }
+    return (
+      <span
+        className={`px-2 py-1 text-xs font-medium rounded border ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800 border-gray-300'}`}
+      >
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -915,7 +949,10 @@ function SubmissionsTab({
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setFilter(tab.key as typeof filter)}
+            onClick={() => {
+              setFilter(tab.key as typeof filter)
+              setSubmissionPage(1)
+            }}
             className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
               filter === tab.key
                 ? 'bg-blue-600 text-white'
@@ -933,163 +970,145 @@ function SubmissionsTab({
       </div>
 
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-0">
           {filteredSubmissions.length === 0 ? (
             <p className="text-gray-500 text-center py-8 text-sm">
               No {filter !== 'all' ? filter : ''} submissions found
             </p>
           ) : (
-            <div className="space-y-3">
-              {filteredSubmissions
-                .slice(
-                  (submissionPage - 1) * submissionsPerPage,
-                  submissionPage * submissionsPerPage,
-                )
-                .map((submission) => (
-                  <div
-                    key={submission.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        {/* Header */}
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-gray-900 text-sm">
-                            {submission.compliance_item?.title || 'Unknown Item'}
-                          </h4>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-sm font-medium ${
-                              submission.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
-                                : submission.status === 'rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-blue-100 text-blue-800'
-                            }`}
+            <div className="overflow-x-auto">
+              {/* Grid Table */}
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Compliance Item
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Role Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      User Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Submission Date & Time
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Review Date & Time
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedSubmissions.map((submission) => (
+                    <tr key={submission.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {submission.compliance_item?.title || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">{getStatusBadge(submission.status)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700 capitalize">
+                        {submission.user?.role || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {submission.user?.full_name || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {formatDateTime(submission.submitted_at)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {submission.reviewed_at ? formatDateTime(submission.reviewed_at) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-blue-600 hover:bg-blue-50"
+                            onClick={() => setSelectedSubmission(submission)}
+                            title="View Details"
                           >
-                            {submission.status?.charAt(0).toUpperCase() +
-                              submission.status?.slice(1).toLowerCase()}
-                          </span>
-                        </div>
-
-                        {/* User Info */}
-                        <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
-                          <div className="flex items-center space-x-1">
-                            <UserGroupIcon className="h-3.5 w-3.5" />
-                            <span>{submission.user?.full_name || 'Unknown User'}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <ClockIcon className="h-3.5 w-3.5" />
-                            <span>
-                              {new Date(submission.submitted_at).toLocaleDateString()}{' '}
-                              {new Date(submission.submitted_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Form Data */}
-                        {submission.form_data && (
-                          <div className="mt-3 bg-gray-50 rounded p-3 border border-gray-200">
-                            <p className="text-xs font-medium text-gray-700 mb-2">
-                              Submission Details:
-                            </p>
-                            <div className="space-y-1">
-                              {Object.entries(submission.form_data).map(([key, value]) => (
-                                <div key={key} className="text-xs">
-                                  <span className="text-gray-600">{key}:</span>{' '}
-                                  <span className="text-gray-900 font-medium">
-                                    {typeof value === 'boolean'
-                                      ? value
-                                        ? 'Yes'
-                                        : 'No'
-                                      : String(value)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Rejection Reason */}
-                        {submission.status === 'rejected' && submission.rejection_reason && (
-                          <div className="mt-3 bg-red-50 rounded p-3 border border-red-200">
-                            <p className="text-xs font-medium text-red-800 mb-1">
-                              Rejection Reason:
-                            </p>
-                            <p className="text-xs text-red-700">{submission.rejection_reason}</p>
-                          </div>
-                        )}
-
-                        {/* Review Info */}
-                        {(submission.status === 'approved' || submission.status === 'rejected') &&
-                          submission.reviewed_at && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              Reviewed on {new Date(submission.reviewed_at).toLocaleDateString()}
-                              {submission.reviewer && ` by ${submission.reviewer.full_name}`}
-                            </div>
+                            <EyeIcon className="h-4 w-4" />
+                          </Button>
+                          {submission.status === 'submitted' && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => handleReview(submission, 'approve')}
+                              >
+                                <CheckCircleIcon className="h-3.5 w-3.5 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                onClick={() => handleReview(submission, 'reject')}
+                              >
+                                <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                                Reject
+                              </Button>
+                            </>
                           )}
-                      </div>
-
-                      {/* Action Buttons */}
-                      {submission.status === 'submitted' && (
-                        <div className="flex flex-col space-y-2 ml-4">
-                          <Button
-                            size="sm"
-                            className="h-7 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => handleReview(submission, 'approve')}
-                          >
-                            <CheckCircleIcon className="h-3.5 w-3.5 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 px-3 text-xs border-red-300 text-red-600 hover:bg-red-50"
-                            onClick={() => handleReview(submission, 'reject')}
-                          >
-                            <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
-                            Reject
-                          </Button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Pagination */}
               {filteredSubmissions.length > submissionsPerPage && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <div className="text-xs text-gray-600">
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+                  <div className="text-sm text-gray-700">
                     Showing {(submissionPage - 1) * submissionsPerPage + 1} to{' '}
                     {Math.min(submissionPage * submissionsPerPage, filteredSubmissions.length)} of{' '}
-                    {filteredSubmissions.length}
+                    {filteredSubmissions.length} results
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="ghost"
-                      onClick={() => setSubmissionPage(Math.max(1, submissionPage - 1))}
+                      variant="outline"
+                      onClick={() => setSubmissionPage(1)}
                       disabled={submissionPage === 1}
+                      className="h-8 px-3 text-xs"
                     >
-                      ← Prev
+                      First
                     </Button>
                     <Button
                       size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        setSubmissionPage(
-                          Math.min(
-                            Math.ceil(filteredSubmissions.length / submissionsPerPage),
-                            submissionPage + 1,
-                          ),
-                        )
-                      }
-                      disabled={
-                        submissionPage ===
-                        Math.ceil(filteredSubmissions.length / submissionsPerPage)
-                      }
+                      variant="outline"
+                      onClick={() => setSubmissionPage(Math.max(1, submissionPage - 1))}
+                      disabled={submissionPage === 1}
+                      className="h-8 px-3 text-xs"
+                    >
+                      ← Previous
+                    </Button>
+                    <div className="flex items-center px-3 text-sm text-gray-700">
+                      Page {submissionPage} of {totalPages}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSubmissionPage(Math.min(totalPages, submissionPage + 1))}
+                      disabled={submissionPage === totalPages}
+                      className="h-8 px-3 text-xs"
                     >
                       Next →
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSubmissionPage(totalPages)}
+                      disabled={submissionPage === totalPages}
+                      className="h-8 px-3 text-xs"
+                    >
+                      Last
                     </Button>
                   </div>
                 </div>
@@ -1098,6 +1117,128 @@ function SubmissionsTab({
           )}
         </CardContent>
       </Card>
+
+      {/* Submission Details Modal */}
+      {selectedSubmission && !showReviewModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Submission Details</h3>
+              <button
+                onClick={() => setSelectedSubmission(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Compliance Item
+                </label>
+                <p className="text-sm text-gray-900">
+                  {selectedSubmission.compliance_item?.title || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                {getStatusBadge(selectedSubmission.status)}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                  <p className="text-sm text-gray-900">
+                    {selectedSubmission.user?.full_name || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <p className="text-sm text-gray-900 capitalize">
+                    {selectedSubmission.user?.role || 'N/A'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Submitted On
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {formatDateTime(selectedSubmission.submitted_at)}
+                  </p>
+                </div>
+                {selectedSubmission.reviewed_at && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Reviewed On
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {formatDateTime(selectedSubmission.reviewed_at)}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {selectedSubmission.form_data && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Form Data</label>
+                  <div className="bg-gray-50 rounded p-3 space-y-2">
+                    {Object.entries(selectedSubmission.form_data).map(([key, value]) => (
+                      <div key={key} className="text-sm">
+                        <span className="text-gray-600 font-medium">{key}:</span>{' '}
+                        <span className="text-gray-900">
+                          {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedSubmission.status === 'rejected' && selectedSubmission.rejection_reason && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rejection Reason
+                  </label>
+                  <div className="bg-red-50 border border-red-200 rounded p-3">
+                    <p className="text-sm text-red-700">{selectedSubmission.rejection_reason}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedSubmission(null)}
+                className="px-4 py-2"
+              >
+                Close
+              </Button>
+              {selectedSubmission.status === 'submitted' && (
+                <>
+                  <Button
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => {
+                      handleReview(selectedSubmission, 'approve')
+                    }}
+                  >
+                    <CheckCircleIcon className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="px-4 py-2 border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={() => {
+                      handleReview(selectedSubmission, 'reject')
+                    }}
+                  >
+                    <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Review Modal */}
       {showReviewModal && selectedSubmission && (

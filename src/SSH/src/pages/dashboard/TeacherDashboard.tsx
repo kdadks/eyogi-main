@@ -824,6 +824,10 @@ export default function TeacherDashboard() {
   )
 
   const handleIssueCertificateWithTemplate = async (enrollmentId: string, templateId: string) => {
+    if (user?.status !== 'active') {
+      toast.error('Your teacher account must be activated before you can issue certificates')
+      return
+    }
     try {
       await issueCertificateWithTemplate(enrollmentId, templateId)
       await loadDashboardData()
@@ -846,6 +850,10 @@ export default function TeacherDashboard() {
   }
 
   const handleBulkIssueCertificatesWithTemplate = async (templateId: string) => {
+    if (user?.status !== 'active') {
+      toast.error('Your teacher account must be activated before you can issue certificates')
+      return
+    }
     if (bulkEligibleEnrollments.length === 0) {
       toast.error('No eligible students selected')
       return
@@ -2169,6 +2177,12 @@ export default function TeacherDashboard() {
                             <Button
                               size="sm"
                               onClick={async () => {
+                                if (user?.status !== 'active') {
+                                  toast.error(
+                                    'Your teacher account must be activated before you can approve enrollments',
+                                  )
+                                  return
+                                }
                                 try {
                                   await approveEnrollment(enrollment.id)
                                   toast.success('Enrollment approved!')
@@ -2178,7 +2192,8 @@ export default function TeacherDashboard() {
                                   toast.error('Failed to approve enrollment')
                                 }
                               }}
-                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                              disabled={user?.status !== 'active'}
+                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <CheckCircleIcon className="h-4 w-4 mr-1" />
                               Approve
@@ -2187,6 +2202,12 @@ export default function TeacherDashboard() {
                               size="sm"
                               variant="outline"
                               onClick={async () => {
+                                if (user?.status !== 'active') {
+                                  toast.error(
+                                    'Your teacher account must be activated before you can reject enrollments',
+                                  )
+                                  return
+                                }
                                 try {
                                   await rejectEnrollment(enrollment.id)
                                   toast.success('Enrollment rejected')
@@ -2196,7 +2217,8 @@ export default function TeacherDashboard() {
                                   toast.error('Failed to reject enrollment')
                                 }
                               }}
-                              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                              disabled={user?.status !== 'active'}
+                              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <XCircleIcon className="h-4 w-4 mr-1" />
                               Reject

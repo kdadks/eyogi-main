@@ -596,6 +596,12 @@ export default function ParentsDashboard() {
     }
   }
   const handleCourseEnrollment = (course: AvailableCourse) => {
+    if (user?.status !== 'active') {
+      toast.error(
+        'Your account must be activated by an admin before you can enroll children in courses',
+      )
+      return
+    }
     if (children.length === 0) {
       toast.error('Please add a child first before enrolling in courses')
       return
@@ -621,6 +627,10 @@ export default function ParentsDashboard() {
     }
   }
   const handleEditChild = async (childId: string) => {
+    if (user?.status !== 'active') {
+      toast.error('Your account must be activated by an admin before you can edit children')
+      return
+    }
     try {
       const child = children.find((child) => child.student_id === childId)
       if (!child) return
@@ -686,6 +696,10 @@ export default function ParentsDashboard() {
     }
   }
   const handleDeleteChild = async (childId: string) => {
+    if (user?.status !== 'active') {
+      toast.error('Your account must be activated by an admin before you can delete children')
+      return
+    }
     const childToDelete = children.find((child) => child.student_id === childId)
     if (!childToDelete) return
     showConfirmDialog({
@@ -1021,14 +1035,32 @@ export default function ParentsDashboard() {
                 courses={courses}
                 coursesLoading={coursesLoading}
                 canAccess={canAccess}
-                onAddChild={() => setShowAddChildModal(true)}
+                isAccountActive={user?.status === 'active'}
+                onAddChild={() => {
+                  if (user?.status !== 'active') {
+                    toast.error(
+                      'Your account must be activated by an admin before you can add children',
+                    )
+                    return
+                  }
+                  setShowAddChildModal(true)
+                }}
                 onCourseEnrollment={handleCourseEnrollment}
               />
             )}
             {activeTab === 'children' && (
               <ChildrenTab
                 children={children}
-                onAddChild={() => setShowAddChildModal(true)}
+                isAccountActive={user?.status === 'active'}
+                onAddChild={() => {
+                  if (user?.status !== 'active') {
+                    toast.error(
+                      'Your account must be activated by an admin before you can add children',
+                    )
+                    return
+                  }
+                  setShowAddChildModal(true)
+                }}
                 onEditChild={handleEditChild}
                 onDeleteChild={handleDeleteChild}
                 onManageConsent={(child) => {
@@ -1265,6 +1297,7 @@ function HomeTab({
   courses,
   coursesLoading,
   canAccess,
+  isAccountActive,
   onAddChild,
   onCourseEnrollment,
 }: {
@@ -1273,6 +1306,7 @@ function HomeTab({
   courses: AvailableCourse[]
   coursesLoading: boolean
   canAccess: (resource: string, action: string) => boolean
+  isAccountActive: boolean
   onAddChild: () => void
   onCourseEnrollment: (course: AvailableCourse) => void
 }) {
@@ -1683,6 +1717,7 @@ function HomeTab({
 // Children Tab Component
 function ChildrenTab({
   children,
+  isAccountActive,
   onAddChild,
   onEditChild,
   onDeleteChild,
@@ -1690,6 +1725,7 @@ function ChildrenTab({
   childConsents,
 }: {
   children: Child[]
+  isAccountActive: boolean
   onAddChild: () => void
   onEditChild: (childId: string) => void
   onDeleteChild: (childId: string) => void
@@ -1702,9 +1738,14 @@ function ChildrenTab({
         <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">My Children</h2>
         <motion.button
           onClick={onAddChild}
-          className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 cursor-pointer text-sm sm:text-base min-h-[44px]"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          disabled={!isAccountActive}
+          className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-sm sm:text-base min-h-[44px] ${
+            isAccountActive
+              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 cursor-pointer'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+          }`}
+          whileHover={isAccountActive ? { scale: 1.05 } : {}}
+          whileTap={isAccountActive ? { scale: 0.95 } : {}}
         >
           <UserPlusIcon className="h-5 w-5" />
           <span>Add Child</span>
@@ -1727,10 +1768,15 @@ function ChildrenTab({
               <div className="absolute top-0 right-0 flex gap-2">
                 <motion.button
                   onClick={() => onEditChild(child.student_id)}
-                  className="min-w-[44px] min-h-[44px] w-11 h-11 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  title="Edit Child"
+                  disabled={!isAccountActive}
+                  className={`min-w-[44px] min-h-[44px] w-11 h-11 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 ${
+                    isAccountActive
+                      ? 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
+                      : 'bg-gray-400 cursor-not-allowed opacity-50'
+                  }`}
+                  whileHover={isAccountActive ? { scale: 1.1 } : {}}
+                  whileTap={isAccountActive ? { scale: 0.9 } : {}}
+                  title={isAccountActive ? 'Edit Child' : 'Account must be activated'}
                   aria-label="Edit Child"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1744,10 +1790,15 @@ function ChildrenTab({
                 </motion.button>
                 <motion.button
                   onClick={() => onDeleteChild(child.student_id)}
-                  className="min-w-[44px] min-h-[44px] w-11 h-11 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 cursor-pointer"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  title="Delete Child"
+                  disabled={!isAccountActive}
+                  className={`min-w-[44px] min-h-[44px] w-11 h-11 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 ${
+                    isAccountActive
+                      ? 'bg-red-500 hover:bg-red-600 cursor-pointer'
+                      : 'bg-gray-400 cursor-not-allowed opacity-50'
+                  }`}
+                  whileHover={isAccountActive ? { scale: 1.1 } : {}}
+                  whileTap={isAccountActive ? { scale: 0.9 } : {}}
+                  title={isAccountActive ? 'Delete Child' : 'Account must be activated'}
                   aria-label="Delete Child"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

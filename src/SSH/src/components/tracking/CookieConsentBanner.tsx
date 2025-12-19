@@ -38,7 +38,6 @@ export default function CookieConsentBanner() {
     // Skip cookie consent banner in development/localhost
     const hostname = window.location.hostname
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
-      console.log('[CookieConsentBanner] Skipping banner in development environment')
       return
     }
 
@@ -46,7 +45,6 @@ export default function CookieConsentBanner() {
     const timer = setTimeout(() => {
       // Check if user has already given consent
       const existingConsent = getTrackingConsent()
-      console.log('[CookieConsentBanner] Existing consent:', existingConsent)
 
       // Show banner if analytics consent hasn't been explicitly set
       // Check for both empty timestamp and undefined analytics
@@ -55,13 +53,9 @@ export default function CookieConsentBanner() {
         existingConsent.timestamp.length > 0 &&
         existingConsent.analytics !== undefined
 
-      console.log('[CookieConsentBanner] Has valid consent:', hasValidConsent)
-
       if (!hasValidConsent) {
-        console.log('[CookieConsentBanner] Showing banner - no valid consent found')
         setShowBanner(true)
       } else {
-        console.log('[CookieConsentBanner] Hiding banner - valid consent exists')
         setPreferences(existingConsent)
 
         // Setup tracking if consent was given
@@ -75,7 +69,6 @@ export default function CookieConsentBanner() {
   }, [isClient])
 
   const handleAcceptAll = () => {
-    console.log('[CookieConsentBanner] Accept All clicked')
     const consent: TrackingConsent = {
       analytics: true,
       functional: true,
@@ -83,14 +76,12 @@ export default function CookieConsentBanner() {
     }
     setTrackingConsent(consent)
     setShowBanner(false)
-    console.log('[CookieConsentBanner] Banner hidden after accept')
 
     // Setup tracking after consent
     setupAutoTracking()
   }
 
   const handleRejectAll = () => {
-    console.log('[CookieConsentBanner] Reject All clicked')
     const consent: TrackingConsent = {
       analytics: false,
       functional: true,
@@ -98,15 +89,12 @@ export default function CookieConsentBanner() {
     }
     setTrackingConsent(consent)
     setShowBanner(false)
-    console.log('[CookieConsentBanner] Banner hidden after reject')
   }
 
   const handleSavePreferences = () => {
-    console.log('[CookieConsentBanner] Save Preferences clicked:', preferences)
     setTrackingConsent(preferences)
     setShowBanner(false)
     setShowSettings(false)
-    console.log('[CookieConsentBanner] Banner hidden after save preferences')
 
     // Setup tracking if analytics was enabled
     if (preferences.analytics) {

@@ -528,3 +528,157 @@ function generatePasswordResetConfirmationHTML(fullName: string): string {
     </html>
   `
 }
+
+interface WelcomeEmailData {
+  email: string
+  fullName: string
+  loginLink: string
+  role: 'student' | 'teacher' | 'parent' | 'admin' | 'business_admin' | 'super_admin'
+}
+
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
+  try {
+    const htmlContent = generateWelcomeEmailHTML(data)
+
+    return await sendEmail({
+      to: data.email,
+      subject: 'Welcome to eYogi Gurukul - Your Learning Journey Begins!',
+      body: htmlContent,
+    })
+  } catch (error) {
+    console.error('Error sending welcome email via Graph API:', error)
+    return false
+  }
+}
+
+function generateWelcomeEmailHTML(data: WelcomeEmailData): string {
+  const firstName = data.fullName.split(' ')[0]
+  const currentYear = new Date().getFullYear()
+
+  // Customize greeting and message based on role
+  let roleGreeting = ''
+  let roleMessage = ''
+
+  switch (data.role) {
+    case 'student':
+      roleGreeting = 'Welcome to Your Learning Journey'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as a student. You are now part of a vibrant learning community rooted in ancient wisdom and modern understanding. Explore courses in Yoga, Meditation, Sanskrit, Indian Knowledge Systems, and more to enrich your knowledge and spiritual growth.`
+      break
+    case 'teacher':
+      roleGreeting = 'Welcome to the Teaching Community'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as a teacher. We are honored to have you as part of our esteemed faculty. Your expertise and dedication will help shape the minds of students seeking knowledge in Yoga, Meditation, Sanskrit, and Indian Knowledge Systems. Once your account is approved by an admin, you can start creating and managing courses.`
+      break
+    case 'parent':
+      roleGreeting = 'Welcome to the eYogi Gurukul Family'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as a parent. You are now part of a caring community dedicated to nurturing young minds with ancient wisdom and modern education. Monitor your child's learning journey, track their progress in courses like Yoga, Meditation, Sanskrit, and Indian Knowledge Systems, and be an active part of their educational growth.`
+      break
+    case 'admin':
+    case 'business_admin':
+    case 'super_admin':
+      roleGreeting = 'Welcome to the Admin Team'
+      roleMessage = `Thank you for joining <strong>eYogi Gurukul</strong> as an administrator. You now have access to manage and oversee the platform, ensuring a smooth learning experience for all users. Your role is crucial in maintaining the quality and integrity of our educational community.`
+      break
+    default:
+      roleGreeting = 'Welcome to eYogi Gurukul'
+      roleMessage = `Thank you for signing up with <strong>eYogi Gurukul</strong>. You are now part of a learning community rooted in ancient wisdom and modern understanding.`
+  }
+
+  return `
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <title>Welcome to eYogi Gurukul</title>
+      <!--[if mso]>
+      <style type="text/css">
+        .button { padding: 16px 32px !important; }
+      </style>
+      <![endif]-->
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <!--[if mso]>
+            <table cellpadding="0" cellspacing="0" border="0" width="600">
+            <tr>
+            <td>
+            <![endif]-->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+              <!-- Logo Header -->
+              <tr>
+                <td align="center" style="padding: 40px 40px 20px 40px; background: linear-gradient(135deg, #2c5f2d 0%, #3d7f3e 100%);">
+                  <img src="https://eyogigurukul.com/logo.png" alt="eYogi Gurukul" width="150" style="display: block; max-width: 150px; height: auto;" />
+                </td>
+              </tr>
+
+              <!-- Main Content -->
+              <tr>
+                <td style="padding: 40px 40px 20px 40px;">
+                  <h2 style="margin: 0 0 20px 0; padding: 0; color: #2c5f2d; font-size: 24px; font-weight: 600; line-height: 32px; font-family: Arial, Helvetica, sans-serif;">
+                    ${roleGreeting}, ${firstName}!
+                  </h2>
+                  <p style="margin: 0 0 20px 0; padding: 0; color: #333333; font-size: 16px; line-height: 24px; font-family: Arial, Helvetica, sans-serif;">
+                    ${roleMessage}
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Call to Action Button -->
+              <tr>
+                <td align="center" style="padding: 0 40px 40px 40px;">
+                  <!--[if mso]>
+                  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${data.loginLink}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="10%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                    <w:anchorlock/>
+                    <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Go to Dashboard</center>
+                  </v:roundrect>
+                  <![endif]-->
+                  <!--[if !mso]><!-->
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center" style="border-radius: 6px; background-color: #2c5f2d;">
+                        <a href="${data.loginLink}" target="_blank" class="button" style="display: inline-block; padding: 16px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; font-family: Arial, Helvetica, sans-serif;">
+                          Go to Dashboard
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <!--<![endif]-->
+                </td>
+              </tr>
+
+              <!-- Support Information -->
+              <tr>
+                <td style="padding: 0 40px 40px 40px;">
+                  <p style="margin: 0 0 10px 0; padding: 0; color: #666666; font-size: 14px; line-height: 21px; font-family: Arial, Helvetica, sans-serif;">
+                    If you need any help, contact us at <a href="mailto:eyogigurukul@gmail.com" style="color: #2c5f2d; text-decoration: none;">eyogigurukul@gmail.com</a>.
+                  </p>
+                  <p style="margin: 0; padding: 0; color: #333333; font-size: 14px; line-height: 21px; font-family: Arial, Helvetica, sans-serif;">
+                    Warm regards,<br />
+                    <strong>Team eYogi Gurukul</strong>
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+                  <p style="margin: 0; padding: 0; font-size: 12px; color: #6c757d; line-height: 18px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
+                    © ${currentYear} eYogi Gurukul. All rights reserved.
+                  </p>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `
+}

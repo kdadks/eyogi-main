@@ -82,15 +82,6 @@ export function setTrackingConsent(consent: Partial<TrackingConsent>): void {
 
     const serialized = JSON.stringify(updated)
     localStorage.setItem(CONSENT_KEY, serialized)
-    console.log('[CookieConsent] Saved consent to localStorage:', serialized)
-
-    // Verify it was saved correctly
-    const verification = localStorage.getItem(CONSENT_KEY)
-    console.log('[CookieConsent] Verification read:', verification)
-
-    if (verification !== serialized) {
-      console.error('[CookieConsent] Verification failed! Saved and read values do not match.')
-    }
   } catch (error) {
     console.error('[CookieConsent] Error setting tracking consent:', error)
   }
@@ -108,10 +99,8 @@ export function getTrackingConsent(): TrackingConsent {
 
   try {
     const consent = localStorage.getItem(CONSENT_KEY)
-    console.log('[CookieConsent] Retrieved consent from localStorage:', consent)
 
     if (!consent) {
-      console.log('[CookieConsent] No consent found in localStorage')
       return {
         analytics: false,
         functional: true,
@@ -120,11 +109,9 @@ export function getTrackingConsent(): TrackingConsent {
     }
 
     const parsed = JSON.parse(consent)
-    console.log('[CookieConsent] Parsed consent:', parsed)
 
     // Check if consent has expired (365 days)
     if (isConsentExpired(parsed.timestamp)) {
-      console.log('[CookieConsent] Consent has expired, clearing it')
       clearTrackingConsent()
       return {
         analytics: false,
@@ -153,9 +140,8 @@ export function clearTrackingConsent(): void {
   try {
     localStorage.removeItem(CONSENT_KEY)
     localStorage.removeItem(SESSION_KEY)
-    console.log('[CookieConsent] Cleared all tracking consent and session data')
   } catch (error) {
-    console.error('[CookieConsent] Error clearing tracking consent:', error)
+    // Error clearing consent - silent fail
   }
 }
 
@@ -219,11 +205,8 @@ export async function getCountry(): Promise<string | undefined> {
     // Check cache first
     const cached = sessionStorage.getItem(COUNTRY_CACHE_KEY)
     if (cached) {
-      console.log('Country from cache:', cached)
       return cached
     }
-
-    console.log('Fetching country from geolocation API...')
 
     // Try ipapi.co first (150 requests/day per IP)
     try {
@@ -236,7 +219,6 @@ export async function getCountry(): Promise<string | undefined> {
       if (response.ok) {
         const data = await response.json()
         const country = data.country_name || data.country || 'Unknown'
-        console.log('Country detected:', country, data)
 
         // Cache the result
         sessionStorage.setItem(COUNTRY_CACHE_KEY, country)
@@ -376,16 +358,8 @@ export async function trackPageView(
       ...additionalData,
     }
 
-    console.log('Tracking page view:', trackingData)
-
     // Send to database
-    const { data, error } = await supabaseAdmin.from('page_analytics').insert(trackingData)
-
-    if (error) {
-      console.error('Error inserting page analytics:', error)
-    } else {
-      console.log('Page view tracked successfully:', data)
-    }
+    await supabaseAdmin.from('page_analytics').insert(trackingData)
   } catch (error) {
     // Silently fail - don't disrupt user experience
     console.error('Error tracking page view:', error)
