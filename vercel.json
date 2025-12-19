@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "buildCommand": "yarn build",
-  "installCommand": "yarn install && cd src/SSH && npm install",
+  "installCommand": "yarn install",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   },
