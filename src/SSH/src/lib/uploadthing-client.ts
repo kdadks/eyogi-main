@@ -21,8 +21,8 @@ const getUploadThingUrl = () => {
     console.log('UploadThing URL (production):', uploadUrl)
     return uploadUrl
   }
-  // In development, use the local Next.js server
-  const devUrl = 'http://localhost:3000/api/uploadthing'
+  // In development, use the SSH app's own UploadThing server
+  const devUrl = 'http://localhost:3001/api/uploadthing'
   console.log('UploadThing URL (development):', devUrl)
   return devUrl
 }
