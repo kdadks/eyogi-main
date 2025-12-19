@@ -277,7 +277,7 @@ function generatePasswordResetEmailHTML(data: PasswordResetEmailData): string {
             <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; font-family:Arial, sans-serif; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
               <tr>
                 <td align="center" style="padding:30px 20px 20px;">
-                  <img src="https://eyogigurukul.com/wp-content/uploads/2024/08/cropped-EYogi-Gurukul-Logo.png" width="180" alt="eYogi Gurukul" style="max-width:100%; height:auto;">
+                  <img src="https://www.eyogigurukul.com/wp-content/uploads/2024/08/cropped-EYogi-Gurukul-Logo.png" width="180" alt="eYogi Gurukul" style="max-width:100%; height:auto;">
                 </td>
               </tr>
               <tr>

@@ -18,8 +18,8 @@ export async function POST(req: Request) {
       )
     }
 
-    // Construct reset URL
-    const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:5173'}/reset-password?token=${payload.resetToken}`
+    // Construct reset URL for SSH app
+    const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:5173'}/ssh-app/reset-password?token=${payload.resetToken}`
 
     // Send the password reset email
     const emailSent = await sendPasswordResetEmail({
