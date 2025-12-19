@@ -282,8 +282,9 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
 
       // Send welcome email to user (non-blocking)
       try {
-        const loginLink = `${window.location.origin}/dashboard`
-        const welcomeResponse = await fetch('/api/auth/welcome', {
+        const loginLink = `${window.location.origin}/ssh-app/`
+        const apiBaseUrl = window.location.origin
+        const welcomeResponse = await fetch(`${apiBaseUrl}/api/auth/welcome`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -301,6 +302,8 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
             status: welcomeResponse.status,
             statusText: welcomeResponse.statusText,
           })
+        } else {
+          console.log('Welcome email sent successfully to:', userData.email.toLowerCase())
         }
       } catch (emailError) {
         console.warn('Error sending welcome email to user:', emailError)
@@ -309,7 +312,8 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       // Send registration notification email (non-blocking)
       // Email will be sent asynchronously without affecting user registration
       try {
-        const response = await fetch('/api/auth/register', {
+        const apiBaseUrl = window.location.origin
+        const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
