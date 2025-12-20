@@ -494,7 +494,7 @@ export default function ParentsDashboard() {
   const loadCourses = useCallback(async () => {
     try {
       setCoursesLoading(true)
-      const coursesData = await getCourses()
+      const { courses: coursesData } = await getCourses()
       // Transform course data to AvailableCourse format
       const transformedCourses: AvailableCourse[] = coursesData.map((course) => ({
         id: course.id,

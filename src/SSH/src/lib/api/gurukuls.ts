@@ -2,24 +2,38 @@ import { supabaseAdmin } from '../supabase'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import { Gurukul } from '../../types'
 import { DEFAULT_IMAGES } from '../constants/images'
-export async function getGurukuls(): Promise<Gurukul[]> {
-  const cacheKey = createCacheKey('gurukuls', 'active')
+export async function getGurukuls(filters?: {
+  page?: number
+  limit?: number
+}): Promise<{ gurukuls: Gurukul[]; total: number }> {
+  const page = filters?.page || 1
+  const limit = filters?.limit || 1000 // Default to large number for backwards compatibility
+  const offset = (page - 1) * limit
+
+  const cacheKey = createCacheKey(
+    'gurukuls',
+    'active',
+    filters?.page?.toString() || '1',
+    filters?.limit?.toString() || '1000',
+  )
 
   return queryCache.get(
     cacheKey,
     async () => {
       try {
-        const { data, error } = await supabaseAdmin
+        const { data, error, count } = await supabaseAdmin
           .from('gurukuls')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('is_active', true)
           .order('sort_order', { ascending: true })
+          .range(offset, offset + limit - 1)
+
         if (error) {
-          return []
+          return { gurukuls: [], total: 0 }
         }
-        return data || []
+        return { gurukuls: data || [], total: count || 0 }
       } catch {
-        return []
+        return { gurukuls: [], total: 0 }
       }
     },
     CACHE_DURATIONS.GURUKULS, // 1 week

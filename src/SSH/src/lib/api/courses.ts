@@ -10,8 +10,14 @@ export async function getCourses(filters?: {
   age_group?: number
   search?: string
   teacher_id?: string
-}): Promise<Course[]> {
+  page?: number
+  limit?: number
+}): Promise<{ courses: Course[]; total: number }> {
   try {
+    const page = filters?.page || 1
+    const limit = filters?.limit || 1000 // Default to large number for backwards compatibility
+    const offset = (page - 1) * limit
+
     // Create cache key based on filters
     const cacheKey = createCacheKey(
       'courses',
@@ -19,6 +25,8 @@ export async function getCourses(filters?: {
       filters?.level || 'all',
       filters?.search || 'all',
       filters?.teacher_id || 'all',
+      filters?.page?.toString() || '1',
+      filters?.limit?.toString() || '1000',
     )
 
     // Use cache for queries without search (search should be fresh)
@@ -26,48 +34,56 @@ export async function getCourses(filters?: {
       return await queryCache.get(
         cacheKey,
         async () => {
-          let query = supabaseAdmin.from('courses').select('*, gurukul:gurukuls(*)')
+          let query = supabaseAdmin
+            .from('courses')
+            .select('*, gurukul:gurukuls(*)', { count: 'exact' })
+
           if (filters?.gurukul_id) {
             query = query.eq('gurukul_id', filters.gurukul_id)
           }
           if (filters?.level) {
             query = query.eq('level', filters.level)
           }
-          // Note: courses table no longer has teacher_id field
-          // Use course_assignments table to filter by teacher
-          const { data, error } = await query.order('created_at', { ascending: false })
+
+          const { data, error, count } = await query
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1)
+
           if (error) {
             throw error
           }
 
-          // Courses no longer have direct teacher_id field
-          // Teachers are assigned via course_assignments table
           const coursesWithDecryptedTeachers = (data || []).map((course: any) => ({
             ...course,
-            teacher: null, // Use course_assignments to get teacher info
+            teacher: null,
           }))
-          return coursesWithDecryptedTeachers
+
+          return { courses: coursesWithDecryptedTeachers, total: count || 0 }
         },
-        CACHE_DURATIONS.COURSES, // Cache for 1 week
+        CACHE_DURATIONS.COURSES,
       )
     }
 
     // For search queries, don't cache (always get fresh results)
-    let query = supabaseAdmin.from('courses').select('*, gurukul:gurukuls(*)')
+    let query = supabaseAdmin.from('courses').select('*, gurukul:gurukuls(*)', { count: 'exact' })
+
     if (filters?.gurukul_id) {
       query = query.eq('gurukul_id', filters.gurukul_id)
     }
     if (filters?.level) {
       query = query.eq('level', filters.level)
     }
-    // Note: courses table no longer has teacher_id field
-    // Use course_assignments table to filter by teacher
+
     if (filters?.search) {
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
     }
-    const { data, error } = await query.order('created_at', { ascending: false })
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
     if (error) {
-      return []
+      return { courses: [], total: 0 }
     }
 
     // Fetch teachers separately if courses have teacher_id
@@ -92,9 +108,10 @@ export async function getCourses(filters?: {
       ...course,
       teacher: course.teacher_id ? teachersMap.get(course.teacher_id) || null : null,
     }))
-    return coursesWithDecryptedTeachers
+
+    return { courses: coursesWithDecryptedTeachers, total: count || 0 }
   } catch {
-    return []
+    return { courses: [], total: 0 }
   }
 }
 export async function getCourse(id: string): Promise<Course | null> {

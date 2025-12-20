@@ -223,7 +223,7 @@ export default function StudentDashboard() {
       setStudentConsent(consentData)
       setEnrollments(enrollmentsData)
       setCertificates(certificatesData)
-      setAvailableCourses(coursesData)
+      setAvailableCourses(coursesData.courses)
 
       setBatchProgress(batchProgressData)
       setCourseProgressData(courseProgressData)

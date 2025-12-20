@@ -81,11 +81,11 @@ export default function GurukulManagement() {
   }, [formData.name, editingGurukul])
   const loadData = async () => {
     try {
-      const [gurukulData, coursesData] = await Promise.all([getAllGurukuls(), getCourses()])
+      const [gurukulData, coursesResult] = await Promise.all([getAllGurukuls(), getCourses()])
       setGurukuls(gurukulData)
       // Count courses per gurukul
       const counts: Record<string, number> = {}
-      coursesData.forEach((course) => {
+      coursesResult.courses.forEach((course) => {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)

@@ -425,8 +425,7 @@ export default function TeacherDashboard() {
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setPendingEnrollments(pendingEnrollmentsData)
-
-      setGurukuls(gurukulData)
+      setGurukuls(gurukulData.gurukuls)
       setCertificateAssignments(assignmentsData)
 
       // Fetch all available templates

@@ -29,36 +29,64 @@ import { sanitizeHtml } from '../utils/sanitize'
 
 /**
  * Parse learning outcomes to handle both HTML and plain text
- * Returns both the processed content and a flag indicating if it's HTML
+ * Extracts content from list items while preserving inline formatting (bold, italic, links, etc.)
+ * Removes list wrapper tags and Quill-specific classes
  */
 function parseLearningOutcomes(outcomes: string[]): Array<{ content: string; isHtml: boolean }> {
   const parsedOutcomes: Array<{ content: string; isHtml: boolean }> = []
 
   outcomes.forEach((outcome) => {
-    const trimmed = outcome.trim()
+    let trimmed = outcome.trim()
     if (!trimmed) return
 
-    // Check if outcome contains list tags - extract individual list items
-    if (trimmed.includes('<li>')) {
+    // Check if outcome contains HTML tags
+    if (trimmed.includes('<')) {
+      // Create a temporary div to parse HTML
       const tempDiv = document.createElement('div')
       tempDiv.innerHTML = trimmed
-      const listItems = tempDiv.querySelectorAll('li')
 
-      listItems.forEach((li) => {
-        const content = li.innerHTML.trim()
+      // Extract content from list items if present
+      const listItems = tempDiv.querySelectorAll('li')
+      if (listItems.length > 0) {
+        listItems.forEach((li) => {
+          // Remove Quill classes from the li element itself
+          li.removeAttribute('class')
+
+          // Get the innerHTML to preserve inline formatting (bold, italic, links, etc.)
+          let content = li.innerHTML.trim()
+
+          // Remove any Quill-specific classes from child elements
+          const childElements = li.querySelectorAll('[class*="ql-"]')
+          childElements.forEach((el) => {
+            const classes = el.className.split(' ').filter((c) => !c.startsWith('ql-'))
+            if (classes.length > 0) {
+              el.className = classes.join(' ')
+            } else {
+              el.removeAttribute('class')
+            }
+          })
+
+          content = li.innerHTML.trim()
+
+          if (content) {
+            // Check if content has HTML formatting
+            const hasHtml = /<\w+[^>]*>/.test(content)
+            parsedOutcomes.push({ content, isHtml: hasHtml })
+          }
+        })
+      } else {
+        // No list items, just extract the content
+        // Remove wrapping ul/ol tags if present
+        let content = tempDiv.innerHTML.trim()
+        content = content.replace(/^<ul[^>]*>|<\/ul>$/gi, '')
+        content = content.replace(/^<ol[^>]*>|<\/ol>$/gi, '')
+        content = content.trim()
+
         if (content) {
-          parsedOutcomes.push({ content, isHtml: true })
+          const hasHtml = /<\w+[^>]*>/.test(content)
+          parsedOutcomes.push({ content, isHtml: hasHtml })
         }
-      })
-    } else if (
-      trimmed.includes('<p>') ||
-      trimmed.includes('<h') ||
-      trimmed.includes('<strong>') ||
-      trimmed.includes('<em>') ||
-      trimmed.includes('<br>')
-    ) {
-      // It's HTML content, keep it as-is
-      parsedOutcomes.push({ content: trimmed, isHtml: true })
+      }
     } else {
       // It's plain text
       parsedOutcomes.push({ content: trimmed, isHtml: false })
@@ -438,12 +466,17 @@ export default function CourseDetailPage() {
                       )
                     ) : (
                       <div className="space-y-2">
-                        <Link to="/auth/signin">
+                        <Link
+                          to={`/auth/signin?redirect=${encodeURIComponent(window.location.pathname)}`}
+                        >
                           <Button className="w-full">Sign In to Enroll</Button>
                         </Link>
                         <p className="text-xs text-center text-gray-600">
                           Don't have an account?{' '}
-                          <Link to="/auth/signup" className="text-orange-600 hover:text-orange-700">
+                          <Link
+                            to={`/auth/signup?redirect=${encodeURIComponent(window.location.pathname)}`}
+                            className="text-orange-600 hover:text-orange-700"
+                          >
                             Sign up
                           </Link>
                         </p>
@@ -462,13 +495,9 @@ export default function CourseDetailPage() {
               {/* Course Media */}
               {(course.cover_image_url || course.video_preview_url) && (
                 <Card>
-                  <CardHeader>
-                    <h2 className="text-2xl font-bold">Course Media</h2>
-                  </CardHeader>
                   <CardContent className="space-y-6">
                     {course.cover_image_url && (
                       <div>
-                        <p className="text-sm font-medium text-gray-600 mb-3">Course Cover</p>
                         <img
                           src={course.cover_image_url}
                           alt={`${course.title} cover`}
@@ -527,24 +556,19 @@ export default function CourseDetailPage() {
                   <h2 className="text-2xl font-bold">What You'll Learn</h2>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-3">
                     {parseLearningOutcomes(course.learning_outcomes).map((item, index) => (
                       <div key={index} className="flex items-start space-x-3">
                         <CheckCircleIcon className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                         {item.isHtml ? (
                           <div
-                            className="text-gray-700 flex-1 text-base whitespace-pre-wrap
-                              [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
-                              [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
-                              [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
-                              [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
-                              [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                            className="text-gray-700 flex-1"
                             dangerouslySetInnerHTML={{
                               __html: sanitizeHtml(item.content),
                             }}
                           />
                         ) : (
-                          <span className="text-gray-700">{item.content}</span>
+                          <span className="text-gray-700 flex-1">{item.content}</span>
                         )}
                       </div>
                     ))}
@@ -606,24 +630,19 @@ export default function CourseDetailPage() {
                       <h2 className="text-2xl font-bold">Prerequisites</h2>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-3">
                         {parseLearningOutcomes(course.prerequisites).map((item, index) => (
                           <div key={index} className="flex items-start space-x-3">
                             <CheckCircleIcon className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
                             {item.isHtml ? (
                               <div
-                                className="text-gray-700 flex-1 text-base whitespace-pre-wrap
-                                  [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ul_li]:mb-1
-                                  [&_ol]:list-decimal [&_ol]:ml-6 [&_ol_li]:mb-1
-                                  [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_u]:underline
-                                  [&_.ql-indent-1]:ml-8 [&_.ql-indent-2]:ml-16 [&_.ql-indent-3]:ml-24 [&_.ql-indent-4]:ml-32
-                                  [&_li_ul]:ml-6 [&_li_ol]:ml-6 [&_li_ul_li]:mb-1 [&_li_ol_li]:mb-1"
+                                className="text-gray-700 flex-1"
                                 dangerouslySetInnerHTML={{
                                   __html: sanitizeHtml(item.content),
                                 }}
                               />
                             ) : (
-                              <span className="text-gray-700">{item.content}</span>
+                              <span className="text-gray-700 flex-1">{item.content}</span>
                             )}
                           </div>
                         ))}

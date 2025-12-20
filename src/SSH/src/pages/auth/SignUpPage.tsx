@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -108,6 +108,7 @@ type SignUpForm = z.infer<typeof signUpSchema>
 export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   // Note: This page is no longer used - replaced by AuthRedirect + Modal
   const { signUp } = useWebsiteAuth()
   const {
@@ -154,14 +155,16 @@ export default function SignUpPage() {
         // Check if it's actually a success message that needs email confirmation
         if (error.includes('Account created! Please check your email')) {
           toast.success(error)
-          navigate('/auth/signin')
+          const redirectTo = searchParams.get('redirect')
+          navigate(redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin')
         } else {
           toast.error(error)
         }
         return
       }
       toast.success('Account created successfully! You can now sign in.')
-      navigate('/auth/signin')
+      const redirectTo = searchParams.get('redirect')
+      navigate(redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin')
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(error.message)

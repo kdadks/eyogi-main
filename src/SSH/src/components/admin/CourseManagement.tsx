@@ -403,10 +403,10 @@ export default function CourseManagement() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [coursesData, gurukulData] = await Promise.all([getCourses(), getGurukuls()])
+      const [coursesResult, gurukulsResult] = await Promise.all([getCourses(), getGurukuls()])
 
-      setCourses(coursesData)
-      setGurukuls(gurukulData)
+      setCourses(coursesResult.courses)
+      setGurukuls(gurukulsResult.gurukuls)
     } catch (error) {
       console.error('Failed to load course data:', error)
       toast.error('Failed to load course data')

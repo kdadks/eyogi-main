@@ -19,9 +19,12 @@ export default function Footer() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [pages, gurukulData] = await Promise.all([getPublishedPages('legal'), getGurukuls()])
+        const [pages, gurukulsResult] = await Promise.all([
+          getPublishedPages('legal'),
+          getGurukuls(),
+        ])
         setLegalPages(pages)
-        setGurukuls(gurukulData)
+        setGurukuls(gurukulsResult.gurukuls)
       } catch (error) {
         console.error('Failed to load footer data:', error)
       }

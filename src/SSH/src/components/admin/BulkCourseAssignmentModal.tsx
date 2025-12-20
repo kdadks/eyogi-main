@@ -39,7 +39,9 @@ const BulkCourseAssignmentModal: React.FC<BulkCourseAssignmentModalProps> = ({
     setLoading(true)
     try {
       // Get all active courses and gurukuls
-      const [allCourses, allGurukuls] = await Promise.all([getCourses({}), getGurukuls()])
+      const [coursesResult, gurukulsResult] = await Promise.all([getCourses({}), getGurukuls()])
+      const allCourses = coursesResult.courses
+      const allGurukuls = gurukulsResult.gurukuls
       const activeCourses = allCourses.filter((course) => course.is_active)
       setAvailableCourses(activeCourses)
       setGurukuls(allGurukuls)

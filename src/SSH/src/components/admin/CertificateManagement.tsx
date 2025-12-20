@@ -95,8 +95,8 @@ export default function CertificateManagement() {
       const [
         allEnrollments,
         templatesData,
-        coursesData,
-        gurukulData,
+        coursesResult,
+        gurukulsResult,
         assignmentsData,
         certificatesData,
       ] = await Promise.all([
@@ -107,6 +107,8 @@ export default function CertificateManagement() {
         getCertificateAssignments(),
         getCertificatesFromTable(),
       ])
+      const coursesData = coursesResult.courses
+      const gurukulData = gurukulsResult.gurukuls
 
       // Helper function to check if student has certificate for course
       const hasCertificate = (studentId: string, courseId: string): boolean => {

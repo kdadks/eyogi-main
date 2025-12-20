@@ -81,7 +81,7 @@ const BatchModal: React.FC<BatchModalProps> = ({ batch, gurukuls, onClose, onSuc
         setCourses(courseList)
       } else {
         // Admins can see all courses
-        const courseList = await getCourses()
+        const { courses: courseList } = await getCourses()
         setCourses(courseList)
       }
     } catch (error) {

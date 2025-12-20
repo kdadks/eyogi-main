@@ -209,7 +209,7 @@ export default function StudentManagement() {
   // Removed duplicate filterStudents function
   const loadData = async () => {
     try {
-      const [usersData, coursesData, enrollmentsData, gurukulData, certificatesData] =
+      const [usersData, coursesResult, enrollmentsData, gurukulsResult, certificatesData] =
         await Promise.all([
           getAllUsers(),
           getCourses(),
@@ -217,8 +217,8 @@ export default function StudentManagement() {
           getGurukuls(),
           getCertificatesFromTable(),
         ])
-      setCourses(coursesData)
-      setGurukuls(gurukulData)
+      setCourses(coursesResult.courses)
+      setGurukuls(gurukulsResult.gurukuls)
       setCertificates(certificatesData)
       // Filter only students and enrich with enrollment data
       const studentsOnly = usersData.filter((user) => user.role === 'student')

@@ -19,33 +19,58 @@ import {
 } from '@heroicons/react/24/outline'
 export default function GurukulPage() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
+  const [totalGurukuls, setTotalGurukuls] = useState(0)
   const [courseCounts, setCourseCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 12
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    loadGurukuls()
+  }, [currentPage])
+
   const loadData = async () => {
     try {
-      const [gurukulData, coursesData, cmsData] = await Promise.all([
-        getGurukuls(),
-        getCourses(),
+      const [cmsData, allCoursesData] = await Promise.all([
         getPageSettings('gurukuls'),
+        getCourses({ limit: 1000 }), // Get all courses to count per gurukul
       ])
-      setGurukuls(gurukulData)
+
       // Count courses per gurukul
       const counts: Record<string, number> = {}
-      coursesData.forEach((course) => {
+      allCoursesData.courses.forEach((course) => {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
       setPageSettings(cmsData)
     } catch {
       // Error loading data - silent fail
+    }
+  }
+
+  const loadGurukuls = async () => {
+    try {
+      setLoading(true)
+      const { gurukuls: gurukulData, total } = await getGurukuls({
+        page: currentPage,
+        limit: itemsPerPage,
+      })
+      setGurukuls(gurukulData)
+      setTotalGurukuls(total)
+    } catch {
+      // Error loading data - silent fail
+      setGurukuls([])
+      setTotalGurukuls(0)
     } finally {
       setLoading(false)
     }
   }
+
+  const totalPages = Math.ceil(totalGurukuls / itemsPerPage)
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -234,6 +259,51 @@ export default function GurukulPage() {
                   </Card>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex flex-col items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'primary' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="min-w-[40px]"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+
+                  <p className="text-sm text-gray-600">
+                    Showing {(currentPage - 1) * itemsPerPage + 1}-
+                    {Math.min(currentPage * itemsPerPage, totalGurukuls)} of {totalGurukuls}{' '}
+                    gurukuls
+                  </p>
+                </div>
+              )}
             </div>
           </section>
           {/* Features Section */}

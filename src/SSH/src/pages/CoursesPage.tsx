@@ -21,12 +21,15 @@ import {
 export default function CoursesPage() {
   const [searchParams] = useSearchParams()
   const [courses, setCourses] = useState<Course[]>([])
+  const [totalCourses, setTotalCourses] = useState(0)
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedGurukul, setSelectedGurukul] = useState('')
   const [selectedLevel, setSelectedLevel] = useState('')
   const [ageGroup, setAgeGroup] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 12
 
   // Set initial level from URL query parameter
   useEffect(() => {
@@ -37,10 +40,19 @@ export default function CoursesPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedGurukul, selectedLevel, ageGroup])
+
+  useEffect(() => {
+    loadCourses()
+  }, [currentPage, searchTerm, selectedGurukul, selectedLevel, ageGroup])
+
   const loadData = async () => {
     try {
-      const [coursesData, gurukulData] = await Promise.all([getCourses(), getGurukuls()])
-      setCourses(coursesData)
+      const { gurukuls: gurukulData } = await getGurukuls()
       setGurukuls(gurukulData)
     } catch {
       // Error loading data - silent fail
@@ -48,17 +60,40 @@ export default function CoursesPage() {
       setLoading(false)
     }
   }
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesGurukul = !selectedGurukul || course.gurukul_id === selectedGurukul
-    const matchesLevel = !selectedLevel || course.level === selectedLevel
-    const matchesAge =
-      !ageGroup ||
-      (course.age_group_min <= parseInt(ageGroup) && course.age_group_max >= parseInt(ageGroup))
-    return matchesSearch && matchesGurukul && matchesLevel && matchesAge
-  })
+
+  const loadCourses = async () => {
+    try {
+      setLoading(true)
+      const { courses: coursesData, total } = await getCourses({
+        page: currentPage,
+        limit: itemsPerPage,
+        gurukul_id: selectedGurukul || undefined,
+        level: selectedLevel || undefined,
+        search: searchTerm || undefined,
+      })
+
+      // Client-side age filtering since it's not in the API
+      let filteredData = coursesData
+      if (ageGroup) {
+        const age = parseInt(ageGroup)
+        filteredData = coursesData.filter(
+          (course) => course.age_group_min <= age && course.age_group_max >= age,
+        )
+      }
+
+      setCourses(filteredData)
+      setTotalCourses(total)
+    } catch {
+      // Error loading data - silent fail
+      setCourses([])
+      setTotalCourses(0)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Remove the old filtered courses logic and pagination calculation
+  const totalPages = Math.ceil(totalCourses / itemsPerPage)
   const levels = [
     { value: 'elementary', label: 'Elementary (4-7 years)' },
     { value: 'basic', label: 'Basic (8-11 years)' },
@@ -123,35 +158,64 @@ export default function CoursesPage() {
       />
       <div>
         <div className="min-h-screen bg-gray-50">
-          {/* Header */}
-          <div className="bg-white shadow-sm">
-            <div className="container-max section-padding">
-              <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 mb-4">Explore Our Courses</h1>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          {/* Hero Section */}
+          <section className="relative bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 overflow-hidden hero-section min-h-[400px]">
+            {/* Sunrise Effect Background */}
+            <div className="sunrise-bg"></div>
+            <div className="sunrise-horizon-glow"></div>
+            <div className="sunrise-sun"></div>
+            <div className="sunrise-rays">
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+              <div className="sunrise-ray"></div>
+            </div>
+            <div className="sunrise-cloud sunrise-cloud-1"></div>
+            <div className="sunrise-cloud sunrise-cloud-2"></div>
+            <div className="sunrise-cloud sunrise-cloud-3"></div>
+
+            {/* Glossy Glass Background Layers */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
+
+            <div className="relative container-max section-padding z-[4] sunrise-content">
+              <div className="text-center max-w-4xl mx-auto mb-8">
+                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                  Explore Our Courses
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
                   Discover comprehensive courses in Vedic wisdom, designed for learners of all ages.
                   From ancient philosophy to practical applications in modern life.
                 </p>
               </div>
+
               {/* Filters */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                   <div className="lg:col-span-2">
                     <div className="relative">
-                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
                         type="text"
                         placeholder="Search courses..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+                        className="pl-9 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 py-2"
                       />
                     </div>
                   </div>
                   <select
                     value={selectedGurukul}
                     onChange={(e) => setSelectedGurukul(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 py-2"
                   >
                     <option value="">All Gurukuls</option>
                     {gurukuls.map((gurukul) => (
@@ -163,7 +227,7 @@ export default function CoursesPage() {
                   <select
                     value={selectedLevel}
                     onChange={(e) => setSelectedLevel(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 py-2"
                   >
                     <option value="">All Levels</option>
                     {levels.map((level) => (
@@ -179,16 +243,18 @@ export default function CoursesPage() {
                     onChange={(e) => setAgeGroup(e.target.value)}
                     min="4"
                     max="100"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 py-2"
                   />
                 </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <p className="text-sm text-gray-600">
-                    Showing {filteredCourses.length} of {courses.length} courses
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <p className="text-xs text-gray-600">
+                    Showing {courses.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} -{' '}
+                    {Math.min(currentPage * itemsPerPage, totalCourses)} of {totalCourses} courses
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-7 text-xs"
                     onClick={() => {
                       setSearchTerm('')
                       setSelectedGurukul('')
@@ -196,89 +262,144 @@ export default function CoursesPage() {
                       setAgeGroup('')
                     }}
                   >
+                    <FunnelIcon className="h-4 w-4 mr-2" />
                     Clear Filters
                   </Button>
                 </div>
               </div>
             </div>
-          </div>
-          {/* Courses Grid */}
+          </section>
+
+          {/* Courses Section */}
           <div className="container-max section-padding">
-            {filteredCourses.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="spinner w-8 h-8 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading courses...</p>
+              </div>
+            ) : courses.length === 0 ? (
               <div className="text-center py-12">
                 <FunnelIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
                 <p className="text-gray-600">Try adjusting your filters to see more courses.</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredCourses.map((course) => (
-                  <Card key={course.id} className="card-hover overflow-hidden flex flex-col">
-                    <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 relative overflow-hidden">
-                      {course.cover_image_url || course.image_url ? (
-                        <img
-                          src={course.cover_image_url || course.image_url}
-                          alt={course.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <span className="text-white font-bold text-lg">
-                                {course.course_number.slice(-2)}
-                              </span>
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {courses.map((course) => (
+                    <Card key={course.id} className="card-hover overflow-hidden flex flex-col">
+                      <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 relative overflow-hidden">
+                        {course.cover_image_url || course.image_url ? (
+                          <img
+                            src={course.cover_image_url || course.image_url}
+                            alt={course.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <span className="text-white font-bold text-lg">
+                                  {course.course_number.slice(-2)}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium text-gray-700">
+                                {course.gurukul?.name}
+                              </p>
                             </div>
-                            <p className="text-sm font-medium text-gray-700">
-                              {course.gurukul?.name}
-                            </p>
                           </div>
+                        )}
+                        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
+                          <p className="text-xs font-medium text-gray-700">
+                            {course.gurukul?.name}
+                          </p>
                         </div>
-                      )}
-                      <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-gray-700">{course.gurukul?.name}</p>
                       </div>
-                    </div>
-                    <CardContent className="p-6 flex flex-col flex-grow">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
-                        <span className="text-sm text-gray-500">{course.course_number}</span>
-                      </div>
-                      <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
-                      <div
-                        className="text-gray-600 mb-4 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
-                      />
-                      <div className="space-y-2 mb-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <UserGroupIcon className="h-4 w-4 mr-2" />
-                          <span>
-                            Ages {getAgeGroupLabel(course.age_group_min, course.age_group_max)}
+                      <CardContent className="p-6 flex flex-col flex-grow">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <Badge className={`${getLevelColor(course.level)} rounded-sm`}>
+                            {course.level.charAt(0).toUpperCase() +
+                              course.level.slice(1).toLowerCase()}
+                          </Badge>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium bg-gray-200 text-gray-800">
+                            {course.course_number}
                           </span>
                         </div>
-                        <div className="flex items-center">
-                          <ClockIcon className="h-4 w-4 mr-2" />
-                          <span>{course.duration_weeks} weeks</span>
+                        <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
+                        <div
+                          className="text-gray-600 mb-4 line-clamp-3"
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
+                        />
+                        <div className="space-y-2 mb-4 text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <UserGroupIcon className="h-4 w-4 mr-2" />
+                            <span>
+                              Ages {getAgeGroupLabel(course.age_group_min, course.age_group_max)}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <ClockIcon className="h-4 w-4 mr-2" />
+                            <span>{course.duration_weeks} weeks</span>
+                          </div>
+                          <div className="flex items-center">
+                            <CurrencyEuroIcon className="h-4 w-4 mr-2" />
+                            <span>{formatCurrency(course.price)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center">
-                          <CurrencyEuroIcon className="h-4 w-4 mr-2" />
-                          <span>{formatCurrency(course.price)}</span>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="text-sm text-gray-500">
+                            {course.delivery_method === 'remote' && '🌐 Online'}
+                            {course.delivery_method === 'physical' && '🏫 In-person'}
+                            {course.delivery_method === 'hybrid' && '🔄 Hybrid'}
+                          </div>
+                          <Link to={generateCourseUrl(course)}>
+                            <Button size="sm">View Details</Button>
+                          </Link>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="text-sm text-gray-500">
-                          {course.delivery_method === 'remote' && '🌐 Online'}
-                          {course.delivery_method === 'physical' && '🏫 In-person'}
-                          {course.delivery_method === 'hybrid' && '🔄 Hybrid'}
-                        </div>
-                        <Link to={generateCourseUrl(course)}>
-                          <Button size="sm">View Details</Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-12 flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="disabled:opacity-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1 rounded text-sm font-medium ${
+                            currentPage === page
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="disabled:opacity-50"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

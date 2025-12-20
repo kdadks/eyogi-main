@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,6 +16,7 @@ type SignInForm = z.infer<typeof signInSchema>
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { signIn } = useAuth()
   const {
     register,
@@ -34,7 +35,8 @@ export default function SignInPage() {
         return
       }
       toast.success('Welcome back!')
-      navigate('/dashboard')
+      const redirectTo = searchParams.get('redirect') || '/dashboard'
+      navigate(redirectTo)
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(error.message)

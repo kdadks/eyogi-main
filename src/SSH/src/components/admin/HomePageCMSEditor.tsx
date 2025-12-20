@@ -26,14 +26,14 @@ const HomePageCMSEditor: React.FC<Props> = ({ slug = 'home' }) => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const [data, coursesData, gurukulData] = await Promise.all([
+        const [data, coursesResult, gurukulsResult] = await Promise.all([
           getPageSettings(slug),
           getCourses(),
           getGurukuls(),
         ])
         setSettings(data)
-        setCourses(coursesData)
-        setGurukuls(gurukulData)
+        setCourses(coursesResult.courses)
+        setGurukuls(gurukulsResult.gurukuls)
         setError(null)
       } catch (e) {
         setError(`Failed to load settings: ${e instanceof Error ? e.message : 'Unknown error'}`)

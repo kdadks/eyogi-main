@@ -54,13 +54,16 @@ export default function AdminOverview() {
   }, [])
   const loadStats = async () => {
     try {
-      const [users, courses, gurukuls, enrollmentStats, consentStats] = await Promise.all([
-        getAllUsers(),
-        getCourses(),
-        getGurukuls(),
-        getEnrollmentStats(),
-        getConsentStats(),
-      ])
+      const [users, coursesResult, gurukulsResult, enrollmentStats, consentStats] =
+        await Promise.all([
+          getAllUsers(),
+          getCourses(),
+          getGurukuls(),
+          getEnrollmentStats(),
+          getConsentStats(),
+        ])
+      const courses = coursesResult.courses
+      const gurukuls = gurukulsResult.gurukuls
       const students = users.filter((u) => u.role === 'student')
       const teachers = users.filter((u) => u.role === 'teacher')
       setStats({

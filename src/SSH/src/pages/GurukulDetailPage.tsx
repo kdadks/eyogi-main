@@ -29,7 +29,7 @@ export default function GurukulDetailPage() {
       const gurukulData = await getGurukul(slug!)
       if (gurukulData) {
         setGurukul(gurukulData)
-        const coursesData = await getCourses({ gurukul_id: gurukulData.id })
+        const { courses: coursesData } = await getCourses({ gurukul_id: gurukulData.id })
         setCourses(coursesData)
       }
     } catch {
@@ -280,19 +280,38 @@ export default function GurukulDetailPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {courses.map((course) => (
                   <Card key={course.id} className="card-hover overflow-hidden flex flex-col">
-                    <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <span className="text-white font-bold text-lg">
-                            {course.course_number.slice(-2)}
-                          </span>
+                    <div className="aspect-video bg-gradient-to-r from-orange-100 to-red-100 relative overflow-hidden">
+                      {course.cover_image_url || course.image_url ? (
+                        <img
+                          src={course.cover_image_url || course.image_url}
+                          alt={course.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <span className="text-white font-bold text-lg">
+                                {course.course_number.slice(-2)}
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium text-gray-700">{gurukul.name}</p>
+                          </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-700">{course.course_number}</p>
+                      )}
+                      <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-gray-700">{gurukul.name}</p>
                       </div>
                     </div>
                     <CardContent className="p-6 flex flex-col flex-grow">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <Badge className={`${getLevelColor(course.level)} rounded-sm`}>
+                          {course.level.charAt(0).toUpperCase() +
+                            course.level.slice(1).toLowerCase()}
+                        </Badge>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium bg-gray-200 text-gray-800">
+                          {course.course_number}
+                        </span>
                       </div>
                       <h3 className="text-xl font-semibold mb-2 line-clamp-2">{course.title}</h3>
                       <div
@@ -315,13 +334,13 @@ export default function GurukulDetailPage() {
                           <span>{formatCurrency(course.price)}</span>
                         </div>
                       </div>
-                      <div className="flex items-end justify-between mt-auto gap-4">
+                      <div className="flex items-center justify-between mt-auto">
                         <div className="text-sm text-gray-500">
                           {course.delivery_method === 'remote' && '🌐 Online'}
                           {course.delivery_method === 'physical' && '🏫 In-person'}
                           {course.delivery_method === 'hybrid' && '🔄 Hybrid'}
                         </div>
-                        <Link to={generateCourseUrl(course)} className="ml-auto">
+                        <Link to={generateCourseUrl(course)}>
                           <Button size="sm">View Details</Button>
                         </Link>
                       </div>

@@ -67,7 +67,7 @@ const BatchManagement: React.FC = () => {
     setLoading(true)
     setCurrentPage(1)
     try {
-      const [batchData, gurukulData, statsData] = await Promise.all([
+      const [batchData, gurukulsResult, statsData] = await Promise.all([
         getBatches({
           gurukul_id: filterGurukul || undefined,
           status: filterStatus || undefined,
@@ -78,7 +78,7 @@ const BatchManagement: React.FC = () => {
       ])
 
       setBatches(batchData)
-      setGurukuls(gurukulData)
+      setGurukuls(gurukulsResult.gurukuls)
       setStats(statsData)
     } catch (error) {
       console.error('Error fetching data:', error)

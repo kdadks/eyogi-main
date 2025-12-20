@@ -42,7 +42,8 @@ const CourseAssignmentModal: React.FC<CourseAssignmentModalProps> = ({
       if (batch.teacher_id) {
         allCourses = await courseAssignments.getTeacherCourses(batch.teacher_id)
       } else {
-        allCourses = await getCourses({ gurukul_id: batch.gurukul_id })
+        const { courses } = await getCourses({ gurukul_id: batch.gurukul_id })
+        allCourses = courses
       }
 
       // Filter out already assigned courses
