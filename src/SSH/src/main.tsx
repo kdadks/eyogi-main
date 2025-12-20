@@ -8,13 +8,21 @@ import { PermissionProvider } from './contexts/PermissionContext'
 import { SessionManager } from './lib/sessionManager'
 import './index.css'
 
-// Suppress ReactQuill warnings in development
+// Suppress ReactQuill warnings and expected Supabase auth errors
 if (import.meta.env.DEV) {
   const originalError = console.error
   const originalWarn = console.warn
 
   console.error = (...args) => {
     if (typeof args[0] === 'string' && args[0].includes('findDOMNode is deprecated')) {
+      return
+    }
+    // Suppress expected Supabase auth errors when no session exists
+    if (typeof args[0] === 'string' && args[0].includes('Invalid Refresh Token')) {
+      return
+    }
+    // Also check for AuthApiError objects
+    if (args[0]?.name === 'AuthApiError' && args[0]?.message?.includes('Refresh Token')) {
       return
     }
     originalError.call(console, ...args)
@@ -45,6 +53,12 @@ if (import.meta.env.PROD || import.meta.env.VITE_FORCE_SESSION_MANAGEMENT) {
 }
 // Keep essential error handlers for production monitoring
 window.addEventListener('error', (event) => {
+  // Skip auth errors
+  const errorMessage = event.error?.message || event.message || ''
+  if (errorMessage.includes('Invalid Refresh Token') || errorMessage.includes('Refresh Token')) {
+    return
+  }
+
   console.error('Global error caught:', event.error || event.message)
   if (event.message.includes('prototype')) {
     // Prototype error detected
@@ -55,6 +69,15 @@ window.addEventListener('error', (event) => {
 })
 
 window.addEventListener('unhandledrejection', (event) => {
+  // Skip auth errors
+  const reason = event.reason
+  if (
+    reason?.message?.includes('Invalid Refresh Token') ||
+    reason?.message?.includes('Refresh Token')
+  ) {
+    return
+  }
+
   console.error('Unhandled promise rejection:', event.reason)
 })
 

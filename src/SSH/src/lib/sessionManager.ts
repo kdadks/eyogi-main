@@ -48,6 +48,24 @@ export class SessionManager {
           localStorage.removeItem(key)
         }
       })
+
+      // Also clear the eyogi-ssh-app-auth token if it exists but is invalid
+      // This prevents "Invalid Refresh Token" errors on app load
+      const authKey = 'eyogi-ssh-app-auth'
+      const authData = localStorage.getItem(authKey)
+      if (authData) {
+        try {
+          const parsed = JSON.parse(authData)
+          // If there's no valid session structure, clear it
+          if (!parsed || !parsed.access_token || !parsed.refresh_token) {
+            localStorage.removeItem(authKey)
+          }
+        } catch {
+          // If parsing fails, the data is corrupted - remove it
+          localStorage.removeItem(authKey)
+        }
+      }
+
       sessionStorage.clear()
     } catch {
       // Error clearing sessions - silent fail

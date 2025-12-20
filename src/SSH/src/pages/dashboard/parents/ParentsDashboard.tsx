@@ -523,7 +523,8 @@ export default function ParentsDashboard() {
     } else {
       setLoading(false)
     }
-  }, [user?.id, loadParentData, loadChildren, loadParentProfile])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
   // Debug: Check what user data is available in ParentsDashboard (one-time log)
   // Load courses once when component mounts
   useEffect(() => {
