@@ -94,8 +94,54 @@ export const US_STATES: CountyCode[] = [
   { code: 'MI', name: 'Michigan', country: 'USA' },
 ]
 
+// Indian States (using standard 2-letter codes)
+export const INDIA_STATES: CountyCode[] = [
+  { code: 'AP', name: 'Andhra Pradesh', country: 'IND' },
+  { code: 'AR', name: 'Arunachal Pradesh', country: 'IND' },
+  { code: 'AS', name: 'Assam', country: 'IND' },
+  { code: 'BR', name: 'Bihar', country: 'IND' },
+  { code: 'CG', name: 'Chhattisgarh', country: 'IND' },
+  { code: 'GA', name: 'Goa', country: 'IND' },
+  { code: 'GJ', name: 'Gujarat', country: 'IND' },
+  { code: 'HR', name: 'Haryana', country: 'IND' },
+  { code: 'HP', name: 'Himachal Pradesh', country: 'IND' },
+  { code: 'JH', name: 'Jharkhand', country: 'IND' },
+  { code: 'KA', name: 'Karnataka', country: 'IND' },
+  { code: 'KL', name: 'Kerala', country: 'IND' },
+  { code: 'MP', name: 'Madhya Pradesh', country: 'IND' },
+  { code: 'MH', name: 'Maharashtra', country: 'IND' },
+  { code: 'MN', name: 'Manipur', country: 'IND' },
+  { code: 'ML', name: 'Meghalaya', country: 'IND' },
+  { code: 'MZ', name: 'Mizoram', country: 'IND' },
+  { code: 'NL', name: 'Nagaland', country: 'IND' },
+  { code: 'OD', name: 'Odisha', country: 'IND' },
+  { code: 'PB', name: 'Punjab', country: 'IND' },
+  { code: 'RJ', name: 'Rajasthan', country: 'IND' },
+  { code: 'SK', name: 'Sikkim', country: 'IND' },
+  { code: 'TN', name: 'Tamil Nadu', country: 'IND' },
+  { code: 'TG', name: 'Telangana', country: 'IND' },
+  { code: 'TR', name: 'Tripura', country: 'IND' },
+  { code: 'UP', name: 'Uttar Pradesh', country: 'IND' },
+  { code: 'UK', name: 'Uttarakhand', country: 'IND' },
+  { code: 'WB', name: 'West Bengal', country: 'IND' },
+  { code: 'AN', name: 'Andaman and Nicobar Islands', country: 'IND' },
+  { code: 'CH', name: 'Chandigarh', country: 'IND' },
+  { code: 'DN', name: 'Dadra and Nagar Haveli', country: 'IND' },
+  { code: 'DD', name: 'Daman and Diu', country: 'IND' },
+  { code: 'DL', name: 'Delhi', country: 'IND' },
+  { code: 'JK', name: 'Jammu and Kashmir', country: 'IND' },
+  { code: 'LA', name: 'Ladakh', country: 'IND' },
+  { code: 'LD', name: 'Lakshadweep', country: 'IND' },
+  { code: 'PY', name: 'Puducherry', country: 'IND' },
+]
+
 // Combine all county/state codes
-export const ALL_COUNTY_CODES: CountyCode[] = [...IRELAND_COUNTIES, ...UK_COUNTIES, ...US_STATES]
+export const ALL_COUNTY_CODES: CountyCode[] = [
+  ...IRELAND_COUNTIES,
+  ...UK_COUNTIES,
+  ...US_STATES,
+  ...INDIA_STATES,
+]
 
 /**
  * Get country code from country name (case-insensitive, fuzzy match)
