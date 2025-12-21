@@ -5,6 +5,7 @@ import StateSelect from '../forms/StateSelect'
 import { getStateName } from '../../lib/address-utils'
 import { normalizeCountryToISO3, getCountryNameFromISO3 } from '../../lib/iso-utils'
 import { supabaseAdmin } from '../../lib/supabase'
+import { countryHasStates } from '../../lib/address-utils'
 
 interface ChildFormData {
   firstName: string
@@ -196,6 +197,22 @@ export default function AddChildModal({
     }
 
     // Class/Grade is now optional - no validation needed
+
+    // Address validation - either state or city must be provided
+    const normalizedCountry = normalizeCountryToISO3(formData.address.country)
+    const hasStates = countryHasStates(normalizedCountry)
+
+    if (hasStates) {
+      // If country has states, state is required
+      if (!formData.address.state || formData.address.state.trim() === '') {
+        newErrors['address.state'] = 'State/Province is required for this country'
+      }
+    } else {
+      // If country doesn't have states, city is required
+      if (!formData.address.city || formData.address.city.trim() === '') {
+        newErrors['address.city'] = 'City is required for this country'
+      }
+    }
 
     // Email validation - only in edit mode
     if (isEditMode) {

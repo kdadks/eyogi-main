@@ -26,6 +26,7 @@ export interface CreateChildData {
 async function generateNextStudentId(
   country?: string | null,
   county?: string | null,
+  city?: string | null,
 ): Promise<string> {
   try {
     let client = supabaseAdmin
@@ -35,9 +36,9 @@ async function generateNextStudentId(
 
     const year = new Date().getFullYear()
 
-    // Get ISO codes
+    // Get ISO codes - pass city as fallback for county code
     const countryCode = getCountryCode(country)
-    const countyCode = getCountyCode(county, countryCode)
+    const countyCode = getCountyCode(county, countryCode, city)
 
     // Create the prefix for this location and year
     const prefix = `${countryCode}${countyCode}${year}`
@@ -114,18 +115,28 @@ export async function createChild(
     if (!childData.country || childData.country.trim() === '') {
       throw new Error('Country is required to generate student ID')
     }
-    if (!childData.state || childData.state.trim() === '') {
-      throw new Error('State/County is required to generate student ID')
+
+    // Either state OR city must be provided
+    const hasState = childData.state && childData.state.trim() !== ''
+    const hasCity = childData.city && childData.city.trim() !== ''
+
+    if (!hasState && !hasCity) {
+      throw new Error('Either State/Province or City is required to generate student ID')
     }
 
-    // Normalize country and state codes to ISO format
+    // Normalize country code to ISO format
     const normalizedCountry = normalizeCountryToISO3(childData.country)
-    const normalizedState = normalizeStateToISO2(childData.state, normalizedCountry)
 
     // Generate unique ID
     const childId = generateUUID()
-    // Generate student ID with normalized country and county/state codes
-    const studentId = await generateNextStudentId(normalizedCountry, normalizedState)
+
+    // Generate student ID - pass raw state name and city, let getCountyCode handle the lookup
+    const studentId = await generateNextStudentId(
+      normalizedCountry,
+      childData.state || null,
+      childData.city || null,
+    )
+
     // Generate unique email for child
     const email = generateStudentEmail(childData.full_name, studentId)
     // Calculate age from date of birth
@@ -136,6 +147,10 @@ export async function createChild(
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--
     }
+
+    // Now normalize state for database storage (after student ID generation)
+    const normalizedState = hasState ? normalizeStateToISO2(childData.state, normalizedCountry) : ''
+
     // Prepare child profile data with normalized ISO codes
     const profileData = {
       id: childId,

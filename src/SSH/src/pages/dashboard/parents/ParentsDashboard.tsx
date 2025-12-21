@@ -532,6 +532,14 @@ export default function ParentsDashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
+
+  // Update stats whenever children data changes
+  useEffect(() => {
+    if (children.length >= 0) {
+      loadParentData()
+    }
+  }, [children, loadParentData])
+
   // Debug: Check what user data is available in ParentsDashboard (one-time log)
   // Load courses once when component mounts
   useEffect(() => {
@@ -574,29 +582,10 @@ export default function ParentsDashboard() {
         },
         changedBy,
       )
-      // Calculate age from date of birth for local state
-      const birthDate = new Date(childData.date_of_birth)
-      const today = new Date()
-      let age = today.getFullYear() - birthDate.getFullYear()
-      const monthDiff = today.getMonth() - birthDate.getMonth()
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--
-      }
-      // Convert database profile to Child interface for local state
-      const newChild: Child = {
-        student_id: newChildProfile.student_id || `temp-${Date.now()}`,
-        full_name: newChildProfile.full_name || childData.fullName,
-        age: age,
-        grade: childData.grade,
-        avatar: age < 10 ? '👶' : age < 15 ? '🧒' : '👤',
-        overall_progress: 0,
-        streak_days: 0,
-        learning_time: { daily: 0, weekly: 0, monthly: 0 },
-        enrolled_courses: [],
-        recent_activity: [],
-        achievements: [],
-      }
-      setChildren((prev) => [...prev, newChild])
+
+      // Reload children data to get the correct student_id and all fields
+      await loadChildren()
+
       setShowAddChildModal(false)
       toast.success(`${childData.fullName} has been added successfully!`)
       loadParentData() // Refresh stats
@@ -1263,56 +1252,79 @@ export default function ParentsDashboard() {
                   </button>
                 </div>
               ) : (
-                children.map((child) => (
-                  <motion.button
-                    key={child.student_id}
-                    onClick={() => handleChildSelection(child.student_id)}
-                    disabled={enrollmentLoading}
-                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    whileHover={{ scale: enrollmentLoading ? 1 : 1.02 }}
-                    whileTap={{ scale: enrollmentLoading ? 1 : 0.98 }}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                        {child.full_name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <h5 className="font-semibold text-gray-900">{child.full_name}</h5>
-                        <p className="text-sm text-gray-600">
-                          {child.grade} • Age {child.age && !isNaN(child.age) ? child.age : 'N/A'}
+                (() => {
+                  const unenrolledChildren = children.filter((child) => {
+                    // Filter out children already enrolled in this course
+                    const isAlreadyEnrolled = child.enrolled_courses?.some(
+                      (course) => course.id === selectedCourse.id,
+                    )
+                    return !isAlreadyEnrolled
+                  })
+
+                  if (unenrolledChildren.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 mb-2">
+                          All your children are already enrolled in this course.
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Add another child or choose a different course.
                         </p>
                       </div>
-                      {enrollmentLoading && (
-                        <svg
-                          className="animate-spin h-5 w-5 text-blue-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                      )}
-                    </div>
-                  </motion.button>
-                ))
+                    )
+                  }
+
+                  return unenrolledChildren.map((child) => (
+                    <motion.button
+                      key={child.student_id}
+                      onClick={() => handleChildSelection(child.student_id)}
+                      disabled={enrollmentLoading}
+                      className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={{ scale: enrollmentLoading ? 1 : 1.02 }}
+                      whileTap={{ scale: enrollmentLoading ? 1 : 0.98 }}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                          {child.full_name.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-semibold text-gray-900">{child.full_name}</h5>
+                          <p className="text-sm text-gray-600">
+                            {child.grade} • Age {child.age && !isNaN(child.age) ? child.age : 'N/A'}
+                          </p>
+                        </div>
+                        {enrollmentLoading && (
+                          <svg
+                            className="animate-spin h-5 w-5 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        )}
+                      </div>
+                    </motion.button>
+                  ))
+                })()
               )}
             </div>
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setShowChildSelectionModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 cursor-pointer"
+                className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 font-medium rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer"
               >
                 Cancel
               </button>
@@ -1679,71 +1691,85 @@ function HomeTab({
                     </div>
                   </div>
                 ))
-              : courses.slice(0, 6).map((course: AvailableCourse, index: number) => (
-                  <motion.div
-                    key={course.id}
-                    className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.1 * index }}
-                    whileHover={{ y: -2 }}
-                  >
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
-                            {course.title}
-                          </h4>
-                          <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
-                          <span
-                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                              course.difficulty === 'Beginner'
-                                ? 'bg-green-100 text-green-800'
-                                : course.difficulty === 'Intermediate'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {course.difficulty}
+              : courses.slice(0, 6).map((course: AvailableCourse, index: number) => {
+                  // Check if all children are enrolled in this course
+                  const allChildrenEnrolled =
+                    children.length > 0 &&
+                    children.every((child) =>
+                      child.enrolled_courses?.some((enrolled) => enrolled.id === course.id),
+                    )
+
+                  return (
+                    <motion.div
+                      key={course.id}
+                      className="bg-white/80 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.1 * index }}
+                      whileHover={{ y: -2 }}
+                    >
+                      <div className="flex-1 flex flex-col">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
+                              {course.title}
+                            </h4>
+                            <p className="text-xs text-gray-600 mb-2">{course.subject}</p>
+                            <span
+                              className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                course.difficulty === 'Beginner'
+                                  ? 'bg-green-100 text-green-800'
+                                  : course.difficulty === 'Intermediate'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {course.difficulty}
+                            </span>
+                          </div>
+                          <div className="text-right ml-2 flex-shrink-0">
+                            <div className="text-sm font-bold text-gray-900">
+                              {formatCurrency(course.price)}
+                            </div>
+                            <div className="text-xs text-gray-600">{course.duration}</div>
+                          </div>
+                        </div>
+                        <div
+                          className="text-xs text-gray-600 mb-3 line-clamp-3 flex-1"
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
+                        />
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <div className="flex text-yellow-400">
+                              {[...Array(5)].map((_, i) => (
+                                <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                </svg>
+                              ))}
+                            </div>
+                            <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
+                          </div>
+                          <span className="text-xs text-gray-600 truncate ml-2">
+                            {course.instructor}
                           </span>
                         </div>
-                        <div className="text-right ml-2 flex-shrink-0">
-                          <div className="text-sm font-bold text-gray-900">
-                            {formatCurrency(course.price)}
-                          </div>
-                          <div className="text-xs text-gray-600">{course.duration}</div>
-                        </div>
                       </div>
-                      <div
-                        className="text-xs text-gray-600 mb-3 line-clamp-3 flex-1"
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
-                      />
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center">
-                          <div className="flex text-yellow-400">
-                            {[...Array(5)].map((_, i) => (
-                              <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                              </svg>
-                            ))}
-                          </div>
-                          <span className="text-xs text-gray-600 ml-1">({course.rating})</span>
-                        </div>
-                        <span className="text-xs text-gray-600 truncate ml-2">
-                          {course.instructor}
-                        </span>
-                      </div>
-                    </div>
-                    <motion.button
-                      onClick={() => onCourseEnrollment(course)}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer mt-auto"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Enroll Now
-                    </motion.button>
-                  </motion.div>
-                ))}
+                      <motion.button
+                        onClick={() => onCourseEnrollment(course)}
+                        disabled={allChildrenEnrolled}
+                        className={`w-full text-sm font-medium py-2 px-4 rounded-lg transition-all duration-300 mt-auto ${
+                          allChildrenEnrolled
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 cursor-pointer'
+                        }`}
+                        whileHover={allChildrenEnrolled ? {} : { scale: 1.02 }}
+                        whileTap={allChildrenEnrolled ? {} : { scale: 0.98 }}
+                      >
+                        {allChildrenEnrolled ? 'All Children Enrolled' : 'Enroll Now'}
+                      </motion.button>
+                    </motion.div>
+                  )
+                })}
           </div>
         </motion.div>
       )}

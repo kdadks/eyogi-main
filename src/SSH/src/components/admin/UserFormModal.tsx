@@ -40,7 +40,7 @@ function generateEmailFromName(fullName: string): string {
 }
 import type { Database } from '../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
-import { countries, getStatesForCountry } from '../../lib/address-utils'
+import { countries, getStatesForCountry, countryHasStates } from '../../lib/address-utils'
 
 // Utility to extract address fields from Profile
 // No extractAddressData needed; use address object from user
@@ -240,9 +240,23 @@ export default function UserFormModal({
       toast.error('Country is required')
       return false
     }
-    if (!formData.state) {
-      toast.error('State/Province is required')
-      return false
+
+    // Check if country has states/provinces
+    const normalizedCountry = normalizeCountryToISO3(formData.country)
+    const hasStates = countryHasStates(normalizedCountry)
+
+    if (hasStates) {
+      // If country has states, state is required
+      if (!formData.state) {
+        toast.error('State/Province is required for this country')
+        return false
+      }
+    } else {
+      // If country doesn't have states, city is required
+      if (!formData.city) {
+        toast.error('City is required for this country')
+        return false
+      }
     }
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       toast.error('Please enter a valid email address')

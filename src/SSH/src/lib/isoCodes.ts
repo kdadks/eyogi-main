@@ -38,34 +38,34 @@ export const COUNTRY_CODES: CountryCode[] = [
   { code: 'FIN', name: 'Finland' },
 ]
 
-// Ireland Counties (using 2-letter codes)
+// Ireland Counties (using 2-letter codes from address-utils.ts)
 export const IRELAND_COUNTIES: CountyCode[] = [
-  { code: 'DU', name: 'Dublin', country: 'IRL' },
-  { code: 'CO', name: 'Cork', country: 'IRL' },
-  { code: 'GA', name: 'Galway', country: 'IRL' },
-  { code: 'LI', name: 'Limerick', country: 'IRL' },
-  { code: 'KE', name: 'Kerry', country: 'IRL' },
-  { code: 'WA', name: 'Waterford', country: 'IRL' },
-  { code: 'KI', name: 'Kildare', country: 'IRL' },
-  { code: 'ME', name: 'Meath', country: 'IRL' },
-  { code: 'WI', name: 'Wicklow', country: 'IRL' },
-  { code: 'WE', name: 'Wexford', country: 'IRL' },
-  { code: 'CA', name: 'Carlow', country: 'IRL' },
-  { code: 'KK', name: 'Kilkenny', country: 'IRL' },
-  { code: 'LA', name: 'Laois', country: 'IRL' },
-  { code: 'OF', name: 'Offaly', country: 'IRL' },
-  { code: 'WH', name: 'Westmeath', country: 'IRL' },
-  { code: 'LO', name: 'Longford', country: 'IRL' },
-  { code: 'LD', name: 'Louth', country: 'IRL' },
-  { code: 'MO', name: 'Monaghan', country: 'IRL' },
+  { code: 'CW', name: 'Carlow', country: 'IRL' },
   { code: 'CN', name: 'Cavan', country: 'IRL' },
-  { code: 'DO', name: 'Donegal', country: 'IRL' },
-  { code: 'SL', name: 'Sligo', country: 'IRL' },
-  { code: 'LE', name: 'Leitrim', country: 'IRL' },
-  { code: 'RO', name: 'Roscommon', country: 'IRL' },
-  { code: 'MA', name: 'Mayo', country: 'IRL' },
-  { code: 'CL', name: 'Clare', country: 'IRL' },
-  { code: 'TI', name: 'Tipperary', country: 'IRL' },
+  { code: 'CE', name: 'Clare', country: 'IRL' },
+  { code: 'CO', name: 'Cork', country: 'IRL' },
+  { code: 'DL', name: 'Donegal', country: 'IRL' },
+  { code: 'DU', name: 'Dublin', country: 'IRL' },
+  { code: 'GA', name: 'Galway', country: 'IRL' },
+  { code: 'KY', name: 'Kerry', country: 'IRL' },
+  { code: 'KE', name: 'Kildare', country: 'IRL' },
+  { code: 'KK', name: 'Kilkenny', country: 'IRL' },
+  { code: 'LS', name: 'Laois', country: 'IRL' },
+  { code: 'LM', name: 'Leitrim', country: 'IRL' },
+  { code: 'LK', name: 'Limerick', country: 'IRL' },
+  { code: 'LD', name: 'Longford', country: 'IRL' },
+  { code: 'LH', name: 'Louth', country: 'IRL' },
+  { code: 'MO', name: 'Mayo', country: 'IRL' },
+  { code: 'MH', name: 'Meath', country: 'IRL' },
+  { code: 'MN', name: 'Monaghan', country: 'IRL' },
+  { code: 'OY', name: 'Offaly', country: 'IRL' },
+  { code: 'RN', name: 'Roscommon', country: 'IRL' },
+  { code: 'SO', name: 'Sligo', country: 'IRL' },
+  { code: 'TA', name: 'Tipperary', country: 'IRL' },
+  { code: 'WD', name: 'Waterford', country: 'IRL' },
+  { code: 'WH', name: 'Westmeath', country: 'IRL' },
+  { code: 'WX', name: 'Wexford', country: 'IRL' },
+  { code: 'WW', name: 'Wicklow', country: 'IRL' },
 ]
 
 // UK Counties/Regions (sample)
@@ -162,22 +162,75 @@ export function getCountryCode(countryName: string | null | undefined): string {
 }
 
 /**
- * Get county/state code from county/state name and country
+ * Generate 2-letter code from city name by taking first 2 unique consonants/letters
  */
-export function getCountyCode(countyName: string | null | undefined, countryCode: string): string {
-  if (!countyName) return 'XX' // Default unknown
+function generateCityCode(cityName: string): string {
+  if (!cityName) return 'XX'
+
+  // Remove spaces, special characters, and convert to uppercase
+  const cleaned = cityName
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+
+  if (cleaned.length === 0) return 'XX'
+  if (cleaned.length === 1) return cleaned + 'X'
+
+  // Try to get 2 unique characters
+  const chars: string[] = []
+  for (const char of cleaned) {
+    if (!chars.includes(char)) {
+      chars.push(char)
+      if (chars.length === 2) break
+    }
+  }
+
+  if (chars.length === 1) chars.push('X')
+  return chars.join('')
+}
+
+/**
+ * Get county/state code from county/state name and country
+ * If state not found and city is provided, generates code from city name
+ */
+export function getCountyCode(
+  countyName: string | null | undefined,
+  countryCode: string,
+  cityName?: string | null,
+): string {
+  // If no state provided, try to use city
+  if (!countyName || countyName.trim() === '') {
+    if (cityName && cityName.trim() !== '') {
+      const cityCode = generateCityCode(cityName)
+      return cityCode
+    }
+    return 'XX' // Default unknown
+  }
 
   const normalized = countyName.trim().toLowerCase()
 
-  const county = ALL_COUNTY_CODES.find(
-    (c) =>
-      c.country === countryCode &&
-      (c.name.toLowerCase() === normalized ||
-        c.code.toLowerCase() === normalized ||
-        c.name.toLowerCase().includes(normalized)),
+  // First try exact code match (to avoid "hr" matching "Andhra Pradesh")
+  let county = ALL_COUNTY_CODES.find(
+    (c) => c.country === countryCode && c.code.toLowerCase() === normalized,
   )
 
-  return county?.code || 'XX'
+  // If no code match, try name match
+  if (!county) {
+    county = ALL_COUNTY_CODES.find(
+      (c) => c.country === countryCode && c.name.toLowerCase() === normalized,
+    )
+  }
+
+  // If state not found in our list, try to generate from city
+  if (!county) {
+    if (cityName && cityName.trim() !== '') {
+      const cityCode = generateCityCode(cityName)
+      return cityCode
+    }
+    return 'XX'
+  }
+
+  return county.code
 }
 
 /**

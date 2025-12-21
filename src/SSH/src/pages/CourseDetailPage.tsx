@@ -8,7 +8,7 @@ import type { Database } from '../types/database'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 import { getEnrolledCount, getCourseBySlug } from '../lib/api/courses'
-import { enrollInCourse } from '../lib/api/enrollments'
+import { enrollInCourse, getStudentEnrollments } from '../lib/api/enrollments'
 import { getChildrenByParentId } from '../lib/api/children'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
@@ -107,6 +107,42 @@ export default function CourseDetailPage() {
   const [prerequisiteResult, setPrerequisiteResult] = useState<PrerequisiteCheckResult | null>(null)
   const [children, setChildren] = useState<Profile[]>([])
   const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
+  const [allChildrenEnrolled, setAllChildrenEnrolled] = useState(false)
+
+  // Check if all children are enrolled when page loads (for parents)
+  useEffect(() => {
+    const checkChildrenEnrollment = async () => {
+      if (user?.role === 'parent' && course?.id) {
+        try {
+          const parentChildren = await getChildrenByParentId(user.id)
+          if (parentChildren.length === 0) {
+            setAllChildrenEnrolled(false)
+            return
+          }
+
+          const childrenWithEnrollmentStatus = await Promise.all(
+            parentChildren.map(async (child) => {
+              const enrollments = await getStudentEnrollments(child.id)
+              const isEnrolled = enrollments.some(
+                (enrollment) => enrollment.course_id === course.id,
+              )
+              return isEnrolled
+            }),
+          )
+
+          // Check if ALL children are enrolled
+          const allEnrolled = childrenWithEnrollmentStatus.every((isEnrolled) => isEnrolled)
+          setAllChildrenEnrolled(allEnrolled)
+        } catch (error) {
+          console.error('Failed to check children enrollment:', error)
+          setAllChildrenEnrolled(false)
+        }
+      }
+    }
+
+    checkChildrenEnrollment()
+  }, [user, course])
+
   const loadCourseData = useCallback(async () => {
     if (!id) {
       setLoading(false)
@@ -163,7 +199,24 @@ export default function CourseDetailPage() {
           toast.error('You need to add children to your account before enrolling them in courses')
           return
         }
-        setChildren(parentChildren)
+
+        // Filter out children who are already enrolled in this course
+        const childrenWithEnrollmentStatus = await Promise.all(
+          parentChildren.map(async (child) => {
+            const enrollments = await getStudentEnrollments(child.id)
+            const isEnrolled = enrollments.some((enrollment) => enrollment.course_id === course!.id)
+            return { ...child, isEnrolled }
+          }),
+        )
+
+        const unenrolledChildren = childrenWithEnrollmentStatus.filter((child) => !child.isEnrolled)
+
+        if (unenrolledChildren.length === 0) {
+          toast.error('All your children are already enrolled in this course')
+          return
+        }
+
+        setChildren(unenrolledChildren)
         setShowChildSelectionModal(true)
       } catch {
         toast.error('Failed to load your children. Please try again.')
@@ -182,6 +235,20 @@ export default function CourseDetailPage() {
     try {
       await enrollInCourse(course!.id, selectedChild.id)
       toast.success(`${selectedChild.full_name} has been enrolled in ${course!.title}!`)
+
+      // Re-check if all children are now enrolled
+      if (user?.role === 'parent' && course?.id) {
+        const parentChildren = await getChildrenByParentId(user.id)
+        const childrenWithEnrollmentStatus = await Promise.all(
+          parentChildren.map(async (child) => {
+            const enrollments = await getStudentEnrollments(child.id)
+            const isEnrolled = enrollments.some((enrollment) => enrollment.course_id === course.id)
+            return isEnrolled
+          }),
+        )
+        const allEnrolled = childrenWithEnrollmentStatus.every((isEnrolled) => isEnrolled)
+        setAllChildrenEnrolled(allEnrolled)
+      }
     } catch {
       toast.error('Failed to enroll child in course')
     } finally {
@@ -445,7 +512,8 @@ export default function CourseDetailPage() {
                             loading={enrolling}
                             disabled={
                               enrolledCount >= course.max_students ||
-                              !!(prerequisiteResult && !prerequisiteResult.canEnroll)
+                              !!(prerequisiteResult && !prerequisiteResult.canEnroll) ||
+                              (user.role === 'parent' && allChildrenEnrolled)
                             }
                           >
                             {enrolledCount >= course.max_students
@@ -454,9 +522,11 @@ export default function CourseDetailPage() {
                                 ? prerequisiteResult.message.includes('Already enrolled')
                                   ? 'Already Enrolled'
                                   : 'Prerequisites Not Met'
-                                : user.role === 'parent'
-                                  ? 'Enroll Child'
-                                  : 'Enroll Now'}
+                                : user.role === 'parent' && allChildrenEnrolled
+                                  ? 'All Children Enrolled'
+                                  : user.role === 'parent'
+                                    ? 'Enroll Child'
+                                    : 'Enroll Now'}
                           </Button>
                         </div>
                       ) : (
@@ -694,7 +764,11 @@ export default function CourseDetailPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Delivery:</span>
-                    <span className="capitalize">{course.delivery_method}</span>
+                    <span className="capitalize">
+                      {course.delivery_method === 'remote' && 'Online'}
+                      {course.delivery_method === 'physical' && 'In-person'}
+                      {course.delivery_method === 'hybrid' && 'Hybrid'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Certificate:</span>
