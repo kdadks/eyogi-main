@@ -255,7 +255,7 @@ export default function ProfileEditModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 p-2"
+              className="text-gray-400 hover:text-gray-500 p-2 cursor-pointer"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>

@@ -1,6 +1,12 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { XMarkIcon, UserIcon, ClockIcon, ComputerDesktopIcon, MapPinIcon } from '@heroicons/react/24/outline'
+import {
+  XMarkIcon,
+  UserIcon,
+  ClockIcon,
+  ComputerDesktopIcon,
+  MapPinIcon,
+} from '@heroicons/react/24/outline'
 import { StudentConsent } from '../../lib/api/consent'
 
 interface ConsentAuditModalProps {
@@ -10,11 +16,17 @@ interface ConsentAuditModalProps {
   userRole?: 'student' | 'teacher' | 'admin' | 'business_admin' | 'super_admin' | 'parent'
 }
 
-export default function ConsentAuditModal({ consent, studentName, onClose, userRole }: ConsentAuditModalProps) {
+export default function ConsentAuditModal({
+  consent,
+  studentName,
+  onClose,
+  userRole,
+}: ConsentAuditModalProps) {
   if (!consent) return null
 
   // Check if user can view sensitive data (IP and Browser)
-  const canViewSensitiveData = userRole === 'business_admin' || userRole === 'super_admin' || userRole === 'admin'
+  const canViewSensitiveData =
+    userRole === 'business_admin' || userRole === 'super_admin' || userRole === 'admin'
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
@@ -58,7 +70,7 @@ export default function ConsentAuditModal({ consent, studentName, onClose, userR
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                  className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg cursor-pointer"
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
@@ -251,7 +263,7 @@ export default function ConsentAuditModal({ consent, studentName, onClose, userR
             <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end border-t border-gray-200">
               <button
                 onClick={onClose}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors cursor-pointer"
               >
                 Close
               </button>

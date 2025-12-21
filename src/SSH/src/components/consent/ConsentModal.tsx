@@ -108,7 +108,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 <XMarkIcon className="h-6 w-6 text-gray-500" />
@@ -184,7 +184,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed"
               disabled={loading}
             >
               <XMarkIcon className="h-6 w-6 text-gray-500" />

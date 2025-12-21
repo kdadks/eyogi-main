@@ -431,7 +431,7 @@ export default function ComplianceFormModal({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
@@ -494,19 +494,11 @@ export default function ComplianceFormModal({
                 <Button
                   type="submit"
                   disabled={submitting}
+                  loading={submitting}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <CloudArrowUpIcon className="h-4 w-4 mr-2" />
-                      Submit Form
-                    </>
-                  )}
+                  <CloudArrowUpIcon className="h-4 w-4 mr-2" />
+                  {submitting ? 'Submitting...' : 'Submit Form'}
                 </Button>
               </div>
             </form>

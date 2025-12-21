@@ -4,7 +4,7 @@ import CountrySelect from '../forms/CountrySelect'
 import StateSelect from '../forms/StateSelect'
 import { getStateName } from '../../lib/address-utils'
 import { normalizeCountryToISO3, getCountryNameFromISO3 } from '../../lib/iso-utils'
-import { supabase } from '../../lib/supabase'
+import { supabaseAdmin } from '../../lib/supabase'
 
 interface ChildFormData {
   firstName: string
@@ -42,6 +42,7 @@ interface AddChildModalProps {
   parentInfo?: ParentInfo
   initialData?: ChildFormData // For edit mode
   isEditMode?: boolean
+  childId?: string // Child's student_id for edit mode (to exclude from email uniqueness check)
 }
 
 export default function AddChildModal({
@@ -52,6 +53,7 @@ export default function AddChildModal({
   parentInfo,
   initialData,
   isEditMode = false,
+  childId,
 }: AddChildModalProps) {
   // Helper function to format date for MM/DD/YYYY display
   const formatDateForDisplay = (dateString?: string): string => {
@@ -209,14 +211,21 @@ export default function AddChildModal({
     return Object.keys(newErrors).length === 0
   }
 
-  // Check if email already exists in database
-  const checkEmailExists = async (email: string): Promise<boolean> => {
+  // Check if email already exists in database (excluding current child in edit mode)
+  const checkEmailExists = async (email: string, excludeId?: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
+      let query = supabaseAdmin
         .from('profiles')
         .select('id')
         .eq('email', email.toLowerCase())
         .limit(1)
+
+      // Exclude current child's ID in edit mode
+      if (excludeId) {
+        query = query.neq('id', excludeId)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('Error checking email existence:', error)
@@ -238,7 +247,7 @@ export default function AddChildModal({
 
     // Check email uniqueness if email is provided in edit mode
     if (isEditMode && formData.email && formData.email.trim()) {
-      const emailExists = await checkEmailExists(formData.email.trim())
+      const emailExists = await checkEmailExists(formData.email.trim(), childId)
       if (emailExists) {
         setErrors({
           email: 'This email address is already in use. Please choose a different email.',
@@ -311,7 +320,7 @@ export default function AddChildModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X className="h-6 w-6" />
           </button>
@@ -509,7 +518,7 @@ export default function AddChildModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 font-medium rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 font-medium rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 Cancel
@@ -517,8 +526,30 @@ export default function AddChildModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center gap-2"
               >
+                {loading && (
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                )}
                 {loading ? 'Saving...' : isEditMode ? 'Update Child' : 'Add Child'}
               </button>
             </div>

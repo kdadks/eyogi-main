@@ -93,7 +93,7 @@ export default function HelpModal({
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                  className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg cursor-pointer"
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
@@ -117,7 +117,9 @@ export default function HelpModal({
                           }`}
                         >
                           {topic.icon && (
-                            <span className={`text-lg ${expandedTopic === topic.id ? 'text-white' : ''}`}>
+                            <span
+                              className={`text-lg ${expandedTopic === topic.id ? 'text-white' : ''}`}
+                            >
                               {topic.icon}
                             </span>
                           )}
@@ -142,7 +144,9 @@ export default function HelpModal({
                               <div className="flex items-center gap-3 mb-4">
                                 {topic.icon && <span className="text-3xl">{topic.icon}</span>}
                                 <div>
-                                  <h3 className="text-2xl font-bold text-gray-900">{topic.title}</h3>
+                                  <h3 className="text-2xl font-bold text-gray-900">
+                                    {topic.title}
+                                  </h3>
                                   <p className="text-gray-600 mt-1">{topic.description}</p>
                                 </div>
                               </div>
@@ -161,9 +165,11 @@ export default function HelpModal({
                                   {/* Section Header */}
                                   <button
                                     onClick={() => toggleSection(section.id)}
-                                    className="w-full px-5 py-4 flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-150 transition-all duration-200"
+                                    className="w-full px-5 py-4 flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-150 transition-all duration-200 cursor-pointer"
                                   >
-                                    <h4 className="font-semibold text-gray-900">{section.heading}</h4>
+                                    <h4 className="font-semibold text-gray-900">
+                                      {section.heading}
+                                    </h4>
                                     <motion.div
                                       animate={{
                                         rotate: expandedSections.has(section.id) ? 180 : 0,
@@ -197,22 +203,30 @@ export default function HelpModal({
                                           {/* Example */}
                                           {section.example && (
                                             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                                              <p className="font-semibold text-blue-900 mb-2">💡 Example:</p>
-                                              <p className="text-blue-800 text-sm">{section.example}</p>
+                                              <p className="font-semibold text-blue-900 mb-2">
+                                                💡 Example:
+                                              </p>
+                                              <p className="text-blue-800 text-sm">
+                                                {section.example}
+                                              </p>
                                             </div>
                                           )}
 
                                           {/* Tips */}
                                           {section.tips && section.tips.length > 0 && (
                                             <div className="space-y-2">
-                                              <p className="font-semibold text-gray-900">💡 Tips:</p>
+                                              <p className="font-semibold text-gray-900">
+                                                💡 Tips:
+                                              </p>
                                               <ul className="space-y-2">
                                                 {section.tips.map((tip, tipIndex) => (
                                                   <li
                                                     key={tipIndex}
                                                     className="flex items-start gap-3 text-sm text-gray-700"
                                                   >
-                                                    <span className="text-green-500 font-bold mt-0.5">•</span>
+                                                    <span className="text-green-500 font-bold mt-0.5">
+                                                      •
+                                                    </span>
                                                     <span>{tip}</span>
                                                   </li>
                                                 ))}
@@ -238,7 +252,7 @@ export default function HelpModal({
               <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end rounded-b-2xl">
                 <button
                   onClick={onClose}
-                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
                 >
                   Close
                 </button>

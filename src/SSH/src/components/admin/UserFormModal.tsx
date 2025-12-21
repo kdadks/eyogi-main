@@ -200,18 +200,18 @@ export default function UserFormModal({
         [name]: value,
       }
       // Auto-generate email when full name changes in create mode - ONLY for students
-      if (mode === 'create' && name === 'full_name' && value && prevData.role === 'student') {
+      if (mode === 'create' && name === 'full_name' && value && prev.role === 'student') {
         updated.email = generateEmailFromName(value)
       } // Auto-generate email when role changes to student in create mode
-      if (mode === 'create' && name === 'role' && value === 'student' && prevData.full_name) {
-        updated.email = generateEmailFromName(prevData.full_name)
+      if (mode === 'create' && name === 'role' && value === 'student' && prev.full_name) {
+        updated.email = generateEmailFromName(prev.full_name)
       }
       // Clear auto-generated email when role changes away from student
       if (
         mode === 'create' &&
         name === 'role' &&
         value !== 'student' &&
-        prevData.email?.includes('@eyogi-student.com')
+        prev.email?.includes('@eyogi-student.com')
       ) {
         updated.email = ''
       } // Auto-calculate age when date of birth changes
@@ -363,6 +363,8 @@ export default function UserFormModal({
         }
 
         // Update existing user profile with all correct fields
+        // Note: Exclude country, state, student_id, parent_id, teacher_id, business_admin_id, age
+        // as these are used to generate role IDs and should not be changed after creation
         const updateData: any = {
           email: formData.email,
           full_name: formData.full_name,
@@ -372,18 +374,15 @@ export default function UserFormModal({
           phone: formData.phone || null,
           emergency_contact: emergencyContact,
           avatar_url: formData.avatar_url || null,
-          student_id: formData.student_id || null,
-          parent_id: formData.parent_id || null,
           address_line_1: formData.address_line_1 || null,
           address_line_2: formData.address_line_2 || null,
           city: formData.city || null,
-          state: normalizedState || null,
           zip_code: formData.zip_code || null,
-          country: normalizedCountry || null,
-          age: formData.age ? Number(formData.age) : null,
           grade: formData.grade || null,
           updated_at: new Date().toISOString(),
         }
+        // Do NOT update: country, state, student_id, parent_id, teacher_id, business_admin_id, age
+        // These fields are immutable after user creation
 
         // Add password_hash if password provided
         if (formData.password) {
@@ -592,6 +591,7 @@ export default function UserFormModal({
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Student ID
+                      <span className="ml-1 text-xs text-gray-500">(Cannot be changed)</span>
                     </label>
                     <input
                       type="text"
@@ -618,14 +618,19 @@ export default function UserFormModal({
             )}
             {formData.role === 'parent' && (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Parent ID</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Parent ID
+                  {mode === 'edit' && (
+                    <span className="ml-1 text-xs text-gray-500">(Cannot be changed)</span>
+                  )}
+                </label>
                 <input
                   type="text"
                   name="parent_id"
                   value={formData.parent_id}
                   onChange={handleInputChange}
-                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                  disabled={isReadOnly}
+                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${mode === 'edit' ? 'bg-gray-100 cursor-not-allowed' : readOnlyClass}`}
+                  disabled={isReadOnly || mode === 'edit'}
                 />
               </div>
             )}
@@ -719,13 +724,16 @@ export default function UserFormModal({
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Country <span className="text-red-500">*</span>
+                {mode === 'edit' && (
+                  <span className="ml-1 text-xs text-gray-500">(Cannot be changed)</span>
+                )}
               </label>
               <select
                 name="country"
                 value={formData.country}
                 onChange={handleInputChange}
-                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                disabled={isReadOnly}
+                className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${mode === 'edit' ? 'bg-gray-100 cursor-not-allowed' : readOnlyClass}`}
+                disabled={isReadOnly || mode === 'edit'}
                 required
               >
                 <option value="">Select Country</option>
@@ -741,13 +749,16 @@ export default function UserFormModal({
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   State/Province <span className="text-red-500">*</span>
+                  {mode === 'edit' && (
+                    <span className="ml-1 text-xs text-gray-500">(Cannot be changed)</span>
+                  )}
                 </label>
                 <select
                   name="state"
                   value={formData.state}
                   onChange={handleInputChange}
-                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                  disabled={isReadOnly}
+                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${mode === 'edit' ? 'bg-gray-100 cursor-not-allowed' : readOnlyClass}`}
+                  disabled={isReadOnly || mode === 'edit'}
                   required
                 >
                   <option value="">Select State/Province</option>

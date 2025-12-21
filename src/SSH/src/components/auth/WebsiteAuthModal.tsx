@@ -298,7 +298,7 @@ export default function WebsiteAuthModal({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-400 hover:text-gray-600 hover:rotate-90"
+              className="p-1.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-400 hover:text-gray-600 hover:rotate-90 cursor-pointer"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>

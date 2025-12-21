@@ -271,19 +271,46 @@ export async function updateChild(
       }
     }
 
-    const updateData = {
+    // Build update data - only include fields that are provided
+    const updateData: any = {
       full_name: updates.full_name,
-      date_of_birth: updates.date_of_birth, // Add the missing date_of_birth field
       age: calculatedAge,
       grade: updates.grade,
-      email: updates.email, // Allow email updates
-      phone: updates.phone || null,
-      address_line_1: updates.address_line_1 || null,
-      address_line_2: updates.address_line_2 || null,
-      city: updates.city || null,
-      state: normalizedState, // Use normalized 2-letter state code
-      zip_code: updates.zip_code || null,
-      country: normalizedCountry, // Use normalized 3-letter country code
+    }
+
+    // Only include date_of_birth if provided
+    if (updates.date_of_birth !== undefined) {
+      updateData.date_of_birth = updates.date_of_birth
+    }
+
+    // Only include email if provided
+    if (updates.email !== undefined) {
+      updateData.email = updates.email
+    }
+
+    // Only include phone if provided
+    if (updates.phone !== undefined) {
+      updateData.phone = updates.phone || null
+    }
+
+    // Only include address fields if explicitly provided (not for parent dashboard edits)
+    if (updates.address_line_1 !== undefined) {
+      updateData.address_line_1 = updates.address_line_1 || null
+    }
+    if (updates.address_line_2 !== undefined) {
+      updateData.address_line_2 = updates.address_line_2 || null
+    }
+    if (updates.city !== undefined) {
+      updateData.city = updates.city || null
+    }
+    if (normalizedState !== null && updates.state !== undefined) {
+      updateData.state = normalizedState
+    }
+    if (updates.zip_code !== undefined) {
+      updateData.zip_code = updates.zip_code || null
+    }
+    if (normalizedCountry !== null && updates.country !== undefined) {
+      updateData.country = normalizedCountry
     }
 
     // Encrypt sensitive fields before updating

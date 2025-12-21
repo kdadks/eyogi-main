@@ -202,9 +202,11 @@ export default function ParentsDashboard() {
   const [showAddChildModal, setShowAddChildModal] = useState(false)
   const [showEditChildModal, setShowEditChildModal] = useState(false)
   const [childToEdit, setChildToEdit] = useState<Child | null>(null)
+  const [childFormLoading, setChildFormLoading] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showChildSelectionModal, setShowChildSelectionModal] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<AvailableCourse | null>(null)
+  const [enrollmentLoading, setEnrollmentLoading] = useState(false)
   const [selectedChildForAttendance, setSelectedChildForAttendance] = useState<string | null>(null)
   const [showConsentModal, setShowConsentModal] = useState(false)
   const [selectedChildForConsent, setSelectedChildForConsent] = useState<Child | null>(null)
@@ -295,15 +297,20 @@ export default function ParentsDashboard() {
         childrenProfiles.map(async (profile) => {
           // Calculate age properly from date of birth
           let age = 0
-          if (profile.age) {
+          if (profile.age && !isNaN(profile.age) && profile.age > 0) {
             age = profile.age
           } else if (profile.date_of_birth) {
             const birthDate = new Date(profile.date_of_birth)
             const today = new Date()
-            age = today.getFullYear() - birthDate.getFullYear()
-            const monthDiff = today.getMonth() - birthDate.getMonth()
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-              age--
+            // Ensure the date is valid
+            if (!isNaN(birthDate.getTime())) {
+              age = today.getFullYear() - birthDate.getFullYear()
+              const monthDiff = today.getMonth() - birthDate.getMonth()
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--
+              }
+              // Ensure age is not negative
+              if (age < 0) age = 0
             }
           }
           // Fetch enrollments for this child
@@ -541,6 +548,7 @@ export default function ParentsDashboard() {
       toast.error('User not authenticated')
       return
     }
+    setChildFormLoading(true)
     try {
       // Build changedBy info for audit trail - the parent is adding a child
       const changedBy: ChangedByInfo = {
@@ -594,6 +602,8 @@ export default function ParentsDashboard() {
       loadParentData() // Refresh stats
     } catch {
       toast.error('Failed to add child. Please try again.')
+    } finally {
+      setChildFormLoading(false)
     }
   }
   const handleCourseEnrollment = (course: AvailableCourse) => {
@@ -614,17 +624,25 @@ export default function ParentsDashboard() {
     if (!selectedCourse) return
     const selectedChild = children.find((child) => child.student_id === childId)
     if (!selectedChild) return
+
+    setEnrollmentLoading(true)
     try {
       // Actually enroll child in course using the API
       await enrollInCourse(selectedCourse.id, selectedChild.student_id)
       toast.success(`${selectedChild.full_name} has been enrolled in ${selectedCourse.title}!`)
       // Refresh children data to update enrollments
-      loadChildren()
-    } catch {
-      toast.error('Failed to enroll child in course. Please try again.')
-    } finally {
+      await loadChildren()
       setShowChildSelectionModal(false)
       setSelectedCourse(null)
+    } catch (error) {
+      console.error('Enrollment error:', error)
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to enroll child in course. Please try again.'
+      toast.error(errorMessage)
+    } finally {
+      setEnrollmentLoading(false)
     }
   }
   const handleEditChild = async (childId: string) => {
@@ -652,6 +670,8 @@ export default function ParentsDashboard() {
     try {
       if (!childToEdit || !user?.id) return
 
+      setChildFormLoading(true)
+
       // Build changedBy info for audit trail - the parent is updating a child
       const changedBy: ChangedByInfo = {
         id: user.id,
@@ -660,6 +680,7 @@ export default function ParentsDashboard() {
         role: user.role || 'parent',
       }
 
+      // Note: Address fields are not updated as they are read-only from parent's profile
       await updateChild(
         childToEdit.student_id,
         {
@@ -668,32 +689,20 @@ export default function ParentsDashboard() {
           grade: childData.grade,
           email: childData.email,
           phone: childData.phone,
-          address_line_1: childData.address.address_line_1,
-          city: childData.address.city,
-          state: childData.address.state,
-          zip_code: childData.address.zip_code,
-          country: childData.address.country,
         },
         changedBy,
       )
-      // Update local state
-      setChildren((prev) =>
-        prev.map((child) =>
-          child.student_id === childToEdit.student_id
-            ? {
-                ...child,
-                full_name: childData.fullName,
-                grade: childData.grade,
-                email: childData.email,
-              }
-            : child,
-        ),
-      )
+
+      // Reload children data to get the updated age calculation and all fields
+      await loadChildren()
+
       setShowEditChildModal(false)
       setChildToEdit(null)
       toast.success(`${childData.fullName} updated successfully!`)
     } catch {
       toast.error('Failed to update child')
+    } finally {
+      setChildFormLoading(false)
     }
   }
   const handleDeleteChild = async (childId: string) => {
@@ -1122,6 +1131,7 @@ export default function ParentsDashboard() {
             },
             phone: parentProfile?.phone || user?.phone || undefined,
           }}
+          loading={childFormLoading}
         />
       )}
       {showEditChildModal && childToEdit && (
@@ -1133,6 +1143,8 @@ export default function ParentsDashboard() {
           }}
           onAddChild={handleUpdateChild}
           isEditMode={true}
+          loading={childFormLoading}
+          childId={childToEdit.student_id}
           initialData={{
             fullName: childToEdit.full_name,
             date_of_birth: childToEdit.date_of_birth || '',
@@ -1255,20 +1267,43 @@ export default function ParentsDashboard() {
                   <motion.button
                     key={child.student_id}
                     onClick={() => handleChildSelection(child.student_id)}
-                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left cursor-pointer"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={enrollmentLoading}
+                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: enrollmentLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: enrollmentLoading ? 1 : 0.98 }}
                   >
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
                         {child.full_name.charAt(0)}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h5 className="font-semibold text-gray-900">{child.full_name}</h5>
                         <p className="text-sm text-gray-600">
-                          {child.grade} • Age {child.age}
+                          {child.grade} • Age {child.age && !isNaN(child.age) ? child.age : 'N/A'}
                         </p>
                       </div>
+                      {enrollmentLoading && (
+                        <svg
+                          className="animate-spin h-5 w-5 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      )}
                     </div>
                   </motion.button>
                 ))
@@ -1831,7 +1866,7 @@ function ChildrenTab({
                     {child.full_name}
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    {child.grade} • Age {child.age}
+                    {child.grade} • Age {child.age && !isNaN(child.age) ? child.age : 'N/A'}
                   </p>
                   {child.display_student_id && (
                     <p className="text-xs sm:text-sm text-purple-600 font-medium mt-0.5">
