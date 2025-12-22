@@ -164,22 +164,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     }
-    // Backup timeout - only to stop loading spinner, don't clear user session
-    const timeoutId = setTimeout(() => {
-      if (isMounted && loading) {
-        debugAuth.warn('Auth initialization timeout - finishing loading', {
-          pathname: location.pathname,
-          hadUser: !!user,
-          hadProfile: !!profile,
-        })
-        // Just stop loading, don't clear user state
-        setLoading(false)
-        setInitialized(true)
-      }
-    }, 5000) // 5 seconds to allow for slow connections
-    initAuth().finally(() => {
-      clearTimeout(timeoutId)
-    })
+    // Start auth initialization
+    initAuth()
 
     // Only set up auth listener on admin pages
     let subscription: { unsubscribe: () => void } | null = null
@@ -222,7 +208,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => {
       isMounted = false
-      clearTimeout(timeoutId)
       if (subscription) {
         subscription.unsubscribe()
       }
@@ -242,20 +227,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         profileExists: !!profile,
       })
       setLoading(false)
-    }
-
-    // Additional timeout for hard refresh scenarios
-    if (isAdminPage && !initialized) {
-      const recoveryTimeout = setTimeout(() => {
-        debugAuth.warn('Force initializing auth state after extended delay', {
-          pathname: location.pathname,
-          timeElapsed: '5000ms',
-        })
-        setInitialized(true)
-        setLoading(false)
-      }, 5000) // 5 second recovery timeout
-
-      return () => clearTimeout(recoveryTimeout)
     }
   }, [location.pathname, loading, initialized, user, profile])
   // Sign in for super admin only (Supabase Auth)
