@@ -100,8 +100,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           if (error) {
             console.error('Session error:', error)
-            // Only clear on actual auth errors, not timeouts
+
+            // Handle refresh token errors - these require re-login
             if (
+              error.message &&
+              (error.message.includes('refresh') ||
+                error.message.includes('Refresh Token') ||
+                error.message.includes('Invalid Refresh Token'))
+            ) {
+              debugAuth.warn('Invalid refresh token - clearing session', {
+                error: error.message,
+                pathname: location.pathname,
+              })
+              await supabase.auth.signOut({ scope: 'local' })
+              session = null
+            }
+            // Only clear on actual auth errors, not timeouts
+            else if (
               error.message &&
               !error.message.includes('timeout') &&
               !error.message.includes('network')
@@ -116,6 +131,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             error: errorMessage,
             pathname: location.pathname,
           })
+
+          // Handle refresh token errors in catch block too
+          if (errorMessage.includes('refresh') || errorMessage.includes('Refresh Token')) {
+            debugAuth.warn('Invalid refresh token in catch - clearing session')
+            try {
+              await supabase.auth.signOut({ scope: 'local' })
+            } catch {
+              // Silent fail on signout error
+            }
+            session = null
+          }
           // Don't clear session on network/timeout errors - keep existing session
         }
         if (!isMounted) return
@@ -128,12 +154,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           profileFetchingRef.current = true
           // Keep loading true during profile fetch
           setLoading(true)
+
+          // Timeout for profile fetch - don't let it hang forever
+          const profileTimeout = setTimeout(() => {
+            if (isMounted && profileFetchingRef.current) {
+              debugAuth.warn('Profile fetch timeout - proceeding without profile')
+              profileFetchingRef.current = false
+              if (isMounted) {
+                setProfile(null)
+                setLoading(false)
+              }
+            }
+          }, 3000) // 3 second timeout for profile fetch
+
           try {
             const userProfile = await fetchProfile(currentUser.id)
+            clearTimeout(profileTimeout)
             if (isMounted) {
               setProfile(userProfile)
             }
           } catch {
+            clearTimeout(profileTimeout)
             if (isMounted) setProfile(null)
           } finally {
             profileFetchingRef.current = false

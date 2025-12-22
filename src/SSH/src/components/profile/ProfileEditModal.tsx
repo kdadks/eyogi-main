@@ -12,18 +12,48 @@ import { AddressFormData } from '../../lib/address-utils'
 import { updateUserProfile, getUserProfile } from '../../lib/api/users'
 import type { ChangedByInfo } from '../../lib/api/auditTrail'
 import type { Database } from '../../lib/supabase'
+
+// Password hashing function (same as used in signup/login)
+const hashPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password + 'eyogi-salt-2024')
+  const hash = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
 type Profile = Database['public']['Tables']['profiles']['Row']
 const profileSchema = z.object({
-  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-  phone: z.string().optional(),
+  full_name: z
+    .string()
+    .min(2, 'Full name must be at least 2 characters')
+    .regex(/^[a-zA-Z\s']+$/, 'Full name can only contain letters, spaces, and apostrophes'),
+  phone: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
   date_of_birth: z.string().optional(),
   // Address fields handled by AddressForm component
   emergency_contact: z
     .object({
-      name: z.string().optional(),
+      name: z
+        .string()
+        .optional()
+        .refine(
+          (val) => !val || /^[a-zA-Z\s']+$/.test(val),
+          'Name can only contain letters, spaces, and apostrophes',
+        ),
       relationship: z.string().optional(),
-      phone: z.string().optional(),
-      email: z.string().email().optional().or(z.literal('')),
+      phone: z
+        .string()
+        .optional()
+        .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
+      email: z
+        .string()
+        .optional()
+        .refine((val) => !val || val === '' || z.string().email().safeParse(val).success, {
+          message: 'Please enter a valid email address',
+        }),
     })
     .optional(),
   preferences: z
@@ -45,6 +75,23 @@ const profileSchema = z.object({
         .optional(),
     })
     .optional(),
+  password: z
+    .string()
+    .optional()
+    .refine(
+      (val) =>
+        !val ||
+        val === '' ||
+        (val.length >= 8 &&
+          /[A-Z]/.test(val) &&
+          /[0-9]/.test(val) &&
+          /[!@#$%^&*(),.?":{}|<>]/.test(val) &&
+          !/\s/.test(val)),
+      {
+        message:
+          'Password must be at least 8 characters with uppercase, digit, special character, and no spaces',
+      },
+    ),
 })
 type ProfileForm = z.infer<typeof profileSchema>
 interface ProfileEditModalProps {
@@ -208,30 +255,37 @@ export default function ProfileEditModal({
         role: user.role || 'student',
       }
 
-      const updatedUser = await updateUserProfile(
-        user.id,
-        {
-          full_name: data.full_name,
-          phone: data.phone || null,
-          date_of_birth: data.date_of_birth || null,
-          // Use addressData instead of form data for address fields
-          address_line_1: addressData.address_line_1 || null,
-          address_line_2: addressData.address_line_2 || null,
-          city: addressData.city || null,
-          state: addressData.state || null,
-          zip_code: addressData.zip_code || null,
-          country: addressData.country || null,
-          emergency_contact: data.emergency_contact || null,
-          preferences: data.preferences || {},
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
-        changedBy,
-      )
+      // Prepare update data
+      const updateData: any = {
+        full_name: data.full_name,
+        phone: data.phone || null,
+        date_of_birth: data.date_of_birth || null,
+        // Use addressData instead of form data for address fields
+        address_line_1: addressData.address_line_1 || null,
+        address_line_2: addressData.address_line_2 || null,
+        city: addressData.city || null,
+        state: addressData.state || null,
+        zip_code: addressData.zip_code || null,
+        country: addressData.country || null,
+        emergency_contact: data.emergency_contact || null,
+        preferences: data.preferences || {},
+      }
+
+      // Handle password change if provided - hash it before storing
+      if (data.password && data.password.trim() !== '') {
+        const hashedPassword = await hashPassword(data.password)
+        updateData.password_hash = hashedPassword
+        toast.success('Password will be updated')
+      }
+
+      const updatedUser = await updateUserProfile(user.id, updateData, changedBy)
+
       toast.success('Profile updated successfully!')
       // Cast the result back to Profile type since the database returns the correct format
       onUpdate(updatedUser as Profile)
       onClose()
-    } catch {
+    } catch (error) {
+      console.error('Profile update error:', error)
       toast.error('Failed to update profile')
     } finally {
       setLoading(false)
@@ -272,10 +326,16 @@ export default function ProfileEditModal({
                     label="Full Name *"
                     {...register('full_name')}
                     error={errors.full_name?.message}
+                    placeholder="John Doe"
                   />
-                  <Input label="Phone" {...register('phone')} error={errors.phone?.message} />
                   <Input
-                    label="Date of Birth"
+                    label="Phone (Numbers only)"
+                    {...register('phone')}
+                    error={errors.phone?.message}
+                    placeholder="1234567890"
+                  />
+                  <Input
+                    label="Date of Birth (MM/DD/YYYY)"
                     type="date"
                     {...register('date_of_birth')}
                     error={errors.date_of_birth?.message}
@@ -283,9 +343,38 @@ export default function ProfileEditModal({
                   <div className="text-sm text-gray-600">
                     <strong>Email:</strong> {user.email} (Cannot be changed)
                   </div>
-                  <div className="text-sm text-gray-600">
-                    <strong>Student ID:</strong> {user.student_id} (System Generated)
-                  </div>
+                  {user.student_id && (
+                    <div className="text-sm text-gray-600">
+                      <strong>Student ID:</strong> {user.student_id} (System Generated)
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security - Change Password */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Change Password</h3>
+                <p className="text-sm text-gray-600 mt-1">Leave blank to keep current password</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  label="New Password"
+                  type="password"
+                  {...register('password')}
+                  error={errors.password?.message}
+                  placeholder="Enter new password (optional)"
+                />
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>Password requirements:</p>
+                  <ul className="list-disc list-inside">
+                    <li>At least 8 characters</li>
+                    <li>One uppercase letter</li>
+                    <li>One digit</li>
+                    <li>One special character (!@#$%^&*)</li>
+                    <li>No spaces</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -293,6 +382,7 @@ export default function ProfileEditModal({
             <Card>
               <CardHeader>
                 <h3 className="text-lg font-semibold">Address</h3>
+                <p className="text-sm text-gray-600 mt-1">Country and State/City are required</p>
               </CardHeader>
               <CardContent>
                 <AddressForm
@@ -314,22 +404,26 @@ export default function ProfileEditModal({
                     label="Contact Name"
                     {...register('emergency_contact.name')}
                     error={errors.emergency_contact?.name?.message}
+                    placeholder="Jane Doe"
                   />
                   <Input
                     label="Relationship"
                     {...register('emergency_contact.relationship')}
                     error={errors.emergency_contact?.relationship?.message}
+                    placeholder="Mother, Father, Spouse, etc."
                   />
                   <Input
-                    label="Contact Phone"
+                    label="Contact Phone (Numbers only)"
                     {...register('emergency_contact.phone')}
                     error={errors.emergency_contact?.phone?.message}
+                    placeholder="1234567890"
                   />
                   <Input
                     label="Contact Email"
                     type="email"
                     {...register('emergency_contact.email')}
                     error={errors.emergency_contact?.email?.message}
+                    placeholder="contact@example.com"
                   />
                 </div>
               </CardContent>
