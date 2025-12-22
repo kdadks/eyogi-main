@@ -127,10 +127,14 @@ export default function StudentManagement() {
             student.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
         )
       }
-      // Course filter
+      // Course filter - only show students with approved/active/completed enrollments for the course
       if (courseFilter !== 'all') {
         filtered = filtered.filter((student) =>
-          student.enrollments.some((e) => e.course_id === courseFilter),
+          student.enrollments.some(
+            (e) =>
+              e.course_id === courseFilter &&
+              (e.status === 'approved' || e.status === 'active' || e.status === 'completed'),
+          ),
         )
       }
       // Status filter (enrollment status)
@@ -432,7 +436,13 @@ export default function StudentManagement() {
     > = {}
     filteredStudents.forEach((student) => {
       student.enrollments.forEach((enrollment) => {
-        if (enrollment.course) {
+        // Only include students with approved/active/completed enrollments
+        if (
+          enrollment.course &&
+          (enrollment.status === 'approved' ||
+            enrollment.status === 'active' ||
+            enrollment.status === 'completed')
+        ) {
           const courseKey = enrollment.course.id
           if (!courseGroups[courseKey]) {
             courseGroups[courseKey] = {

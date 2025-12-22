@@ -158,11 +158,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Timeout for profile fetch - don't let it hang forever
           const profileTimeout = setTimeout(() => {
             if (isMounted && profileFetchingRef.current) {
-              debugAuth.warn('Profile fetch timeout - proceeding without profile')
+              debugAuth.warn('Profile fetch timeout - redirecting to login')
               profileFetchingRef.current = false
               if (isMounted) {
                 setProfile(null)
+                setUser(null)
                 setLoading(false)
+                setInitialized(true)
+                // Clear session and redirect to login on timeout
+                supabase.auth.signOut({ scope: 'local' }).catch(() => {
+                  // Ignore error
+                })
               }
             }
           }, 3000) // 3 second timeout for profile fetch
@@ -171,11 +177,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const userProfile = await fetchProfile(currentUser.id)
             clearTimeout(profileTimeout)
             if (isMounted) {
-              setProfile(userProfile)
+              // If profile fetch failed or user doesn't have admin role, clear auth
+              if (!userProfile) {
+                debugAuth.warn('Profile fetch failed - clearing auth')
+                setProfile(null)
+                setUser(null)
+                setInitialized(true)
+                await supabase.auth.signOut({ scope: 'local' })
+              } else {
+                setProfile(userProfile)
+                setInitialized(true)
+              }
             }
           } catch {
             clearTimeout(profileTimeout)
-            if (isMounted) setProfile(null)
+            if (isMounted) {
+              debugAuth.warn('Profile fetch error - clearing auth')
+              setProfile(null)
+              setUser(null)
+              setInitialized(true)
+              await supabase.auth.signOut({ scope: 'local' })
+            }
           } finally {
             profileFetchingRef.current = false
             if (isMounted) {
@@ -184,17 +206,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } else {
           setProfile(null)
-        }
-        if (isMounted) {
-          // Only set initialized true and loading false if we're not fetching profile
-          if (!shouldFetchProfile) {
+          if (isMounted) {
             setLoading(false)
             setInitialized(true)
-          } else {
-            setInitialized(true)
           }
-        } else {
-          // No session found, already set to null
         }
       } catch {
         if (isMounted) {
