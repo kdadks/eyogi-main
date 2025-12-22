@@ -38,6 +38,7 @@ export default function CookieConsentBanner() {
     // Skip cookie consent banner in development/localhost
     const hostname = window.location.hostname
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
+      console.log('[CookieConsent] Skipping banner on localhost')
       return
     }
 
@@ -46,6 +47,8 @@ export default function CookieConsentBanner() {
       // Check if user has already given consent
       const existingConsent = getTrackingConsent()
 
+      console.log('[CookieConsent] Checking existing consent:', existingConsent)
+
       // Show banner if analytics consent hasn't been explicitly set
       // Check for both empty timestamp and undefined analytics
       const hasValidConsent =
@@ -53,9 +56,13 @@ export default function CookieConsentBanner() {
         existingConsent.timestamp.length > 0 &&
         existingConsent.analytics !== undefined
 
+      console.log('[CookieConsent] Has valid consent?', hasValidConsent)
+
       if (!hasValidConsent) {
+        console.log('[CookieConsent] No valid consent found, showing banner')
         setShowBanner(true)
       } else {
+        console.log('[CookieConsent] Valid consent found, hiding banner')
         setPreferences(existingConsent)
 
         // Setup tracking if consent was given
@@ -74,7 +81,14 @@ export default function CookieConsentBanner() {
       functional: true,
       timestamp: new Date().toISOString(),
     }
+
+    console.log('[CookieConsent] Saving accept consent:', consent)
     setTrackingConsent(consent)
+
+    // Verify it was saved
+    const saved = getTrackingConsent()
+    console.log('[CookieConsent] Verified saved consent:', saved)
+
     setShowBanner(false)
 
     // Setup tracking after consent
@@ -87,7 +101,14 @@ export default function CookieConsentBanner() {
       functional: true,
       timestamp: new Date().toISOString(),
     }
+
+    console.log('[CookieConsent] Saving reject consent:', consent)
     setTrackingConsent(consent)
+
+    // Verify it was saved
+    const saved = getTrackingConsent()
+    console.log('[CookieConsent] Verified saved consent:', saved)
+
     setShowBanner(false)
   }
 
