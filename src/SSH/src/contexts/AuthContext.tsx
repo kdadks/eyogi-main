@@ -332,7 +332,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       inactivityTimerRef.current = setTimeout(async () => {
         console.log('Auto-logout due to inactivity (15 minutes)')
         await signOut()
-        window.location.href = '/admin/login'
+        // Redirect to home page instead of login page
+        window.location.href = '/ssh-app'
       }, INACTIVITY_TIMEOUT)
     }
 

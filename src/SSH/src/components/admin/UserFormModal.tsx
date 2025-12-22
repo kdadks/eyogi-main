@@ -224,11 +224,13 @@ export default function UserFormModal({
   }
   // No handleAddressChange needed; address is handled via user prop
   const validateForm = () => {
-    if (!formData.email) {
+    // Email is optional for business_admin users
+    if (!formData.email && formData.role !== 'business_admin') {
       toast.error('Email is required')
       return false
     }
-    if (mode === 'create' && !formData.password) {
+    // Password is required only when creating users with email
+    if (mode === 'create' && formData.email && !formData.password) {
       toast.error('Password is required for new users')
       return false
     }
@@ -274,17 +276,36 @@ export default function UserFormModal({
     setLoading(true)
     try {
       if (mode === 'create') {
-        // Create user in Supabase Auth
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          email_confirm: true,
-        })
-        if (authError) {
-          throw new Error(`Authentication error: ${authError.message}`)
-        }
-        if (!authData.user) {
-          throw new Error('Failed to create user account')
+        let userId: string
+
+        // Business admin users don't need Supabase Auth - they use profiles table only
+        if (formData.role === 'business_admin') {
+          // Generate a UUID for the business admin
+          userId = crypto.randomUUID()
+
+          // If no email provided, generate one from the name
+          if (!formData.email) {
+            formData.email = generateEmailFromName(formData.full_name)
+          }
+
+          // If no password provided, generate a secure random one
+          if (!formData.password) {
+            formData.password = crypto.randomUUID().substring(0, 16)
+          }
+        } else {
+          // For other roles, create user in Supabase Auth
+          const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: formData.email,
+            password: formData.password,
+            email_confirm: true,
+          })
+          if (authError) {
+            throw new Error(`Authentication error: ${authError.message}`)
+          }
+          if (!authData.user) {
+            throw new Error('Failed to create user account')
+          }
+          userId = authData.user.id
         }
 
         // Normalize country and state codes to proper ISO format
@@ -309,7 +330,7 @@ export default function UserFormModal({
 
         // Create profile in database
         const baseProfileData = {
-          id: authData.user.id,
+          id: userId,
           email: formData.email,
           full_name: formData.full_name,
           role: formData.role,
@@ -343,8 +364,10 @@ export default function UserFormModal({
           .from('profiles')
           .insert([encryptedProfileData])
         if (profileError) {
-          // If profile creation fails, try to delete the auth user
-          await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+          // If profile creation fails and we created an auth user, try to delete it
+          if (formData.role !== 'business_admin') {
+            await supabaseAdmin.auth.admin.deleteUser(userId)
+          }
           throw new Error(`Profile creation error: ${profileError.message}`)
         }
 
@@ -359,7 +382,7 @@ export default function UserFormModal({
 
           await logEncryptedFieldChanges(
             'profiles',
-            authData.user.id,
+            userId,
             null, // No old data for create
             encryptedProfileData as Record<string, unknown>,
             changedBy,
@@ -530,7 +553,33 @@ export default function UserFormModal({
                 </select>
               </div>
             )}
-            {/* Email field - hidden in create mode, shown in edit/view mode */}
+            {/* Email field - optional for business_admin in create mode */}
+            {mode === 'create' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Email {formData.role !== 'business_admin' && '*'}
+                  {formData.role === 'business_admin' && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      (Optional - auto-generated if empty)
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
+                  required={formData.role !== 'business_admin'}
+                  disabled={isReadOnly}
+                  placeholder={
+                    formData.role === 'business_admin'
+                      ? 'Will be auto-generated if left empty'
+                      : 'user@example.com'
+                  }
+                />
+              </div>
+            )}
             {mode !== 'create' && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
@@ -560,7 +609,13 @@ export default function UserFormModal({
             {(mode === 'create' || mode === 'edit') && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Password {mode === 'create' ? '*' : '(leave blank to keep current)'}
+                  Password {mode === 'create' && formData.role !== 'business_admin' ? '*' : ''}
+                  {mode === 'create' && formData.role === 'business_admin' && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      (Optional - auto-generated if empty)
+                    </span>
+                  )}
+                  {mode === 'edit' && '(leave blank to keep current)'}
                 </label>
                 <input
                   type="password"
@@ -568,8 +623,14 @@ export default function UserFormModal({
                   value={formData.password}
                   onChange={handleInputChange}
                   className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
-                  placeholder={mode === 'create' ? 'Enter password' : 'Enter new password'}
-                  required={mode === 'create'}
+                  placeholder={
+                    mode === 'create'
+                      ? formData.role === 'business_admin'
+                        ? 'Will be auto-generated if left empty'
+                        : 'Enter password'
+                      : 'Enter new password'
+                  }
+                  required={mode === 'create' && formData.role !== 'business_admin'}
                   minLength={6}
                   disabled={isReadOnly}
                 />

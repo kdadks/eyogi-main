@@ -18,6 +18,7 @@ import toast from 'react-hot-toast'
 import UserFormModal from './UserFormModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { getUserProfile } from '../../lib/api/users'
+import { sendActivationEmail } from '../../lib/activation-email'
 import { decryptProfileFields } from '../../lib/encryption'
 type Profile = Database['public']['Tables']['profiles']['Row']
 const AdminUserManagement: React.FC = () => {
@@ -155,6 +156,7 @@ const AdminUserManagement: React.FC = () => {
 
   const handleActivateUser = async (userId: string, userName: string) => {
     try {
+      // Update user status to active
       const { error } = await supabaseAdmin
         .from('profiles')
         .update({ status: 'active' })
@@ -165,9 +167,23 @@ const AdminUserManagement: React.FC = () => {
         return
       }
 
-      toast.success(`${userName} has been activated successfully`)
+      // Send activation email
+      try {
+        const emailSent = await sendActivationEmail(userId)
+
+        if (emailSent) {
+          toast.success(`${userName} has been activated and notified via email`)
+        } else {
+          toast.success(`${userName} has been activated (email notification may have failed)`)
+        }
+      } catch (emailError) {
+        console.error('Error sending activation email:', emailError)
+        toast.success(`${userName} has been activated (email notification failed)`)
+      }
+
       loadUsers() // Refresh the list
-    } catch {
+    } catch (error) {
+      console.error('Activation error:', error)
       toast.error('Failed to activate user')
     }
   }
