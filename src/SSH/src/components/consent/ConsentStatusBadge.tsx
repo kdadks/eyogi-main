@@ -63,7 +63,7 @@ const ConsentStatusBadge: React.FC<ConsentStatusBadgeProps> = ({
   return (
     <Component
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border font-medium ${status.color} ${sizeClasses[size]} ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded border font-medium ${status.color} ${sizeClasses[size]} ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`}
       type={onClick ? 'button' : undefined}
     >
       <Icon className={`${iconSizes[size]} ${status.iconColor}`} />

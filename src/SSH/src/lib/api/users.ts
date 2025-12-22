@@ -23,7 +23,7 @@ export async function getAllUsers(): Promise<Profile[]> {
     async () => {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('id, full_name, email, role, student_id, created_at, updated_at, age')
+        .select('*')
         .order('created_at', { ascending: false })
       if (error) {
         return []

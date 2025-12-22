@@ -17,6 +17,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializationRef = React.useRef(false)
   const profileFetchingRef = React.useRef(false)
   const location = useLocation()
+
+  // Inactivity timeout: 15 minutes
+  const INACTIVITY_TIMEOUT = 15 * 60 * 1000 // 15 minutes in milliseconds
+  const inactivityTimerRef = React.useRef<NodeJS.Timeout | null>(null)
+  const lastActivityRef = React.useRef<number>(Date.now())
   // Fetch user profile from database using admin client for admin context
   const fetchProfile = useCallback(
     async (userId: string, retryCount = 0): Promise<Profile | null> => {
@@ -89,31 +94,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         let session = null
 
         try {
-          // For production, add a race condition timeout to prevent hanging
-          const sessionPromise = supabase.auth.getSession()
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Session check timeout')), 2000),
-          )
+          // Get session without aggressive timeout
+          const { data, error } = await supabase.auth.getSession()
+          session = data.session
 
-          const result = await Promise.race([sessionPromise, timeoutPromise])
-          session = result.data.session
-          if (result.error) {
-            console.error('Session error:', result.error)
-            // Clear invalid session from storage
-            await supabase.auth.signOut({ scope: 'local' })
-            session = null
+          if (error) {
+            console.error('Session error:', error)
+            // Only clear on actual auth errors, not timeouts
+            if (
+              error.message &&
+              !error.message.includes('timeout') &&
+              !error.message.includes('network')
+            ) {
+              await supabase.auth.signOut({ scope: 'local' })
+              session = null
+            }
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-          debugAuth.warn('Session check failed or timed out', {
+          debugAuth.warn('Session check failed', {
             error: errorMessage,
             pathname: location.pathname,
           })
-          // Clear potentially invalid session from storage
-          try {
-            await supabase.auth.signOut({ scope: 'local' })
-          } catch {}
-          session = null
+          // Don't clear session on network/timeout errors - keep existing session
         }
         if (!isMounted) return
         const currentUser = session?.user ?? null
@@ -161,23 +164,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     }
-    // Backup timeout - shorter for better UX in production
+    // Backup timeout - only to stop loading spinner, don't clear user session
     const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        // In production, we want to fail fast rather than show infinite spinner
-        debugAuth.warn('Auth initialization timeout - setting initialized state', {
+      if (isMounted && loading) {
+        debugAuth.warn('Auth initialization timeout - finishing loading', {
           pathname: location.pathname,
           hadUser: !!user,
           hadProfile: !!profile,
         })
-        setUser(null)
-        setProfile(null)
+        // Just stop loading, don't clear user state
         setLoading(false)
         setInitialized(true)
-      } else {
-        // Component unmounted, no action needed
       }
-    }, 3000) // Reduced to 3 seconds for better production UX
+    }, 5000) // 5 seconds to allow for slow connections
     initAuth().finally(() => {
       clearTimeout(timeoutId)
     })
@@ -273,6 +272,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
   const signOut = async () => {
     try {
+      // Clear inactivity timer
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+
       // Clear local state immediately
       setUser(null)
       setProfile(null)
@@ -280,15 +284,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setInitialized(true)
       // Sign out from Supabase with global scope
       await supabase.auth.signOut({ scope: 'global' })
-      // Clear storage
-      localStorage.clear()
-      sessionStorage.clear()
+      // Clear only auth-related storage
+      localStorage.removeItem('eyogi-ssh-app-auth')
+      sessionStorage.removeItem('eyogi-ssh-app-auth')
     } catch {
       // Still clear local state
       setUser(null)
       setProfile(null)
     }
   }
+
+  // Inactivity timeout tracking
+  useEffect(() => {
+    if (
+      !user ||
+      !location.pathname.includes('/admin') ||
+      location.pathname.includes('/admin/login')
+    ) {
+      // Clear timer if not on admin page or not logged in
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+      return
+    }
+
+    const resetInactivityTimer = () => {
+      lastActivityRef.current = Date.now()
+
+      // Clear existing timer
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+
+      // Set new timer
+      inactivityTimerRef.current = setTimeout(async () => {
+        console.log('Auto-logout due to inactivity (15 minutes)')
+        await signOut()
+        window.location.href = '/admin/login'
+      }, INACTIVITY_TIMEOUT)
+    }
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+
+    const handleActivity = () => {
+      resetInactivityTimer()
+    }
+
+    // Add event listeners
+    events.forEach((event) => {
+      document.addEventListener(event, handleActivity)
+    })
+
+    // Initialize timer
+    resetInactivityTimer()
+
+    // Cleanup
+    return () => {
+      events.forEach((event) => {
+        document.removeEventListener(event, handleActivity)
+      })
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+    }
+  }, [user, location.pathname])
   // Check if user has admin privileges
   const isSuperAdmin =
     !!user && !!profile && ['admin', 'business_admin', 'super_admin'].includes(profile.role)

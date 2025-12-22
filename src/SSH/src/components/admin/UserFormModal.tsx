@@ -291,8 +291,13 @@ export default function UserFormModal({
         const normalizedCountry = normalizeCountryToISO3(formData.country)
         const normalizedState = normalizeStateToISO2(formData.state, normalizedCountry)
 
-        // Generate appropriate ID based on role
-        const roleIds = await generateRoleId(formData.role, normalizedCountry, normalizedState)
+        // Generate appropriate ID based on role - pass city as fallback for state
+        const roleIds = await generateRoleId(
+          formData.role,
+          normalizedCountry,
+          normalizedState,
+          formData.city,
+        )
 
         // Build emergency_contact JSONB object
         const emergencyContact = {
@@ -785,7 +790,12 @@ export default function UserFormModal({
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                City
+                {availableStates.length === 0 && formData.country && (
+                  <span className="text-red-500"> *</span>
+                )}
+              </label>
               <input
                 type="text"
                 name="city"
@@ -793,6 +803,7 @@ export default function UserFormModal({
                 onChange={handleInputChange}
                 className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${readOnlyClass}`}
                 disabled={isReadOnly}
+                required={availableStates.length === 0 && !!formData.country}
               />
             </div>
             <div>
