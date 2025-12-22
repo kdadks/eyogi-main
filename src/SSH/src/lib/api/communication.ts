@@ -30,7 +30,10 @@ export async function sendBulkEmail(data: BulkEmailData): Promise<{
 
   // Call the main app's API endpoint to send emails
   // The main Next.js app runs on port 3000, SSH app runs on 5174
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  // In production, use the same origin; in development, use VITE_APP_URL
+  const siteUrl = import.meta.env.VITE_APP_URL || window.location.origin
+
+  console.log('Sending emails using site URL:', siteUrl)
 
   // Check if the main app is reachable first
   try {
@@ -41,10 +44,12 @@ export async function sendBulkEmail(data: BulkEmailData): Promise<{
   } catch (error) {
     results.failed = data.studentEmails.length
     results.success = false
+    const errorDetails = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Email service health check failed:', errorDetails, 'URL:', siteUrl)
     results.errors.push(
-      '⚠️ Cannot connect to email service. Please ensure the main Next.js application is running on port 3000.',
-      'Start it with: npm run dev (from the project root)',
-      `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `⚠️ Cannot connect to email service at ${siteUrl}`,
+      'Ensure the main application is accessible',
+      `Connection error: ${errorDetails}`,
     )
     return results
   }

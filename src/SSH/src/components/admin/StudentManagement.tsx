@@ -359,22 +359,18 @@ export default function StudentManagement() {
         } else {
           // Show detailed error message
           console.error('Email sending errors:', result.errors)
+          console.error('Full error details:', JSON.stringify(result.errors, null, 2))
 
           if (result.errors.some((err) => err.includes('Cannot connect to email service'))) {
-            toast.error(
-              '⚠️ Email service unavailable. Please ensure the main Next.js app is running on port 3000.',
-              { duration: 6000 },
-            )
+            toast.error(`⚠️ Email service unavailable: ${result.errors[0]}`, { duration: 8000 })
           } else if (result.sent > 0) {
             toast.error(
               `Partially sent: ${result.sent} succeeded, ${result.failed} failed. Check console for details.`,
               { duration: 5000 },
             )
           } else {
-            toast.error(
-              `Failed to send emails. ${result.errors[0] || 'Please check console for details.'}`,
-              { duration: 5000 },
-            )
+            const mainError = result.errors[0] || 'Unknown error occurred'
+            toast.error(`Failed to send emails: ${mainError}`, { duration: 6000 })
           }
         }
       } else if (communicationData.type === 'sms') {
