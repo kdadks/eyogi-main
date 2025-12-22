@@ -3,6 +3,8 @@ import { Enrollment } from '../../types'
 import { checkCoursePrerequisites } from './prerequisites'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import { decryptProfileFields } from '../encryption'
+import { sendEnrollmentSubmissionEmail, sendEnrollmentStatusEmail } from '../enrollment-email'
+import { sendEnrollmentSubmissionEmail, sendEnrollmentStatusEmail } from '../enrollment-email'
 export async function enrollInCourse(courseId: string, studentId: string): Promise<Enrollment> {
   try {
     // Check prerequisites before enrollment
@@ -26,6 +28,11 @@ export async function enrollInCourse(courseId: string, studentId: string): Promi
     if (error) {
       throw new Error('Failed to enroll in course')
     }
+
+    // Send enrollment submission confirmation email (non-blocking)
+    sendEnrollmentSubmissionEmail(data.id).catch((err) =>
+      console.error('Failed to send enrollment submission email:', err),
+    )
 
     // Invalidate enrollment caches
     queryCache.invalidatePattern('enrollments:.*')
@@ -56,6 +63,11 @@ export async function enrollInCourseWithoutPrerequisites(
     if (error) {
       throw new Error('Failed to enroll in course')
     }
+
+    // Send enrollment submission confirmation email (non-blocking)
+    sendEnrollmentSubmissionEmail(data.id).catch((err) =>
+      console.error('Failed to send enrollment submission email:', err),
+    )
 
     // Invalidate enrollment caches
     queryCache.invalidatePattern('enrollments:.*')
@@ -196,26 +208,6 @@ export async function updateEnrollmentStatus(
   additionalData?: Partial<Enrollment>,
 ): Promise<Enrollment> {
   try {
-    // First, fetch enrollment details if status is being set to 'approved'
-    let enrollmentDetails: any = null
-    if (status === 'approved') {
-      const { data: fetchedData, error: fetchError } = await supabaseAdmin
-        .from('enrollments')
-        .select(
-          `
-          *,
-          student:student_id (email, full_name),
-          course:course_id (id, title, description)
-        `,
-        )
-        .eq('id', enrollmentId)
-        .single()
-
-      if (!fetchError && fetchedData) {
-        enrollmentDetails = fetchedData
-      }
-    }
-
     const { data, error } = await supabaseAdmin
       .from('enrollments')
       .update({
@@ -230,63 +222,11 @@ export async function updateEnrollmentStatus(
       throw new Error('Failed to update enrollment status')
     }
 
-    // Send enrollment confirmation email if status is being approved (non-blocking)
-    if (status === 'approved' && enrollmentDetails) {
-      try {
-        // Decrypt student profile before using it
-        const decryptedStudent = enrollmentDetails.student
-          ? decryptProfileFields(enrollmentDetails.student)
-          : null
-        if (
-          decryptedStudent &&
-          typeof decryptedStudent === 'object' &&
-          'email' in decryptedStudent &&
-          'full_name' in decryptedStudent
-        ) {
-          const studentEmail = (decryptedStudent as { email: string; full_name: string }).email
-          const studentFullName = (decryptedStudent as { email: string; full_name: string })
-            .full_name
-          const courseName =
-            typeof enrollmentDetails.course === 'object' &&
-            enrollmentDetails.course &&
-            'title' in enrollmentDetails.course
-              ? (enrollmentDetails.course as { title: string }).title
-              : 'Your Course'
-          const courseDescription =
-            typeof enrollmentDetails.course === 'object' &&
-            enrollmentDetails.course &&
-            'description' in enrollmentDetails.course
-              ? (enrollmentDetails.course as { description?: string }).description
-              : undefined
-
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/enrollments/confirm`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                studentEmail,
-                studentFullName,
-                courseName,
-                courseDescription,
-              }),
-            },
-          )
-
-          if (!response.ok) {
-            console.warn('Failed to send enrollment confirmation email:', {
-              status: response.status,
-              statusText: response.statusText,
-            })
-            // Don't throw - enrollment was successful, just email failed
-          }
-        }
-      } catch (emailError) {
-        console.warn('Error sending enrollment confirmation email:', emailError)
-        // Don't throw - enrollment was successful, just email failed
-      }
+    // Send enrollment status email (approved or rejected) - non-blocking
+    if (status === 'approved' || status === 'rejected') {
+      sendEnrollmentStatusEmail(enrollmentId, status).catch((err) =>
+        console.error('Failed to send enrollment status email:', err),
+      )
     }
 
     // Invalidate enrollment caches

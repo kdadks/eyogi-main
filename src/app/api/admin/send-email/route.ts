@@ -5,7 +5,8 @@ import { sendEmail } from '@/lib/email/graphEmailService'
 interface SendEmailRequest {
   to: string
   subject: string
-  message: string
+  message?: string
+  htmlBody?: string
 }
 
 /**
@@ -105,11 +106,12 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as SendEmailRequest
 
-    if (!body.to || !body.subject || !body.message) {
+    if (!body.to || !body.subject || (!body.message && !body.htmlBody)) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const htmlContent = generateBulkEmailHTML(body.message)
+    // If htmlBody is provided, use it directly; otherwise, generate from message
+    const htmlContent = body.htmlBody || generateBulkEmailHTML(body.message!)
 
     const emailSent = await sendEmail({
       to: body.to,

@@ -1,9 +1,9 @@
 import { supabaseAdmin } from './supabase'
 import { decryptField } from './encryption'
+import { sendEmailViaAPI } from './email-service'
 
 /**
  * Send activation email to user and parent notification if applicable
- * This uses Supabase Edge Function or direct SMTP instead of Microsoft Graph
  */
 export async function sendActivationEmail(userId: string): Promise<boolean> {
   try {
@@ -27,11 +27,16 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
     // Generate activation email HTML
     const userEmailHTML = generateActivationEmailHTML(decryptedFullName)
 
-    // For now, we'll use a simple approach - log the email content
-    // In production, this should call Supabase Edge Function or SMTP service
-    console.log('✅ Activation email prepared for:', email)
-    // TODO: Send actual email using userEmailHTML
-    void userEmailHTML // Placeholder to avoid unused variable warning
+    // Send activation email
+    const emailSent = await sendEmailViaAPI({
+      to: email,
+      subject: 'Your Account Has Been Activated',
+      htmlBody: userEmailHTML,
+    })
+
+    if (!emailSent) {
+      console.error('Failed to send activation email to:', email)
+    }
 
     // If user is a student (role = 4) and has a parent, send notification to parent
     if (role === 4 && parent_id) {
@@ -44,9 +49,13 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
 
         if (parentData?.email) {
           const parentEmailHTML = generateParentNotificationHTML(decryptedFullName)
-          console.log('✅ Parent notification email prepared for:', parentData.email)
-          // TODO: Send actual email using parentEmailHTML
-          void parentEmailHTML // Placeholder to avoid unused variable warning
+
+          // Send parent notification email
+          await sendEmailViaAPI({
+            to: parentData.email,
+            subject: "Your Child's Account Has Been Activated",
+            htmlBody: parentEmailHTML,
+          })
         }
       } catch (parentError) {
         console.error('Error fetching parent details:', parentError)
@@ -54,9 +63,7 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
       }
     }
 
-    // TODO: Implement actual email sending via Supabase Edge Function
-    // For now, return true to indicate success
-    return true
+    return emailSent
   } catch (error) {
     console.error('Error sending activation email:', error)
     return false
