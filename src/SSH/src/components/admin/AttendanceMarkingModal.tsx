@@ -104,6 +104,9 @@ const AttendanceMarkingModal: React.FC<AttendanceMarkingModalProps> = ({
           }
         }) || []
 
+      // Sort students alphabetically by name
+      studentList.sort((a, b) => a.student_name.localeCompare(b.student_name))
+
       setStudents(studentList)
     } catch (error) {
       console.error('Error fetching batch students:', error)
