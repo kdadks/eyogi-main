@@ -51,8 +51,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               <Button variant="outline" onClick={onCancel} disabled={loading}>
                 {cancelText}
               </Button>
-              <Button variant={getButtonVariant()} onClick={onConfirm} disabled={loading}>
-                {loading ? 'Processing...' : confirmText}
+              <Button
+                variant={getButtonVariant()}
+                onClick={onConfirm}
+                disabled={loading}
+                loading={loading}
+              >
+                {confirmText}
               </Button>
             </div>
           </CardContent>
