@@ -52,9 +52,24 @@ export async function enrollInCourse(courseId: string, studentId: string): Promi
     }
 
     // Always send admin notification about new enrollment
-    sendAdminEnrollmentNotification(data.id).catch((err) =>
-      console.error('Failed to send admin enrollment notification:', err),
-    )
+    sendAdminEnrollmentNotification(data.id)
+      .then((success) => {
+        if (success) {
+          console.log('✅ Admin enrollment notification sent successfully for enrollment:', data.id)
+        } else {
+          console.error(
+            '❌ Admin enrollment notification failed (returned false) for enrollment:',
+            data.id,
+          )
+        }
+      })
+      .catch((err) => {
+        console.error('❌ Failed to send admin enrollment notification:', {
+          enrollmentId: data.id,
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+        })
+      })
 
     // Invalidate enrollment caches
     queryCache.invalidatePattern('enrollments:.*')
@@ -106,9 +121,24 @@ export async function enrollInCourseWithoutPrerequisites(
     }
 
     // Always send admin notification about new enrollment
-    sendAdminEnrollmentNotification(data.id).catch((err) =>
-      console.error('Failed to send admin enrollment notification:', err),
-    )
+    sendAdminEnrollmentNotification(data.id)
+      .then((success) => {
+        if (success) {
+          console.log('✅ Admin enrollment notification sent successfully for enrollment:', data.id)
+        } else {
+          console.error(
+            '❌ Admin enrollment notification failed (returned false) for enrollment:',
+            data.id,
+          )
+        }
+      })
+      .catch((err) => {
+        console.error('❌ Failed to send admin enrollment notification:', {
+          enrollmentId: data.id,
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+        })
+      })
 
     // Invalidate enrollment caches
     queryCache.invalidatePattern('enrollments:.*')

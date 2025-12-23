@@ -301,12 +301,28 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
     })
 
     if (!emailSent) {
-      console.error('Failed to send admin enrollment notification')
+      console.error('❌ Failed to send admin enrollment notification', {
+        adminEmail: ADMIN_EMAIL,
+        enrollmentId,
+        studentName,
+        courseTitle: course.title,
+      })
+    } else {
+      console.log('✅ Admin enrollment notification sent successfully', {
+        adminEmail: ADMIN_EMAIL,
+        enrollmentId,
+        studentName,
+        courseTitle: course.title,
+      })
     }
 
     return emailSent
   } catch (error) {
-    console.error('Error sending admin enrollment notification:', error)
+    console.error('❌ Error sending admin enrollment notification:', {
+      enrollmentId,
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
     return false
   }
 }
