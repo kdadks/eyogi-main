@@ -25,10 +25,21 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
     // Decrypt the full name
     const decryptedFullName = decryptField(full_name) || 'User'
 
-    // Generate activation email HTML
+    // If user is a student (role = 4 or role = 'student') and has a parent
+    // Send activation notification ONLY to parent, not to the student
+    if ((role === 4 || role === 'student') && parent_id) {
+      // Use the dedicated function for child activation notifications to parent
+      const parentEmailSent = await sendChildActivationNotificationToParent(userId).catch((err) => {
+        console.error('Failed to send child activation notification to parent:', err)
+        return false
+      })
+      return parentEmailSent
+    }
+
+    // For users WITHOUT a parent (direct registrations, teachers, admins, etc.)
+    // Send activation email directly to the user
     const userEmailHTML = generateActivationEmailHTML(decryptedFullName)
 
-    // Send activation email
     const emailSent = await sendEmailViaAPI({
       to: email,
       subject: 'Your Account Has Been Activated',
@@ -37,14 +48,6 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
 
     if (!emailSent) {
       console.error('Failed to send activation email to:', email)
-    }
-
-    // If user is a student (role = 4 or role = 'student') and has a parent, send notification to parent
-    if ((role === 4 || role === 'student') && parent_id) {
-      // Use the new dedicated function for child activation notifications
-      sendChildActivationNotificationToParent(userId).catch((err) =>
-        console.error('Failed to send child activation notification to parent:', err),
-      )
     }
 
     return emailSent
