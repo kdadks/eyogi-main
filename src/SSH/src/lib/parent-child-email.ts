@@ -140,21 +140,36 @@ export async function sendParentEnrollmentConfirmation(
     // Get enrollment details
     const { data: enrollment, error: enrollmentError } = await supabaseAdmin
       .from('enrollments')
-      .select(
-        `
-        id,
-        student_id,
-        course_id,
-        status,
-        student:student_id (full_name, student_id),
-        course:course_id (title, description)
-      `,
-      )
+      .select('id, student_id, course_id, status')
       .eq('id', enrollmentId)
       .single()
 
     if (enrollmentError || !enrollment) {
       console.error('Failed to fetch enrollment details:', enrollmentError)
+      return false
+    }
+
+    // Get student details separately
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name, student_id')
+      .eq('id', enrollment.student_id)
+      .single()
+
+    if (studentError || !student) {
+      console.error('Failed to fetch student details:', studentError)
+      return false
+    }
+
+    // Get course details separately
+    const { data: course, error: courseError } = await supabaseAdmin
+      .from('courses')
+      .select('title, description')
+      .eq('id', enrollment.course_id)
+      .single()
+
+    if (courseError || !course) {
+      console.error('Failed to fetch course details:', courseError)
       return false
     }
 
@@ -167,14 +182,6 @@ export async function sendParentEnrollmentConfirmation(
 
     if (parentError || !parent) {
       console.error('Failed to fetch parent details:', parentError)
-      return false
-    }
-
-    const student = enrollment.student as unknown as { full_name: string; student_id?: string }
-    const course = enrollment.course as unknown as { title: string; description?: string }
-
-    if (!student || !course) {
-      console.error('Missing enrollment data')
       return false
     }
 
@@ -215,16 +222,7 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
     // Get enrollment details
     const { data: enrollment, error: enrollmentError } = await supabaseAdmin
       .from('enrollments')
-      .select(
-        `
-        id,
-        student_id,
-        course_id,
-        created_at,
-        student:student_id (full_name, student_id, email, parent_id),
-        course:course_id (title, subject)
-      `,
-      )
+      .select('id, student_id, course_id, created_at')
       .eq('id', enrollmentId)
       .single()
 
@@ -233,16 +231,27 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
       return false
     }
 
-    const student = enrollment.student as unknown as {
-      full_name: string
-      student_id?: string
-      email: string
-      parent_id?: string
-    }
-    const course = enrollment.course as unknown as { title: string; subject?: string }
+    // Get student details separately
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name, student_id, email, parent_id')
+      .eq('id', enrollment.student_id)
+      .single()
 
-    if (!student || !course) {
-      console.error('Missing enrollment data')
+    if (studentError || !student) {
+      console.error('Failed to fetch student details:', studentError)
+      return false
+    }
+
+    // Get course details separately
+    const { data: course, error: courseError } = await supabaseAdmin
+      .from('courses')
+      .select('title, subject')
+      .eq('id', enrollment.course_id)
+      .single()
+
+    if (courseError || !course) {
+      console.error('Failed to fetch course details:', courseError)
       return false
     }
 
