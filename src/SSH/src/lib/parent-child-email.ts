@@ -247,6 +247,8 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
     let course = null
     let courseError = null
 
+    console.log('🔍 Looking up course:', enrollment.course_id)
+
     // Try gurukul_courses first
     const { data: gurukulCourse, error: gurukulError } = await supabaseAdmin
       .from('gurukul_courses')
@@ -255,8 +257,10 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
       .single()
 
     if (gurukulCourse) {
+      console.log('✅ Found course in gurukul_courses:', gurukulCourse)
       course = gurukulCourse
     } else {
+      console.log('⚠️ Not found in gurukul_courses:', gurukulError)
       // Fallback to courses table
       const { data: regularCourse, error: regularError } = await supabaseAdmin
         .from('courses')
@@ -264,15 +268,21 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
         .eq('id', enrollment.course_id)
         .single()
 
-      course = regularCourse
+      if (regularCourse) {
+        console.log('✅ Found course in courses:', regularCourse)
+        course = regularCourse
+      } else {
+        console.log('⚠️ Not found in courses:', regularError)
+      }
       courseError = regularError
     }
 
     if (!course) {
-      console.error('Failed to fetch course details from both tables:', {
-        gurukulError,
-        courseError,
+      console.error('❌ Failed to fetch course details from both tables:', {
+        gurukulError: gurukulError?.message || gurukulError,
+        courseError: courseError?.message || courseError,
         courseId: enrollment.course_id,
+        enrollmentId: enrollment.id,
       })
       return false
     }
