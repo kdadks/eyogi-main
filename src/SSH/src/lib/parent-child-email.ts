@@ -243,49 +243,25 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
       return false
     }
 
-    // Get course details - try gurukul_courses first, then fallback to courses
-    let course = null
-    let courseError = null
-
+    // Get course details from courses table
     console.log('🔍 Looking up course:', enrollment.course_id)
 
-    // Try gurukul_courses first
-    const { data: gurukulCourse, error: gurukulError } = await supabaseAdmin
-      .from('gurukul_courses')
-      .select('title, subject')
+    const { data: course, error: courseError } = await supabaseAdmin
+      .from('courses')
+      .select('title')
       .eq('id', enrollment.course_id)
       .single()
 
-    if (gurukulCourse) {
-      console.log('✅ Found course in gurukul_courses:', gurukulCourse)
-      course = gurukulCourse
-    } else {
-      console.log('⚠️ Not found in gurukul_courses:', gurukulError)
-      // Fallback to courses table
-      const { data: regularCourse, error: regularError } = await supabaseAdmin
-        .from('courses')
-        .select('title, subject')
-        .eq('id', enrollment.course_id)
-        .single()
-
-      if (regularCourse) {
-        console.log('✅ Found course in courses:', regularCourse)
-        course = regularCourse
-      } else {
-        console.log('⚠️ Not found in courses:', regularError)
-      }
-      courseError = regularError
-    }
-
-    if (!course) {
-      console.error('❌ Failed to fetch course details from both tables:', {
-        gurukulError: gurukulError?.message || gurukulError,
-        courseError: courseError?.message || courseError,
+    if (courseError || !course) {
+      console.error('❌ Failed to fetch course details:', {
+        error: courseError?.message || courseError,
         courseId: enrollment.course_id,
         enrollmentId: enrollment.id,
       })
       return false
     }
+
+    console.log('✅ Found course:', course)
 
     // Decrypt student name
     const studentName = decryptField(student.full_name) || 'Student'
@@ -321,7 +297,7 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
       studentId,
       student.email,
       course.title,
-      course.subject || '',
+      '', // subject field doesn't exist in courses table
       enrollmentType,
       parentInfo,
       enrollment.created_at,
