@@ -278,34 +278,36 @@ export default function UserFormModal({
       if (mode === 'create') {
         let userId: string
 
-        // Business admin users don't need Supabase Auth - they use profiles table only
+        // If no email provided, generate one from the name
+        if (!formData.email) {
+          formData.email = generateEmailFromName(formData.full_name)
+        }
+
+        // If no password provided, generate a secure random one
+        if (!formData.password) {
+          formData.password = crypto.randomUUID().substring(0, 16)
+        }
+
+        // Authentication strategy:
+        // - business_admin: Create in Supabase Auth (needs auth for admin login)
+        // - super_admin: Created manually in Supabase Auth (not through this form)
+        // - student, teacher, parent: Profiles table only with password_hash
         if (formData.role === 'business_admin') {
-          // Generate a UUID for the business admin
-          userId = crypto.randomUUID()
-
-          // If no email provided, generate one from the name
-          if (!formData.email) {
-            formData.email = generateEmailFromName(formData.full_name)
-          }
-
-          // If no password provided, generate a secure random one
-          if (!formData.password) {
-            formData.password = crypto.randomUUID().substring(0, 16)
-          }
-        } else {
-          // For other roles, create user in Supabase Auth
+          // Create in Supabase Auth for business admin
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email: formData.email,
             password: formData.password,
             email_confirm: true,
           })
-          if (authError) {
-            throw new Error(`Authentication error: ${authError.message}`)
+
+          if (authError || !authData.user) {
+            throw new Error(`Failed to create business admin auth: ${authError?.message}`)
           }
-          if (!authData.user) {
-            throw new Error('Failed to create user account')
-          }
+
           userId = authData.user.id
+        } else {
+          // For all other roles (student, teacher, parent), use UUID only
+          userId = crypto.randomUUID()
         }
 
         // Normalize country and state codes to proper ISO format

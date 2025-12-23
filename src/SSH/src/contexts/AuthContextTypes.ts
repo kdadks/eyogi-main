@@ -1,4 +1,4 @@
-import { createContext } from 'react'
+import { createContext, useContext } from 'react'
 import { User } from '@supabase/supabase-js'
 import type { Profile } from '../types'
 export interface AuthContextType {
@@ -8,7 +8,7 @@ export interface AuthContextType {
   profile: Profile | null
   loading: boolean
   initialized: boolean
-  // Admin sign in (Supabase Auth only)
+  // Admin sign in (Supabase Auth only - for business_admin and super_admin)
   signIn: (email: string, password: string) => Promise<{ error: unknown }>
   signOut: () => Promise<void>
   updateAuthState: () => Promise<{ user: User | null; profile: Profile | null }>
@@ -22,3 +22,12 @@ export interface AuthContextType {
   canAccess: (resource: string, action: string) => boolean
 }
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+// Hook to use Supabase Auth context (for business_admin and super_admin login)
+export const useSupabaseAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useSupabaseAuth must be used within an AuthProvider')
+  }
+  return context
+}

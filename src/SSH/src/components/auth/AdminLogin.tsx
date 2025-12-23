@@ -1,45 +1,32 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
-import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
+import { useSupabaseAuth } from '../../contexts/AuthContextTypes'
+
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate()
-  const { updateAuthState } = useAuth()
+  const { signIn } = useSupabaseAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    try {
-      // Sign in with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (error) {
-        toast.error(error.message || 'Login failed')
-        return
-      }
-      if (!data.user) {
-        toast.error('Login failed - no user data')
-        return
-      }
 
-      // Get the session to ensure it's available
-      const { data: sessionData } = await supabase.auth.getSession()
-      if (!sessionData.session) {
-        toast.error('Session not established')
+    try {
+      // Use Supabase Auth for business_admin and super_admin login ONLY
+      // All other users (student, parent, teacher) use WebsiteAuth
+      const { error } = await signIn(email, password)
+
+      if (error) {
+        toast.error(error)
         return
       }
 
       toast.success('Welcome to Admin Console')
-
-      // Update auth context immediately
-      await updateAuthState()
 
       // Small delay to ensure state is updated
       await new Promise((resolve) => setTimeout(resolve, 100))

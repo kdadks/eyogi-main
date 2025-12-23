@@ -21,14 +21,16 @@ import {
   ShieldExclamationIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline'
-import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
+
 interface AdminSidebarProps {
   isOpen: boolean
   onClose: () => void
 }
+
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
-  const { user, signOut } = useAuth()
+  const { user, signOut } = useWebsiteAuth()
   const { canAccessResource, canShowInMenu, getUserRole, currentUser, isSuperAdminRole } =
     usePermissions()
   const [isSigningOut, setIsSigningOut] = useState(false)

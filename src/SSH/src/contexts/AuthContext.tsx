@@ -285,18 +285,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false)
     }
   }, [location.pathname, loading, initialized, user, profile])
-  // Sign in for super admin only (Supabase Auth)
+
+  // Supabase Auth is ONLY for super_admin and business_admin login
+  // All other logins (student, parent, teacher) use WebsiteAuthContext
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      return { error }
-    } catch (err) {
-      return { error: err }
+
+      if (error) {
+        debugAuth.error('Supabase Auth login failed', { error: error.message, email })
+        return { error: error.message }
+      }
+
+      if (data.user) {
+        // Fetch profile to verify role
+        const userProfile = await fetchProfile(data.user.id)
+
+        if (!userProfile) {
+          debugAuth.error('Profile not found for authenticated user', { userId: data.user.id })
+          await supabase.auth.signOut()
+          return { error: 'Profile not found' }
+        }
+
+        // Only allow super_admin and business_admin to log in via Supabase Auth
+        if (userProfile.role !== 'super_admin' && userProfile.role !== 'business_admin') {
+          debugAuth.error('Unauthorized role for Supabase Auth login', { role: userProfile.role })
+          await supabase.auth.signOut()
+          return { error: 'Unauthorized access. This login is for administrators only.' }
+        }
+
+        setUser(data.user)
+        setProfile(userProfile)
+        debugAuth.log('Supabase Auth login successful', { email, role: userProfile.role })
+        return { error: null }
+      }
+
+      return { error: 'Login failed' }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      debugAuth.error('Supabase Auth login exception', { error: errorMessage })
+      return { error: errorMessage }
     }
   }
+
   const signOut = async () => {
     try {
       // Clear inactivity timer
@@ -304,18 +338,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         clearTimeout(inactivityTimerRef.current)
       }
 
-      // Clear local state immediately
+      // Sign out from Supabase Auth (for super_admin and business_admin)
+      await supabase.auth.signOut()
+
+      // Clear local state
       setUser(null)
       setProfile(null)
       setLoading(false)
       setInitialized(true)
-      // Sign out from Supabase with global scope
-      await supabase.auth.signOut({ scope: 'global' })
-      // Clear only auth-related storage
-      localStorage.removeItem('eyogi-ssh-app-auth')
-      sessionStorage.removeItem('eyogi-ssh-app-auth')
-    } catch {
-      // Still clear local state
+
+      debugAuth.log('Signed out successfully')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      debugAuth.error('Sign out error', { error: errorMessage })
+      // Still clear local state on error
       setUser(null)
       setProfile(null)
     }

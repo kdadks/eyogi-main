@@ -1,13 +1,18 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useSupabaseAuth as useAuth } from '../../hooks/useSupabaseAuth'
+import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
+
 interface ProtectedRouteProps {
   children: React.ReactNode
 }
+
 const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isSuperAdmin, loading, user, initialized } = useAuth()
+  const { user, loading, initialized } = useWebsiteAuth()
   const location = useLocation()
   const [showFallback, setShowFallback] = React.useState(false)
+
+  // Check if user has admin privileges
+  const isAdmin = user && ['admin', 'business_admin', 'super_admin'].includes(user.role)
 
   // Fallback mechanism for production - if loading too long, show fallback
   React.useEffect(() => {
@@ -63,9 +68,10 @@ const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     )
   }
   // Redirect to login if not authenticated or not admin
-  if (!user || !isSuperAdmin) {
+  if (!user || !isAdmin) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />
   }
+
   // Allow access
   return <>{children}</>
 }
