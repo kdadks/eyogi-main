@@ -112,38 +112,69 @@ const AdminUserManagement: React.FC = () => {
       message: `Are you sure you want to delete "${userToDelete.full_name}"?\n\nThis will also delete all their enrollments${userToDelete.role === 'parent' ? ' and all their children' : ''}. This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          // 1. Delete enrollments if user is a student
+          // Delete related records based on role
           if (userToDelete.role === 'student') {
+            // Only delete records that pending students might actually have:
+            // 1. Enrollments (might be pre-enrolled by admin)
             const enrollments = await getStudentEnrollments(userId)
             if (enrollments.length > 0) {
               const enrollmentIds = enrollments.map((e) => e.id)
               await supabaseAdmin.from('enrollments').delete().in('id', enrollmentIds)
             }
+
+            // 2. Student consent records (where they are the student)
+            await supabaseAdmin.from('student_consent').delete().eq('student_id', userId)
+
+            // 3. Batch assignments (might be pre-assigned)
+            await supabaseAdmin.from('batch_students').delete().eq('student_id', userId)
+
+            // Note: Certificates, attendance, and progress shouldn't exist for pending students
+            // but we'll try to delete them anyway (will silently succeed if no records exist)
+            await supabaseAdmin.from('certificates').delete().eq('student_id', userId)
+            await supabaseAdmin.from('batch_progress').delete().eq('student_id', userId)
+            await supabaseAdmin.from('attendance_records').delete().eq('student_id', userId)
           }
-          // 2. If user is a parent, delete all their children (and their enrollments)
+
+          // 2. If user is a parent, delete all their children
           if (userToDelete.role === 'parent') {
             const children = await getChildrenByParentId(userId)
             for (const child of children) {
-              // Delete child enrollments
+              // Delete child's enrollments
               const enrollments = await getStudentEnrollments(child.id)
               if (enrollments.length > 0) {
                 const enrollmentIds = enrollments.map((e) => e.id)
                 await supabaseAdmin.from('enrollments').delete().in('id', enrollmentIds)
               }
+
+              // Delete other child records
+              await supabaseAdmin.from('student_consent').delete().eq('student_id', child.id)
+              await supabaseAdmin.from('batch_students').delete().eq('student_id', child.id)
+              await supabaseAdmin.from('certificates').delete().eq('student_id', child.id)
+              await supabaseAdmin.from('batch_progress').delete().eq('student_id', child.id)
+              await supabaseAdmin.from('attendance_records').delete().eq('student_id', child.id)
+
               // Delete child profile
               await deleteChild(child.id)
             }
           }
-          // 3. Delete user profile
+
+          // 3. Delete consent records where this user gave consent for others
+          await supabaseAdmin.from('student_consent').delete().eq('consented_by', userId)
+
+          // 4. Finally, delete the user profile
           const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
           if (error) {
-            toast.error('Failed to delete user')
+            console.error('Error deleting user profile:', error)
+            toast.error(`Failed to delete user: ${error.message}`)
             return
           }
+
           toast.success('User and related data deleted successfully')
           loadUsers() // Refresh the list
-        } catch {
-          toast.error('Failed to delete user')
+        } catch (err) {
+          console.error('Error during user deletion:', err)
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+          toast.error(`Failed to delete user: ${errorMessage}`)
         }
         setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
       },
