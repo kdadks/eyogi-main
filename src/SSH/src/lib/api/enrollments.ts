@@ -10,6 +10,23 @@ import {
 } from '../parent-child-email'
 export async function enrollInCourse(courseId: string, studentId: string): Promise<Enrollment> {
   try {
+    // Check student status - only active students can enroll
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('status, parent_id')
+      .eq('id', studentId)
+      .single()
+
+    if (studentError || !student) {
+      throw new Error('Failed to fetch student details')
+    }
+
+    if (student.status !== 'active') {
+      throw new Error(
+        'Only active accounts can enroll in courses. Please wait for your account to be verified.',
+      )
+    }
+
     // Check prerequisites before enrollment
     const prerequisiteCheck = await checkCoursePrerequisites(courseId, studentId)
     if (!prerequisiteCheck.canEnroll) {
@@ -32,14 +49,8 @@ export async function enrollInCourse(courseId: string, studentId: string): Promi
       throw new Error('Failed to enroll in course')
     }
 
-    // Check if student has a parent (parent-initiated enrollment)
-    const { data: student } = await supabaseAdmin
-      .from('profiles')
-      .select('parent_id')
-      .eq('id', studentId)
-      .single()
-
-    if (student?.parent_id) {
+    // Use the student data we already fetched above
+    if (student.parent_id) {
       // Parent-initiated enrollment: send confirmation to parent
       sendParentEnrollmentConfirmation(data.id, student.parent_id).catch((err) =>
         console.error('Failed to send parent enrollment confirmation:', err),
@@ -84,6 +95,23 @@ export async function enrollInCourseWithoutPrerequisites(
   studentId: string,
 ): Promise<Enrollment> {
   try {
+    // Check student status - only active students can enroll
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('status, parent_id')
+      .eq('id', studentId)
+      .single()
+
+    if (studentError || !student) {
+      throw new Error('Failed to fetch student details')
+    }
+
+    if (student.status !== 'active') {
+      throw new Error(
+        'Only active accounts can enroll in courses. Please wait for your account to be verified.',
+      )
+    }
+
     const { data, error } = await supabaseAdmin
       .from('enrollments')
       .insert({
@@ -101,14 +129,8 @@ export async function enrollInCourseWithoutPrerequisites(
       throw new Error('Failed to enroll in course')
     }
 
-    // Check if student has a parent (parent-initiated enrollment)
-    const { data: student } = await supabaseAdmin
-      .from('profiles')
-      .select('parent_id')
-      .eq('id', studentId)
-      .single()
-
-    if (student?.parent_id) {
+    // Use the student data we already fetched above
+    if (student.parent_id) {
       // Parent-initiated enrollment: send confirmation to parent
       sendParentEnrollmentConfirmation(data.id, student.parent_id).catch((err) =>
         console.error('Failed to send parent enrollment confirmation:', err),
@@ -258,7 +280,7 @@ export async function getTeacherEnrollments(teacherId: string): Promise<Enrollme
         }
 
         // Map and transform the data to match the Enrollment interface
-        const mappedData = (data || []).map((item: Record<string, any>) => ({
+        const mappedData = (data || []).map((item: Record<string, unknown>) => ({
           ...item,
           course: item.course || undefined,
           student: item.student ? decryptProfileFields(item.student) : undefined,
@@ -641,7 +663,7 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
         }
 
         // Map and transform the data to match Enrollment interface
-        const mappedData = (data || []).map((item: Record<string, any>) => ({
+        const mappedData = (data || []).map((item: Record<string, unknown>) => ({
           ...item,
           course: item.course || undefined,
           student: item.student ? decryptProfileFields(item.student) : undefined,
@@ -691,9 +713,11 @@ export async function getStudentsEnrolledInCourse(
 
         // Transform data to the expected format and remove duplicates
         const studentsMap = new Map()
-        data?.forEach((enrollment: any) => {
+        data?.forEach((enrollment: Record<string, unknown>) => {
           if (enrollment.student) {
-            const decryptedStudent = decryptProfileFields(enrollment.student)
+            const decryptedStudent = decryptProfileFields(
+              enrollment.student as { id: string; full_name: string; email: string },
+            )
             studentsMap.set(decryptedStudent.id, {
               id: decryptedStudent.id,
               full_name: decryptedStudent.full_name,

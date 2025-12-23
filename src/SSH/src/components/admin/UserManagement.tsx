@@ -28,6 +28,7 @@ export default function UserManagement() {
   const [viewingUser, setViewingUser] = useState<User | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -92,14 +93,17 @@ export default function UserManagement() {
       title: 'Delete User',
       message: `Are you sure you want to delete "${userToDelete.full_name || userToDelete.email}"? This action cannot be undone.`,
       onConfirm: async () => {
+        setDeleteLoading(true)
         try {
           await deleteUser(userId)
           await loadUsers()
           toast.success('User deleted successfully')
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
         } catch {
           toast.error('Failed to delete user')
+        } finally {
+          setDeleteLoading(false)
         }
-        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
       },
     })
   }
@@ -531,6 +535,7 @@ export default function UserManagement() {
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
         variant="danger"
+        loading={deleteLoading}
       />
     </div>
   )
