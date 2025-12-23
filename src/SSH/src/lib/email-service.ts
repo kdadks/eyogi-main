@@ -19,6 +19,12 @@ export async function sendEmailViaAPI(options: SendEmailOptions): Promise<boolea
       ? import.meta.env.VITE_APP_URL || 'http://localhost:3000'
       : window.location.origin
 
+    console.log('📧 Sending email via API:', {
+      apiUrl,
+      to: options.to,
+      subject: options.subject,
+    })
+
     const response = await fetch(`${apiUrl}/api/admin/send-email`, {
       method: 'POST',
       headers: {
@@ -33,19 +39,30 @@ export async function sendEmailViaAPI(options: SendEmailOptions): Promise<boolea
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Failed to send email:', {
+      console.error('❌ Failed to send email - HTTP error:', {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
+        to: options.to,
+        subject: options.subject,
       })
       return false
     }
 
     const result = await response.json()
-    console.log('✅ Email sent successfully:', options.subject, 'to', options.to)
+    console.log('✅ Email API response:', {
+      success: result.success,
+      to: options.to,
+      subject: options.subject,
+    })
     return result.success === true
   } catch (error) {
-    console.error('Error sending email via API:', error)
+    console.error('❌ Error sending email via API - Exception:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      to: options.to,
+      subject: options.subject,
+    })
     return false
   }
 }

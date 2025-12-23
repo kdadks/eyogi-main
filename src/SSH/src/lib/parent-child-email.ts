@@ -243,15 +243,37 @@ export async function sendAdminEnrollmentNotification(enrollmentId: string): Pro
       return false
     }
 
-    // Get course details separately
-    const { data: course, error: courseError } = await supabaseAdmin
-      .from('courses')
+    // Get course details - try gurukul_courses first, then fallback to courses
+    let course = null
+    let courseError = null
+
+    // Try gurukul_courses first
+    const { data: gurukulCourse, error: gurukulError } = await supabaseAdmin
+      .from('gurukul_courses')
       .select('title, subject')
       .eq('id', enrollment.course_id)
       .single()
 
-    if (courseError || !course) {
-      console.error('Failed to fetch course details:', courseError)
+    if (gurukulCourse) {
+      course = gurukulCourse
+    } else {
+      // Fallback to courses table
+      const { data: regularCourse, error: regularError } = await supabaseAdmin
+        .from('courses')
+        .select('title, subject')
+        .eq('id', enrollment.course_id)
+        .single()
+
+      course = regularCourse
+      courseError = regularError
+    }
+
+    if (!course) {
+      console.error('Failed to fetch course details from both tables:', {
+        gurukulError,
+        courseError,
+        courseId: enrollment.course_id,
+      })
       return false
     }
 

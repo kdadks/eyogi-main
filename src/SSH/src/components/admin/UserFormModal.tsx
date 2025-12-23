@@ -294,6 +294,11 @@ export default function UserFormModal({
         // - student, teacher, parent: Profiles table only with password_hash
         if (formData.role === 'business_admin') {
           // Create in Supabase Auth for business admin
+          console.log('🔐 Creating business_admin in Supabase Auth...', {
+            email: formData.email,
+            role: formData.role,
+          })
+
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email: formData.email,
             password: formData.password,
@@ -301,12 +306,22 @@ export default function UserFormModal({
           })
 
           if (authError || !authData.user) {
+            console.error('❌ Failed to create business admin in Supabase Auth:', authError)
             throw new Error(`Failed to create business admin auth: ${authError?.message}`)
           }
+
+          console.log('✅ Successfully created business_admin in Supabase Auth:', {
+            userId: authData.user.id,
+            email: authData.user.email,
+          })
 
           userId = authData.user.id
         } else {
           // For all other roles (student, teacher, parent), use UUID only
+          console.log('📝 Creating non-admin user with UUID only:', {
+            role: formData.role,
+            email: formData.email,
+          })
           userId = crypto.randomUUID()
         }
 
