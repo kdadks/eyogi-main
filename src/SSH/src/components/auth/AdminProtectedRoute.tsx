@@ -1,18 +1,19 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useWebsiteAuth } from '../../contexts/WebsiteAuthContext'
+import { useSupabaseAuth } from '../../contexts/AuthContextTypes'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
 }
 
 const AdminProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading, initialized } = useWebsiteAuth()
+  const { user, profile, loading, initialized } = useSupabaseAuth()
   const location = useLocation()
   const [showFallback, setShowFallback] = React.useState(false)
 
-  // Check if user has admin privileges
-  const isAdmin = user && ['admin', 'business_admin', 'super_admin'].includes(user.role)
+  // Check if user has admin privileges (from Supabase Auth)
+  const isAdmin =
+    user && profile && ['admin', 'business_admin', 'super_admin'].includes(profile.role)
 
   // Fallback mechanism for production - if loading too long, show fallback
   React.useEffect(() => {

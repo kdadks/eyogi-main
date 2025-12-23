@@ -199,7 +199,7 @@ export async function sendParentEnrollmentConfirmation(
     )
     const emailSent = await sendEmailViaAPI({
       to: parent.email,
-      subject: `Enrollment Confirmation: ${childName} in ${course.title}`,
+      subject: `Enrollment Request Confirmation: ${childName} in ${course.title}`,
       htmlBody: emailHTML,
     })
 
