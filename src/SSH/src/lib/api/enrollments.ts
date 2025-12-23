@@ -4,7 +4,10 @@ import { checkCoursePrerequisites } from './prerequisites'
 import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import { decryptProfileFields } from '../encryption'
 import { sendEnrollmentSubmissionEmail, sendEnrollmentStatusEmail } from '../enrollment-email'
-import { sendEnrollmentSubmissionEmail, sendEnrollmentStatusEmail } from '../enrollment-email'
+import {
+  sendParentEnrollmentConfirmation,
+  sendAdminEnrollmentNotification,
+} from '../parent-child-email'
 export async function enrollInCourse(courseId: string, studentId: string): Promise<Enrollment> {
   try {
     // Check prerequisites before enrollment
@@ -29,9 +32,28 @@ export async function enrollInCourse(courseId: string, studentId: string): Promi
       throw new Error('Failed to enroll in course')
     }
 
-    // Send enrollment submission confirmation email (non-blocking)
-    sendEnrollmentSubmissionEmail(data.id).catch((err) =>
-      console.error('Failed to send enrollment submission email:', err),
+    // Check if student has a parent (parent-initiated enrollment)
+    const { data: student } = await supabaseAdmin
+      .from('profiles')
+      .select('parent_id')
+      .eq('id', studentId)
+      .single()
+
+    if (student?.parent_id) {
+      // Parent-initiated enrollment: send confirmation to parent
+      sendParentEnrollmentConfirmation(data.id, student.parent_id).catch((err) =>
+        console.error('Failed to send parent enrollment confirmation:', err),
+      )
+    } else {
+      // Direct student enrollment: send submission email to student
+      sendEnrollmentSubmissionEmail(data.id).catch((err) =>
+        console.error('Failed to send enrollment submission email:', err),
+      )
+    }
+
+    // Always send admin notification about new enrollment
+    sendAdminEnrollmentNotification(data.id).catch((err) =>
+      console.error('Failed to send admin enrollment notification:', err),
     )
 
     // Invalidate enrollment caches
@@ -64,9 +86,28 @@ export async function enrollInCourseWithoutPrerequisites(
       throw new Error('Failed to enroll in course')
     }
 
-    // Send enrollment submission confirmation email (non-blocking)
-    sendEnrollmentSubmissionEmail(data.id).catch((err) =>
-      console.error('Failed to send enrollment submission email:', err),
+    // Check if student has a parent (parent-initiated enrollment)
+    const { data: student } = await supabaseAdmin
+      .from('profiles')
+      .select('parent_id')
+      .eq('id', studentId)
+      .single()
+
+    if (student?.parent_id) {
+      // Parent-initiated enrollment: send confirmation to parent
+      sendParentEnrollmentConfirmation(data.id, student.parent_id).catch((err) =>
+        console.error('Failed to send parent enrollment confirmation:', err),
+      )
+    } else {
+      // Direct student enrollment: send submission email to student
+      sendEnrollmentSubmissionEmail(data.id).catch((err) =>
+        console.error('Failed to send enrollment submission email:', err),
+      )
+    }
+
+    // Always send admin notification about new enrollment
+    sendAdminEnrollmentNotification(data.id).catch((err) =>
+      console.error('Failed to send admin enrollment notification:', err),
     )
 
     // Invalidate enrollment caches

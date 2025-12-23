@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase'
 import { decryptField } from './encryption'
 import { sendEmailViaAPI } from './email-service'
+import { sendChildActivationNotificationToParent } from './parent-child-email'
 
 /**
  * Send activation email to user and parent notification if applicable
@@ -38,29 +39,12 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
       console.error('Failed to send activation email to:', email)
     }
 
-    // If user is a student (role = 4) and has a parent, send notification to parent
-    if (role === 4 && parent_id) {
-      try {
-        const { data: parentData } = await supabaseAdmin
-          .from('profiles')
-          .select('email')
-          .eq('id', parent_id)
-          .single()
-
-        if (parentData?.email) {
-          const parentEmailHTML = generateParentNotificationHTML(decryptedFullName)
-
-          // Send parent notification email
-          await sendEmailViaAPI({
-            to: parentData.email,
-            subject: "Your Child's Account Has Been Activated",
-            htmlBody: parentEmailHTML,
-          })
-        }
-      } catch (parentError) {
-        console.error('Error fetching parent details:', parentError)
-        // Continue even if parent notification fails
-      }
+    // If user is a student (role = 4 or role = 'student') and has a parent, send notification to parent
+    if ((role === 4 || role === 'student') && parent_id) {
+      // Use the new dedicated function for child activation notifications
+      sendChildActivationNotificationToParent(userId).catch((err) =>
+        console.error('Failed to send child activation notification to parent:', err),
+      )
     }
 
     return emailSent

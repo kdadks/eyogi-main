@@ -4,6 +4,7 @@ import { getCountryCode, getCountyCode } from '../isoCodes'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
 import { encryptProfileFields, decryptProfileFields } from '../encryption'
 import { logEncryptedFieldChanges, type ChangedByInfo } from './auditTrail'
+import { sendChildAddedNotifications } from '../parent-child-email'
 type Profile = Database['public']['Tables']['profiles']['Row']
 export interface CreateChildData {
   full_name: string
@@ -207,6 +208,11 @@ export async function createChild(
 
     // Parent-child relationship is now handled simply through parent_id field in profiles table
     // No need for complex parent_child_relationships table
+
+    // Send email notifications (non-blocking)
+    sendChildAddedNotifications(childId, childData.parent_id).catch((err) =>
+      console.error('Failed to send child added notifications:', err),
+    )
 
     // Decrypt before returning
     return decryptProfileFields(data)

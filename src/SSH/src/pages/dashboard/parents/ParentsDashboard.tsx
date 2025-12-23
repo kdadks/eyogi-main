@@ -77,6 +77,7 @@ interface Child {
   grade: string
   email?: string
   avatar?: string
+  status?: string // Account status (active, inactive, pending)
   overall_progress: number
   streak_days: number
   learning_time: {
@@ -123,6 +124,7 @@ interface Course {
   enrollment_date: string
   estimated_completion_date: string
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+  status?: string // enrollment status: 'pending', 'approved', 'rejected', 'completed'
   batch_info?: {
     batch_id: string
     batch_name: string
@@ -394,6 +396,7 @@ export default function ParentsDashboard() {
                 day: 'numeric',
               }),
               difficulty: mapCourseLevel(enrollment.course?.level || 'basic'),
+              status: enrollment.status,
               batch_info: batch_info,
             }
           })
@@ -452,6 +455,7 @@ export default function ParentsDashboard() {
             recent_activity: recentActivities,
             achievements: achievements,
             batch_progress: batch_progress,
+            status: profile.status || 'inactive', // Add account status
             // Store address data from database
             address_line_1: profile.address_line_1 || '',
             address_line_2: profile.address_line_2 || '',
@@ -613,6 +617,15 @@ export default function ParentsDashboard() {
     if (!selectedCourse) return
     const selectedChild = children.find((child) => child.student_id === childId)
     if (!selectedChild) return
+
+    // Check if child account is activated
+    if (selectedChild.status !== 'active') {
+      toast.error(
+        `${selectedChild.full_name}'s account must be activated by the Gurukul admin before enrolling in courses. Please wait for account activation.`,
+        { duration: 5000 },
+      )
+      return
+    }
 
     setEnrollmentLoading(true)
     try {
@@ -1274,50 +1287,81 @@ export default function ParentsDashboard() {
                     )
                   }
 
-                  return unenrolledChildren.map((child) => (
-                    <motion.button
-                      key={child.student_id}
-                      onClick={() => handleChildSelection(child.student_id)}
-                      disabled={enrollmentLoading}
-                      className="w-full p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      whileHover={{ scale: enrollmentLoading ? 1 : 1.02 }}
-                      whileTap={{ scale: enrollmentLoading ? 1 : 0.98 }}
-                    >
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                          {child.full_name.charAt(0)}
-                        </div>
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-gray-900">{child.full_name}</h5>
-                          <p className="text-sm text-gray-600">
-                            {child.grade} • Age {child.age && !isNaN(child.age) ? child.age : 'N/A'}
-                          </p>
-                        </div>
-                        {enrollmentLoading && (
-                          <svg
-                            className="animate-spin h-5 w-5 text-blue-600"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
+                  return unenrolledChildren.map((child) => {
+                    const isActive = child.status === 'active'
+                    return (
+                      <motion.button
+                        key={child.student_id}
+                        onClick={() => isActive && handleChildSelection(child.student_id)}
+                        disabled={enrollmentLoading || !isActive}
+                        className={`w-full p-4 border rounded-lg transition-all duration-200 text-left ${
+                          isActive
+                            ? 'border-gray-200 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                            : 'border-red-200 bg-red-50 cursor-not-allowed opacity-60'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        whileHover={{ scale: enrollmentLoading || !isActive ? 1 : 1.02 }}
+                        whileTap={{ scale: enrollmentLoading || !isActive ? 1 : 0.98 }}
+                        title={
+                          !isActive
+                            ? 'This child account must be activated before enrollment'
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-center">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3 ${
+                              isActive
+                                ? 'bg-gradient-to-br from-purple-500 to-pink-600'
+                                : 'bg-gray-400'
+                            }`}
                           >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        )}
-                      </div>
-                    </motion.button>
-                  ))
+                            {child.full_name.charAt(0)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-semibold text-gray-900">{child.full_name}</h5>
+                              {!isActive && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                  ⏳ Pending Activation
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              {child.grade} • Age{' '}
+                              {child.age && !isNaN(child.age) ? child.age : 'N/A'}
+                            </p>
+                            {!isActive && (
+                              <p className="text-xs text-red-600 mt-1">
+                                Account must be activated by Gurukul admin
+                              </p>
+                            )}
+                          </div>
+                          {enrollmentLoading && isActive && (
+                            <svg
+                              className="animate-spin h-5 w-5 text-blue-600"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                          )}
+                        </div>
+                      </motion.button>
+                    )
+                  })
                 })()
               )}
             </div>
@@ -1899,7 +1943,33 @@ function ChildrenTab({
                       ID: {child.display_student_id}
                     </p>
                   )}
-                  <div className="mt-2">
+                  {/* Badges: Activation Status & Consent Status */}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {/* Activation Status Badge */}
+                    {child.status === 'active' ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Pending
+                      </span>
+                    )}
+                    {/* Consent Status Badge */}
                     <ConsentStatusBadge
                       consentGiven={childConsents.get(child.student_id)?.consent_given || false}
                       withdrawn={childConsents.get(child.student_id)?.withdrawn || false}
@@ -1949,10 +2019,42 @@ function ChildrenTab({
                       {child.enrolled_courses.slice(0, 3).map((course) => (
                         <div key={course.id} className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center flex-1 mr-2">
+                            <div className="flex items-center flex-1 mr-2 gap-1 flex-wrap">
                               <span className="text-gray-600 truncate">{course.title}</span>
+                              {/* Enrollment Status Badge */}
+                              {course.status === 'approved' || course.status === 'completed' ? (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                                  <svg
+                                    className="w-2.5 h-2.5 mr-0.5"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  Approved
+                                </span>
+                              ) : course.status === 'pending' ? (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 whitespace-nowrap">
+                                  <svg
+                                    className="w-2.5 h-2.5 mr-0.5"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  Pending
+                                </span>
+                              ) : null}
                               {course.batch_info && (
-                                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                   <svg
                                     className="w-2.5 h-2.5 mr-0.5"
                                     fill="currentColor"
@@ -2118,8 +2220,52 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
               {/* Course Info */}
               <div className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-base">{enrollment.title}</h3>
-                  <p className="text-sm text-gray-600">{enrollment.subject}</p>
+                  <div className="flex items-start gap-2 mb-2">
+                    <h3 className="font-semibold text-gray-900 text-base flex-1">
+                      {enrollment.title}
+                    </h3>
+                    {/* Enrollment Status Badge */}
+                    {enrollment.status ? (
+                      enrollment.status === 'approved' || enrollment.status === 'completed' ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Approved
+                        </span>
+                      ) : enrollment.status === 'pending' ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 whitespace-nowrap">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Pending
+                        </span>
+                      ) : enrollment.status === 'rejected' ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Rejected
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap">
+                          {enrollment.status}
+                        </span>
+                      )
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-sm">
