@@ -493,41 +493,57 @@ export default function CourseDetailPage() {
                                 </div>
                               </div>
                             )}
-                          {/* Prerequisites Checker - only for students who are not already enrolled */}
-                          {user.role === 'student' &&
-                            !(
-                              prerequisiteResult &&
-                              prerequisiteResult.message.includes('Already enrolled')
-                            ) && (
+                          {/* Hidden PrerequisiteChecker to check status - always runs for active students */}
+                          {user.role === 'student' && user.status === 'active' && (
+                            <div style={{ display: 'none' }}>
                               <PrerequisiteChecker
                                 courseId={course.id}
                                 studentId={user.id}
                                 onPrerequisiteCheck={setPrerequisiteResult}
                                 showFullDetails={false}
                               />
-                            )}
-                          <Button
-                            className="w-full"
-                            onClick={handleEnroll}
-                            loading={enrolling}
-                            disabled={
-                              enrolledCount >= course.max_students ||
-                              !!(prerequisiteResult && !prerequisiteResult.canEnroll) ||
-                              (user.role === 'parent' && allChildrenEnrolled)
-                            }
-                          >
-                            {enrolledCount >= course.max_students
-                              ? 'Course Full'
-                              : prerequisiteResult && !prerequisiteResult.canEnroll
-                                ? prerequisiteResult.message.includes('Already enrolled')
-                                  ? 'Already Enrolled'
-                                  : 'Prerequisites Not Met'
-                                : user.role === 'parent' && allChildrenEnrolled
-                                  ? 'All Children Enrolled'
-                                  : user.role === 'parent'
-                                    ? 'Enroll Child'
-                                    : 'Enroll Now'}
-                          </Button>
+                            </div>
+                          )}
+                          {/* Account Pending Verification message for non-active students */}
+                          {user.role === 'student' && user.status !== 'active' && (
+                            <div className="p-4 rounded-lg border-2 bg-yellow-50 border-yellow-300 flex items-center gap-3">
+                              <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-yellow-900">
+                                  Account Pending Verification
+                                </p>
+                                <p className="text-sm text-yellow-700">
+                                  Your account needs to be activated before you can enroll in
+                                  courses. Please wait for admin approval.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          {/* Only show enroll button for active students or parents */}
+                          {(user.role === 'parent' || user.status === 'active') && (
+                            <Button
+                              className="w-full"
+                              onClick={handleEnroll}
+                              loading={enrolling}
+                              disabled={
+                                enrolledCount >= course.max_students ||
+                                !!(prerequisiteResult && !prerequisiteResult.canEnroll) ||
+                                (user.role === 'parent' && allChildrenEnrolled)
+                              }
+                            >
+                              {enrolledCount >= course.max_students
+                                ? 'Course Full'
+                                : prerequisiteResult && !prerequisiteResult.canEnroll
+                                  ? prerequisiteResult.message.includes('Already enrolled')
+                                    ? 'Already Enrolled'
+                                    : 'Prerequisites Not Met'
+                                  : user.role === 'parent' && allChildrenEnrolled
+                                    ? 'All Children Enrolled'
+                                    : user.role === 'parent'
+                                      ? 'Enroll Child'
+                                      : 'Enroll Now'}
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center text-sm text-gray-600">
@@ -681,12 +697,27 @@ export default function CourseDetailPage() {
                     <h2 className="text-2xl font-bold">Prerequisites</h2>
                   </CardHeader>
                   <CardContent>
-                    <PrerequisiteChecker
-                      courseId={course.id}
-                      studentId={user.id}
-                      onPrerequisiteCheck={setPrerequisiteResult}
-                      showFullDetails={true}
-                    />
+                    {user.status !== 'active' ? (
+                      <div className="p-4 rounded-lg border-2 bg-yellow-50 border-yellow-300 flex items-center gap-3">
+                        <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-yellow-900">
+                            Account Pending Verification
+                          </p>
+                          <p className="text-sm text-yellow-700">
+                            Your account needs to be activated before you can enroll in courses.
+                            Please wait for admin approval.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <PrerequisiteChecker
+                        courseId={course.id}
+                        studentId={user.id}
+                        onPrerequisiteCheck={setPrerequisiteResult}
+                        showFullDetails={true}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               )}
