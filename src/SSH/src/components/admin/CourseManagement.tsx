@@ -395,6 +395,14 @@ export default function CourseManagement() {
     if (filterLevel) {
       filtered = filtered.filter((course) => course.level === filterLevel)
     }
+
+    // Sort by most recent created/updated date first
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at).getTime()
+      const dateB = new Date(b.updated_at || b.created_at).getTime()
+      return dateB - dateA // Most recent first
+    })
+
     setFilteredCourses(filtered)
   }, [courses, searchTerm, filterGurukul, filterLevel])
   useEffect(() => {

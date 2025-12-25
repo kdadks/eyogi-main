@@ -34,6 +34,8 @@ export default function EnrollmentManagement() {
     id: string
     name: string
   } | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 25
 
   useEffect(() => {
     loadEnrollments()
@@ -53,7 +55,21 @@ export default function EnrollmentManagement() {
     if (statusFilter !== 'all') {
       filtered = filtered.filter((enrollment) => enrollment.status === statusFilter)
     }
+
+    // Sort: pending first, then alphabetically by student name for approved/rejected
+    filtered = filtered.sort((a, b) => {
+      // Pending status comes first
+      if (a.status === 'pending' && b.status !== 'pending') return -1
+      if (a.status !== 'pending' && b.status === 'pending') return 1
+
+      // If both are pending or both are non-pending, sort alphabetically by student name
+      const nameA = a.student?.full_name?.toLowerCase() || ''
+      const nameB = b.student?.full_name?.toLowerCase() || ''
+      return nameA.localeCompare(nameB)
+    })
+
     setFilteredEnrollments(filtered)
+    setCurrentPage(1) // Reset to first page when filters change
   }, [enrollments, searchTerm, statusFilter])
   useEffect(() => {
     filterEnrollments()
@@ -78,10 +94,16 @@ export default function EnrollmentManagement() {
     setSelectedEnrollments(newSelected)
   }
   const handleSelectAll = () => {
-    if (selectedEnrollments.size === filteredEnrollments.length) {
-      setSelectedEnrollments(new Set())
+    if (selectedEnrollments.size === paginatedEnrollments.length) {
+      // Deselect all on current page
+      const newSelected = new Set(selectedEnrollments)
+      paginatedEnrollments.forEach((e) => newSelected.delete(e.id))
+      setSelectedEnrollments(newSelected)
     } else {
-      setSelectedEnrollments(new Set(filteredEnrollments.map((e) => e.id)))
+      // Select all on current page
+      const newSelected = new Set(selectedEnrollments)
+      paginatedEnrollments.forEach((e) => newSelected.add(e.id))
+      setSelectedEnrollments(newSelected)
     }
   }
   const handleUpdateStatus = async (enrollmentId: string, status: Enrollment['status']) => {
@@ -123,6 +145,17 @@ export default function EnrollmentManagement() {
     approved: enrollments.filter((e) => e.status === 'approved').length,
     completed: enrollments.filter((e) => e.status === 'completed').length,
     rejected: enrollments.filter((e) => e.status === 'rejected').length,
+  }
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredEnrollments.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedEnrollments = filteredEnrollments.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   if (loading) {
     return (
@@ -242,8 +275,8 @@ export default function EnrollmentManagement() {
                       <input
                         type="checkbox"
                         checked={
-                          selectedEnrollments.size === filteredEnrollments.length &&
-                          filteredEnrollments.length > 0
+                          paginatedEnrollments.length > 0 &&
+                          paginatedEnrollments.every((e) => selectedEnrollments.has(e.id))
                         }
                         onChange={handleSelectAll}
                         className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
@@ -270,7 +303,7 @@ export default function EnrollmentManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredEnrollments.map((enrollment) => (
+                  {paginatedEnrollments.map((enrollment) => (
                     <tr key={enrollment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <input
@@ -419,6 +452,68 @@ export default function EnrollmentManagement() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {filteredEnrollments.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">
+                  {Math.min(endIndex, filteredEnrollments.length)}
+                </span>{' '}
+                of <span className="font-medium">{filteredEnrollments.length}</span> enrollments
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-1 text-sm rounded ${
+                            currentPage === page
+                              ? 'bg-orange-600 text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return (
+                        <span key={page} className="px-2 py-1 text-gray-500">
+                          ...
+                        </span>
+                      )
+                    }
+                    return null
+                  })}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

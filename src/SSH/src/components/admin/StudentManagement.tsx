@@ -76,7 +76,7 @@ export default function StudentManagement() {
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [courseFilter, setCourseFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('approved')
   const [userStatusFilter, setUserStatusFilter] = useState<string>('all')
   const [ageGroupFilter, setAgeGroupFilter] = useState<string>('all')
   const [gurukulFilter, setGurukulFilter] = useState<string>('all')
@@ -412,21 +412,66 @@ export default function StudentManagement() {
     }
   }
   const exportStudentData = () => {
-    // Create CSV data
-    filteredStudents.map((student) => ({
-      'Student ID': student.student_id,
-      'Full Name': student.full_name,
-      Email: student.email,
-      Age: student.age,
-      Phone: student.phone,
-      'Total Enrollments': student.total_enrollments,
-      'Completed Courses': student.completed_courses,
-      'Pending Enrollments': student.pending_enrollments,
-      'Total Spent': `€${student.total_spent}`,
+    // Create CSV data from filtered students only (what's shown in the grid)
+    const csvData = filteredStudents.map((student) => ({
+      'Student ID': student.student_id || '',
+      'Full Name': student.full_name || '',
+      Email: student.email || '',
+      Age: student.age || '',
+      Phone: student.phone || '',
+      Status: student.status || '',
+      'Total Enrollments': student.total_enrollments || 0,
+      'Completed Courses': student.completed_courses || 0,
+      'Pending Enrollments': student.pending_enrollments || 0,
+      'Total Spent': student.total_spent || 0,
       'Joined Date': formatDate(student.created_at),
     }))
-    // In a real app, this would generate and download a CSV file
-    toast.success('Student data exported successfully')
+
+    if (csvData.length === 0) {
+      toast.error('No students to export')
+      return
+    }
+
+    // Convert to CSV format
+    const headers = Object.keys(csvData[0])
+    const csvRows = [
+      headers.join(','), // Header row
+      ...csvData.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header as keyof typeof row]
+            // Escape values containing commas, quotes, or newlines
+            const stringValue = String(value)
+            if (
+              stringValue.includes(',') ||
+              stringValue.includes('"') ||
+              stringValue.includes('\n')
+            ) {
+              return `"${stringValue.replace(/"/g, '""')}"`
+            }
+            return stringValue
+          })
+          .join(','),
+      ),
+    ]
+
+    const csvContent = csvRows.join('\n')
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    const timestamp = new Date().toISOString().split('T')[0]
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `students_export_${timestamp}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast.success(`Exported ${csvData.length} students to CSV`)
   }
   // Removed unused getStudentsByGurukul function
   const getStudentsByCourse = () => {
@@ -436,13 +481,11 @@ export default function StudentManagement() {
     > = {}
     filteredStudents.forEach((student) => {
       student.enrollments.forEach((enrollment) => {
-        // Only include students with approved/active/completed enrollments
-        if (
-          enrollment.course &&
-          (enrollment.status === 'approved' ||
-            enrollment.status === 'active' ||
-            enrollment.status === 'completed')
-        ) {
+        // Include students based on statusFilter (or all statuses if statusFilter is 'all')
+        const shouldInclude =
+          enrollment.course && (statusFilter === 'all' || enrollment.status === statusFilter)
+
+        if (shouldInclude) {
           const courseKey = enrollment.course.id
           if (!courseGroups[courseKey]) {
             courseGroups[courseKey] = {
@@ -673,7 +716,7 @@ export default function StudentManagement() {
                 onClick={() => {
                   setSearchTerm('')
                   setCourseFilter('all')
-                  setStatusFilter('all')
+                  setStatusFilter('approved')
                   setUserStatusFilter('all')
                   setAgeGroupFilter('all')
                   setGurukulFilter('all')

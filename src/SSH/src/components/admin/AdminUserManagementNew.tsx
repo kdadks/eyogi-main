@@ -20,6 +20,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { getUserProfile } from '../../lib/api/users'
 import { sendActivationEmail } from '../../lib/activation-email'
 import { decryptProfileFields } from '../../lib/encryption'
+import { logEncryptedFieldChanges, type ChangedByInfo } from '../../lib/api/auditTrail'
 type Profile = Database['public']['Tables']['profiles']['Row']
 const AdminUserManagement: React.FC = () => {
   const [users, setUsers] = useState<Profile[]>([])
@@ -161,7 +162,33 @@ const AdminUserManagement: React.FC = () => {
           // 3. Delete consent records where this user gave consent for others
           await supabaseAdmin.from('student_consent').delete().eq('consented_by', userId)
 
-          // 4. Finally, delete the user profile
+          // 4. Log audit trail before deletion
+          if (currentUser) {
+            const changedBy: ChangedByInfo = {
+              id: currentUser.id,
+              email: currentUser.email || '',
+              name: currentUser.user_metadata?.full_name || currentUser.email || 'Admin',
+              role: currentUser.user_metadata?.role || 'admin',
+            }
+
+            try {
+              // Get decrypted user data for audit trail
+              const decryptedUser = decryptProfileFields(userToDelete)
+              await logEncryptedFieldChanges(
+                'profiles',
+                userId,
+                decryptedUser as unknown as Record<string, unknown>,
+                {},
+                changedBy,
+                'DELETE',
+              )
+            } catch (auditError) {
+              console.error('Failed to log audit trail for user deletion:', auditError)
+              // Continue with deletion even if audit trail fails
+            }
+          }
+
+          // 5. Finally, delete the user profile
           const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
           if (error) {
             console.error('Error deleting user profile:', error)

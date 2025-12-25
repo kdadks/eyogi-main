@@ -120,10 +120,36 @@ export async function updateUserRole(userId: string, newRole: Profile['role']): 
 
   return data
 }
-export async function deleteUser(userId: string): Promise<void> {
+export async function deleteUser(userId: string, changedBy?: ChangedByInfo): Promise<void> {
+  // Get user data before deletion for audit trail
+  let userData: Profile | null = null
+  if (changedBy) {
+    const { data } = await supabaseAdmin.from('profiles').select('*').eq('id', userId).single()
+    if (data) {
+      userData = decryptProfileFields(data)
+    }
+  }
+
   const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
   if (error) {
     throw new Error('Failed to delete user')
+  }
+
+  // Log audit trail for the deletion
+  if (changedBy && userData) {
+    try {
+      await logEncryptedFieldChanges(
+        'profiles',
+        userId,
+        userData as Record<string, unknown>,
+        {},
+        changedBy,
+        'DELETE',
+      )
+    } catch (auditError) {
+      console.error('Failed to log audit trail for user deletion:', auditError)
+      // Don't fail the deletion if audit trail fails
+    }
   }
 
   // Invalidate user caches

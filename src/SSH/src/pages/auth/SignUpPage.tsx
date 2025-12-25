@@ -71,7 +71,7 @@ const signUpSchema = z
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--
       }
-      
+
       // Validate age range
       if (age < 4 || age > 100) {
         return false
@@ -138,7 +138,7 @@ export default function SignUpPage() {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--
       }
-      
+
       const { error } = await signUp({
         email: data.email,
         password: data.password,
@@ -156,7 +156,9 @@ export default function SignUpPage() {
         if (error.includes('Account created! Please check your email')) {
           toast.success(error)
           const redirectTo = searchParams.get('redirect')
-          navigate(redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin')
+          navigate(
+            redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin',
+          )
         } else {
           toast.error(error)
         }
@@ -164,7 +166,9 @@ export default function SignUpPage() {
       }
       toast.success('Account created successfully! You can now sign in.')
       const redirectTo = searchParams.get('redirect')
-      navigate(redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin')
+      navigate(
+        redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin',
+      )
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(error.message)
@@ -220,14 +224,22 @@ export default function SignUpPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
-                    label={<>Full Name <span className="text-red-500">*</span></>}
+                    label={
+                      <>
+                        Full Name <span className="text-red-500">*</span>
+                      </>
+                    }
                     placeholder="Enter your full name"
                     className="h-12 text-base"
                     {...register('full_name')}
                     error={errors.full_name?.message}
                   />
                   <Input
-                    label={<>Email Address <span className="text-red-500">*</span></>}
+                    label={
+                      <>
+                        Email Address <span className="text-red-500">*</span>
+                      </>
+                    }
                     type="email"
                     autoComplete="email"
                     placeholder="your@email.com"
@@ -236,7 +248,11 @@ export default function SignUpPage() {
                     error={errors.email?.message}
                   />
                   <Input
-                    label={<>Date of Birth <span className="text-red-500">*</span></>}
+                    label={
+                      <>
+                        Date of Birth <span className="text-red-500">*</span>
+                      </>
+                    }
                     type="date"
                     className="h-12 text-base"
                     {...register('date_of_birth')}
@@ -321,7 +337,7 @@ export default function SignUpPage() {
                 </div>
               </div>
 
-              {/* Password Section */
+              {/* Password Section */}
               <div className="space-y-6 border-t border-gray-200 pt-6">
                 <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
                   Security
@@ -329,7 +345,11 @@ export default function SignUpPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Input
-                      label={<>Password <span className="text-red-500">*</span></>}
+                      label={
+                        <>
+                          Password <span className="text-red-500">*</span>
+                        </>
+                      }
                       type="password"
                       autoComplete="new-password"
                       placeholder="Create a strong password"
@@ -338,12 +358,17 @@ export default function SignUpPage() {
                       error={errors.password?.message}
                     />
                     <p className="mt-1 text-xs text-gray-600">
-                      Must be 8+ characters with 1 uppercase, 1 digit, 1 special character (!@#$%^&*), no spaces
+                      Must be 8+ characters with 1 uppercase, 1 digit, 1 special character
+                      (!@#$%^&*), no spaces
                     </p>
                   </div>
                   <div>
                     <Input
-                      label={<>Confirm Password <span className="text-red-500">*</span></>}
+                      label={
+                        <>
+                          Confirm Password <span className="text-red-500">*</span>
+                        </>
+                      }
                       type="password"
                       autoComplete="new-password"
                       placeholder="Confirm your password"

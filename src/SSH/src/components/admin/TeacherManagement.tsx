@@ -184,6 +184,13 @@ export default function TeacherManagement() {
       })
     }
 
+    // Sort alphabetically by full name
+    filtered.sort((a, b) => {
+      const nameA = (a.full_name || a.email || '').toLowerCase()
+      const nameB = (b.full_name || b.email || '').toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
+
     setFilteredTeachers(filtered)
   }
 
