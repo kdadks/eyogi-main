@@ -1,606 +1,692 @@
-# eYogi Gurukul - Developer Onboarding Guide
+# eYogi Gurukul - Comprehensive Education Platform
 
-A Next.js 15 + PayloadCMS 3.9 application with PostgreSQL backend, built for content management and educational platform delivery.
+A dual-platform educational ecosystem combining **PayloadCMS-powered main website** with a **full-featured SSH (Spiritual and Scriptural Hub) University management system**. Built with Next.js 15, React 19, and PostgreSQL.
 
-> 📚 **For comprehensive project documentation including all features, systems, and architecture**, see **[COMPREHENSIVE_README.md](./COMPREHENSIVE_README.md)**
+## 🌟 Platform Overview
 
-### Prerequisites (Required)
+This project consists of two integrated platforms:
 
-- **Node.js**: 18.20.2 or higher (or Node.js 20.9.0+)
+1. **Main eYogi Website** - Public-facing content management system built with PayloadCMS
+2. **SSH University** - Complete learning management system with student, teacher, parent, and admin portals
+
+---
+
+## 📦 Main eYogi Website Features (PayloadCMS)
+
+### Content Management System
+- **Dynamic Pages** - Create and manage pages with flexible block-based layouts
+- **Blog System** - Full-featured blogging with categories, tags, and rich text editor
+- **Media Library** - Centralized media management with UploadThing integration
+- **Rich Text Editor** - Lexical-based editor with syntax highlighting, embedded media, and custom blocks
+
+### Page Builder Blocks
+- **Archive Block** - Display posts by collection or manual selection with filtering
+- **Call-to-Action** - Customizable CTA sections with links and styling
+- **Content Block** - Rich text content with advanced formatting
+- **Media Block** - Image/video embeds with captions and layouts
+- **Form Block** - Dynamic form builder with custom fields
+- **Code Block** - Syntax-highlighted code snippets for documentation
+
+### Content Collections
+- **Pages** - Static pages (About, Contact, Services, etc.)
+- **Posts** - Blog articles with SEO optimization
+- **Media** - File uploads (images, videos, PDFs)
+- **Categories** - Post categorization with hierarchical structure
+- **FAQ** - Frequently Asked Questions with categories
+- **Membership** - Membership information and pricing
+- **Form Links** - External form integration
+
+### Global Content Management
+- **About Us** - Global about page with gallery and team info
+- **Privacy Policy** - Legal documentation management
+- **Donation** - Donation page with payment integration
+- **Dynamic Menus** - Header and footer menu management through CMS
+
+### Built-in Plugins
+- **Form Builder** - Create custom forms with validation and submissions
+- **SEO Plugin** - Automated meta tags, Open Graph, and XML sitemap
+- **Redirects** - Manage URL redirects with pattern matching
+- **Search** - Full-text search across content collections
+- **Nested Docs** - Hierarchical document structures
+
+### Admin Features (PayloadCMS)
+- **User Management** - Role-based access control (Admin, Editor, Viewer)
+- **Media Management** - Upload, organize, and optimize media files
+- **Version Control** - Track changes with draft/publish workflows
+- **Live Preview** - Real-time content preview before publishing
+- **Access Control** - Granular permissions per collection/field
+- **Webhooks** - Trigger external services on content changes
+- **Admin UI Customization** - Branded admin panel with custom views
+
+---
+
+## 🎓 SSH University Platform Features
+
+### Student Portal
+**Dashboard & Overview**
+- Personal learning dashboard with progress tracking
+- Course enrollment and registration system
+- Certificate showcase and downloads
+- Learning streak tracking and achievements
+- Real-time progress analytics
+- Personalized course recommendations
+
+**Course Management**
+- Browse available courses with filters and search
+- View course details (syllabus, prerequisites, duration)
+- Enroll in courses with prerequisite validation
+- Access course materials (videos, documents, assignments)
+- Track module and lesson completion
+- Submit assignments and projects
+- Take quizzes and assessments
+
+**Progress & Performance**
+- Overall progress percentage per course
+- Module-wise completion tracking
+- Batch performance insights
+- Learning analytics and time spent
+- Grade history and feedback
+- Attendance records
+- Certificate generation upon completion
+
+**Interactive Features**
+- AI-powered chatbot for assistance
+- Discussion forums per course
+- Peer collaboration tools
+- Teacher messaging system
+- Notifications for deadlines and updates
+
+### Teacher Portal
+**Dashboard & Analytics**
+- Teacher performance dashboard
+- Student engagement metrics
+- Course analytics and insights
+- Attendance tracking and reports
+- Assessment statistics
+
+**Course Management**
+- Create and edit courses with rich content
+- Organize courses into modules and lessons
+- Upload course materials (videos, PDFs, links)
+- Set prerequisites and requirements
+- Create assignments with rubrics
+- Design quizzes and assessments
+- Schedule course batches
+
+**Student Management**
+- View enrolled students per course/batch
+- Track individual student progress
+- Grade assignments and provide feedback
+- Approve/reject enrollment requests
+- Manage student attendance
+- Issue certificates upon completion
+- Communicate with students
+
+**Batch Management**
+- Create and manage course batches
+- Set batch schedules (start/end dates)
+- Assign students to batches
+- Monitor batch progress
+- Track batch-specific metrics
+
+**Content Creation**
+- Rich text lesson editor
+- Video embedding and hosting
+- Interactive coding exercises
+- Quiz builder with multiple question types
+- Assignment templates
+- Resource library management
+
+### Parent Portal
+**Child Management**
+- Register and manage multiple children
+- View children's profiles and progress
+- Manage consent for data processing (COPPA/GDPR compliant)
+- Monitor learning activities
+- Access performance reports
+
+**Enrollment & Courses**
+- Browse courses for children
+- Enroll children in courses
+- Track enrollment status and approvals
+- View course details and requirements
+- Monitor course completion
+
+**Progress Monitoring**
+- Real-time progress tracking per child
+- Certificate achievements
+- Attendance reports
+- Performance analytics
+- Learning insights and recommendations
+
+**Communication**
+- Receive enrollment confirmations via email
+- Get progress notifications
+- Access teacher feedback
+- View important announcements
+
+### Admin/Business Admin Portal
+**User Management**
+- Create and manage all user types (Students, Teachers, Parents, Admins)
+- Role-based access control with granular permissions
+- Bulk user operations (import, export, deactivate)
+- User profile management with field-level encryption
+- Account activation/deactivation
+- Password reset and security management
+- User audit trails
+
+**Course Management**
+- Create and edit courses with full control
+- Manage course assignments to teachers
+- Set course visibility and availability
+- Configure prerequisites and dependencies
+- Monitor course enrollments
+- Archive/restore courses
+- Course analytics and reporting
+
+**Batch Management**
+- Create batch instances for courses
+- Assign teachers to batches
+- Set batch capacity and pricing
+- Schedule batch timelines
+- Assign students to batches (individual or bulk)
+- Track batch performance and completion rates
+- Batch-level analytics
+
+**Enrollment Management**
+- View all enrollment requests with filters
+- Approve/reject enrollments with notifications
+- Bulk enrollment operations
+- Transfer students between batches
+- Monitor enrollment statistics
+- Handle enrollment disputes
+- Prerequisite validation override
+
+**Gurukul Management**
+- Create and manage multiple gurukuls (learning centers)
+- Assign courses to specific gurukuls
+- Track gurukul-specific metrics
+- Manage gurukul administrators
+- Monitor performance by location
+- Gurukul-wise student and teacher allocation
+
+**Certificate Management**
+- Auto-generate certificates on course completion
+- Custom certificate templates with Supabase storage
+- Certificate verification system with unique IDs
+- Bulk certificate operations
+- Download and email certificates
+- Certificate analytics and reports
+- PDF generation and delivery
+
+**Content Management**
+- Manage all course content system-wide
+- Review and approve teacher submissions
+- Version control for course materials
+- Media library management
+- Content publishing workflows
+- Bulk content operations
+
+**Analytics & Reporting**
+- System-wide analytics dashboard
+- Student performance reports
+- Teacher effectiveness metrics
+- Course completion statistics
+- Revenue and enrollment trends
+- Attendance analytics
+- Certificate issuance reports
+- Export data to CSV/Excel
+- Custom report generation
+
+**Compliance & Security**
+- GDPR compliance management
+- Data deletion requests handling (right to be forgotten)
+- Consent management (COPPA/GDPR)
+- Audit trail for all system actions
+- User data encryption (CryptoJS)
+- Privacy policy enforcement
+- Data export capabilities
+- Compliance reporting
+
+**Financial Management**
+- Invoice generation and management
+- Payment tracking and processing
+- Revenue reports by course/batch
+- Batch pricing management
+- Refund handling
+- Financial analytics
+
+**Permission Management**
+- Create custom roles with specific permissions
+- Assign permissions by resource and action
+- Role hierarchy and inheritance
+- Per-user permission overrides
+- Permission audit logs
+- Fine-grained access control
+
+**Media Management**
+- Centralized media library
+- File upload and organization
+- Image optimization and compression
+- Video hosting integration
+- Storage analytics and quotas
+- Bulk media operations
+
+---
+
+## 🛠️ Technical Stack
+
+### Frontend
+- **Framework**: Next.js 15.1.0 (App Router)
+- **UI Library**: React 19
+- **Styling**: Tailwind CSS 3.4 + Radix UI primitives
+- **Animations**: Framer Motion + Motion library
+- **Form Handling**: React Hook Form + Zod validation
+- **State Management**: React Context + Custom hooks
+- **Icons**: Heroicons + Lucide React
+
+### Backend & CMS
+- **CMS**: PayloadCMS 3.9.0 with TypeScript
+- **Database**: PostgreSQL (Neon serverless)
+- **ORM**: PayloadCMS Postgres Adapter
+- **Authentication**: Supabase Auth + PayloadCMS Auth
+- **File Storage**: UploadThing CDN + Supabase Storage
+- **Rich Text**: Lexical Editor
+
+### SSH University Tech
+- **Build Tool**: Vite
+- **Routing**: React Router v6
+- **Database**: Supabase PostgreSQL
+- **Real-time**: Supabase Realtime subscriptions
+- **File Storage**: Supabase Storage (buckets)
+- **Email**: Microsoft Graph API + Nodemailer SMTP
+- **AI**: OpenAI GPT integration for chatbot
+- **Encryption**: CryptoJS for sensitive data
+- **PDF Generation**: jsPDF for certificates
+
+### Developer Tools
+- **Language**: TypeScript 5.7
+- **Linting**: ESLint 9 + Prettier
+- **Package Manager**: Yarn
+- **Deployment**: Vercel (Main Site + SSH)
+- **Version Control**: Git + GitHub
+- **Environment**: Node.js 22.x
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js**: 22.x (configured in package.json engines)
 - **Package Manager**: yarn
-- **Database**: PostgreSQL 13+ (local or cloud)
+- **Database**: PostgreSQL 13+ (Neon recommended)
 - **Git**: For version control
 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/TutusBOT/eyogi.git
+git clone https://github.com/YourUsername/eyogi.git
 cd eyogi
 yarn install
 ```
 
-### 2. Environment Setup (.env)
+### 2. Environment Setup
 
 Create `.env` file in the root directory:
 
-**Complete `.env` configuration:**
-
 ```bash
 # ===== DATABASE =====
-# Neon PostgreSQL connection string
-DATABASE_URI=postgresql://username:password@ep-xxx-xxx.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URI=postgresql://username:password@ep-xxx.us-east-1.aws.neon.tech/neondb?sslmode=require
 
 # ===== PAYLOADCMS =====
-# Secret key for PayloadCMS (generate a random 32+ char string)
 PAYLOAD_SECRET=your-super-secret-key-minimum-32-characters-long
 
 # ===== NEXT.JS =====
-# Your site URL (important for image optimization and SEO)
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 
 # ===== FILE UPLOADS =====
-# UploadThing credentials for file/media management
 UPLOADTHING_TOKEN=your-uploadthing-token
 
-# ===== EMAIL (SMTP) =====
-# Email configuration for contact forms and notifications
-SMTP_HOST=your-smtp-host
-SMTP_PORT=587
-SMTP_USER=your-email@example.com
-SMTP_PASS=your-app-password
-SMTP_PORT=587
-SMTP_USER=your-email@outlook.com
-SMTP_PASS=your-app-password
+# ===== EMAIL (Microsoft Graph) =====
+MICROSOFT_TENANT_ID=your-tenant-id
+MICROSOFT_CLIENT_ID=your-client-id
+MICROSOFT_CLIENT_SECRET=your-client-secret
+MICROSOFT_FROM_EMAIL=noreply@yourdomain.com
 
-# ===== OPTIONAL =====
-# Disable image optimization in problematic environments
-# DISABLE_IMAGE_OPTIMIZE=1
+# ===== EMAIL (SMTP Alternative) =====
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+```
+
+### SSH University Environment
+
+Create `src/SSH/.env` file:
+
+```bash
+# ===== SUPABASE =====
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# ===== ENCRYPTION =====
+VITE_ENCRYPTION_KEY=your-32-character-encryption-key
+
+# ===== OPENAI (Chatbot) =====
+VITE_OPENAI_API_KEY=your-openai-api-key
+
+# ===== EMAIL =====
+VITE_MICROSOFT_TENANT_ID=your-tenant-id
+VITE_MICROSOFT_CLIENT_ID=your-client-id
+VITE_MICROSOFT_CLIENT_SECRET=your-client-secret
+VITE_MICROSOFT_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 ### 3. Database Setup
 
-#### ✅ Production Database (Already Configured)
-
-**The project uses a Neon PostgreSQL database that is already set up and hosted.**
-
-- **Database Provider**: Neon (Serverless PostgreSQL)
-- **Status**: ✅ Already configured and running
-- **Access**: You'll receive the `DATABASE_URI` connection string
-
-**What you need to do:**
-
-1. Get the `DATABASE_URI` connection string
-2. Add it to your `.env` file:
+The project uses Neon PostgreSQL (serverless). Migrations are in `migrations/` folder.
 
 ```bash
-DATABASE_URI=postgresql://username:password@ep-xxx-xxx.us-east-1.aws.neon.tech/neondb?sslmode=require
+# Run migrations (if needed)
+psql $DATABASE_URI < migrations/create_dynamic_menus.sql
 ```
 
-**⚠️ Important Notes:**
+### 4. Development
 
-- The production Neon database is shared - be careful with migrations and data changes
+```bash
+# Start main development server
+yarn dev
 
-**Access points after setup:**
+# Build for production
+yarn build
 
-- **Frontend**: http://localhost:3000
-- **Admin Panel**: http://localhost:3000/admin
-- **API**: http://localhost:3000/api
+# Start production server
+yarn start
 
-## 🛠️ External Service Setup
-
-### UploadThing (File Uploads) - Current Implementation
-
-**This project currently uses UploadThing for media management, but it's not the only option.**
-
-**Current Setup (UploadThing):**
-
-1. Go to https://uploadthing.com
-2. Copy token to `UPLOADTHING_TOKEN` in `.env`
-3. Configure allowed file types in dashboard
-
-**Alternative Storage Options:**
-If you want to change the file storage provider, PayloadCMS supports multiple storage adapters:
-
-- **AWS S3**: Enterprise-grade cloud storage
-- **Google Cloud Storage**: Google's cloud storage solution
-- **Cloudinary**: Image and video management with transformations
-- **Local Storage**: Store files on your server filesystem
-- **Custom Storage**: Build your own storage adapter
-
-**📖 How to Change Storage Providers:**
-
-- **PayloadCMS Storage Documentation**: https://payloadcms.com/docs/upload/overview
-- **Storage Adapters Guide**: https://payloadcms.com/docs/upload/storage-adapters
-- **Configuration Examples**: https://payloadcms.com/docs/upload/storage-adapters#available-storage-adapters
-
-**⚠️ Note:** Changing storage providers requires:
-
-1. Installing the appropriate storage adapter package
-2. Updating `src/payload.config.ts` configuration
-3. Migrating existing media files
-4. Updating environment variables
-
-### Email Service (SMTP) - Current Implementation
-
-**This project uses Nodemailer with SMTP for email functionality (contact forms and notifications).**
-
-**Current Setup (SMTP):**
-
-1. Configure your SMTP server credentials:
-   ```bash
-   SMTP_HOST=your-smtp-host.com
-   SMTP_PORT=587  # Use 465 for SSL, 587 for TLS
-   SMTP_USER=your-email@example.com
-   SMTP_PASS=your-app-password
-   ```
-
-2. Supported SMTP Providers:
-   - **Gmail**: SMTP server at smtp.gmail.com:587 (use app password)
-   - **Outlook**: SMTP server at smtp-mail.outlook.com:587
-   - **SendGrid**: SMTP relay at smtp.sendgrid.net:587
-   - **AWS SES**: SMTP endpoint from your AWS region
-   - **Custom SMTP**: Any SMTP server supporting TLS/SSL
-
-**Email Features:**
-- Contact form submissions
-- Registration confirmations
-- Course enrollment notifications
-- Certificate delivery
-- Password reset emails
-- Admin notifications
-
-**Email Service File:**
-- Implementation: `src/lib/email/emailService.ts`
-- API endpoint: `src/app/api/send/route.ts`
-- **Amazon SES**: AWS email service
-- **Nodemailer**: Direct SMTP integration
-- **Custom Email API**: Build your own email integration
-
-**📖 How to Change Email Providers:**
-
-- **PayloadCMS Email Documentation**: https://payloadcms.com/docs/email/overview
-- **Email Configuration Guide**: https://payloadcms.com/docs/email/email
-
-## 📊 Database Schema & Management
-
-### Understanding the Database Structure
-
-PayloadCMS automatically creates and manages database tables based on your collections:
-
-```typescript
-// Collections (src/collections/)
-;-pages - // Static pages (About, Contact, etc.)
-  posts - // Blog posts and articles
-  media - // File uploads (images, videos, PDFs)
-  categories - // Post categories
-  categoriesFaq - // FAQ categories
-  Faq - // FAQ entries
-  users - // Admin users
-  membership - // Membership information
-  formLinks - // External form links
-  // Globals (site-wide content)
-  about -
-  us - // About page content
-  privacy -
-  policy - // Privacy policy content
-  donation - // Donation page content
-  // Plugin-generated collections
-  forms - // Form builder forms
-  form -
-  submissions - // Form submissions
-  search - // Search index
-  redirects // URL redirects
+# Build SSH University separately
+yarn build:ssh
 ```
 
-**💡 Neon Database Features:**
+### 5. Access Points
 
-- **Serverless**: Automatically scales and pauses when not in use
-- **Branching**: Create database branches for testing (available in Neon dashboard)
-- **Backups**: Automatic backups managed by Neon
-- **SSL Required**: All connections must use SSL
-- **Connection Pooling**: Built-in connection pooling for performance
+- **Main Website**: http://localhost:3000
+- **PayloadCMS Admin**: http://localhost:3000/admin
+- **SSH University**: http://localhost:3000/ssh-app
+- **API Routes**: http://localhost:3000/api
 
-## 🏗️ Architecture Overview
-
-### Core Stack
-
-- **Framework**: Next.js 15.1.0 (App Router) + React 19
-- **CMS**: PayloadCMS 3.9.0 with TypeScript
-- **Database**: PostgreSQL via `@payloadcms/db-postgres`
-- **Storage**: UploadThing integration for media management
-- **Styling**: Tailwind CSS + Radix UI primitives
-- **Rich Text**: Lexical Editor with custom features
-- **Validation**: Zod schemas + React Hook Form
-- **Animations**: Framer Motion + Motion library
-
-### PayloadCMS Configuration
-
-```typescript
-// src/payload.config.ts
-export default buildConfig({
-  collections: [Pages, Posts, Media, Categories, CategoriesFaq, Faq, Users, Membership, FormLinks],
-  globals: [AboutUs, PrivacyPolicy, Donation],
-  plugins: [...plugins, uploadthingStorage({...})],
-  db: postgresAdapter({ pool: { connectionString: process.env.DATABASE_URI }}),
-  editor: defaultLexical,
-})
-```
+---
 
 ## 📁 Project Structure
 
 ```
-src/
-├── app/                           # Next.js App Router
-│   ├── (frontend)/               # Public pages with layout
-│   │   ├── about/page.tsx        # About page
-│   │   ├── faq/[slug]/page.tsx   # Dynamic FAQ pages
-│   │   └── hinduism/page.tsx     # Blog posts listing
-│   ├── (payload)/                # PayloadCMS admin UI
-│   └── api/                      # API routes
-│       └── form-submissions/     # Form handling endpoint
-├── blocks/                       # PayloadCMS Block components
-│   ├── ArchiveBlock/            # Post archive with filtering
-│   ├── CallToAction/            # CTA sections
-│   ├── Code/                    # Syntax highlighted code blocks
-│   ├── Content/                 # Rich text content blocks
-│   ├── Form/                    # Dynamic form builder
-│   ├── MediaBlock/              # Image/video embed blocks
-│   └── RenderBlocks.tsx         # Block renderer component
-├── collections/                  # PayloadCMS Collections
-│   ├── Categories.ts            # Blog post categories
-│   ├── Media.ts                 # File upload collection
-│   ├── Pages/                   # Static pages collection
-│   ├── Posts/                   # Blog posts collection
-│   ├── Users/                   # Authentication users
-│   ├── aboutUs/AboutUs.ts       # Global about page content
-│   ├── faq/                     # FAQ collections
-│   ├── forms/                   # Form links collection
-│   └── membership/              # Membership collection
-├── components/                   # React Components
-│   ├── ui/                      # Base UI components (Radix)
-│   ├── AboutUs/                 # About page specific components
-│   ├── AdminBar/                # CMS admin toolbar
-│   ├── Blogs/                   # Blog listing components
-│   ├── CollectionArchive/       # Post archive display
-│   ├── Faq/                     # FAQ components
-│   ├── Hero/                    # Hero section variants
-│   ├── Media/                   # Media display components
-│   ├── RichText/                # Lexical renderer
-│   └── SlideIn/                 # Animation components
-├── fields/                       # PayloadCMS Custom Fields
-│   ├── defaultLexical.ts        # Lexical editor config
-│   ├── link.ts                  # Link field schema
-│   └── slug/                    # Auto-slug generation
-├── hooks/                        # PayloadCMS Hooks & React hooks
-│   ├── formatSlug.ts            # Slug formatting hook
-│   ├── populatePublishedAt.ts   # Auto-populate publish date
-│   ├── revalidate*.ts           # ISR revalidation hooks
-│   └── use-toast.ts             # Toast notification hook
-├── plugins/                      # PayloadCMS Plugin Configuration
-│   └── index.ts                 # Plugin registration & config
-├── providers/                    # React Context Providers
-│   ├── HeaderTheme/             # Theme context
-│   ├── Theme/                   # Global theme provider
-│   └── TransitionRouter.tsx     # Page transition provider
-├── search/                       # Search Plugin Configuration
-│   ├── beforeSync.ts            # Pre-search indexing hook
-│   ├── fieldOverrides.ts        # Search field configuration
-│   └── Search.tsx               # Search UI component
-└── utilities/                    # Helper Functions
-    ├── canUseDOM.ts             # SSR detection
-    ├── cn.ts                    # ClassNames utility
-    ├── formatDateTime.ts        # Date formatting
-    ├── generateMeta.ts          # SEO meta generation
-    ├── generatePreviewPath.ts   # Preview URL generation
-    └── getURL.ts                # URL helpers (client/server)
+eyogi-main/
+├── src/
+│   ├── app/                      # Next.js App Router
+│   │   ├── (frontend)/          # Public pages
+│   │   ├── (payload)/           # PayloadCMS admin
+│   │   └── api/                 # API routes
+│   ├── blocks/                   # PayloadCMS Blocks
+│   ├── collections/              # PayloadCMS Collections
+│   ├── components/               # React Components
+│   ├── fields/                   # Custom PayloadCMS Fields
+│   ├── globals/                  # PayloadCMS Globals
+│   ├── hooks/                    # React & Payload Hooks
+│   ├── lib/                      # Utility Functions
+│   ├── plugins/                  # PayloadCMS Plugins
+│   ├── providers/                # Context Providers
+│   ├── SSH/                      # SSH University Platform
+│   │   ├── src/
+│   │   │   ├── components/      # SSH React Components
+│   │   │   ├── pages/           # SSH Pages
+│   │   │   ├── lib/             # SSH Utilities
+│   │   │   ├── contexts/        # SSH Contexts
+│   │   │   └── types/           # TypeScript Types
+│   │   ├── migrations/          # SSH Database Migrations
+│   │   └── public/              # SSH Static Assets
+│   └── utilities/                # Helper Functions
+├── public/                       # Public Assets
+│   ├── ssh-app/                 # Built SSH App (generated)
+│   └── docs/                    # Documentation
+├── migrations/                   # Main DB Migrations
+├── docs/                         # Project Documentation
+├── scripts/                      # Utility Scripts
+├── package.json                  # Dependencies
+├── next.config.js               # Next.js Config
+├── payload.config.ts            # PayloadCMS Config
+├── tailwind.config.mjs          # Tailwind Config
+└── tsconfig.json                # TypeScript Config
 ```
 
-## 🔧 PayloadCMS Implementation Details
+---
 
-### Collections Architecture
+## 📚 Key Features in Detail
 
-#### Content Collections
+### Dynamic Menu System
+- Create and manage header/footer menus through PayloadCMS
+- Support for submenus and nested navigation
+- Icon integration (300+ Lucide icons)
+- Badge support ("New", "Beta", etc.)
+- Sort order and visibility controls
+- No code changes required
 
-```typescript
-// Posts Collection with rich text and relationships
-export const Posts: CollectionConfig<'posts'> = {
-  slug: 'posts',
-  fields: [
-    { name: 'title', type: 'text', required: true },
-    {
-      name: 'content',
-      type: 'richText',
-      editor: lexicalEditor({
-        features: ({ rootFeatures }) => [
-          ...rootFeatures,
-          HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }),
-          BlocksFeature({ blocks: [Code, MediaBlock] }),
-          FixedToolbarFeature(),
-          InlineToolbarFeature(),
-          HorizontalRuleFeature(),
-        ],
-      }),
-    },
-    {
-      name: 'categories',
-      type: 'relationship',
-      relationTo: 'categories',
-      hasMany: true,
-    },
-  ],
-  hooks: {
-    beforeChange: [populatePublishedAt],
-    afterChange: [revalidatePost],
-    afterDelete: [revalidateDelete],
-  },
-}
-```
+### Role-Based Access Control
+**Main Site Roles:**
+- Super Admin - Full system access
+- Admin - Content management
+- Editor - Content creation
+- Viewer - Read-only access
 
-#### Global Content Management
-
-```typescript
-// Global configuration for site-wide content
-export const AboutUs: GlobalConfig = {
-  slug: 'about-us',
-  fields: [
-    {
-      name: 'whatIsGurukul',
-      type: 'group',
-      fields: [
-        { name: 'description', type: 'richText', editor: lexicalEditor({...}) },
-        { name: 'photo', type: 'relationship', relationTo: 'media' },
-      ],
-    },
-    {
-      name: 'gallery',
-      type: 'group',
-      fields: [
-        {
-          name: 'galleryImages',
-          type: 'array',
-          fields: [{ name: 'image', type: 'relationship', relationTo: 'media' }],
-        },
-        {
-          name: 'ytLinks',
-          type: 'array',
-          fields: [{ name: 'Link', type: 'text' }],
-        },
-      ],
-    },
-  ],
-  hooks: { afterChange: [revalidateAboutUs] },
-}
-```
-
-### Block-Based Content System
-
-#### Dynamic Block Rendering
-
-```typescript
-// RenderBlocks component handles all block types
-export const RenderBlocks: React.FC<{ blocks: Block[] }> = ({ blocks }) => {
-  const blockComponents = {
-    archive: ArchiveBlock,
-    callToAction: CallToActionBlock,
-    content: ContentBlock,
-    mediaBlock: MediaBlock,
-    formBlock: FormBlock,
-    code: CodeBlock,
-  }
-
-  return blocks?.map((block, index) => {
-    const BlockComponent = blockComponents[block.blockType]
-    return BlockComponent ? <BlockComponent key={index} {...block} /> : null
-  })
-}
-```
-
-#### Block Configuration Examples
-
-```typescript
-// Archive Block with conditional fields
-export const Archive: Block = {
-  slug: 'archive',
-  fields: [
-    {
-      name: 'populateBy',
-      type: 'select',
-      options: [
-        { label: 'Collection', value: 'collection' },
-        { label: 'Individual Selection', value: 'selection' },
-      ],
-    },
-    {
-      name: 'categories',
-      type: 'relationship',
-      relationTo: 'categories',
-      hasMany: true,
-      admin: {
-        condition: (_, siblingData) => siblingData.populateBy === 'collection',
-      },
-    },
-  ],
-}
-```
-
-### Plugin System
-
-```typescript
-// Plugin configuration with overrides
-export const plugins: Plugin[] = [
-  searchPlugin({
-    collections: ['posts'],
-    beforeSync: beforeSyncWithSearch,
-    searchOverrides: {
-      admin: { hidden: true },
-      fields: ({ defaultFields }) => [...defaultFields, ...searchFields],
-    },
-  }),
-  formBuilderPlugin({
-    fields: { payment: false },
-    formSubmissionOverrides: { admin: { hidden: true } },
-    formOverrides: {
-      admin: { hidden: true },
-      fields: ({ defaultFields }) =>
-        defaultFields.map((field) => {
-          if ('name' in field && field.name === 'confirmationMessage') {
-            return {
-              ...field,
-              editor: lexicalEditor({
-                features: ({ rootFeatures }) => [
-                  ...rootFeatures,
-                  FixedToolbarFeature(),
-                  HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-                ],
-              }),
-            }
-          }
-          return field
-        }),
-    },
-  }),
-  redirectsPlugin({ collections: ['pages', 'posts'], overrides: { admin: { hidden: true } } }),
-  seoPlugin({ generateTitle, generateURL }),
-]
-```
-
-## 🔌 API Architecture
-
-### Form Submission Endpoint
-
-```typescript
-// app/api/form-submissions/route.ts
-export async function POST(request: Request) {
-  const payload = await getPayload({ config: configPromise })
-  const data = await request.json()
-
-  const result = await payload.create({
-    collection: 'form-submissions',
-    data: {
-      form: data.form,
-      submissionData: data.submissionData,
-    },
-  })
-
-  return Response.json(result)
-}
-```
-
-### Dynamic Page Generation
-
-```typescript
-// app/(frontend)/faq/[slug]/page.tsx
-export default async function Page({ params }: { params: Promise<{ slug?: string }> }) {
-  const { slug = '' } = await params
-  const payload = await getPayload({ config: configPromise })
-
-  const result = await payload.find({
-    collection: 'Faq',
-    where: { slug: { equals: slug } },
-    limit: 1,
-  })
-
-  return <FaqPage data={result.docs[0]} />
-}
-```
-
-### Environment Variables for Production
-
-```bash
-# Production database (replace with your cloud DB)
-DATABASE_URI=postgresql://user:pass@prod-host:5432/eyogi_prod
-
-# Production URL (your actual domain)
-NEXT_PUBLIC_SERVER_URL=https://yourdomain.com
-
-# Same secrets as development
-PAYLOAD_SECRET=your-production-secret-32-chars-minimum
-UPLOADTHING_TOKEN=your-uploadthing-token
-```
-
-#
-
-## 📚 Learning Resources
-
-### PayloadCMS Documentation
-
-- **Official Docs**: https://payloadcms.com/docs
-- **Collections**: https://payloadcms.com/docs/configuration/collections
-- **Blocks**: https://payloadcms.com/docs/fields/blocks
-- **Hooks**: https://payloadcms.com/docs/hooks/overview
-
-### Next.js Resources
-
-- **App Router**: https://nextjs.org/docs/app
-- **API Routes**: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
-- **Image Optimization**: https://nextjs.org/docs/app/building-your-application/optimizing/images
-
-### Environment Configuration
-
-```bash
-# Required environment variables
-DATABASE_URI=postgresql://user:password@localhost:5432/eyogi
-PAYLOAD_SECRET=your-secret-key
-NEXT_PUBLIC_SERVER_URL=http://localhost:3000
-UPLOADTHING_SECRET=your-uploadthing-secret
-UPLOADTHING_APP_ID=your-uploadthing-app-id
-```
-
-### Development Commands
-
-```bash
-# Install dependencies
-yarn install
-
-# Generate TypeScript types from PayloadCMS schema
-yarn generate:types
-
-# Development server with Turbo
-yarn dev
-
-# Production build
-npm build && npm start
-```
-
-### TypeScript Integration
-
-```typescript
-// Generated types from PayloadCMS schema
-export interface Config {
-  collections: {
-    pages: Page
-    posts: Post
-    media: Media
-    categories: Category
-    // ... other collections
-  }
-  globals: {
-    'about-us': AboutUs
-    'privacy-policy': PrivacyPolicy
-    donation: Donation
-  }
-}
-```
-
-### Performance Optimizations
-
-- **ISR (Incremental Static Regeneration)**: Automatic revalidation via PayloadCMS hooks
-- **Image Optimization**: Next.js Image component with UploadThing CDN
-- **Code Splitting**: Automatic route-based splitting via App Router
-- **Caching**: PostgreSQL connection pooling and query optimization
+**SSH University Roles:**
+- Super Admin - Full system control
+- Business Admin - User and content management
+- Teacher - Course and student management
+- Student - Course access and learning
+- Parent - Child management and monitoring
 
 ### Security Features
+- Field-level encryption for sensitive data (CryptoJS)
+- GDPR/COPPA compliance with consent management
+- Audit trail for all administrative actions
+- Rate limiting on API endpoints
+- Secure authentication with JWT tokens
+- Password hashing with bcrypt
+- CSRF protection
+- SQL injection prevention
 
-- **CSRF Protection**: Built-in Next.js CSRF protection
-- **Input Validation**: Zod schemas for form validation
-- **Media Security**: UploadThing handles file validation and CDN delivery
+### Performance Optimizations
+- Next.js 15 App Router with React Server Components
+- Incremental Static Regeneration (ISR)
+- Image optimization with Next/Image
+- Code splitting and lazy loading
+- PostgreSQL connection pooling
+- Query result caching (5-minute TTL)
+- CDN delivery for media (UploadThing)
+- Bundle size optimization
 
-## 🔍 Key Technical Features
+### Email System
+- Microsoft Graph API integration
+- SMTP fallback support
+- Template-based emails
+- Enrollment confirmations
+- Certificate delivery
+- Progress notifications
+- Parent-child communication
+- Admin notifications
 
-- **Type Safety**: Full TypeScript coverage with generated types from PayloadCMS schema
-- **Real-time Preview**: Live preview functionality for content editors
-- **SEO Optimization**: Automated meta tag generation and XML sitemap
-- **Accessibility**: ARIA-compliant components using Radix UI primitives
-- **Performance**: Optimized builds with Bundle Analyzer integration
-- **Error Handling**: Comprehensive error boundaries and logging
-- **Testing**: ESLint configuration with strict TypeScript rules
+### Certificate System
+- Auto-generation on course completion
+- Custom templates with branding
+- Unique verification IDs
+- PDF download capability
+- Email delivery
+- Certificate verification portal
+- Batch certificate generation
+
+---
+
+## 🔧 Configuration
+
+### PayloadCMS Collections
+
+```typescript
+// Main Collections
+- Pages: Dynamic page builder
+- Posts: Blog system
+- Media: File management
+- Categories: Post categories
+- FAQ: Question & Answer system
+- Users: Admin users
+- Membership: Membership tiers
+- Form Links: External forms
+
+// Globals
+- About Us: About page content
+- Privacy Policy: Legal docs
+- Donation: Donation page
+- Header Menu: Navigation
+- Footer Menu: Footer links
+```
+
+### SSH University Database Tables
+
+```
+// Core Tables
+- profiles: User profiles (encrypted)
+- courses: Course information
+- batches: Course batch instances
+- enrollments: Student enrollments
+- certificates: Issued certificates
+- gurukuls: Learning centers
+- progress: Student progress tracking
+- attendance: Attendance records
+- consent_records: GDPR consent
+
+// Content Tables
+- lessons: Course lessons
+- modules: Course modules
+- assignments: Student assignments
+- quizzes: Assessments
+- media_files: Course media
+
+// Admin Tables
+- permissions: Role permissions
+- audit_trail: System audit logs
+- invoices: Financial records
+- payments: Payment tracking
+```
+
+---
+
+## 🚀 Deployment
+
+### Vercel Deployment (Recommended)
+
+**Main Site:**
+```bash
+# Deploy to Vercel
+vercel --prod
+
+# Or use GitHub integration
+# Push to main branch → auto-deploy
+```
+
+**Environment Variables on Vercel:**
+- Add all `.env` variables in Vercel dashboard
+- Set `NODE_VERSION` to `22.x`
+- Configure `NEXT_PUBLIC_SERVER_URL` to production domain
+
+**SSH University:**
+- Built during main build process
+- Served as static files from `public/ssh-app/`
+- No separate deployment needed
+
+### Build Commands
+
+```bash
+# Full production build
+yarn build
+
+# Build only main site
+yarn build:next
+
+# Build only SSH University
+yarn build:ssh
+
+# Clean build (remove cache)
+yarn build:clean
+```
+
+---
+
+## 📖 Documentation
+
+Comprehensive documentation available in `/docs/`:
+
+- **START_HERE.md** - Dynamic menu system overview
+- **BUSINESS_ADMIN_ACCESS_GUIDE.md** - Admin access guide
+- **CERTIFICATE_EMAIL_IMPLEMENTATION.md** - Certificate system
+- **DYNAMIC_MENUS_SUMMARY.md** - Menu system details
+- **EMAIL_AUTO_GENERATION_FIX.md** - Email configuration
+- **ENCRYPTION_SETUP_GUIDE.md** - Data encryption setup
+- **MICROSOFT_GRAPH_EMAIL_SETUP.md** - Microsoft Graph setup
+- **MEDIA_UPLOAD_URL_FIX.md** - Media troubleshooting
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run linter
+yarn lint
+
+# Fix lint issues
+yarn lint:fix
+
+# Type check
+tsc --noEmit
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 🆘 Support
+
+For issues and questions:
+- Check documentation in `/docs/`
+- Review existing GitHub issues
+- Create new issue with detailed description
+- Contact development team
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Mobile apps (iOS/Android)
+- [ ] Advanced analytics dashboard
+- [ ] Gamification system
+- [ ] Video conferencing integration
+- [ ] Advanced AI tutoring
+- [ ] Multi-language support
+- [ ] Payment gateway integration
+- [ ] Social learning features
+
+---
+
+**Built with ❤️ by the eYogi Gurukul Team**
