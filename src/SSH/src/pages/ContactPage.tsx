@@ -225,9 +225,9 @@ export default function ContactPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
 
             <div className="relative container-max section-padding z-[4] sunrise-content">
-              <div className="text-center max-w-4xl mx-auto">
+              <div className="text-center max-w-4xl mx-auto px-4">
                 {cmsData.hero_title && (
-                  <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
                     {cmsData.hero_title}{' '}
                     {cmsData.hero_title_highlight && (
                       <span className="gradient-text">{cmsData.hero_title_highlight}</span>
@@ -235,7 +235,7 @@ export default function ContactPage() {
                   </h1>
                 )}
                 {cmsData.hero_description && (
-                  <p className="text-xl text-gray-600 leading-relaxed mb-8">
+                  <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed mb-6 sm:mb-8">
                     {cmsData.hero_description}
                   </p>
                 )}
@@ -252,19 +252,21 @@ export default function ContactPage() {
                 cmsData.contact_info_bg_image_url,
               )}
             >
-              <div className="container-max">
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+              <div className="container-max px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12 lg:mb-16">
                   {contactInfo.map((info, index) => {
                     const IconComponent = getIcon(info.icon)
                     return (
                       <Card key={index} className="text-center card-hover">
-                        <CardContent className="pt-8">
-                          <div className="h-16 w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <IconComponent className="h-8 w-8 text-white" />
+                        <CardContent className="pt-6 sm:pt-8 px-4 pb-4">
+                          <div className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                            <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                           </div>
-                          <h3 className="text-lg font-semibold mb-2">{info.title}</h3>
-                          <p className="text-orange-600 font-medium mb-1">{info.details}</p>
-                          <p className="text-gray-600 text-sm">{info.description}</p>
+                          <h3 className="text-base sm:text-lg font-semibold mb-2">{info.title}</h3>
+                          <p className="text-orange-600 font-medium mb-1 text-sm sm:text-base">
+                            {info.details}
+                          </p>
+                          <p className="text-gray-600 text-xs sm:text-sm">{info.description}</p>
                         </CardContent>
                       </Card>
                     )
@@ -282,26 +284,31 @@ export default function ContactPage() {
               cmsData.form_bg_image_url,
             )}
           >
-            <div className="container-max">
-              <div className="grid lg:grid-cols-2 gap-12">
+            <div className="container-max px-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
                 {/* Contact Form */}
                 {cmsData.form_visible && (
                   <div>
                     <Card>
                       <CardHeader>
-                        <div className="flex items-center space-x-3">
-                          <ChatBubbleLeftRightIcon className="h-6 w-6 text-orange-600" />
+                        <div className="flex items-center space-x-2 sm:space-x-3">
+                          <ChatBubbleLeftRightIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 flex-shrink-0" />
                           {cmsData.form_title && (
-                            <h2 className="text-2xl font-bold">{cmsData.form_title}</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold">{cmsData.form_title}</h2>
                           )}
                         </div>
                         {cmsData.form_description && (
-                          <p className="text-gray-600">{cmsData.form_description}</p>
+                          <p className="text-sm sm:text-base text-gray-600">
+                            {cmsData.form_description}
+                          </p>
                         )}
                       </CardHeader>
                       <CardContent>
-                        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
-                          <div className="grid md:grid-cols-2 gap-4">
+                        <form
+                          onSubmit={handleSubmit(onSubmit)}
+                          className="flex flex-col gap-4 sm:gap-6 lg:gap-8"
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <Input
                               label="Full Name"
                               {...register('name')}
@@ -315,12 +322,12 @@ export default function ContactPage() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700">
                               Inquiry Type
                             </label>
                             <select
                               {...register('type')}
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 sm:px-4 py-2.5 sm:py-3 h-11 sm:h-12 touch-manipulation"
                             >
                               <option value="general">General Inquiry</option>
                               <option value="course">Course Information</option>
@@ -337,20 +344,24 @@ export default function ContactPage() {
                             error={errors.subject?.message}
                           />
                           <div className="space-y-1">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700">
                               Message
                             </label>
                             <textarea
                               {...register('message')}
                               rows={5}
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base px-4 py-3"
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 sm:px-4 py-2.5 sm:py-3 touch-manipulation"
                               placeholder="Tell us how we can help you..."
                             />
                             {errors.message && (
                               <p className="text-sm text-red-600">{errors.message.message}</p>
                             )}
                           </div>
-                          <Button type="submit" className="w-full" loading={loading}>
+                          <Button
+                            type="submit"
+                            className="w-full min-h-[44px] sm:min-h-[48px] text-sm touch-manipulation"
+                            loading={loading}
+                          >
                             Send Message
                           </Button>
                         </form>
@@ -361,31 +372,33 @@ export default function ContactPage() {
                 {/* FAQ */}
                 {cmsData.faq_visible && (
                   <div>
-                    <div className="flex items-center space-x-3 mb-6">
-                      <QuestionMarkCircleIcon className="h-6 w-6 text-orange-600" />
+                    <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
+                      <QuestionMarkCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 flex-shrink-0" />
                       {cmsData.faq_title && (
-                        <h2 className="text-2xl font-bold">{cmsData.faq_title}</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold">{cmsData.faq_title}</h2>
                       )}
                     </div>
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-4 sm:gap-6">
                       {faqItems.map((item, index) => (
                         <Card key={index} className="card-hover">
-                          <CardContent className="p-6">
-                            <h3 className="font-semibold text-gray-900 mb-2">{item.question}</h3>
-                            <p className="text-gray-600 text-sm">{item.answer}</p>
+                          <CardContent className="p-4 sm:p-5 lg:p-6">
+                            <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">
+                              {item.question}
+                            </h3>
+                            <p className="text-gray-600 text-xs sm:text-sm">{item.answer}</p>
                           </CardContent>
                         </Card>
                       ))}
                     </div>
                     {cmsData.help_card_visible && (
-                      <div className="mt-8 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                      <div className="mt-6 sm:mt-8 p-4 sm:p-5 lg:p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
                         {cmsData.help_card_title && (
-                          <h3 className="font-semibold text-gray-900 mb-2">
+                          <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">
                             {cmsData.help_card_title}
                           </h3>
                         )}
                         {cmsData.help_card_description && (
-                          <p className="text-gray-600 text-sm mb-4">
+                          <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
                             {cmsData.help_card_description}
                           </p>
                         )}

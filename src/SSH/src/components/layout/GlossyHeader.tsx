@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, LogOut, User } from 'lucide-react'
+import { Menu, X, LogOut, User, Home } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
@@ -75,6 +75,40 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      const mobileMenu = document.getElementById('mobile-menu-container')
+      const menuButton = document.getElementById('mobile-menu-button')
+
+      if (
+        isMobileMenuOpen &&
+        mobileMenu &&
+        menuButton &&
+        !mobileMenu.contains(target) &&
+        !menuButton.contains(target)
+      ) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuOpen])
   const headerVariants = {
     top: {
       background: 'rgba(255, 255, 255, 0.05)',
@@ -311,10 +345,17 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
             </div>
             {/* Mobile menu button */}
             <motion.button
-              className="lg:hidden p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              whileHover={{ scale: 1.1 }}
+              id="mobile-menu-button"
+              className="lg:hidden p-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors touch-manipulation"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsMobileMenuOpen(!isMobileMenuOpen)
+              }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
+              style={{ minWidth: '44px', minHeight: '44px' }}
             >
               <AnimatePresence mode="wait">
                 {isMobileMenuOpen ? (
@@ -345,124 +386,146 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
         {/* Mobile Navigation */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div
-              className="lg:hidden border-t border-gray-200 bg-white/90 backdrop-blur-md"
-              variants={mobileMenuVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-            >
-              <div className="px-2 pt-2 pb-3 space-y-3">
-                {navLinks.map((link) => (
-                  <motion.div key={link.name} variants={mobileItemVariants}>
-                    {link.external ? (
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                      >
-                        {link.icon &&
-                          (() => {
-                            const IconComponent = LucideIcons[
-                              link.icon as keyof typeof LucideIcons
-                            ] as React.ComponentType<{ className?: string }>
-                            return IconComponent ? <IconComponent className="w-5 h-5" /> : null
-                          })()}
-                        <span>{link.name}</span>
-                      </a>
+            <>
+              {/* Backdrop overlay */}
+              <motion.div
+                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ top: '64px' }}
+              />
+              <motion.div
+                id="mobile-menu-container"
+                className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur-md shadow-xl relative z-50"
+                variants={mobileMenuVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+              >
+                <div className="px-4 pt-4 pb-6 space-y-3 max-h-[calc(100vh-64px)] overflow-y-auto">
+                  {navLinks.map((link) => (
+                    <motion.div key={link.name} variants={mobileItemVariants}>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 touch-manipulation"
+                          style={{ minHeight: '44px' }}
+                        >
+                          {link.icon &&
+                            (() => {
+                              const IconComponent = LucideIcons[
+                                link.icon as keyof typeof LucideIcons
+                              ] as React.ComponentType<{ className?: string }>
+                              return IconComponent ? <IconComponent className="w-5 h-5" /> : null
+                            })()}
+                          <span>{link.name}</span>
+                        </a>
+                      ) : (
+                        <Link
+                          to={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation ${
+                            location.pathname === link.href
+                              ? 'text-gray-900 bg-orange-100 shadow-lg'
+                              : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                          style={{ minHeight: '44px' }}
+                        >
+                          {link.icon &&
+                            (() => {
+                              const IconComponent = LucideIcons[
+                                link.icon as keyof typeof LucideIcons
+                              ] as React.ComponentType<{ className?: string }>
+                              return IconComponent ? <IconComponent className="w-5 h-5" /> : null
+                            })()}
+                          <span>{link.name}</span>
+                        </Link>
+                      )}
+                    </motion.div>
+                  ))}
+                  {/* Main Site Link for Mobile */}
+                  <motion.div
+                    variants={mobileItemVariants}
+                    className="pt-2 border-t border-gray-200"
+                  >
+                    <a
+                      href="/"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false)
+                        window.location.href = '/'
+                      }}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 text-blue-600 hover:text-blue-800 hover:bg-blue-50 active:bg-blue-100 touch-manipulation"
+                      style={{ minHeight: '44px' }}
+                    >
+                      <span>← eYogi Gurukul</span>
+                    </a>
+                  </motion.div>
+                  {/* Mobile Auth Section */}
+                  <motion.div
+                    className="pt-4 border-t border-gray-200 space-y-3"
+                    variants={mobileItemVariants}
+                  >
+                    {websiteUser ? (
+                      <>
+                        <div className="flex items-center space-x-3 px-3 py-2 text-gray-800">
+                          <User className="w-4 h-4" />
+                          <span>{websiteUser.full_name || websiteUser.email || 'User'}</span>
+                        </div>
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 w-full text-blue-600 hover:text-blue-800 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-all duration-200 touch-manipulation"
+                          style={{ minHeight: '44px' }}
+                        >
+                          <Home className="w-5 h-5" />
+                          <span>View Dashboard</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            handleSignOut()
+                            setIsMobileMenuOpen(false)
+                          }}
+                          className="flex items-center space-x-3 px-4 py-3 w-full text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-all duration-200 touch-manipulation"
+                          style={{ minHeight: '44px' }}
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </>
                     ) : (
-                      <Link
-                        to={link.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
-                          location.pathname === link.href
-                            ? 'text-gray-900 bg-orange-100 shadow-lg'
-                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                      >
-                        {link.icon &&
-                          (() => {
-                            const IconComponent = LucideIcons[
-                              link.icon as keyof typeof LucideIcons
-                            ] as React.ComponentType<{ className?: string }>
-                            return IconComponent ? <IconComponent className="w-5 h-5" /> : null
-                          })()}
-                        <span>{link.name}</span>
-                      </Link>
+                      <>
+                        <button
+                          onClick={() => {
+                            onOpenAuthModal?.('signin')
+                            setIsMobileMenuOpen(false)
+                          }}
+                          className="block w-full px-4 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-gray-800 hover:bg-white/30 hover:border-white/40 active:bg-white/40 rounded-lg font-medium shadow-lg transition-all duration-200 relative overflow-hidden touch-manipulation"
+                          style={{ minHeight: '44px' }}
+                        >
+                          <span className="relative z-10">Sign In</span>
+                          <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            onOpenAuthModal?.('signup')
+                            setIsMobileMenuOpen(false)
+                          }}
+                          className="block w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation"
+                          style={{ minHeight: '44px' }}
+                        >
+                          Get Started
+                        </button>
+                      </>
                     )}
                   </motion.div>
-                ))}
-                {/* Main Site Link for Mobile */}
-                <motion.div variants={mobileItemVariants} className="pt-2 border-t border-gray-200">
-                  <a
-                    href="/"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false)
-                      window.location.href = '/'
-                    }}
-                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                  >
-                    <span>← eYogi Gurukul</span>
-                  </a>
-                </motion.div>
-                {/* Mobile Auth Section */}
-                <motion.div
-                  className="pt-4 border-t border-gray-200 space-y-3"
-                  variants={mobileItemVariants}
-                >
-                  {websiteUser ? (
-                    <>
-                      <div className="flex items-center space-x-3 px-3 py-2 text-gray-800">
-                        <User className="w-4 h-4" />
-                        <span>{websiteUser.full_name || websiteUser.email || 'User'}</span>
-                      </div>
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-2 w-full text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                      >
-                        <Home className="w-4 h-4" />
-                        <span>View Dashboard</span>
-                      </Link>
-                      <button
-                        onClick={() => {
-                          handleSignOut()
-                          setIsMobileMenuOpen(false)
-                        }}
-                        className="flex items-center space-x-3 px-3 py-2 w-full text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => {
-                          onOpenAuthModal?.('signin')
-                          setIsMobileMenuOpen(false)
-                        }}
-                        className="block w-full px-3 py-2 bg-white/20 backdrop-blur-md border border-white/30 text-gray-800 hover:bg-white/30 hover:border-white/40 rounded-lg font-medium shadow-lg transition-all duration-200 relative overflow-hidden"
-                      >
-                        <span className="relative z-10">Sign In</span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                      </button>
-                      <button
-                        onClick={() => {
-                          onOpenAuthModal?.('signup')
-                          setIsMobileMenuOpen(false)
-                        }}
-                        className="block w-full px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium shadow-lg"
-                      >
-                        Get Started
-                      </button>
-                    </>
-                  )}
-                </motion.div>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

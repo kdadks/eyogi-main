@@ -273,22 +273,22 @@ export default function WebsiteAuthModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-md flex items-center justify-center z-[60] p-4 overflow-y-auto animate-in fade-in duration-300">
-      <div className="max-w-md w-full my-8 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-        <Card className="shadow-2xl border border-orange-100/20 bg-white/98 backdrop-blur-xl rounded-2xl overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-md flex items-center justify-center z-[60] px-4 py-4 sm:p-6 overflow-y-auto animate-in fade-in duration-300">
+      <div className="max-w-md w-full my-auto animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[95vh] overflow-y-auto">
+        <Card className="shadow-2xl border border-orange-100/20 bg-white/98 backdrop-blur-xl rounded-xl sm:rounded-2xl overflow-hidden">
           {/* Gradient Header Bar */}
           <div className="h-1.5 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500"></div>
 
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-6 px-6">
-            <div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 sm:pt-6 px-4 sm:px-6">
+            <div className="flex-1 pr-2">
+              <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                 {mode === 'signin'
                   ? 'Welcome Back'
                   : mode === 'forgot-password'
                     ? 'Reset Password'
                     : 'Join Us'}
               </h3>
-              <p className="text-sm text-gray-600 mt-0.5">
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
                 {mode === 'signin'
                   ? 'Continue your learning journey'
                   : mode === 'forgot-password'
@@ -298,22 +298,24 @@ export default function WebsiteAuthModal({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-400 hover:text-gray-600 hover:rotate-90 cursor-pointer"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 text-gray-400 hover:text-gray-600 hover:rotate-90 cursor-pointer touch-manipulation flex-shrink-0"
+              style={{ minWidth: '40px', minHeight: '40px' }}
+              aria-label="Close"
             >
-              <XMarkIcon className="h-5 w-5" />
+              <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
           </CardHeader>
-          <CardContent className="px-6 pb-6">
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
             {mode === 'signin' ? (
               <form
                 onSubmit={signInForm.handleSubmit(handleSignIn)}
-                className="flex flex-col gap-4"
+                className="flex flex-col gap-3 sm:gap-4"
               >
                 <Input
                   label="Email address"
                   type="email"
                   autoComplete="email"
-                  className="h-11 text-sm"
+                  className="h-11 sm:h-12 text-sm"
                   {...signInForm.register('email')}
                   error={signInForm.formState.errors.email?.message}
                 />
@@ -322,7 +324,7 @@ export default function WebsiteAuthModal({
                     label="Password"
                     type="password"
                     autoComplete="current-password"
-                    className="h-11 text-sm"
+                    className="h-11 sm:h-12 text-sm"
                     {...signInForm.register('password')}
                     error={signInForm.formState.errors.password?.message}
                   />
@@ -330,7 +332,8 @@ export default function WebsiteAuthModal({
                     <button
                       type="button"
                       onClick={() => setMode('forgot-password')}
-                      className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 py-1 rounded transition-all cursor-pointer"
+                      className="text-xs sm:text-sm font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded transition-all cursor-pointer touch-manipulation"
+                      style={{ minHeight: '36px' }}
                     >
                       Forgot password?
                     </button>
@@ -338,18 +341,19 @@ export default function WebsiteAuthModal({
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation text-sm sm:text-base"
                   loading={loading}
                 >
                   Sign in
                 </Button>
                 <div className="text-center space-y-2">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Don't have an account?{' '}
                     <button
                       type="button"
                       onClick={() => setMode('signup')}
-                      className="font-semibold text-transparent bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text hover:from-orange-700 hover:to-red-700 hover:bg-orange-50 px-2 py-0.5 rounded transition-all cursor-pointer"
+                      className="font-semibold text-transparent bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text hover:from-orange-700 hover:to-red-700 hover:bg-orange-50 px-2 py-1 rounded transition-all cursor-pointer touch-manipulation"
+                      style={{ minHeight: '32px' }}
                     >
                       Sign up
                     </button>
@@ -359,10 +363,10 @@ export default function WebsiteAuthModal({
             ) : mode === 'forgot-password' ? (
               <form
                 onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)}
-                className="flex flex-col gap-4"
+                className="flex flex-col gap-3 sm:gap-4"
               >
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-2">
-                  <p className="text-sm text-gray-700">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4 mb-2">
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
                     Enter your email address and we'll send you instructions to reset your password.
                   </p>
                 </div>
@@ -370,14 +374,14 @@ export default function WebsiteAuthModal({
                   label="Email address"
                   type="email"
                   autoComplete="email"
-                  className="h-11 text-sm"
+                  className="h-11 sm:h-12 text-sm"
                   placeholder="your@email.com"
                   {...forgotPasswordForm.register('email')}
                   error={forgotPasswordForm.formState.errors.email?.message}
                 />
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full h-11 sm:h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation text-sm sm:text-base"
                   loading={loading}
                 >
                   Send Reset Instructions
@@ -386,7 +390,8 @@ export default function WebsiteAuthModal({
                   <button
                     type="button"
                     onClick={() => setMode('signin')}
-                    className="text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-3 py-1.5 rounded transition-all cursor-pointer"
+                    className="text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 px-3 py-2 rounded transition-all cursor-pointer touch-manipulation"
+                    style={{ minHeight: '40px' }}
                   >
                     ← Back to sign in
                   </button>
@@ -419,7 +424,7 @@ export default function WebsiteAuthModal({
                   {...signUpForm.register('email')}
                   error={signUpForm.formState.errors.email?.message}
                 />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Input
                       label={
@@ -429,11 +434,11 @@ export default function WebsiteAuthModal({
                       }
                       type="password"
                       autoComplete="new-password"
-                      className="h-10 text-sm"
+                      className="h-10 sm:h-11 text-sm"
                       {...signUpForm.register('password')}
                       error={signUpForm.formState.errors.password?.message}
                     />
-                    <p className="mt-1 text-xs text-gray-500 leading-tight">
+                    <p className="mt-1 text-[10px] sm:text-xs text-gray-500 leading-tight">
                       8+ chars, 1 uppercase, 1 digit, 1 special (!@#$%^&*), no spaces
                     </p>
                   </div>
@@ -445,19 +450,22 @@ export default function WebsiteAuthModal({
                     }
                     type="password"
                     autoComplete="new-password"
-                    className="h-10 text-sm"
+                    className="h-10 sm:h-11 text-sm"
                     {...signUpForm.register('confirmPassword')}
                     error={signUpForm.formState.errors.confirmPassword?.message}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="role"
+                      className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
+                    >
                       Role <span className="text-red-500">*</span>
                     </label>
                     <select
                       {...signUpForm.register('role')}
-                      className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                      className="w-full h-10 sm:h-11 px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all touch-manipulation"
                     >
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
@@ -467,7 +475,7 @@ export default function WebsiteAuthModal({
                   <Input
                     label="Phone"
                     type="tel"
-                    className="h-10 text-sm"
+                    className="h-10 sm:h-11 text-sm"
                     {...signUpForm.register('phone')}
                     error={signUpForm.formState.errors.phone?.message}
                   />
@@ -479,13 +487,13 @@ export default function WebsiteAuthModal({
                     </>
                   }
                   type="date"
-                  className="h-10 text-sm"
+                  className="h-10 sm:h-11 text-sm"
                   {...signUpForm.register('date_of_birth')}
                   error={signUpForm.formState.errors.date_of_birth?.message}
                 />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                       Country <span className="text-red-500">*</span>
                     </label>
                     <CountrySelect
@@ -497,17 +505,17 @@ export default function WebsiteAuthModal({
                       }}
                       required
                       placeholder="Select Country"
-                      className="h-10 text-sm"
+                      className="h-10 sm:h-11 text-sm"
                     />
                     {signUpForm.formState.errors.country && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-[10px] sm:text-xs text-red-600">
                         {signUpForm.formState.errors.country.message}
                       </p>
                     )}
                   </div>
                   {signUpForm.watch('country') && countryHasStates(signUpForm.watch('country')) ? (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         State <span className="text-red-500">*</span>
                       </label>
                       <StateSelect
@@ -515,24 +523,24 @@ export default function WebsiteAuthModal({
                         value={signUpForm.watch('state') || ''}
                         onChange={(value) => signUpForm.setValue('state', value)}
                         placeholder="Select State"
-                        className="h-10 text-sm"
+                        className="h-10 sm:h-11 text-sm"
                         required
                       />
                       {signUpForm.formState.errors.state && (
-                        <p className="mt-1 text-xs text-red-600">
+                        <p className="mt-1 text-[10px] sm:text-xs text-red-600">
                           {signUpForm.formState.errors.state.message}
                         </p>
                       )}
                     </div>
                   ) : signUpForm.watch('country') ? (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                         City <span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
                         placeholder="Enter city"
-                        className="h-10 text-sm"
+                        className="h-10 sm:h-11 text-sm"
                         {...signUpForm.register('city')}
                         error={signUpForm.formState.errors.city?.message}
                       />
@@ -543,18 +551,19 @@ export default function WebsiteAuthModal({
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-10 mt-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full h-11 sm:h-12 mt-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation text-sm sm:text-base"
                   loading={loading}
                 >
                   Create Account
                 </Button>
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Already have an account?{' '}
                     <button
                       type="button"
                       onClick={() => setMode('signin')}
-                      className="font-semibold text-transparent bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text hover:from-orange-700 hover:to-red-700 hover:bg-orange-50 px-2 py-0.5 rounded transition-all cursor-pointer"
+                      className="font-semibold text-transparent bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text hover:from-orange-700 hover:to-red-700 hover:bg-orange-50 px-2 py-1 rounded transition-all cursor-pointer touch-manipulation"
+                      style={{ minHeight: '32px' }}
                     >
                       Sign in
                     </button>

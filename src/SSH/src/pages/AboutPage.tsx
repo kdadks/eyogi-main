@@ -214,24 +214,26 @@ export default function AboutPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
 
-            <div className="relative section-padding z-[4] sunrise-content px-4 md:px-8 lg:px-12">
-              <div className="text-center max-w-4xl mx-auto">
-                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <div className="relative section-padding z-[4] sunrise-content">
+              <div className="text-center max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
                   {cmsData.hero_title}{' '}
                   <span className="gradient-text">{cmsData.hero_title_highlight}</span>
                 </h1>
-                <p className="text-xl text-gray-600 leading-relaxed mb-8">
+                <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed mb-6 sm:mb-8">
                   {cmsData.hero_description}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   {cmsData.hero_button_1_link && cmsData.hero_button_1_text && (
                     <Link to={cmsData.hero_button_1_link}>
-                      <Button size="lg">{cmsData.hero_button_1_text}</Button>
+                      <Button size="lg" className="w-full sm:w-auto min-h-[48px]">
+                        {cmsData.hero_button_1_text}
+                      </Button>
                     </Link>
                   )}
                   {cmsData.hero_button_2_link && cmsData.hero_button_2_text && (
                     <Link to={cmsData.hero_button_2_link}>
-                      <Button variant="outline" size="lg">
+                      <Button variant="outline" size="lg" className="w-full sm:w-auto min-h-[48px]">
                         {cmsData.hero_button_2_text}
                       </Button>
                     </Link>

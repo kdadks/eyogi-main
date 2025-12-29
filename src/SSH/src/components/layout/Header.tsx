@@ -29,6 +29,39 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [userMenuOpen])
+
+  // Close mobile menu when clicking outside and prevent body scroll
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      const mobileMenu = document.getElementById('mobile-menu-header')
+      const menuButton = document.getElementById('mobile-menu-button-header')
+
+      if (
+        mobileMenuOpen &&
+        mobileMenu &&
+        menuButton &&
+        !mobileMenu.contains(target) &&
+        !menuButton.contains(target)
+      ) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    if (mobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      document.body.style.overflow = 'unset'
+    }
+  }, [mobileMenuOpen])
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Gurukuls', href: '/gurukuls' },
@@ -207,10 +240,16 @@ export default function Header() {
             {/* Mobile menu button */}
             <div className="md:hidden">
               <button
+                id="mobile-menu-button-header"
                 type="button"
-                className="p-2 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-300"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-300 touch-manipulation"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMobileMenuOpen(!mobileMenuOpen)
+                }}
                 style={{ minHeight: '44px', minWidth: '44px' }}
+                aria-label="Toggle mobile menu"
+                aria-expanded={mobileMenuOpen}
               >
                 {mobileMenuOpen ? (
                   <XMarkIcon className="h-6 w-6" />
@@ -223,58 +262,67 @@ export default function Header() {
         </div>
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div
-            className={`md:hidden border-t border-gray-200/50 mobile-menu ${mobileMenuOpen ? 'open' : ''}`}
-          >
-            <div className="bg-white/95 backdrop-blur-lg px-3 pt-3 pb-4 space-y-1">
-              {navigation.map((item) => (
-                <ScrollLink
-                  key={item.name}
-                  to={item.href}
-                  className="block px-4 py-4 text-base font-semibold text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-300"
-                  style={{ minHeight: '44px' }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </ScrollLink>
-              ))}
-              {user && (
-                <ScrollLink
-                  to="/dashboard"
-                  className="block px-4 py-4 text-base font-semibold text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-300"
-                  style={{ minHeight: '44px' }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </ScrollLink>
-              )}
-              {!user && (
-                <div className="pt-4 space-y-3">
-                  <Link to="/auth/signin" className="block">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-center font-semibold py-3"
-                      style={{ minHeight: '44px' }}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/auth/signup" className="block">
-                    <Button
-                      size="sm"
-                      className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3"
-                      style={{ minHeight: '44px' }}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Sign Up
-                    </Button>
-                  </Link>
-                </div>
-              )}
+          <>
+            {/* Backdrop overlay */}
+            <div
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ top: '64px' }}
+            />
+            <div
+              id="mobile-menu-header"
+              className="md:hidden border-t border-gray-200/50 mobile-menu bg-white/95 backdrop-blur-lg shadow-xl relative z-50"
+            >
+              <div className="px-4 pt-4 pb-6 space-y-2 max-h-[calc(100vh-64px)] overflow-y-auto">
+                {navigation.map((item) => (
+                  <ScrollLink
+                    key={item.name}
+                    to={item.href}
+                    className="block px-4 py-3 text-base font-semibold text-gray-700 hover:text-orange-600 hover:bg-orange-50 active:bg-orange-100 rounded-lg transition-all duration-300 touch-manipulation"
+                    style={{ minHeight: '44px' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </ScrollLink>
+                ))}
+                {user && (
+                  <ScrollLink
+                    to="/dashboard"
+                    className="block px-4 py-3 text-base font-semibold text-gray-700 hover:text-orange-600 hover:bg-orange-50 active:bg-orange-100 rounded-lg transition-all duration-300 touch-manipulation"
+                    style={{ minHeight: '44px' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </ScrollLink>
+                )}
+                {!user && (
+                  <div className="pt-4 space-y-3">
+                    <Link to="/auth/signin" className="block">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-center font-semibold py-3 touch-manipulation active:bg-gray-100"
+                        style={{ minHeight: '44px' }}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link to="/auth/signup" className="block">
+                      <Button
+                        size="sm"
+                        className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-semibold py-3 touch-manipulation"
+                        style={{ minHeight: '44px' }}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Sign Up
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </nav>
     </header>

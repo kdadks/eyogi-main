@@ -181,13 +181,13 @@ export default function HomePage() {
         >
           {/* Sunrise Effect Background */}
           <div className="sunrise-bg"></div>
-          
+
           {/* Horizon Glow */}
           <div className="sunrise-horizon-glow"></div>
-          
+
           {/* Sun */}
           <div className="sunrise-sun"></div>
-          
+
           {/* Light Rays */}
           <div className="sunrise-rays">
             <div className="sunrise-ray"></div>
@@ -203,12 +203,12 @@ export default function HomePage() {
             <div className="sunrise-ray"></div>
             <div className="sunrise-ray"></div>
           </div>
-          
+
           {/* Floating Clouds */}
           <div className="sunrise-cloud sunrise-cloud-1"></div>
           <div className="sunrise-cloud sunrise-cloud-2"></div>
           <div className="sunrise-cloud sunrise-cloud-3"></div>
-          
+
           {/* Enhanced Glossy Glass Background Layers */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-white/20 to-white/30 backdrop-blur-md z-[3]"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-orange-100/50 via-orange-50/30 to-red-100/40 backdrop-blur-sm z-[3]"></div>
@@ -218,11 +218,11 @@ export default function HomePage() {
           <div className="absolute inset-0 backdrop-blur-[2px] bg-white/15 z-[3]"></div>
           {/* Additional Gloss Layer */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/20 z-[3]"></div>
-          
-          <div className="relative container-max section-padding z-[4] sunrise-content">
+
+          <div className="relative container-max section-padding z-[4] sunrise-content px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="space-y-6 lg:space-y-8 text-center lg:text-left">
-                <div className="space-y-4 px-4 sm:px-0">
+                <div className="space-y-4">
                   <div className="flex justify-center lg:justify-start badge-container">
                     <Badge
                       variant="info"
@@ -232,20 +232,20 @@ export default function HomePage() {
                     </Badge>
                   </div>
                   <h1
-                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight px-2 sm:px-0"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight"
                     itemProp="headline"
                   >
                     {pageSettings?.home_hero_title}{' '}
                     <span className="gradient-text">{pageSettings?.home_hero_title_highlight}</span>
                   </h1>
                   <p
-                    className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed px-2 sm:px-0"
+                    className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed"
                     itemProp="description"
                   >
                     {pageSettings?.home_hero_description}
                   </p>
                 </div>
-                <div className="flex flex-col gap-3 sm:gap-4 px-4 sm:px-0 sm:flex-row justify-center lg:justify-start">
+                <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row justify-center lg:justify-start">
                   {pageSettings?.home_hero_button_1_text && (
                     <ScrollLink
                       to={pageSettings?.home_hero_button_1_link}
@@ -275,7 +275,7 @@ export default function HomePage() {
                     </ScrollLink>
                   )}
                 </div>
-                <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row sm:items-center sm:space-x-6 lg:space-x-8 text-sm text-gray-600 justify-center lg:justify-start px-2 sm:px-0">
+                <div className="flex flex-col gap-3 sm:gap-2 sm:flex-row sm:items-center sm:space-x-6 lg:space-x-8 text-sm text-gray-600 justify-center lg:justify-start">
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm sm:text-sm font-medium">
