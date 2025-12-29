@@ -66,7 +66,7 @@ export default function Hero() {
       </div>
       <div className="flex flex-row justify-between p-4 lg:p-16 text-white gap-8">
         <div className="flex flex-col gap-4">
-          <p className="text-lg md:text-2xl">eyogiurukul@gmail.com</p>
+          <p className="text-lg md:text-2xl">office@eyogigurukul.com</p>
           <div className="flex lg:justify-between gap-4">
             <Link
               href="http://www.linkedin.com/in/eyogi-gurukul-7a63a91a0"

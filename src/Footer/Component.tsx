@@ -343,7 +343,7 @@ export default function Footer() {
             <p>Account Name: eYogi Gurukul</p>
             <p>Bank: AIB Ireland</p>
             <p>Registered Charity Number: 20205851</p>
-            <p>eyogiurukul@gmail.com</p>
+            <p>office@eyogigurukul.com</p>
           </div>
           <div className="flex flex-col">
             <p className="text-base lg:text-xl font-medium pb-2 uppercase">Links:</p>
