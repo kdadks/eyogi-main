@@ -337,6 +337,8 @@ export default function ProfileEditModal({
                   <Input
                     label="Date of Birth (MM/DD/YYYY)"
                     type="date"
+                    className="h-10 sm:h-11 text-xs sm:text-sm"
+                    style={{ fontSize: '13px' }}
                     {...register('date_of_birth')}
                     error={errors.date_of_birth?.message}
                   />

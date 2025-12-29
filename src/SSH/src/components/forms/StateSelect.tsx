@@ -56,13 +56,17 @@ const StateSelect: React.FC<StateSelectProps> = ({
         disabled={disabled || states.length === 0}
         required={required}
         className={`
-          appearance-none block w-full pl-10 pr-8 py-2.5 
+          appearance-none block w-full pl-10 pr-8 py-2 
           border border-gray-300 rounded-lg 
-          bg-white text-sm placeholder-gray-400
+          bg-white text-xs sm:text-sm placeholder-gray-400
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
+          h-9 sm:h-10
           ${className}
         `}
+        style={{
+          fontSize: '13px',
+        }}
       >
         <option value="" disabled>
           {getDynamicPlaceholder()}

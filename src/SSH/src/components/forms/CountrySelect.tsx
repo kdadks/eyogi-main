@@ -23,10 +23,22 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onChange(e.target.value)
   }
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+
   return (
-    <div className="relative">
-      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <Globe className="h-4 w-4 text-gray-400" />
+    <div
+      className="relative w-full overflow-hidden"
+      style={{ maxWidth: '100%', boxSizing: 'border-box' }}
+    >
+      <div
+        className="absolute inset-y-0 left-0 flex items-center pointer-events-none z-10"
+        style={{ left: isMobile ? '6px' : '8px' }}
+      >
+        <Globe
+          className="text-gray-400"
+          style={{ width: isMobile ? '12px' : '14px', height: isMobile ? '12px' : '14px' }}
+        />
       </div>
       <select
         value={value}
@@ -34,13 +46,22 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
         disabled={disabled}
         required={required}
         className={`
-          appearance-none block w-full pl-10 pr-8 py-2.5 
+          appearance-none block w-full py-2 
           border border-gray-300 rounded-lg 
-          bg-white text-sm placeholder-gray-400
+          bg-white placeholder-gray-400
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
           ${className}
         `}
+        style={{
+          fontSize: isMobile ? '12px' : '13px',
+          paddingLeft: isMobile ? '28px' : '32px',
+          paddingRight: isMobile ? '32px' : '36px',
+          height: isMobile ? '36px' : '40px',
+          maxWidth: '100%',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
       >
         <option value="" disabled>
           {placeholder}
@@ -71,12 +92,16 @@ const CountrySelect: React.FC<CountrySelectProps> = ({
           ))}
       </select>
       {/* Custom dropdown arrow */}
-      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+      <div
+        className="absolute inset-y-0 right-0 flex items-center pointer-events-none z-10"
+        style={{ right: isMobile ? '6px' : '8px' }}
+      >
         <svg
-          className="h-4 w-4 text-gray-400"
+          className="text-gray-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          style={{ width: isMobile ? '12px' : '14px', height: isMobile ? '12px' : '14px' }}
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>

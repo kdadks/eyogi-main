@@ -86,6 +86,11 @@ function App() {
     }
   }, [])
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
   const openAuthModal = (mode: 'signin' | 'signup' | 'forgot-password' = 'signin') => {
     setAuthModalMode(mode)
     setIsAuthModalOpen(true)

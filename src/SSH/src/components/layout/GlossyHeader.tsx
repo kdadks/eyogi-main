@@ -412,7 +412,10 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                           href={link.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={() => setIsMobileMenuOpen(false)}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
                           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 touch-manipulation"
                           style={{ minHeight: '44px' }}
                         >
@@ -428,7 +431,10 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                       ) : (
                         <Link
                           to={link.href}
-                          onClick={() => setIsMobileMenuOpen(false)}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
                           className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation ${
                             location.pathname === link.href
                               ? 'text-gray-900 bg-orange-100 shadow-lg'
@@ -478,7 +484,10 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                         </div>
                         <Link
                           to="/dashboard"
-                          onClick={() => setIsMobileMenuOpen(false)}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
                           className="flex items-center space-x-3 px-4 py-3 w-full text-blue-600 hover:text-blue-800 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-all duration-200 touch-manipulation"
                           style={{ minHeight: '44px' }}
                         >

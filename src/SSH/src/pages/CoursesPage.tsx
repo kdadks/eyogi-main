@@ -215,7 +215,8 @@ export default function CoursesPage() {
                   <select
                     value={selectedGurukul}
                     onChange={(e) => setSelectedGurukul(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm h-10 sm:h-11 px-3 py-2 touch-manipulation"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-3 py-1.5 sm:py-2 touch-manipulation"
+                    style={{ fontSize: '13px' }}
                   >
                     <option value="">All Gurukuls</option>
                     {gurukuls.map((gurukul) => (
@@ -227,7 +228,8 @@ export default function CoursesPage() {
                   <select
                     value={selectedLevel}
                     onChange={(e) => setSelectedLevel(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm h-10 sm:h-11 px-3 py-2 touch-manipulation"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-xs sm:text-sm h-9 sm:h-10 px-2 sm:px-3 py-1.5 sm:py-2 touch-manipulation"
+                    style={{ fontSize: '13px' }}
                   >
                     <option value="">All Levels</option>
                     {levels.map((level) => (

@@ -273,8 +273,8 @@ export default function WebsiteAuthModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-md flex items-center justify-center z-[60] px-4 py-4 sm:p-6 overflow-y-auto animate-in fade-in duration-300">
-      <div className="max-w-md w-full my-auto animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-md flex items-start sm:items-center justify-center z-[60] px-4 py-6 sm:py-4 overflow-y-auto animate-in fade-in duration-300">
+      <div className="max-w-md w-full my-auto animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 max-h-[90vh] sm:max-h-[95vh] overflow-y-auto">
         <Card className="shadow-2xl border border-orange-100/20 bg-white/98 backdrop-blur-xl rounded-xl sm:rounded-2xl overflow-hidden">
           {/* Gradient Header Bar */}
           <div className="h-1.5 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500"></div>
@@ -487,7 +487,8 @@ export default function WebsiteAuthModal({
                     </>
                   }
                   type="date"
-                  className="h-10 sm:h-11 text-sm"
+                  className="h-10 sm:h-11 text-xs sm:text-sm"
+                  style={{ fontSize: '13px' }}
                   {...signUpForm.register('date_of_birth')}
                   error={signUpForm.formState.errors.date_of_birth?.message}
                 />

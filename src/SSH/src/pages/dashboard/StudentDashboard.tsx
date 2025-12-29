@@ -1500,7 +1500,8 @@ export default function StudentDashboard() {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm h-9 sm:h-10"
+                      style={{ fontSize: '13px' }}
                     >
                       <option value="all">All Statuses</option>
                       <option value="pending">Pending</option>
@@ -1516,7 +1517,8 @@ export default function StudentDashboard() {
                     <select
                       value={courseFilter}
                       onChange={(e) => setCourseFilter(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm h-9 sm:h-10"
+                      style={{ fontSize: '13px' }}
                     >
                       <option value="all">All Levels</option>
                       <option value="elementary">Elementary</option>

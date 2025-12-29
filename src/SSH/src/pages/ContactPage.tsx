@@ -327,7 +327,8 @@ export default function ContactPage() {
                             </label>
                             <select
                               {...register('type')}
-                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm px-3 sm:px-4 py-2.5 sm:py-3 h-11 sm:h-12 touch-manipulation"
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-xs sm:text-sm px-2 sm:px-3 py-2 h-9 sm:h-10 touch-manipulation"
+                              style={{ fontSize: '13px' }}
                             >
                               <option value="general">General Inquiry</option>
                               <option value="course">Course Information</option>

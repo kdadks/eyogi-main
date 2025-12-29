@@ -254,7 +254,8 @@ export default function SignUpPage() {
                       </>
                     }
                     type="date"
-                    className="h-12 text-base"
+                    className="h-10 sm:h-12 text-xs sm:text-base"
+                    style={{ fontSize: '13px' }}
                     {...register('date_of_birth')}
                     error={errors.date_of_birth?.message}
                   />

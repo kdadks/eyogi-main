@@ -418,6 +418,19 @@ html {
   .mobile-button-spacing {
     gap: 0.75rem;
   }
+  
+  /* Make all select dropdowns mobile-friendly */
+  select {
+    font-size: 13px !important;
+    padding: 0.375rem 0.5rem !important;
+    height: 2.25rem !important; /* 36px - h-9 */
+  }
+  
+  @media (min-width: 640px) {
+    select {
+      height: 2.5rem !important; /* 40px - h-10 */
+    }
+  }
 }
 
 .section-padding {
@@ -697,6 +710,53 @@ body {
   
   input, textarea, select {
     font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Date input specific styling for mobile */
+  input[type="date"] {
+    font-size: 13px !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+  
+  /* Date picker calendar text */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    width: 18px;
+    height: 18px;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit {
+    font-size: 13px;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-text,
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    font-size: 13px;
+    padding: 0 2px;
+  }
+  
+  /* Make dropdown options smaller on mobile */
+  select option, select optgroup {
+    font-size: 13px !important;
+    padding: 6px 8px !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Prevent select dropdown from overflowing viewport on mobile */
+  select {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  
+  /* Force mobile select dropdowns to respect container width */
+  select, select:focus, select:active {
+    max-width: calc(100vw - 2rem) !important;
   }
   
   /* Badge mobile improvements */

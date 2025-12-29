@@ -280,7 +280,10 @@ export default function Header() {
                     to={item.href}
                     className="block px-4 py-3 text-base font-semibold text-gray-700 hover:text-orange-600 hover:bg-orange-50 active:bg-orange-100 rounded-lg transition-all duration-300 touch-manipulation"
                     style={{ minHeight: '44px' }}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
                   >
                     {item.name}
                   </ScrollLink>
@@ -290,7 +293,10 @@ export default function Header() {
                     to="/dashboard"
                     className="block px-4 py-3 text-base font-semibold text-gray-700 hover:text-orange-600 hover:bg-orange-50 active:bg-orange-100 rounded-lg transition-all duration-300 touch-manipulation"
                     style={{ minHeight: '44px' }}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
                   >
                     Dashboard
                   </ScrollLink>
@@ -303,7 +309,10 @@ export default function Header() {
                         size="sm"
                         className="w-full justify-center font-semibold py-3 touch-manipulation active:bg-gray-100"
                         style={{ minHeight: '44px' }}
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                        }}
                       >
                         Sign In
                       </Button>
@@ -313,7 +322,10 @@ export default function Header() {
                         size="sm"
                         className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-semibold py-3 touch-manipulation"
                         style={{ minHeight: '44px' }}
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                        }}
                       >
                         Sign Up
                       </Button>
