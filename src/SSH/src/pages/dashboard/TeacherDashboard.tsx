@@ -59,6 +59,7 @@ import {
 import { Batch, BatchStudentWithInfo } from '@/types'
 import { getCountryName, getStateName } from '@/lib/address-utils'
 import type { Database } from '@/lib/supabase'
+import { decryptField } from '@/lib/encryption'
 import { formatCurrency, formatDate, generateCourseUrl } from '@/lib/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -238,7 +239,18 @@ export default function TeacherDashboard() {
   const [showTemplatePreviewModal, setShowTemplatePreviewModal] = useState(false)
   const [currentTemplateIndex, setCurrentTemplateIndex] = useState(0)
   const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(null)
+  const [previewStudentName, setPreviewStudentName] = useState<string>('')
+  const [previewCourseName, setPreviewCourseName] = useState<string>('')
   const [loadingPreview, setLoadingPreview] = useState(false)
+  const [issuingBatchCertificates, setIssuingBatchCertificates] = useState(false)
+  const [issuingIndividualCert, setIssuingIndividualCert] = useState(false)
+  const [processingStudentIds, setProcessingStudentIds] = useState<Set<string>>(new Set())
+  const [showReIssueConfirmation, setShowReIssueConfirmation] = useState(false)
+  const [existingCertificatesCount, setExistingCertificatesCount] = useState(0)
+  const [pendingBatchTemplateId, setPendingBatchTemplateId] = useState<string | undefined>(
+    undefined,
+  )
+  const [batchCertificateProgress, setBatchCertificateProgress] = useState<string[]>([])
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false)
@@ -246,6 +258,15 @@ export default function TeacherDashboard() {
     useState<ProfileWithAddress | null>(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const notificationRef = useRef<HTMLDivElement>(null)
+
+  // Track which data sets have been loaded for lazy loading
+  const [loadedDataSets, setLoadedDataSets] = useState({
+    overview: false,
+    courses: false,
+    students: false,
+    batches: false,
+    certificates: false,
+  })
 
   // Close notifications when clicking outside or pressing Escape
   useEffect(() => {
@@ -307,11 +328,33 @@ export default function TeacherDashboard() {
       featured: false,
     },
   })
+
+  // Load initial data on mount
   useEffect(() => {
     if (user) {
-      loadDashboardData()
+      loadOverviewData()
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lazy load data when switching views
+  useEffect(() => {
+    if (!user) return
+
+    switch (activeView) {
+      case 'students':
+        loadStudentsData()
+        break
+      case 'batches':
+        loadBatchesData()
+        break
+      case 'courses':
+        loadCoursesData()
+        break
+      case 'certificates':
+        loadCertificatesData()
+        break
+    }
+  }, [activeView, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync learning outcomes with form
   useEffect(() => {
@@ -407,51 +450,43 @@ export default function TeacherDashboard() {
     }
     generatePreview()
   }, [showTemplatePreviewModal, currentTemplateIndex, allTemplates])
-  const loadDashboardData = async () => {
+
+  // Load initial overview data only
+  const loadOverviewData = async () => {
+    if (loadedDataSets.overview) return
+
     try {
-      // Invalidate enrollment caches to ensure fresh data
       queryCache.invalidatePattern('enrollments:.*')
 
-      const [
-        coursesData,
-        enrollmentsData,
-        pendingEnrollmentsData,
-        gurukulData,
-        assignmentsData,
-        batchesData,
-        studentsData,
-        completedBatchStudentsData,
-        certificatesData,
-      ] = await Promise.all([
-        getTeacherCourses(user!.id),
-        getTeacherEnrollments(user!.id),
-        getPendingEnrollments(user!.id),
-        getGurukuls(),
-        getTeacherCertificateAssignments(user!.id),
-        getBatches({ teacher_id: user!.id, is_active: true }),
-        getAllStudents(),
-        getCompletedBatchStudents(user!.id),
-        getCertificatesFromTable(),
-      ])
+      const [coursesData, enrollmentsData, pendingEnrollmentsData, certificatesData] =
+        await Promise.all([
+          getTeacherCourses(user!.id),
+          getTeacherEnrollments(user!.id),
+          getPendingEnrollments(user!.id),
+          getCertificatesFromTable({ teacher_id: user!.id, is_active: true }),
+        ])
+
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setPendingEnrollments(pendingEnrollmentsData)
-      setGurukuls(gurukulData.gurukuls)
-      setCertificateAssignments(assignmentsData)
-
-      // Fetch all available templates
-      try {
-        const templatesData = await getCertificateTemplates()
-        setAllTemplates(templatesData)
-      } catch (error) {
-        console.error('Error loading templates:', error)
-        setAllTemplates([])
-      }
-
-      setBatches(batchesData)
-      setAllStudents(studentsData as ProfileWithAddress[])
-      setCompletedBatchStudents(completedBatchStudentsData)
       setCertificates(certificatesData)
+
+      setLoadedDataSets((prev) => ({ ...prev, overview: true }))
+    } catch (error) {
+      console.error('Overview load error:', error)
+      toast.error('Failed to load overview data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load students data when needed
+  const loadStudentsData = async () => {
+    if (loadedDataSets.students) return
+
+    try {
+      const studentsData = await getAllStudents()
+      setAllStudents(studentsData as ProfileWithAddress[])
 
       // Load consent status for all students
       if (studentsData && studentsData.length > 0) {
@@ -465,11 +500,103 @@ export default function TeacherDashboard() {
         })
         setStudentConsents(consentMap)
       }
+
+      setLoadedDataSets((prev) => ({ ...prev, students: true }))
     } catch (error) {
-      console.error('Dashboard load error:', error)
-      toast.error('Failed to load dashboard data')
-    } finally {
-      setLoading(false)
+      console.error('Students load error:', error)
+      toast.error('Failed to load students data')
+    }
+  }
+
+  // Load batches data when needed
+  const loadBatchesData = async () => {
+    if (loadedDataSets.batches) return
+
+    try {
+      const [batchesData, completedBatchStudentsData] = await Promise.all([
+        getBatches({ teacher_id: user!.id, is_active: true }),
+        getCompletedBatchStudents(user!.id),
+      ])
+
+      setBatches(batchesData)
+      setCompletedBatchStudents(completedBatchStudentsData)
+
+      setLoadedDataSets((prev) => ({ ...prev, batches: true }))
+    } catch (error) {
+      console.error('Batches load error:', error)
+      toast.error('Failed to load batches data')
+    }
+  }
+
+  // Load courses-specific data when needed
+  const loadCoursesData = async () => {
+    if (loadedDataSets.courses) return
+
+    try {
+      const gurukulData = await getGurukuls()
+      setGurukuls(gurukulData.gurukuls)
+
+      setLoadedDataSets((prev) => ({ ...prev, courses: true }))
+    } catch (error) {
+      console.error('Courses load error:', error)
+      toast.error('Failed to load courses data')
+    }
+  }
+
+  // Load certificates-specific data when needed
+  const loadCertificatesData = async () => {
+    if (loadedDataSets.certificates) return
+
+    try {
+      // Certificates tab also needs batches data for batch certificate issuance
+      const [assignmentsData, templatesData, batchesData, completedBatchStudentsData] =
+        await Promise.all([
+          getTeacherCertificateAssignments(user!.id),
+          getCertificateTemplates().catch(() => []),
+          getBatches({ teacher_id: user!.id, is_active: true }),
+          getCompletedBatchStudents(user!.id),
+        ])
+
+      setCertificateAssignments(assignmentsData)
+      setAllTemplates(templatesData)
+      setBatches(batchesData)
+      setCompletedBatchStudents(completedBatchStudentsData)
+
+      setLoadedDataSets((prev) => ({ ...prev, certificates: true, batches: true }))
+    } catch (error) {
+      console.error('Certificates load error:', error)
+      toast.error('Failed to load certificates data')
+    }
+  }
+
+  // Reload all data (used after mutations)
+  const loadDashboardData = async () => {
+    // Reset loaded states to force fresh data
+    setLoadedDataSets({
+      overview: false,
+      courses: false,
+      students: false,
+      batches: false,
+      certificates: false,
+    })
+
+    // Load overview data first
+    await loadOverviewData()
+
+    // Load other data based on active view
+    switch (activeView) {
+      case 'students':
+        await loadStudentsData()
+        break
+      case 'batches':
+        await loadBatchesData()
+        break
+      case 'courses':
+        await loadCoursesData()
+        break
+      case 'certificates':
+        await loadCertificatesData()
+        break
     }
   }
 
@@ -511,7 +638,12 @@ export default function TeacherDashboard() {
   }, [user?.id, loadTeacherProfile])
 
   // Helper function to reset form state for new course creation
-  const openCreateCourseModal = () => {
+  const openCreateCourseModal = async () => {
+    // Ensure gurukuls data is loaded
+    if (!loadedDataSets.courses) {
+      await loadCoursesData()
+    }
+
     // Reset form to pristine state with empty/default values
     reset({
       gurukul_id: '',
@@ -833,20 +965,52 @@ export default function TeacherDashboard() {
     [],
   )
 
-  const handleIssueCertificateWithTemplate = async (enrollmentId: string, templateId: string) => {
+  const handleIssueCertificateWithTemplate = async (
+    enrollmentId: string,
+    templateId: string,
+    forceReissue = false,
+  ) => {
     if (user?.status !== 'active') {
       toast.error('Your teacher account must be activated before you can issue certificates')
       return
     }
+    if (issuingIndividualCert) {
+      return // Prevent multiple clicks
+    }
     try {
-      await issueCertificateWithTemplate(enrollmentId, templateId)
+      setIssuingIndividualCert(true)
+      await issueCertificateWithTemplate(enrollmentId, templateId, forceReissue)
       await loadDashboardData()
       setShowIssuanceModal(false)
       setSelectedEnrollmentForCert(null)
       setSelectedTemplate(null)
-      toast.success('Certificate issued successfully with template!')
-    } catch {
-      toast.error('Failed to issue certificate')
+      setExistingCertificatesCount(0) // Reset after successful issuance
+      toast.success(
+        '✅ Certificate issued successfully! Student will receive an email notification.',
+        { duration: 5000 },
+      )
+    } catch (error) {
+      // Check if certificate was already issued
+      if (
+        error instanceof Error &&
+        (error.message === 'CERTIFICATE_ALREADY_ISSUED' ||
+          error.name === 'CertificateAlreadyIssued')
+      ) {
+        toast.info('ℹ️ Certificate has already been issued to this student for this course.', {
+          duration: 4000,
+        })
+        // Refresh dashboard to update UI
+        await loadDashboardData()
+        setShowIssuanceModal(false)
+        setSelectedEnrollmentForCert(null)
+        setSelectedTemplate(null)
+        setExistingCertificatesCount(0) // Reset on error
+      } else {
+        console.error('Error issuing certificate:', error)
+        toast.error('Failed to issue certificate')
+      }
+    } finally {
+      setIssuingIndividualCert(false)
     }
   }
   const openIssuanceModal = (enrollmentId: string) => {
@@ -887,37 +1051,243 @@ export default function TeacherDashboard() {
     }
   }
 
-  const handleIndividualCertificate = (student: BatchStudentWithInfo) => {
-    // Implementation for individual certificate issuance
+  const handleIndividualCertificate = async (student: BatchStudentWithInfo) => {
+    // Check if already processing this student
+    if (processingStudentIds.has(student.student_id)) {
+      return
+    }
+
+    try {
+      setProcessingStudentIds((prev) => new Set(prev).add(student.student_id))
+
+      // Get the course_id from the student data (includes course_id now)
+      const courseId = student.course_id
+      if (!courseId) {
+        toast.error('No course associated with this batch')
+        return
+      }
+
+      // Find the enrollment for this student in this course
+      const enrollment = enrollments.find(
+        (e) => e.student_id === student.student_id && e.course_id === courseId,
+      )
+
+      if (!enrollment) {
+        toast.error(
+          `Student ${student.name} is not enrolled in the course. Please enroll them first.`,
+        )
+        return
+      }
+
+      // Check if enrollment is completed
+      if (enrollment.status !== 'completed') {
+        toast.error(
+          `Cannot issue certificate: Enrollment status is "${enrollment.status}". Please update ${student.name}'s enrollment status to "completed" first.`,
+        )
+        return
+      }
+
+      // Check if certificate already exists
+      const existingCert = certificates.find(
+        (cert) => cert.student_id === student.student_id && cert.course_id === courseId,
+      )
+
+      if (existingCert) {
+        // Show re-issue confirmation
+        setSelectedEnrollmentForCert(enrollment.id)
+        setExistingCertificatesCount(1)
+        setShowReIssueConfirmation(true)
+      } else {
+        // No existing certificate, show template selection modal
+        setSelectedEnrollmentForCert(enrollment.id)
+        setShowIssuanceModal(true)
+      }
+    } catch (error) {
+      console.error('Error preparing certificate issuance:', error)
+      toast.error('Failed to prepare certificate issuance')
+    } finally {
+      // Remove from processing after modal is shown or error occurs
+      setTimeout(() => {
+        setProcessingStudentIds((prev) => {
+          const next = new Set(prev)
+          next.delete(student.student_id)
+          return next
+        })
+      }, 500)
+    }
   }
 
-  const handleIssueBatchCertificates = async (templateId?: string) => {
+  const handleBatchCertificateClick = async (batchId: string) => {
+    try {
+      // Ensure required data is loaded
+      if (!loadedDataSets.certificates) {
+        await loadCertificatesData()
+      }
+
+      // Check for existing certificates before opening modal
+      const batchStudents = await getBatchStudents(batchId)
+
+      // Check how many already have certificates
+      const studentsWithCerts = batchStudents.filter((student) => {
+        return certificates.some((cert) => cert.student_id === student.student_id)
+      })
+
+      if (studentsWithCerts.length > 0) {
+        // Show confirmation dialog
+        setSelectedBatchForCertificate(batchId)
+        setExistingCertificatesCount(studentsWithCerts.length)
+        setShowReIssueConfirmation(true)
+      } else {
+        // No existing certificates, show template selection modal
+        setSelectedBatchForCertificate(batchId)
+        setShowBatchCertificateModal(true)
+      }
+    } catch (error) {
+      console.error('Error checking certificates:', error)
+      toast.error('Failed to check certificate status')
+    }
+  }
+
+  const handleIssueBatchCertificates = async (templateId?: string, forceReissue = false) => {
     if (!selectedBatchForCertificate) {
       toast.error('No batch selected')
       return
     }
 
+    if (issuingBatchCertificates) {
+      return // Prevent multiple clicks
+    }
+
     try {
-      const results = await issueBatchCertificates(selectedBatchForCertificate, templateId)
+      setIssuingBatchCertificates(true)
+      setBatchCertificateProgress([]) // Clear previous progress
 
-      const successCount = results.filter((r) => r.success).length
-      const failCount = results.filter((r) => !r.success).length
+      // Get batch students first
+      const batchStudents = await getBatchStudents(selectedBatchForCertificate)
 
-      if (successCount > 0) {
-        toast.success(`${successCount} certificates issued successfully!`)
+      if (!batchStudents || batchStudents.length === 0) {
+        toast.error('No students found in this batch')
+        return
       }
 
-      if (failCount > 0) {
-        toast.error(`${failCount} certificates failed to issue`)
+      setBatchCertificateProgress((prev) => [
+        ...prev,
+        `📋 Found ${batchStudents.length} students in batch`,
+      ])
+
+      // Get batch details with course
+      const batch = batches.find((b) => b.id === selectedBatchForCertificate)
+      const courseId = batch?.course?.id
+
+      if (!courseId) {
+        toast.error('No course associated with this batch')
+        setBatchCertificateProgress((prev) => [
+          ...prev,
+          `❌ Error: No course assigned to this batch`,
+        ])
+        return
+      }
+
+      let successCount = 0
+      let failCount = 0
+
+      // Process students one by one to show progress
+      for (let i = 0; i < batchStudents.length; i++) {
+        const student = batchStudents[i]
+        const studentNum = i + 1
+        const studentName = student.student?.full_name || student.name || 'Unknown Student'
+
+        try {
+          setBatchCertificateProgress((prev) => [
+            ...prev,
+            `👤 Student ${studentNum}/${batchStudents.length}: ${studentName} - Finding enrollment...`,
+          ])
+
+          // Get enrollment
+          const enrollment = enrollments.find(
+            (e) => e.student_id === student.student_id && e.course_id === courseId,
+          )
+
+          if (!enrollment) {
+            setBatchCertificateProgress((prev) => [
+              ...prev,
+              `❌ Student ${studentNum}: ${studentName} - Not enrolled in course`,
+            ])
+            failCount++
+            continue
+          }
+
+          if (enrollment.status !== 'completed') {
+            setBatchCertificateProgress((prev) => [
+              ...prev,
+              `❌ Student ${studentNum}: ${studentName} - Enrollment not completed`,
+            ])
+            failCount++
+            continue
+          }
+
+          setBatchCertificateProgress((prev) => [
+            ...prev,
+            `📝 Student ${studentNum}: ${studentName} - Generating certificate...`,
+          ])
+
+          // Issue certificate
+          await issueCertificateWithTemplate(enrollment.id, templateId || '', forceReissue)
+
+          setBatchCertificateProgress((prev) => [
+            ...prev,
+            `✅ Student ${studentNum}: ${studentName} - Certificate issued! Email sent.`,
+          ])
+          successCount++
+        } catch (error) {
+          console.error(`Error issuing certificate for ${studentName}:`, error)
+          setBatchCertificateProgress((prev) => [
+            ...prev,
+            `❌ Student ${studentNum}: ${studentName} - Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          ])
+          failCount++
+        }
+      }
+
+      // Final summary
+      setBatchCertificateProgress((prev) => [
+        ...prev,
+        `\n✨ Processing complete! ${successCount} certificates issued successfully, ${failCount} failed.`,
+      ])
+
+      if (successCount > 0 && failCount === 0) {
+        toast.success(
+          `✅ All ${successCount} certificates issued successfully! Students will receive email notifications.`,
+          { duration: 5000 },
+        )
+      } else if (successCount > 0 && failCount > 0) {
+        toast.success(
+          `${successCount} certificates issued. ${failCount} failed - check progress log for details.`,
+          { duration: 5000 },
+        )
+      } else if (failCount > 0) {
+        toast.error(`Failed to issue certificates for ${failCount} students`)
       }
 
       await loadDashboardData()
-      setShowBatchCertificateModal(false)
-      setSelectedBatchForCertificate(null)
-      setSelectedTemplate(null)
+
+      // Don't close modal immediately - let user see the progress
+      setTimeout(() => {
+        setShowBatchCertificateModal(false)
+        setSelectedBatchForCertificate(null)
+        setSelectedTemplate(null)
+        setExistingCertificatesCount(0)
+        setBatchCertificateProgress([])
+      }, 5000) // Close after 5 seconds
     } catch (error) {
       console.error('Error issuing batch certificates:', error)
       toast.error('Failed to issue batch certificates')
+      setBatchCertificateProgress((prev) => [
+        ...prev,
+        `❌ Critical error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      ])
+    } finally {
+      setIssuingBatchCertificates(false)
     }
   }
   const addLearningOutcome = () => {
@@ -988,7 +1358,9 @@ export default function TeacherDashboard() {
     ).length,
     // Batch-centric certificate management
     completedBatches: batches.filter((batch) => batch.status === 'completed').length,
-    batchesReadyForCertificates: completedBatchStudents.length,
+    batchesReadyForCertificates: completedBatchStudents.filter(
+      (student) => !hasCertificate(student.student_id, student.course_id),
+    ).length,
     // Calculate revenue from paid enrollments only - handles currency conversion and edge cases
     totalRevenue: enrollments
       .filter((e) => e.payment_status === 'paid' && e.course?.price && e.course.price > 0)
@@ -1053,52 +1425,72 @@ export default function TeacherDashboard() {
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, 10) // Show only latest 10 notifications
 
-  // Generate recent activity from real enrollment data
-  const recentActivity = enrollments
-    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-    .slice(0, 4)
-    .map((enrollment) => {
-      const timeDiff = Date.now() - new Date(enrollment.updated_at).getTime()
-      const hours = Math.floor(timeDiff / (1000 * 60 * 60))
-      const days = Math.floor(hours / 24)
-      let timeText = ''
-      if (days > 0) {
-        timeText = `${days} day${days > 1 ? 's' : ''} ago`
-      } else if (hours > 0) {
-        timeText = `${hours} hour${hours > 1 ? 's' : ''} ago`
-      } else {
-        timeText = 'Recently'
+  // Generate recent activity from enrollments and certificates
+  const getTimeText = (timestamp: string | Date) => {
+    const timeDiff = Date.now() - new Date(timestamp).getTime()
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60))
+    const days = Math.floor(hours / 24)
+    if (days > 0) {
+      return `${days} day${days > 1 ? 's' : ''} ago`
+    } else if (hours > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    } else {
+      return 'Recently'
+    }
+  }
+
+  // Combine enrollment and certificate activities
+  const allActivities = [
+    // Certificate issuance activities - use created_at for accurate timestamp (issue_date is date-only in DB)
+    ...certificates.map((cert) => {
+      const studentName = cert.student?.full_name
+        ? decryptField(cert.student.full_name) || 'student'
+        : 'student'
+      const certTimestamp = new Date(cert.created_at).getTime()
+      return {
+        type: 'certificate' as const,
+        message: `${studentName} was issued the certificate for ${cert.course?.title || 'course'}`,
+        time: getTimeText(cert.created_at),
+        icon: DocumentTextIcon,
+        timestamp: certTimestamp,
       }
+    }),
+    // Enrollment activities
+    ...enrollments.map((enrollment) => {
+      const studentName = enrollment.student?.full_name
+        ? decryptField(enrollment.student.full_name) || 'Student'
+        : 'Student'
+      const enrollTimestamp = new Date(enrollment.updated_at).getTime()
+
       if (enrollment.status === 'completed') {
         return {
-          type: 'completion',
-          message: `${enrollment.student?.full_name || 'Student'} completed ${enrollment.course?.title || 'course'}`,
-          time: timeText,
+          type: 'completion' as const,
+          message: `${studentName} completed ${enrollment.course?.title || 'course'}`,
+          time: getTimeText(enrollment.updated_at),
           icon: CheckCircleIcon,
-        }
-      } else if (hasCertificate(enrollment.student_id, enrollment.course_id)) {
-        return {
-          type: 'certificate',
-          message: `Certificate issued to ${enrollment.student?.full_name || 'student'}`,
-          time: timeText,
-          icon: DocumentTextIcon,
+          timestamp: enrollTimestamp,
         }
       } else if (enrollment.status === 'pending') {
         return {
-          type: 'enrollment',
-          message: `New enrollment request from ${enrollment.student?.full_name || 'student'} in ${enrollment.course?.title || 'course'}`,
-          time: timeText,
+          type: 'enrollment' as const,
+          message: `New enrollment request from ${studentName} in ${enrollment.course?.title || 'course'}`,
+          time: getTimeText(enrollment.updated_at),
           icon: UserGroupIcon,
+          timestamp: new Date(enrollment.updated_at).getTime(),
         }
       } else {
         return {
-          type: 'enrollment',
-          message: `${enrollment.student?.full_name || 'Student'} enrolled in ${enrollment.course?.title || 'course'}`,
-          time: timeText,
+          type: 'enrollment' as const,
+          message: `${studentName} enrolled in ${enrollment.course?.title || 'course'}`,
+          time: getTimeText(enrollment.updated_at),
           icon: BookOpenIcon,
+          timestamp: new Date(enrollment.updated_at).getTime(),
         }
       }
-    })
+    }),
+  ]
+
+  const recentActivity = allActivities.sort((a, b) => b.timestamp - a.timestamp).slice(0, 4)
   const quickActions = [
     {
       title: 'Create New Course',
@@ -3103,10 +3495,7 @@ export default function TeacherDashboard() {
                             ) : isCompleted ? (
                               <Button
                                 size="sm"
-                                onClick={() => {
-                                  setSelectedBatchForCertificate(batch.id)
-                                  setShowBatchCertificateModal(true)
-                                }}
+                                onClick={() => handleBatchCertificateClick(batch.id)}
                                 className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
                               >
                                 <TrophyIcon className="h-4 w-4 mr-2" />
@@ -3160,10 +3549,39 @@ export default function TeacherDashboard() {
                             <Button
                               size="sm"
                               onClick={() => handleIndividualCertificate(student)}
-                              className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold"
+                              disabled={processingStudentIds.has(student.student_id)}
+                              className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             >
-                              <TrophyIcon className="h-4 w-4 mr-1" />
-                              Issue Certificate
+                              {processingStudentIds.has(student.student_id) ? (
+                                <>
+                                  <svg
+                                    className="animate-spin h-4 w-4 mr-1"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                  </svg>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <TrophyIcon className="h-4 w-4 mr-1" />
+                                  Issue Certificate
+                                </>
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -5009,6 +5427,7 @@ export default function TeacherDashboard() {
                         setShowIssuanceModal(false)
                         setSelectedEnrollmentForCert(null)
                         setSelectedTemplate(null)
+                        setExistingCertificatesCount(0) // Reset when canceling
                       }}
                       className="border-gray-300"
                     >
@@ -5059,61 +5478,99 @@ export default function TeacherDashboard() {
                             template,
                           )
 
-                          toast.dismiss()
+                          // Store student and course names for modal display
+                          setPreviewStudentName(certificateData.studentName)
+                          setPreviewCourseName(certificateData.courseName)
 
-                          // Open preview in new window
-                          const previewWindow = window.open('', '_blank')
-                          if (previewWindow) {
-                            previewWindow.document.write(`
-                              <!DOCTYPE html>
-                              <html>
-                                <head>
-                                  <title>Certificate Preview</title>
-                                  <style>
-                                    body { margin: 0; padding: 20px; background: #f3f4f6; }
-                                    iframe { width: 100%; height: 90vh; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                                    .header { text-align: center; margin-bottom: 20px; }
-                                    h1 { color: #1f2937; }
-                                    .note { color: #6b7280; font-style: italic; }
-                                  </style>
-                                </head>
-                                <body>
-                                  <div class="header">
-                                    <h1>Certificate Preview</h1>
-                                    <p class="note">This is a preview. The actual certificate will have a unique number.</p>
-                                  </div>
-                                  <iframe src="${previewUrl}"></iframe>
-                                </body>
-                              </html>
-                            `)
-                            previewWindow.document.close()
-                          }
+                          // Show preview in modal
+                          setTemplatePreviewUrl(previewUrl)
+                          setShowTemplatePreviewModal(true)
+                          toast.dismiss()
                         } catch (error) {
                           toast.dismiss()
                           console.error('Preview error:', error)
                           toast.error('Failed to generate preview')
                         }
                       }}
-                      disabled={!selectedTemplate}
+                      disabled={!selectedTemplate || loadingPreview}
                       className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <EyeIcon className="h-4 w-4 mr-2" />
-                      Preview Certificate
+                      {loadingPreview ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 mr-2"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <EyeIcon className="h-4 w-4 mr-2" />
+                          Preview Certificate
+                        </>
+                      )}
                     </Button>
                     <Button
                       onClick={() => {
                         if (selectedTemplate && selectedEnrollmentForCert) {
+                          // Pass true for forceReissue if existingCertificatesCount > 0
+                          const shouldForceReissue = existingCertificatesCount > 0
                           handleIssueCertificateWithTemplate(
                             selectedEnrollmentForCert,
                             selectedTemplate,
+                            shouldForceReissue,
                           )
                         }
                       }}
-                      disabled={!selectedTemplate}
+                      disabled={!selectedTemplate || issuingIndividualCert}
                       className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <TrophyIcon className="h-4 w-4 mr-2" />
-                      Issue Certificate
+                      {issuingIndividualCert ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 mr-2"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Issuing...
+                        </>
+                      ) : (
+                        <>
+                          <TrophyIcon className="h-4 w-4 mr-2" />
+                          Issue Certificate
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -5711,6 +6168,7 @@ export default function TeacherDashboard() {
                         setShowBatchCertificateModal(false)
                         setSelectedBatchForCertificate(null)
                         setSelectedTemplate(null)
+                        setExistingCertificatesCount(0) // Reset when canceling
                       }}
                     >
                       Cancel
@@ -5718,16 +6176,95 @@ export default function TeacherDashboard() {
                     <Button
                       onClick={() => {
                         if (selectedTemplate) {
-                          handleIssueBatchCertificates(selectedTemplate)
+                          // Pass true for forceReissue if existingCertificatesCount > 0
+                          const shouldForceReissue = existingCertificatesCount > 0
+                          handleIssueBatchCertificates(selectedTemplate, shouldForceReissue)
                         }
                       }}
-                      disabled={!selectedTemplate}
+                      disabled={!selectedTemplate || issuingBatchCertificates}
                       className="bg-gradient-to-r from-purple-500 to-purple-600 disabled:opacity-50"
                     >
-                      <TrophyIcon className="h-4 w-4 mr-2" />
-                      Issue Batch Certificates
+                      {issuingBatchCertificates ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 mr-2"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Issuing Certificates...
+                        </>
+                      ) : (
+                        <>
+                          <TrophyIcon className="h-4 w-4 mr-2" />
+                          Issue Batch Certificates
+                        </>
+                      )}
                     </Button>
                   </div>
+
+                  {/* Progress Log */}
+                  {batchCertificateProgress.length > 0 && (
+                    <div className="mt-6 border-t border-gray-200 pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                        <svg
+                          className="animate-spin h-5 w-5 mr-2 text-purple-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Processing Progress
+                      </h3>
+                      <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                        <div className="space-y-2 font-mono text-sm">
+                          {batchCertificateProgress.map((message, index) => (
+                            <div
+                              key={index}
+                              className={`${
+                                message.includes('✅')
+                                  ? 'text-green-700'
+                                  : message.includes('❌')
+                                    ? 'text-red-700'
+                                    : message.includes('📋') || message.includes('✨')
+                                      ? 'text-purple-700 font-semibold'
+                                      : 'text-gray-700'
+                              }`}
+                            >
+                              {message}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -5735,8 +6272,134 @@ export default function TeacherDashboard() {
         </div>
       )}
 
+      {/* Re-issue Confirmation Modal */}
+      {showReIssueConfirmation && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="h-6 w-6 text-yellow-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900">Certificates Already Issued</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {existingCertificatesCount} student{existingCertificatesCount > 1 ? 's' : ''} in
+                    this batch already {existingCertificatesCount > 1 ? 'have' : 'has'} certificates
+                    issued.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-yellow-800">
+                  <strong>⚠️ Warning:</strong> Re-issuing will deactivate the previous certificates
+                  and issue new ones. This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowReIssueConfirmation(false)
+                    setSelectedBatchForCertificate(null)
+                    setSelectedEnrollmentForCert(null)
+                    setExistingCertificatesCount(0)
+                    setPendingBatchTemplateId(undefined)
+                  }}
+                  className="flex-1 border-gray-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowReIssueConfirmation(false)
+                    // Don't reset existingCertificatesCount - keep it so the template modal knows this is a re-issuance
+                    setPendingBatchTemplateId(undefined)
+                    // Show appropriate modal based on context
+                    if (selectedEnrollmentForCert) {
+                      // Individual student certificate re-issuance
+                      setShowIssuanceModal(true)
+                    } else if (selectedBatchForCertificate) {
+                      // Batch certificate re-issuance
+                      setShowBatchCertificateModal(true)
+                    }
+                  }}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+                >
+                  Yes, Re-issue Certificates
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Template Preview Modal */}
-      {showTemplatePreviewModal && allTemplates.length > 0 && (
+      {showTemplatePreviewModal && templatePreviewUrl && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-x-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Certificate Preview</h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {previewStudentName} - {previewCourseName}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    This is a preview. The actual certificate will have a unique certificate number.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowTemplatePreviewModal(false)
+                    setTemplatePreviewUrl(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 flex-grow overflow-y-auto bg-gray-50">
+              <iframe
+                src={templatePreviewUrl}
+                className="w-full h-[70vh] border-0 rounded-lg shadow-lg"
+                title="Certificate Preview"
+              />
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              <Button
+                onClick={() => {
+                  setShowTemplatePreviewModal(false)
+                  setTemplatePreviewUrl(null)
+                }}
+                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
+              >
+                Close Preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All Templates Preview Modal */}
+      {showTemplatePreviewModal && allTemplates.length > 0 && !templatePreviewUrl && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-x-hidden">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
             <div className="p-6 border-b border-gray-200 flex-shrink-0">

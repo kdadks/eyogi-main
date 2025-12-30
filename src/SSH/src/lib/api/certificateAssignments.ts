@@ -377,7 +377,7 @@ export const deleteCertificateAssignment = async (id: string) => {
 }
 // Get available gurukuls for assignment
 export const getAvailableGurukuls = async () => {
-  const gurukuls = await getGurukuls()
+  const { gurukuls } = await getGurukuls()
   return gurukuls.map((g) => ({
     id: g.id,
     name: g.name,
@@ -387,7 +387,7 @@ export const getAvailableGurukuls = async () => {
 // Get available courses for assignment
 export const getAvailableCourses = async (gurukulId?: string) => {
   const filters = gurukulId ? { gurukul_id: gurukulId } : undefined
-  const courses = await getCourses(filters)
+  const { courses } = await getCourses(filters)
   return courses.map((c) => ({
     id: c.id,
     title: c.title,

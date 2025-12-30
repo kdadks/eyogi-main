@@ -9,6 +9,7 @@ import {
   bulkIssueCertificates,
   getCertificatesFromTable,
   regenerateCertificate,
+  getCertificateLookupMap,
 } from '@/lib/api/certificates'
 import {
   getCertificateTemplates,
@@ -20,7 +21,7 @@ import {
   deleteCertificateAssignment,
   type CertificateAssignment,
 } from '@/lib/api/certificateAssignments'
-import { getAllEnrollments } from '@/lib/api/enrollments'
+import { getAllEnrollments, getCompletedEnrollmentsWithoutCertificate } from '@/lib/api/enrollments'
 import { getCourses } from '@/lib/api/courses'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { generateCertificatePDF, CertificateData } from '@/lib/pdf/certificateGenerator'
@@ -91,35 +92,32 @@ export default function CertificateManagement() {
   // All hooks must be called before any early returns
   const loadData = useCallback(async () => {
     try {
+      setLoading(true)
       // Load all data in parallel
+      // Optimization: Get certificate lookup map instead of full certificate objects
       const [
-        allEnrollments,
         templatesData,
         coursesResult,
         gurukulsResult,
         assignmentsData,
         certificatesData,
+        certificateLookupMap,
       ] = await Promise.all([
-        getAllEnrollments(),
         getCertificateTemplates(),
         getCourses(),
         getGurukuls(),
         getCertificateAssignments(),
-        getCertificatesFromTable(),
+        getCertificatesFromTable({ is_active: true }),
+        getCertificateLookupMap(), // O(n) single query instead of O(n*m)
       ])
+
       const coursesData = coursesResult.courses
       const gurukulData = gurukulsResult.gurukuls
 
-      // Helper function to check if student has certificate for course
-      const hasCertificate = (studentId: string, courseId: string): boolean => {
-        return certificatesData.some(
-          (cert) => cert.student_id === studentId && cert.course_id === courseId,
-        )
-      }
+      // Optimization: Use pre-filtered completed enrollments without certificate
+      const completedWithoutCerts =
+        await getCompletedEnrollmentsWithoutCertificate(certificateLookupMap)
 
-      const completedWithoutCerts = allEnrollments.filter(
-        (e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id),
-      )
       setCompletedEnrollments(completedWithoutCerts)
       setCertificates(certificatesData)
       setTemplates(templatesData)
@@ -131,9 +129,8 @@ export default function CertificateManagement() {
       if (templatesData.length > 0 && !selectedTemplate) {
         setSelectedTemplate(templatesData[0].id)
       }
-
-      // Certificates already loaded above, no need to reload
-    } catch {
+    } catch (error) {
+      console.error('Failed to load certificate data:', error)
       toast.error('Failed to load certificate data')
     } finally {
       setLoading(false)
@@ -148,10 +145,17 @@ export default function CertificateManagement() {
       return
     }
     try {
+      toast.loading('Issuing certificate...')
       await issueCertificateWithTemplate(enrollmentId, selectedTemplate)
-      await loadData()
+      // Optimized: Only remove from completed enrollments instead of full reload
+      setCompletedEnrollments((prev) => prev.filter((e) => e.id !== enrollmentId))
+      // Also fetch updated certificates list
+      const updatedCerts = await getCertificatesFromTable({ is_active: true })
+      setCertificates(updatedCerts)
+      toast.dismiss()
       toast.success('Certificate issued successfully')
     } catch (error) {
+      toast.dismiss()
       const errorMessage = error instanceof Error ? error.message : 'Failed to issue certificate'
       toast.error(errorMessage)
     }
@@ -166,15 +170,22 @@ export default function CertificateManagement() {
       return
     }
     try {
+      toast.loading('Issuing certificates...')
       await Promise.all(
         Array.from(selectedEnrollments).map((enrollmentId) =>
           issueCertificateWithTemplate(enrollmentId, selectedTemplate),
         ),
       )
-      await loadData()
+      // Optimized: Remove issued enrollments from state
+      setCompletedEnrollments((prev) => prev.filter((e) => !selectedEnrollments.has(e.id)))
+      // Also fetch updated certificates list
+      const updatedCerts = await getCertificatesFromTable({ is_active: true })
+      setCertificates(updatedCerts)
       setSelectedEnrollments(new Set())
+      toast.dismiss()
       toast.success(`${selectedEnrollments.size} certificates issued successfully`)
     } catch {
+      toast.dismiss()
       toast.error('Failed to issue certificates')
     }
   }
@@ -207,22 +218,29 @@ export default function CertificateManagement() {
       message: `Are you sure you want to delete "${templateToDelete.name}"?`,
       onConfirm: async () => {
         try {
+          setConfirmDialog((prev) => ({ ...prev, loading: true }))
           await deleteCertificateTemplate(templateId)
-          await loadData()
+          // Optimized: Remove from state instead of full reload
+          setTemplates((prev) => prev.filter((t) => t.id !== templateId))
           toast.success('Template deleted successfully')
         } catch {
           toast.error('Failed to delete template')
+        } finally {
+          setConfirmDialog((prev) => ({ ...prev, isOpen: false, loading: false }))
         }
-        setConfirmDialog((prev) => ({ ...prev, isOpen: false }))
       },
     })
   }
   const handleDuplicateTemplate = async (templateId: string) => {
     try {
-      await duplicateCertificateTemplate(templateId)
-      await loadData()
+      toast.loading('Duplicating template...')
+      const newTemplate = await duplicateCertificateTemplate(templateId)
+      // Optimized: Add new template to state instead of full reload
+      setTemplates((prev) => [newTemplate, ...prev])
+      toast.dismiss()
       toast.success('Template duplicated successfully')
     } catch {
+      toast.dismiss()
       toast.error('Failed to duplicate template')
     }
   }
@@ -293,8 +311,9 @@ export default function CertificateManagement() {
           setConfirmDialog((prev) => ({ ...prev, loading: true }))
 
           await deleteCertificateAssignment(assignmentId)
+          // Optimized: Remove from state instead of full reload
+          setAssignments((prev) => prev.filter((a) => a.id !== assignmentId))
           toast.success('Assignment removed successfully')
-          await loadData() // Reload data after deletion
 
           // Close dialog after successful deletion
           setConfirmDialog((prev) => ({ ...prev, isOpen: false, loading: false }))
@@ -981,9 +1000,11 @@ export default function CertificateManagement() {
       <TemplateAssignmentModal
         isOpen={assignmentModalOpen}
         onClose={() => setAssignmentModalOpen(false)}
-        onSave={async () => {
-          await loadData() // Reload data after assignment
+        onSave={async (newAssignment) => {
+          // Optimized: Add new assignment to state instead of full reload
+          setAssignments((prev) => [newAssignment, ...prev])
           setAssignmentModalOpen(false)
+          toast.success('Template assigned successfully')
         }}
         templates={templates}
         userId={profile?.id || ''}

@@ -839,7 +839,7 @@ export async function getCompletedBatchStudents(
         .select(
           `
           *,
-          student:user_profiles!batch_students_student_id_fkey(
+          student:profiles!batch_students_student_id_fkey(
             id,
             full_name,
             email
@@ -866,6 +866,7 @@ export async function getCompletedBatchStudents(
         email: bs.student?.email || 'No Email',
         batch_name: batch.name,
         course_title: batch.batch_courses?.[0]?.course?.title || 'Unknown Course',
+        course_id: batch.batch_courses?.[0]?.course?.id || null,
       }))
     })
 
@@ -1122,6 +1123,42 @@ async function updateBatchOverallProgress(batchId: string): Promise<void> {
     ) {
       if (progressPercentage === 100) {
         updateData.status = 'completed'
+
+        // Auto-complete enrollments for all students in this batch
+        // Get the course_id from batch_courses
+        const { data: batchCourseData } = await supabaseAdmin
+          .from('batch_courses')
+          .select('course_id')
+          .eq('batch_id', batchId)
+          .eq('is_active', true)
+          .limit(1)
+          .single()
+
+        if (batchCourseData && batchCourseData.course_id) {
+          // Get all active students in this batch
+          const { data: batchStudents } = await supabaseAdmin
+            .from('batch_students')
+            .select('student_id')
+            .eq('batch_id', batchId)
+            .eq('is_active', true)
+
+          if (batchStudents && batchStudents.length > 0) {
+            const studentIds = batchStudents.map((bs) => bs.student_id)
+
+            // Update all enrollments for these students in this course to 'completed'
+            await supabaseAdmin
+              .from('enrollments')
+              .update({
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                progress_percentage: 100,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('course_id', batchCourseData.course_id)
+              .in('student_id', studentIds)
+              .in('status', ['approved', 'pending']) // Only update non-completed enrollments
+          }
+        }
       } else if (progressPercentage > 0) {
         updateData.status = 'in_progress'
       } else if (batch.status === 'not_started') {

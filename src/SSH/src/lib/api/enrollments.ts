@@ -430,6 +430,66 @@ export async function getAllEnrollments(): Promise<Enrollment[]> {
     CACHE_DURATIONS.ENROLLMENTS, // 1 hour
   )
 }
+
+/**
+ * Get only completed enrollments without certificate - optimized for certificate management
+ * Fetches minimal data (only IDs and essential info) for faster loading
+ */
+export async function getCompletedEnrollmentsWithoutCertificate(
+  certificateLookupMap: Map<string, Set<string>>,
+): Promise<Enrollment[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('enrollments')
+      .select(
+        `
+        *,
+        courses (
+          id,
+          title,
+          course_number,
+          gurukul_id,
+          gurukuls(*)
+        ),
+        profiles!enrollments_student_id_fkey (
+          id,
+          full_name,
+          email,
+          phone,
+          student_id
+        )
+      `,
+      )
+      .eq('status', 'completed')
+      .order('enrolled_at', { ascending: false })
+
+    if (error) {
+      return []
+    }
+
+    // Filter out enrollments that already have certificates
+    const filteredData =
+      data?.filter((enrollment) => {
+        const certificateSet = certificateLookupMap.get(enrollment.student_id)
+        return !certificateSet || !certificateSet.has(enrollment.course_id)
+      }) || []
+
+    // Transform the data
+    return filteredData.map((enrollment) => ({
+      ...enrollment,
+      course: enrollment.courses
+        ? {
+            ...enrollment.courses,
+            gurukul: enrollment.courses.gurukuls,
+          }
+        : null,
+      student: enrollment.profiles ? decryptProfileFields(enrollment.profiles) : null,
+    }))
+  } catch (error) {
+    console.error('Error fetching completed enrollments:', error)
+    return []
+  }
+}
 /**
  * Get enrollments for all children of a parent
  */
@@ -669,8 +729,6 @@ export async function getPendingEnrollments(teacherId: string): Promise<Enrollme
           student: item.student ? decryptProfileFields(item.student) : undefined,
         }))
 
-        console.log(`Found ${mappedData.length} pending enrollments for teacher ${teacherId}`)
-        console.log('Pending enrollments data:', mappedData)
         return mappedData as unknown as Enrollment[]
       } catch (error) {
         console.error('Error in getPendingEnrollments:', error)

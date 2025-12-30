@@ -7,6 +7,61 @@ if (typeof window !== 'undefined') {
   const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 }
+
+/**
+ * Compress an image to reduce file size before embedding in PDF
+ * @param imageUrl URL or data URL of the image
+ * @param maxWidth Maximum width in pixels (default: 1400 for A4 landscape at ~150 DPI)
+ * @param quality JPEG quality 0-1 (default: 0.65 for good balance)
+ * @returns Compressed image as data URL
+ */
+async function compressImage(
+  imageUrl: string,
+  maxWidth: number = 1400,
+  quality: number = 0.65,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        // Calculate new dimensions while maintaining aspect ratio
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Convert to JPEG with compression
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedDataUrl)
+      } catch (error) {
+        reject(error)
+      }
+    }
+
+    img.onerror = () => reject(new Error(`Failed to load image: ${imageUrl}`))
+    img.src = imageUrl
+  })
+}
+
 export interface CertificateData {
   studentName: string
   studentId: string
@@ -66,6 +121,7 @@ export class CertificateGenerator {
       orientation: 'landscape',
       unit: 'mm',
       format: 'a4',
+      compress: true, // Enable PDF compression
     })
   }
   async generateCertificate(data: CertificateData, template?: CertificateTemplate): Promise<Blob> {
@@ -111,42 +167,17 @@ export class CertificateGenerator {
         throw new Error('Template image URL not found')
       }
 
-      console.log('Loading template image:', templateImageUrl)
+      // Compress the image before embedding (1400px width, 65% quality for optimal file size)
+      const compressedImageUrl = await compressImage(templateImageUrl, 1400, 0.65)
 
-      // Fetch the image
-      const response = await fetch(templateImageUrl)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch template image: ${response.statusText}`)
-      }
-
-      const blob = await response.blob()
-      const arrayBuffer = await blob.arrayBuffer()
-      const uint8Array = new Uint8Array(arrayBuffer)
-      const binaryString = Array.from(uint8Array)
-        .map((byte) => String.fromCharCode(byte))
-        .join('')
-      const base64String = btoa(binaryString)
-
-      // Determine image format
-      const format = templateImageUrl.toLowerCase().includes('.png') ? 'PNG' : 'JPEG'
-
-      // Add the template image as the background
-      this.pdf.addImage(
-        `data:image/${format.toLowerCase()};base64,${base64String}`,
-        format,
-        0,
-        0,
-        width,
-        height,
-      )
+      // Add the compressed template image as the background
+      this.pdf.addImage(compressedImageUrl, 'JPEG', 0, 0, width, height)
 
       // Get dynamic fields from template
       const dynamicFields = template.template_data?.dynamic_fields || []
 
       // If dynamic fields are configured, use them
       if (dynamicFields.length > 0) {
-        console.log('Rendering certificate with dynamic fields:', dynamicFields.length)
-
         // Load the template image to get actual dimensions
         const img = new Image()
         img.src = templateImageUrl
@@ -157,7 +188,6 @@ export class CertificateGenerator {
 
         const templateWidth = img.naturalWidth
         const templateHeight = img.naturalHeight
-        console.log('Template dimensions:', templateWidth, 'x', templateHeight)
 
         // Map certificate data to field values
         const fieldValues: Record<string, string> = {
@@ -186,8 +216,6 @@ export class CertificateGenerator {
           const yPos = (field.y / templateHeight) * height
           const fieldWidth = (field.width / templateWidth) * width
 
-          console.log(`Rendering field ${field.name} at x:${xPos}, y:${yPos} (original: ${field.x}, ${field.y})`)
-
           // Parse color (hex to RGB) and apply formatting
           const color = this.hexToRgb(field.fontColor || '#000000')
           this.pdf.setTextColor(color.r, color.g, color.b)
@@ -205,9 +233,14 @@ export class CertificateGenerator {
             pdfFont = 'helvetica' // Default for Arial, Helvetica, Sans-serif, etc.
           }
 
-          const fontStyle = field.isBold && field.isItalic ? 'bolditalic' :
-                           field.isBold ? 'bold' :
-                           field.isItalic ? 'italic' : 'normal'
+          const fontStyle =
+            field.isBold && field.isItalic
+              ? 'bolditalic'
+              : field.isBold
+                ? 'bold'
+                : field.isItalic
+                  ? 'italic'
+                  : 'normal'
           this.pdf.setFont(pdfFont, fontStyle)
 
           // Scale font size appropriately
@@ -230,7 +263,7 @@ export class CertificateGenerator {
       }
 
       // Get template dimensions (reuse from above if available)
-      let templateWidth = 700  // Default fallback
+      let templateWidth = 700 // Default fallback
       let templateHeight = 500 // Default fallback
 
       if (dynamicFields.length > 0) {
@@ -327,7 +360,11 @@ export class CertificateGenerator {
         let pdfFont = 'helvetica'
         const fontFamily = (textMsg.fontFamily || 'Arial').toLowerCase()
 
-        if (fontFamily.includes('times') || fontFamily.includes('serif') || fontFamily.includes('georgia')) {
+        if (
+          fontFamily.includes('times') ||
+          fontFamily.includes('serif') ||
+          fontFamily.includes('georgia')
+        ) {
           pdfFont = 'times'
         } else if (fontFamily.includes('courier') || fontFamily.includes('mono')) {
           pdfFont = 'courier'
@@ -336,9 +373,14 @@ export class CertificateGenerator {
         }
 
         // Set font with proper style
-        const fontStyle = textMsg.isBold && textMsg.isItalic ? 'bolditalic' :
-                         textMsg.isBold ? 'bold' :
-                         textMsg.isItalic ? 'italic' : 'normal'
+        const fontStyle =
+          textMsg.isBold && textMsg.isItalic
+            ? 'bolditalic'
+            : textMsg.isBold
+              ? 'bold'
+              : textMsg.isItalic
+                ? 'italic'
+                : 'normal'
         this.pdf.setFont(pdfFont, fontStyle)
 
         // Scale font size
@@ -362,7 +404,7 @@ export class CertificateGenerator {
           }
           // For 'left', textX remains as xPos
 
-          this.pdf.text(line, textX, yPos + (index * scaledFontSize * 0.4))
+          this.pdf.text(line, textX, yPos + index * scaledFontSize * 0.4)
         })
       }
 

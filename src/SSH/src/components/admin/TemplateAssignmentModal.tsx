@@ -19,7 +19,7 @@ import {
 interface TemplateAssignmentModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: () => void
+  onSave: (assignment?: any) => void
   templates: CertificateTemplate[]
   userId: string
 }
@@ -126,9 +126,9 @@ export default function TemplateAssignmentModal({
         delete assignmentData.gurukul_id
       }
       // Assignment data prepared for creation
-      await createCertificateAssignment(assignmentData, userId)
+      const newAssignment = await createCertificateAssignment(assignmentData, userId)
       toast.success('Template assigned successfully')
-      onSave()
+      onSave(newAssignment)
       handleClose()
     } catch {
       toast.error('Failed to assign template')

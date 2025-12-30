@@ -414,6 +414,7 @@ export interface BatchStudentWithInfo extends BatchStudent {
   email: string
   batch_name: string
   course_title: string
+  course_id: string | null
   progress_percentage?: number
 }
 

@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../supabase'
 import { Certificate, CertificateTemplate } from '@/types'
 import { generateCertificatePDF, CertificateData } from '../pdf/certificateGenerator'
-import { decryptProfileFields } from '../encryption'
+import { decryptProfileFields, decryptField } from '../encryption'
 
 /**
  * Send certificate issued email notification to parent
@@ -59,8 +59,6 @@ export async function generateAndUploadCertificatePDF(
   template?: CertificateTemplate,
 ): Promise<string> {
   try {
-    console.log('Generating PDF for certificate:', certificateNumber)
-
     // Generate the PDF blob
     const pdfBlob = await generateCertificatePDF(certificateData, template)
 
@@ -68,8 +66,6 @@ export async function generateAndUploadCertificatePDF(
     const fileName = `${certificateNumber}.pdf`
     const filePath = `certificates/${fileName}`
     const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
-
-    console.log('Uploading certificate PDF:', { filePath, fileSize: pdfBlob.size })
 
     // Upload to Supabase storage
     const { data, error } = await supabaseAdmin.storage
@@ -83,16 +79,10 @@ export async function generateAndUploadCertificatePDF(
       throw new Error(`PDF upload failed: ${error.message}`)
     }
 
-    console.log('PDF uploaded successfully:', { path: data.path })
-
     // Get public URL
     const { data: publicUrlData } = supabaseAdmin.storage
       .from('certificates')
       .getPublicUrl(data.path)
-
-    console.log('Certificate PDF URL generated:', {
-      url: publicUrlData.publicUrl,
-    })
 
     return publicUrlData.publicUrl
   } catch (error) {
@@ -174,14 +164,6 @@ export async function createCertificate(certificateData: {
     const verificationCode = Math.random().toString(36).substr(2, 9).toUpperCase()
     const now = new Date().toISOString()
 
-    console.log('Creating certificate record:', {
-      studentId: certificateData.student_id,
-      courseId: certificateData.course_id,
-      templateId: certificateData.template_id,
-      certificateNumber,
-      verificationCode,
-    })
-
     const { data, error } = await supabaseAdmin
       .from('certificates')
       .insert({
@@ -216,12 +198,6 @@ export async function createCertificate(certificateData: {
       console.error('Error creating certificate:', { error, certificateData })
       throw new Error(`Failed to create certificate: ${error.message}`)
     }
-
-    console.log('Certificate created successfully:', {
-      certificateId: data.id,
-      studentId: data.student_id,
-      courseId: data.course_id,
-    })
 
     // Transform data to match interface
     return {
@@ -286,6 +262,37 @@ export async function getCertificatesFromTable(filters?: {
   } catch (error) {
     console.error('Error fetching certificates from table:', error)
     return []
+  }
+}
+
+/**
+ * Get certificate lookup map for fast checking - returns only essential IDs
+ * This is much faster than fetching full certificate objects when you just need to check existence
+ */
+export async function getCertificateLookupMap(): Promise<Map<string, Set<string>>> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('certificates')
+      .select('student_id, course_id')
+      .eq('is_active', true)
+
+    if (error) {
+      console.error('Error fetching certificate lookup:', error)
+      return new Map()
+    }
+
+    // Build a map for O(1) lookup: student_id -> Set<course_id>
+    const lookupMap = new Map<string, Set<string>>()
+    for (const cert of data || []) {
+      if (!lookupMap.has(cert.student_id)) {
+        lookupMap.set(cert.student_id, new Set())
+      }
+      lookupMap.get(cert.student_id)!.add(cert.course_id)
+    }
+    return lookupMap
+  } catch (error) {
+    console.error('Error building certificate lookup map:', error)
+    return new Map()
   }
 }
 
@@ -561,12 +568,25 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
     throw new Error('No active student certificate template found in database')
   }
 
+  // Fetch teacher from course_assignments
+  let teacherId = null
+  const { data: courseAssignment } = await supabaseAdmin
+    .from('course_assignments')
+    .select('teacher_id')
+    .eq('course_id', enrollment.course_id)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (courseAssignment) {
+    teacherId = courseAssignment.teacher_id
+  }
+
   // Create certificate in the certificates table
   const certificate = await createCertificate({
     student_id: enrollment.student_id,
     course_id: enrollment.course_id,
     template_id: templateId,
-    teacher_id: null, // Could be enhanced to include teacher ID
+    teacher_id: teacherId, // Use the teacher ID from course assignment
     title: `Certificate of Completion - ${enrollment.courses?.title || 'Course'}`,
     completion_date: enrollment.completed_at || new Date().toISOString(),
     certificate_data: {
@@ -622,13 +642,16 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
       return certificate
     }
 
-    // Send email notification to parent
-    await sendCertificateEmailNotification(
-      enrollment.profiles?.full_name || 'Student',
-      enrollment.courses?.title || 'Course',
-      pdfUrl,
-      enrollment.profiles?.parent?.email,
-    )
+    // Send email notification to parent if available, otherwise to student
+    const recipientEmail = enrollment.profiles?.parent?.email || enrollment.profiles?.email
+    if (recipientEmail) {
+      await sendCertificateEmailNotification(
+        enrollment.profiles?.full_name || 'Student',
+        enrollment.courses?.title || 'Course',
+        pdfUrl,
+        recipientEmail,
+      )
+    }
 
     return {
       ...updatedCert,
@@ -647,53 +670,113 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
 export async function issueCertificateWithTemplate(
   enrollmentId: string,
   templateId: string,
+  forceReissue = false,
 ): Promise<Certificate> {
-  console.log('issueCertificateWithTemplate called with:', { enrollmentId, templateId })
+  console.log('issueCertificateWithTemplate called with:', {
+    enrollmentId,
+    templateId,
+    forceReissue,
+  })
 
-  // Get enrollment details with parent email (via parent_id relationship)
+  // First, get the basic enrollment data
   const { data: enrollment, error: enrollmentError } = await supabaseAdmin
     .from('enrollments')
-    .select(
-      `
-      *,
-      courses (*),
-      profiles!enrollments_student_id_fkey (
-        *,
-        parent:profiles!profiles_parent_id_fkey(email, full_name)
-      )
-    `,
-    )
+    .select('*')
     .eq('id', enrollmentId)
     .single()
 
   if (enrollmentError || !enrollment) {
     console.error('Enrollment not found:', { enrollmentId, enrollmentError })
-    throw new Error('Enrollment not found')
+    console.error('Full enrollment error details:', JSON.stringify(enrollmentError, null, 2))
+    throw new Error(`Enrollment not found: ${enrollmentError?.message || 'Unknown error'}`)
   }
 
-  console.log('Enrollment found:', {
-    enrollmentId,
-    studentId: enrollment.student_id,
-    courseId: enrollment.course_id,
-    status: enrollment.status,
-    studentName: enrollment.profiles?.full_name,
-  })
+  // Fetch course data separately
+  const { data: course } = await supabaseAdmin
+    .from('courses')
+    .select('*')
+    .eq('id', enrollment.course_id)
+    .single()
 
-  if (enrollment.status !== 'completed') {
-    console.error('Enrollment status is not completed:', { status: enrollment.status })
+  // Fetch teacher from course_assignments
+  let teacherId = null
+  const { data: courseAssignment } = await supabaseAdmin
+    .from('course_assignments')
+    .select('teacher_id')
+    .eq('course_id', enrollment.course_id)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (courseAssignment) {
+    teacherId = courseAssignment.teacher_id
+  }
+
+  // Fetch student profile separately
+  const { data: studentProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('id', enrollment.student_id)
+    .single()
+
+  // Fetch parent profile if exists
+  let parentProfile = null
+  if (studentProfile?.parent_id) {
+    const { data: parent } = await supabaseAdmin
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', studentProfile.parent_id)
+      .single()
+    parentProfile = parent
+  }
+
+  // Decrypt student name before using it
+  const decryptedStudentName = decryptField(studentProfile?.full_name) || 'Student'
+  const decryptedParentName = parentProfile?.full_name
+    ? decryptField(parentProfile.full_name)
+    : null
+
+  // Combine data in the format expected by the rest of the function
+  const enrichedEnrollment = {
+    ...enrollment,
+    courses: course,
+    profiles: {
+      ...studentProfile,
+      full_name: decryptedStudentName, // Use decrypted name
+      parent: parentProfile
+        ? {
+            ...parentProfile,
+            full_name: decryptedParentName,
+          }
+        : null,
+    },
+  }
+
+  if (enrichedEnrollment.status !== 'completed') {
+    console.error('Enrollment status is not completed:', { status: enrichedEnrollment.status })
     throw new Error('Can only issue certificates for completed courses')
   }
 
-  // Check if certificate already exists in certificates table
-  const existingCertificate = await getCertificatesFromTable({
-    student_id: enrollment.student_id,
-    course_id: enrollment.course_id,
-    is_active: true,
-  })
+  // Check if certificate already exists in certificates table (skip if forcing re-issue)
+  if (!forceReissue) {
+    const existingCertificate = await getCertificatesFromTable({
+      student_id: enrichedEnrollment.student_id,
+      course_id: enrichedEnrollment.course_id,
+      is_active: true,
+    })
 
-  if (existingCertificate.length > 0) {
-    console.error('Certificate already exists for this enrollment')
-    throw new Error('Certificate already issued for this enrollment')
+    if (existingCertificate.length > 0) {
+      const error = new Error('CERTIFICATE_ALREADY_ISSUED')
+      error.name = 'CertificateAlreadyIssued'
+      throw error
+    }
+  } else {
+    // Deactivate existing certificates if forcing re-issue
+    await supabaseAdmin
+      .from('certificates')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('student_id', enrichedEnrollment.student_id)
+      .eq('course_id', enrichedEnrollment.course_id)
+      .eq('is_active', true)
   }
 
   // Get the certificate template
@@ -708,24 +791,18 @@ export async function issueCertificateWithTemplate(
     throw new Error('Certificate template not found')
   }
 
-  console.log('Creating certificate with:', {
-    studentId: enrollment.student_id,
-    courseId: enrollment.course_id,
-    templateId: templateId,
-  })
-
   // Create certificate in the certificates table (without file_url initially)
   const certificate = await createCertificate({
-    student_id: enrollment.student_id,
-    course_id: enrollment.course_id,
+    student_id: enrichedEnrollment.student_id,
+    course_id: enrichedEnrollment.course_id,
     template_id: templateId,
-    teacher_id: null, // Could be enhanced to include teacher ID
-    title: `Certificate of Completion - ${enrollment.courses?.title || 'Course'}`,
-    completion_date: enrollment.completed_at || new Date().toISOString(),
+    teacher_id: teacherId, // Use the teacher ID from course assignment
+    title: `Certificate of Completion - ${enrichedEnrollment.courses?.title || 'Course'}`,
+    completion_date: enrichedEnrollment.completed_at || new Date().toISOString(),
     certificate_data: {
-      student_name: enrollment.profiles?.full_name || 'Student',
-      course_title: enrollment.courses?.title || 'Course',
-      completion_date: enrollment.completed_at || new Date().toISOString(),
+      student_name: enrichedEnrollment.profiles?.full_name || 'Student',
+      course_title: enrichedEnrollment.courses?.title || 'Course',
+      completion_date: enrichedEnrollment.completed_at || new Date().toISOString(),
       enrollment_id: enrollmentId, // Keep reference to original enrollment
     },
   })
@@ -733,12 +810,12 @@ export async function issueCertificateWithTemplate(
   // Generate and upload PDF after certificate is created
   try {
     const certificateData: CertificateData = {
-      studentName: enrollment.profiles?.full_name || 'Student',
-      studentId: enrollment.student_id,
-      courseName: enrollment.courses?.title || 'Course',
-      courseId: enrollment.course_id,
+      studentName: enrichedEnrollment.profiles?.full_name || 'Student',
+      studentId: enrichedEnrollment.student_id,
+      courseName: enrichedEnrollment.courses?.title || 'Course',
+      courseId: enrichedEnrollment.course_id,
       gurukulName: 'eYogi Gurukul',
-      completionDate: enrollment.completed_at || new Date().toISOString(),
+      completionDate: enrichedEnrollment.completed_at || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
       verificationCode: certificate.verification_code,
     }
@@ -770,13 +847,17 @@ export async function issueCertificateWithTemplate(
       return certificate
     }
 
-    // Send email notification to parent
-    await sendCertificateEmailNotification(
-      enrollment.profiles?.full_name || 'Student',
-      enrollment.courses?.title || 'Course',
-      pdfUrl,
-      enrollment.profiles?.parent?.email,
-    )
+    // Send email notification to parent if available, otherwise to student
+    const recipientEmail =
+      enrichedEnrollment.profiles?.parent?.email || enrichedEnrollment.profiles?.email
+    if (recipientEmail) {
+      await sendCertificateEmailNotification(
+        enrichedEnrollment.profiles?.full_name || 'Student',
+        enrichedEnrollment.courses?.title || 'Course',
+        pdfUrl,
+        recipientEmail,
+      )
+    }
 
     return {
       ...updatedCert,
@@ -912,6 +993,7 @@ export interface BatchCertificateResult {
 export async function issueBatchCertificates(
   batchId: string,
   templateId?: string,
+  forceReissue = false,
 ): Promise<BatchCertificateResult[]> {
   try {
     // Import getBatchStudents dynamically to avoid circular dependency
@@ -927,7 +1009,17 @@ export async function issueBatchCertificates(
     // Get batch details with course information
     const { data: batchDetails, error: batchError } = await supabaseAdmin
       .from('batches')
-      .select('*')
+      .select(
+        `
+        *,
+        batch_courses!inner (
+          course:courses (
+            id,
+            title
+          )
+        )
+      `,
+      )
       .eq('id', batchId)
       .single()
 
@@ -935,27 +1027,53 @@ export async function issueBatchCertificates(
       throw new Error('Failed to fetch batch details')
     }
 
+    // Get the course_id from batch_courses
+    const courseId = (batchDetails as any).batch_courses?.[0]?.course?.id
+    if (!courseId) {
+      throw new Error('No course associated with this batch')
+    }
+
     // For each student, check if they have a completed enrollment and issue certificate
     const certificatePromises = batchStudents.map(async (batchStudent) => {
       try {
-        // Check if enrollment exists and is completed
+        // Get student name from the student profile
+        const studentName = (batchStudent as any).student?.full_name || 'Unknown Student'
+
+        // Check if enrollment exists for this student
         const { data: existingEnrollment, error: enrollmentError } = await supabaseAdmin
           .from('enrollments')
           .select('*')
           .eq('student_id', batchStudent.student_id)
-          .eq('course_id', batchDetails.course_id)
-          .eq('status', 'completed')
-          .single()
+          .eq('course_id', courseId)
+          .maybeSingle()
 
-        if (enrollmentError || !existingEnrollment) {
+        if (!existingEnrollment) {
+          // Student is in batch but not enrolled in the course
           throw new Error(
-            `No completed enrollment found for student ${batchStudent.student_id}. Student must be manually enrolled by teacher first.`,
+            `Student "${studentName}" is not enrolled in the course. Please enroll the student first before issuing certificates.`,
           )
+        }
+
+        // Check if enrollment is completed
+        if (existingEnrollment.status !== 'completed') {
+          throw new Error(
+            `Student "${studentName}" has not completed the course (status: ${existingEnrollment.status}). Only completed enrollments can receive certificates.`,
+          )
+        }
+
+        // If forceReissue is true, delete existing certificate first
+        if (forceReissue) {
+          await supabaseAdmin
+            .from('certificates')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('student_id', batchStudent.student_id)
+            .eq('course_id', courseId)
+            .eq('is_active', true)
         }
 
         // Issue certificate
         if (templateId) {
-          await issueCertificateWithTemplate(existingEnrollment.id, templateId)
+          await issueCertificateWithTemplate(existingEnrollment.id, templateId, forceReissue)
         } else {
           await issueCertificate(existingEnrollment.id)
         }
@@ -995,8 +1113,6 @@ export async function issueBatchCertificates(
  * Regenerate certificate PDF with the latest template
  */
 export async function regenerateCertificate(certificateId: string): Promise<Certificate> {
-  console.log('regenerateCertificate called with:', { certificateId })
-
   // Get certificate details with all relations
   const { data: certificate, error: certError } = await supabaseAdmin
     .from('certificates')
@@ -1016,13 +1132,6 @@ export async function regenerateCertificate(certificateId: string): Promise<Cert
     throw new Error('Certificate not found')
   }
 
-  console.log('Certificate found:', {
-    certificateId,
-    studentId: certificate.student_id,
-    courseId: certificate.course_id,
-    templateId: certificate.template_id,
-  })
-
   // Get the template
   const { data: template, error: templateError } = await supabaseAdmin
     .from('certificate_templates')
@@ -1038,15 +1147,15 @@ export async function regenerateCertificate(certificateId: string): Promise<Cert
     throw new Error('Certificate template not found')
   }
 
-  console.log('Regenerating certificate with template:', {
-    templateId: template.id,
-    templateName: template.name,
-  })
-
   // Generate and upload new PDF
   try {
+    // Decrypt student name if encrypted
+    const decryptedStudentName = certificate.student?.full_name
+      ? decryptField(certificate.student.full_name) || 'Student'
+      : 'Student'
+
     const certificateData: CertificateData = {
-      studentName: certificate.student?.full_name || 'Student',
+      studentName: decryptedStudentName,
       studentId: certificate.student_id,
       courseName: certificate.course?.title || 'Course',
       courseId: certificate.course_id,
@@ -1084,11 +1193,6 @@ export async function regenerateCertificate(certificateId: string): Promise<Cert
       console.error('Error updating certificate with new PDF URL:', updateError)
       throw new Error('Failed to update certificate')
     }
-
-    console.log('Certificate regenerated successfully:', {
-      certificateId: updatedCert.id,
-      newPdfUrl: pdfUrl,
-    })
 
     return {
       ...updatedCert,

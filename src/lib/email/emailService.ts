@@ -901,11 +901,33 @@ export async function sendCertificateIssuedEmail(
 
     const htmlContent = generateCertificateIssuedEmailHTML(data)
 
-    const mailOptions = {
+    // Fetch the certificate PDF from the URL to attach it
+    let certificateAttachment = null
+    try {
+      const response = await fetch(data.certificateUrl)
+      if (response.ok) {
+        const buffer = await response.arrayBuffer()
+        certificateAttachment = {
+          filename: `Certificate-${data.studentName.replace(/\s+/g, '_')}.pdf`,
+          content: Buffer.from(buffer),
+          contentType: 'application/pdf',
+        }
+      }
+    } catch (fetchError) {
+      console.warn('Could not fetch certificate for attachment:', fetchError)
+      // Continue without attachment - the email still has the download link
+    }
+
+    const mailOptions: any = {
       from: `${process.env.SMTP_FROM_NAME || 'eYogi Gurukul'} <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
       to: data.parentEmail,
       subject: `Certificate Issued - ${data.courseName}`,
       html: htmlContent,
+    }
+
+    // Add certificate as attachment if successfully fetched
+    if (certificateAttachment) {
+      mailOptions.attachments = [certificateAttachment]
     }
 
     const info = await transporter.sendMail(mailOptions)
@@ -914,6 +936,7 @@ export async function sendCertificateIssuedEmail(
       messageId: info.messageId,
       parentEmail: data.parentEmail,
       courseName: data.courseName,
+      hasAttachment: !!certificateAttachment,
       timestamp: new Date().toISOString(),
     })
 
@@ -929,42 +952,118 @@ function generateCertificateIssuedEmailHTML(data: CertificateIssuedEmailData): s
   const firstName = data.studentName.split(' ')[0]
 
   return `
-    <!DOCTYPE html>
-    <html>
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
-      <meta charset="UTF-8">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="x-apple-disable-message-reformatting" />
       <title>Certificate Issued</title>
+      <!--[if mso]>
+      <style type="text/css">
+        body, table, td, a {font-family: Arial, sans-serif !important;}
+      </style>
+      <![endif]-->
     </head>
-    <body style="background:#f5f5f5;">
-      <table width="100%" cellpadding="0" cellspacing="0">
+    <body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
         <tr>
-          <td align="center">
-            <table width="600" cellpadding="20" cellspacing="0" style="background:#ffffff; font-family:Arial;">
+          <td align="center" style="padding: 40px 10px;">
+            <!--[if mso]>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+            <tr>
+            <td>
+            <![endif]-->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+              <!-- Logo -->
               <tr>
-                <td align="center">
-                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul Logo">
+                <td align="center" style="padding: 30px 20px 20px 20px;">
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
                 </td>
               </tr>
+              <!-- Content -->
               <tr>
-                <td>
-                  <h2 style="color:#2c5f2d;">Your Certificate Is Ready 🎉</h2>
-                  <p>Dear ${firstName},</p>
-                  <p>
-                    Congratulations on successfully completing
-                    <strong>${data.courseName}</strong>.
+                <td style="padding: 20px 40px 40px 40px;">
+                  <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">🎉 Certificate Issued!</h2>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear ${firstName},</p>
+                  <p style="margin: 0; padding: 0 0 25px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    Congratulations on successfully completing <strong>${data.courseName}</strong>!
                   </p>
-                  <p style="text-align:center;">
-                    <a href="${data.certificateUrl}" style="background:#2c5f2d; color:#fff; padding:12px 22px; text-decoration:none; border-radius:4px;">
-                      Download Certificate
-                    </a>
+                  
+                  <!-- Success Box -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 25px 0;">
+                    <tr>
+                      <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                        <p style="margin: 0; padding: 0; line-height: 24px; color: #1b5e20; font-size: 15px; font-family: Arial, Helvetica, sans-serif;">
+                          <strong>✅ Achievement Unlocked!</strong><br/>
+                          Your certificate of completion is now ready and attached to this email.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Button -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td align="center" style="padding: 20px 0;">
+                        <!--[if mso]>
+                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${data.certificateUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                          <w:anchorlock/>
+                          <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">📥 Download Certificate</center>
+                        </v:roundrect>
+                        <![endif]-->
+                        <![if !mso]>
+                        <a href="${data.certificateUrl}" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d; border-radius: 6px;">📥 Download Certificate</a>
+                        <![endif]>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 21px; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
+                    Or copy this link to download:
                   </p>
-                  <p>
-                    We are proud of your dedication and achievement.
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td style="padding: 12px; background-color: #f8f9fa; word-break: break-all;">
+                        <p style="margin: 0; padding: 0; font-size: 13px; color: #666666; font-family: Arial, Helvetica, sans-serif; line-height: 19px;">
+                          <a href="${data.certificateUrl}" target="_blank" style="color: #2c5f2d; text-decoration: underline; word-break: break-all;">${data.certificateUrl}</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    We are proud of your dedication and achievement. This certificate is a testament to your commitment to learning and growth.
                   </p>
-                  <p>With blessings,<br><strong>Team eYogi Gurukul</strong></p>
+                  
+                  <p style="margin: 0; padding: 20px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    For any questions, contact us at
+                    <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
+                  </p>
+                  
+                  <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">
+                    With blessings,<br/>
+                    <strong>Team eYogi Gurukul</strong>
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0; padding: 0; text-align: center; color: #9ca3af; font-size: 12px; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                    <strong>eYogi Gurukul</strong><br/>
+                    Your journey to Vedic learning<br/>
+                    © 2025 eYogi Gurukul. All rights reserved.
+                  </p>
                 </td>
               </tr>
             </table>
+            <!--[if mso]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
           </td>
         </tr>
       </table>
