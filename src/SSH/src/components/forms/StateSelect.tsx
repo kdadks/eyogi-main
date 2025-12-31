@@ -61,6 +61,7 @@ const StateSelect: React.FC<StateSelectProps> = ({
           bg-white text-xs sm:text-sm placeholder-gray-400
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
+          cursor-pointer
           h-9 sm:h-10
           ${className}
         `}

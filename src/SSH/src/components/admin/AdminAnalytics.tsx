@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import ConsentReport from './ConsentReport'
 import CacheManagement from './CacheManagement'
+import { supabaseAdmin } from '@/lib/supabase'
 import {
   ChartBarIcon,
   UserGroupIcon,
@@ -95,10 +96,6 @@ export default function AdminAnalytics() {
   const [gurukulData, setGurukulData] = useState<GurukulAnalytics | null>(null)
   const [siteData, setSiteData] = useState<SiteAnalytics | null>(null)
 
-  useEffect(() => {
-    loadAnalytics()
-  }, [dateRange])
-
   const loadAnalytics = async () => {
     setLoading(true)
     try {
@@ -143,10 +140,69 @@ export default function AdminAnalytics() {
     }
   }
 
+  useEffect(() => {
+    loadAnalytics()
+  }, [dateRange])
+
+  // Set up real-time subscription for attendance records
+  useEffect(() => {
+    let subscription: any = null
+
+    const setupSubscription = async () => {
+      try {
+        // Subscribe to attendance_records changes
+        subscription = supabaseAdmin
+          .channel('attendance_analytics')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'attendance_records',
+            },
+            () => {
+              // Reload analytics when attendance records change
+              // Use current dateRange value
+              setLoading(true)
+              setTimeout(() => {
+                loadAnalytics()
+              }, 100)
+            },
+          )
+          .subscribe()
+      } catch (error) {
+        console.error('Error setting up subscription:', error)
+      }
+    }
+
+    setupSubscription()
+
+    return () => {
+      if (subscription) {
+        supabaseAdmin.removeChannel(subscription)
+      }
+    }
+  }, [loadAnalytics])
+
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
     return num.toString()
+  }
+
+  const getDateRangeLabel = (range: string): string => {
+    switch (range) {
+      case '7d':
+        return 'Last 7 Days'
+      case '30d':
+        return 'Last 30 Days'
+      case '90d':
+        return 'Last 90 Days'
+      case '1y':
+        return 'Last Year'
+      default:
+        return 'Last 30 Days'
+    }
   }
 
   const tabs = [
@@ -185,7 +241,7 @@ export default function AdminAnalytics() {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -231,6 +287,8 @@ export default function AdminAnalytics() {
             attendanceData,
           }}
           formatNumber={formatNumber}
+          dateRange={dateRange}
+          getDateRangeLabel={getDateRangeLabel}
         />
       )}
       {activeTab === 'students' && (
@@ -244,10 +302,20 @@ export default function AdminAnalytics() {
       {activeTab === 'teachers' && <TeachersTab data={teacherData} formatNumber={formatNumber} />}
       {activeTab === 'batches' && <BatchesTab data={batchData} formatNumber={formatNumber} />}
       {activeTab === 'attendance' && (
-        <AttendanceTab data={attendanceData} formatNumber={formatNumber} />
+        <AttendanceTab
+          data={attendanceData}
+          formatNumber={formatNumber}
+          dateRange={dateRange}
+          getDateRangeLabel={getDateRangeLabel}
+        />
       )}
       {activeTab === 'certificates' && (
-        <CertificatesTab data={certificateData} formatNumber={formatNumber} />
+        <CertificatesTab
+          data={certificateData}
+          formatNumber={formatNumber}
+          dateRange={dateRange}
+          getDateRangeLabel={getDateRangeLabel}
+        />
       )}
       {activeTab === 'gurukuls' && <GurukulsTab data={gurukulData} formatNumber={formatNumber} />}
       {activeTab === 'site' && <SiteTab data={siteData} formatNumber={formatNumber} />}
@@ -261,7 +329,7 @@ export default function AdminAnalytics() {
 // OVERVIEW TAB
 // ============================================
 
-function OverviewTab({ data, formatNumber }: any) {
+function OverviewTab({ data, formatNumber, dateRange, getDateRangeLabel }: any) {
   const {
     studentData,
     enrollmentData,
@@ -367,7 +435,9 @@ function OverviewTab({ data, formatNumber }: any) {
       {enrollmentData && enrollmentData.enrollmentTrends.length > 0 && (
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Enrollment Trends (Last 30 Days)</h3>
+            <h3 className="text-lg font-semibold">
+              Enrollment Trends ({getDateRangeLabel(dateRange)})
+            </h3>
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-end justify-between space-x-1">
@@ -614,10 +684,7 @@ function StudentsTab({ data, enrollmentData, formatNumber }: any) {
                       <MapPinIcon className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {location.city}, {location.state}
-                      </p>
-                      <p className="text-xs text-gray-600">{location.country}</p>
+                      <p className="font-medium text-gray-900">{location.location}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -1110,7 +1177,7 @@ function BatchesTab({ data, formatNumber }: any) {
 // ATTENDANCE TAB
 // ============================================
 
-function AttendanceTab({ data, formatNumber }: any) {
+function AttendanceTab({ data, formatNumber, dateRange, getDateRangeLabel }: any) {
   if (!data) return <div className="text-center py-12 text-gray-500">No data available</div>
 
   return (
@@ -1168,7 +1235,9 @@ function AttendanceTab({ data, formatNumber }: any) {
       {data.attendanceTrends && data.attendanceTrends.length > 0 && (
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Attendance Trends (Last 30 Days)</h3>
+            <h3 className="text-lg font-semibold">
+              Attendance Trends ({getDateRangeLabel(dateRange)})
+            </h3>
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-end justify-between space-x-1">
@@ -1280,7 +1349,7 @@ function AttendanceTab({ data, formatNumber }: any) {
 // CERTIFICATES TAB
 // ============================================
 
-function CertificatesTab({ data, formatNumber }: any) {
+function CertificatesTab({ data, formatNumber, dateRange, getDateRangeLabel }: any) {
   if (!data) return <div className="text-center py-12 text-gray-500">No data available</div>
 
   return (
@@ -1317,7 +1386,9 @@ function CertificatesTab({ data, formatNumber }: any) {
       {data.certificateTrends && data.certificateTrends.length > 0 && (
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">Certificate Issuance Trends (Last 30 Days)</h3>
+            <h3 className="text-lg font-semibold">
+              Certificate Issuance Trends ({getDateRangeLabel(dateRange)})
+            </h3>
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-end justify-between space-x-1">

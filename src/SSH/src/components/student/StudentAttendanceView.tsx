@@ -162,7 +162,7 @@ const StudentAttendanceView: React.FC<StudentAttendanceViewProps> = ({ studentId
           <select
             value={selectedBatchId || ''}
             onChange={(e) => setSelectedBatchId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
           >
             {summaries.map((summary) => (
               <option key={summary.batch_id} value={summary.batch_id}>

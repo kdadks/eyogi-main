@@ -1,5 +1,179 @@
 import { supabaseAdmin } from '../supabase'
 import { decryptProfileFields } from '../encryption'
+import { getCountryNameFromISO3 } from '../iso-utils'
+import { getStateName } from '../address-utils'
+
+// ============================================
+// COUNTRY & STATE MAPPINGS (ISO to Full Name)
+// ============================================
+
+const COUNTRY_CODES: Record<string, string> = {
+  US: 'United States',
+  GB: 'United Kingdom',
+  CA: 'Canada',
+  AU: 'Australia',
+  IN: 'India',
+  DE: 'Germany',
+  FR: 'France',
+  JP: 'Japan',
+  CN: 'China',
+  BR: 'Brazil',
+  MX: 'Mexico',
+  NZ: 'New Zealand',
+  SG: 'Singapore',
+  HK: 'Hong Kong',
+  AE: 'United Arab Emirates',
+  SA: 'Saudi Arabia',
+  KR: 'South Korea',
+  ID: 'Indonesia',
+  TH: 'Thailand',
+  MY: 'Malaysia',
+  PH: 'Philippines',
+  VN: 'Vietnam',
+  TR: 'Turkey',
+  IT: 'Italy',
+  ES: 'Spain',
+  NL: 'Netherlands',
+  CH: 'Switzerland',
+  SE: 'Sweden',
+  NO: 'Norway',
+  DK: 'Denmark',
+  FI: 'Finland',
+  PL: 'Poland',
+  RU: 'Russia',
+  ZA: 'South Africa',
+  NG: 'Nigeria',
+  EG: 'Egypt',
+  ZM: 'Zambia',
+  KE: 'Kenya',
+}
+
+const US_STATE_CODES: Record<string, string> = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+  DC: 'District of Columbia',
+}
+
+const CANADIAN_PROVINCES: Record<string, string> = {
+  AB: 'Alberta',
+  BC: 'British Columbia',
+  MB: 'Manitoba',
+  NB: 'New Brunswick',
+  NL: 'Newfoundland and Labrador',
+  NS: 'Nova Scotia',
+  ON: 'Ontario',
+  PE: 'Prince Edward Island',
+  QC: 'Quebec',
+  SK: 'Saskatchewan',
+  YT: 'Yukon',
+  NT: 'Northwest Territories',
+  NU: 'Nunavut',
+}
+
+const INDIAN_STATES: Record<string, string> = {
+  AN: 'Andaman and Nicobar Islands',
+  AP: 'Andhra Pradesh',
+  AR: 'Arunachal Pradesh',
+  AS: 'Assam',
+  BR: 'Bihar',
+  CG: 'Chhattisgarh',
+  CH: 'Chandigarh',
+  DL: 'Delhi',
+  GA: 'Goa',
+  GJ: 'Gujarat',
+  HR: 'Haryana',
+  HP: 'Himachal Pradesh',
+  JK: 'Jammu and Kashmir',
+  JH: 'Jharkhand',
+  KA: 'Karnataka',
+  KL: 'Kerala',
+  LA: 'Ladakh',
+  LD: 'Lakshadweep',
+  MP: 'Madhya Pradesh',
+  MH: 'Maharashtra',
+  MN: 'Manipur',
+  ML: 'Meghalaya',
+  MZ: 'Mizoram',
+  OD: 'Odisha',
+  OL: 'Odisha',
+  PB: 'Punjab',
+  PY: 'Puducherry',
+  RJ: 'Rajasthan',
+  SK: 'Sikkim',
+  TN: 'Tamil Nadu',
+  TG: 'Telangana',
+  TR: 'Tripura',
+  UP: 'Uttar Pradesh',
+  UK: 'Uttarakhand',
+  WB: 'West Bengal',
+}
+
+const AUSTRALIAN_STATES: Record<string, string> = {
+  NSW: 'New South Wales',
+  VIC: 'Victoria',
+  QLD: 'Queensland',
+  WA: 'Western Australia',
+  SA: 'South Australia',
+  TAS: 'Tasmania',
+  NT: 'Northern Territory',
+  ACT: 'Australian Capital Territory',
+}
+
+// Note: getStateName is imported from address-utils and handles all countries
+
+function getCountryName(code: string): string {
+  if (!code || code === 'Unknown') return ''
+  const name = getCountryNameFromISO3(code)
+  return name || code
+}
 
 // ============================================
 // TYPES & INTERFACES
@@ -22,6 +196,7 @@ export interface StudentAnalytics {
     city: string
     state: string
     country: string
+    location: string
     count: number
   }>
   studentsByStatus: Array<{
@@ -269,19 +444,39 @@ export async function getStudentAnalytics(
       count: count as number,
     }))
 
-    // Get students by location
+    // Get students by location - group by state, country (not by city)
     const locationMap = new Map()
     ;(decryptedAllStudents || []).forEach((student: any) => {
-      if (student.city || student.state || student.country) {
-        const key = `${student.city || 'Unknown'},${student.state || 'Unknown'},${student.country || 'Unknown'}`
-        locationMap.set(key, (locationMap.get(key) || 0) + 1)
-      }
+      // State and country are not encrypted, use them for grouping
+      const state = student.state || 'NULL'
+      const country = student.country || 'NULL'
+
+      // Create key using only state + country for grouping
+      // City is only used for display when state is NULL
+      const key = `${state}|${country}`
+      locationMap.set(key, (locationMap.get(key) || 0) + 1)
     })
 
     const studentsByLocation = Array.from(locationMap.entries())
       .map(([key, count]) => {
-        const [city, state, country] = key.split(',')
-        return { city, state, country, count }
+        const [state, country] = key.split('|')
+
+        // Get full country name
+        const fullCountry = country !== 'NULL' ? getCountryName(country) : ''
+
+        // Priority: state > country
+        let location = ''
+        if (state && state !== 'NULL') {
+          // Show state + country
+          const fullState = getStateName(country, state)
+          const stateDisplay = fullState && fullState !== '' ? fullState : state
+          location = fullCountry ? `${stateDisplay}, ${fullCountry}` : stateDisplay
+        } else {
+          // Fallback to country only if no state
+          location = fullCountry || 'Unknown'
+        }
+
+        return { city: '', state, country, location, count }
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
@@ -404,9 +599,9 @@ export async function getEnrollmentAnalytics(
       (e: any) => e.created_at >= dateRange.start && e.created_at <= dateRange.end,
     )
 
-    // By status
+    // By status (filtered by date range)
     const statusMap = new Map()
-    ;(filteredEnrollments || []).forEach((enr: any) => {
+    ;(rangeEnrollments || []).forEach((enr: any) => {
       statusMap.set(enr.status, (statusMap.get(enr.status) || 0) + 1)
     })
 
@@ -415,32 +610,27 @@ export async function getEnrollmentAnalytics(
       count,
     }))
 
-    // Enrollment trends (last 30 days)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
+    // Enrollment trends (based on selected date range)
     const dailyEnrollments = new Map()
-    ;(filteredEnrollments || []).forEach((enr: any) => {
+    ;(rangeEnrollments || []).forEach((enr: any) => {
       const date = new Date(enr.created_at)
-      if (date >= thirtyDaysAgo) {
-        const dateStr = date.toISOString().split('T')[0]
-        dailyEnrollments.set(dateStr, (dailyEnrollments.get(dateStr) || 0) + 1)
-      }
+      const dateStr = date.toISOString().split('T')[0]
+      dailyEnrollments.set(dateStr, (dailyEnrollments.get(dateStr) || 0) + 1)
     })
 
     const enrollmentTrends = Array.from(dailyEnrollments.entries())
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
-    // Completion rate
+    // Completion rate (filtered by date range)
     const completedCount =
-      filteredEnrollments?.filter((e: any) => e.status === 'completed').length || 0
-    const totalCount = filteredEnrollments?.length || 1
+      rangeEnrollments?.filter((e: any) => e.status === 'completed').length || 0
+    const totalCount = rangeEnrollments?.length || 1
     const completionRate = Math.round((completedCount / totalCount) * 100)
 
-    // Average time to complete
+    // Average time to complete (filtered by date range)
     const completedEnrollments =
-      filteredEnrollments?.filter((e: any) => e.status === 'completed' && e.completed_at) || []
+      rangeEnrollments?.filter((e: any) => e.status === 'completed' && e.completed_at) || []
     const totalDays = completedEnrollments.reduce((sum: number, enr: any) => {
       const start = new Date(enr.enrolled_at)
       const end = new Date(enr.completed_at)
@@ -450,9 +640,9 @@ export async function getEnrollmentAnalytics(
     const averageTimeToComplete =
       completedEnrollments.length > 0 ? Math.round(totalDays / completedEnrollments.length) : 0
 
-    // By course
+    // By course (filtered by date range)
     const courseMap = new Map()
-    ;(filteredEnrollments || []).forEach((enr: any) => {
+    ;(rangeEnrollments || []).forEach((enr: any) => {
       const courseId = enr.course_id
       const courseName = enr.course?.title || 'Unknown'
       const existing = courseMap.get(courseId) || { courseId, courseName, count: 0 }
@@ -465,7 +655,7 @@ export async function getEnrollmentAnalytics(
       .slice(0, 10)
 
     return {
-      totalEnrollments: filteredEnrollments?.length || 0,
+      totalEnrollments: rangeEnrollments?.length || 0,
       enrollmentsByStatus,
       enrollmentTrends,
       completionRate,
@@ -803,23 +993,61 @@ export async function getAttendanceAnalytics(
   gurukulId?: string,
 ): Promise<AttendanceAnalytics> {
   try {
-    const { data: attendanceRecords } = await supabaseAdmin
+    // Convert ISO timestamp to date-only strings for comparison with class_date field
+    const startDate = new Date(dateRange.start).toISOString().split('T')[0]
+    const endDate = new Date(dateRange.end).toISOString().split('T')[0]
+
+    const { data: attendanceRecords, error: fetchError } = await supabaseAdmin
       .from('attendance_records')
-      .select('*, student:profiles(full_name), batch:batches(gurukul_id)')
-      .gte('class_date', dateRange.start)
-      .lte('class_date', dateRange.end)
+      .select(
+        `
+        *,
+        student:profiles!attendance_records_student_id_fkey(full_name),
+        batch:batches(id, gurukul_id)
+      `,
+      )
+      .gte('class_date', startDate)
+      .lte('class_date', endDate)
+
+    if (fetchError) {
+      console.error('Error fetching attendance records:', fetchError)
+      throw fetchError
+    }
+
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      return {
+        overallAttendanceRate: 0,
+        attendanceByStatus: [],
+        attendanceTrends: [],
+        lowAttendanceStudents: [],
+        perfectAttendanceStudents: [],
+      }
+    }
 
     // Decrypt student profiles in attendance records
-    const decryptedAttendanceRecords = attendanceRecords?.map((record) => ({
+    const decryptedAttendanceRecords = attendanceRecords.map((record) => ({
       ...record,
       student: record.student ? decryptProfileFields(record.student) : null,
     }))
 
     const filteredRecords = gurukulId
-      ? decryptedAttendanceRecords?.filter((r: any) => r.batch?.gurukul_id === gurukulId)
+      ? decryptedAttendanceRecords.filter((r: any) => {
+          const batchGurukulId = r.batch?.gurukul_id
+          return batchGurukulId === gurukulId
+        })
       : decryptedAttendanceRecords
 
-    const totalRecords = filteredRecords?.length || 1
+    const totalRecords = filteredRecords.length || 0
+
+    if (totalRecords === 0) {
+      return {
+        overallAttendanceRate: 0,
+        attendanceByStatus: [],
+        attendanceTrends: [],
+        lowAttendanceStudents: [],
+        perfectAttendanceStudents: [],
+      }
+    }
 
     // By status
     const statusMap = new Map()
@@ -830,11 +1058,15 @@ export async function getAttendanceAnalytics(
     const attendanceByStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
       status,
       count,
-      percentage: Math.round((count / totalRecords) * 100),
+      percentage: totalRecords > 0 ? Math.round((count / totalRecords) * 100) : 0,
     }))
 
     const presentCount = statusMap.get('present') || 0
-    const overallAttendanceRate = Math.round((presentCount / totalRecords) * 100)
+    const lateCount = statusMap.get('late') || 0
+    const excusedCount = statusMap.get('excused') || 0
+    const attendedCount = presentCount + lateCount + excusedCount
+    const overallAttendanceRate =
+      totalRecords > 0 ? Math.round((attendedCount / totalRecords) * 100) : 0
 
     // Attendance trends
     const dailyAttendance = new Map()
@@ -919,6 +1151,7 @@ export async function getCertificateAnalytics(
       .select(
         '*, course:courses(title, gurukul_id), teacher:profiles!certificates_teacher_id_fkey(full_name)',
       )
+      .eq('is_active', true)
 
     // Decrypt teacher profiles in certificates
     const decryptedAllCertificates = allCertificates?.map((cert) => ({
@@ -1229,11 +1462,14 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
 
     ;(pageAnalytics || []).forEach((record: any) => {
       if (record.referrer) {
-        referrerMap.set(record.referrer, (referrerMap.get(record.referrer) || 0) + 1)
+        // Filter out localhost referrers
+        if (!isLocalhost(record.referrer)) {
+          referrerMap.set(record.referrer, (referrerMap.get(record.referrer) || 0) + 1)
 
-        // Parse source from referrer
-        const source = parseReferrerSource(record.referrer)
-        sourceMap.set(source, (sourceMap.get(source) || 0) + 1)
+          // Parse source from referrer
+          const source = parseReferrerSource(record.referrer)
+          sourceMap.set(source, (sourceMap.get(source) || 0) + 1)
+        }
       } else {
         // No referrer means direct traffic
         sourceMap.set('Direct', (sourceMap.get('Direct') || 0) + 1)
@@ -1310,9 +1546,29 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
   }
 }
 
+// Helper function to check if referrer is from localhost
+function isLocalhost(referrer: string): boolean {
+  if (!referrer) return false
+  try {
+    const url = new URL(referrer)
+    const hostname = url.hostname.toLowerCase()
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('localhost:') ||
+      hostname.startsWith('127.0.0.1:')
+    )
+  } catch {
+    return false
+  }
+}
+
 // Helper function to parse referrer into source categories
 function parseReferrerSource(referrer: string): string {
   if (!referrer) return 'Direct'
+
+  // Don't track localhost referrers
+  if (isLocalhost(referrer)) return null as any
 
   try {
     const url = new URL(referrer)

@@ -14,7 +14,10 @@ export function Card({ className, children, onClick }: CardProps) {
     'bg-gradient-to-br from-white/30 via-white/10 to-white/5 border border-white/20 backdrop-blur-md'
   const glow = 'shadow-[0_8px_30px_rgba(16,24,40,0.08)]'
   return (
-    <div className={cn(base, glass, glow, className)} onClick={onClick}>
+    <div
+      className={cn(base, glass, glow, onClick ? 'cursor-pointer' : '', className)}
+      onClick={onClick}
+    >
       {/* Shiny moving reflection (CSS: .card-sheen) */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="card-sheen" />

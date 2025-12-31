@@ -445,7 +445,7 @@ export default function TeacherStudentManagement() {
                 <select
                   value={courseFilter}
                   onChange={(e) => setCourseFilter(e.target.value)}
-                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500 cursor-pointer"
                 >
                   <option value="all">All Courses</option>
                   {courses.map((course) => (
@@ -457,7 +457,7 @@ export default function TeacherStudentManagement() {
                 <select
                   value={batchFilter}
                   onChange={(e) => setBatchFilter(e.target.value)}
-                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500 cursor-pointer"
                 >
                   <option value="all">All Batches</option>
                   {batches.map((batch) => (
@@ -469,7 +469,7 @@ export default function TeacherStudentManagement() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500"
+                  className="border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-orange-500 cursor-pointer"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>

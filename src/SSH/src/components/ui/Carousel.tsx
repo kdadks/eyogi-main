@@ -173,7 +173,7 @@ const CarouselPrevious = React.forwardRef<
     <button
       ref={ref}
       type="button"
-      className={`absolute h-10 w-10 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+      className={`absolute h-10 w-10 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center ${
         orientation === 'horizontal'
           ? '-left-5 top-1/2 -translate-y-1/2'
           : '-top-12 left-1/2 -translate-x-1/2 rotate-90'
@@ -199,7 +199,7 @@ const CarouselNext = React.forwardRef<
     <button
       ref={ref}
       type="button"
-      className={`absolute h-10 w-10 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+      className={`absolute h-10 w-10 rounded-full bg-white shadow-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center ${
         orientation === 'horizontal'
           ? '-right-5 top-1/2 -translate-y-1/2'
           : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90'

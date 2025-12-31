@@ -214,7 +214,7 @@ export default function DataDeletionRequest({
             <select
               value={deletionType}
               onChange={(e) => setDeletionType(e.target.value as DeletionRequestType)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
               disabled={loading}
             >
               <option value="student_data">Delete Student Data Only</option>
@@ -373,7 +373,9 @@ export default function DataDeletionRequest({
         {relevantRequests.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3">
-              {isParentRequesting ? `${actualTargetUserName}'s Deletion Requests` : 'Your Deletion Requests'}
+              {isParentRequesting
+                ? `${actualTargetUserName}'s Deletion Requests`
+                : 'Your Deletion Requests'}
             </h4>
             <div className="space-y-3">
               {relevantRequests.map((request) => (
