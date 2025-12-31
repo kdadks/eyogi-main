@@ -113,6 +113,6 @@
     "tailwind-scrollbar": "^4.0.2"
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   }
 }

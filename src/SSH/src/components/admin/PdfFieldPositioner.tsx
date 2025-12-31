@@ -1,14 +1,31 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Button } from '../ui/Button'
-import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline'
+import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { DynamicField } from './DynamicFieldEditor'
 import toast from 'react-hot-toast'
+import * as pdfjsLib from 'pdfjs-dist'
 
-// Version: 2.0 - Added coordinate scaling and migration support
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  const workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
+}
 
-interface VisualFieldPositionerProps {
-  templateImage: string
+// Preset fields that can be added to the certificate
+const PRESET_FIELDS = [
+  { name: 'student_name', label: 'Student Name', fontSize: 24, fontColor: '#1a5490' },
+  { name: 'student_id', label: 'Student ID', fontSize: 12, fontColor: '#666666' },
+  { name: 'course_name', label: 'Course Name', fontSize: 18, fontColor: '#d97706' },
+  { name: 'course_id', label: 'Course ID', fontSize: 12, fontColor: '#666666' },
+  { name: 'completion_date', label: 'Completion Date', fontSize: 14, fontColor: '#000000' },
+  { name: 'certificate_number', label: 'Certificate Number', fontSize: 10, fontColor: '#666666' },
+  { name: 'gurukul_name', label: 'Gurukul Name', fontSize: 14, fontColor: '#000000' },
+]
+
+interface PdfFieldPositionerProps {
+  pdfUrl: string
+  pdfDimensions: { width: number; height: number } // In mm
   fields: DynamicField[]
   onFieldsChange: (fields: DynamicField[]) => void
   signatures?: {
@@ -34,147 +51,128 @@ interface SignatureDraggingState {
   initialY: number
 }
 
-export default function VisualFieldPositioner({
-  templateImage,
+export default function PdfFieldPositioner({
+  pdfUrl,
+  pdfDimensions,
   fields,
   onFieldsChange,
   signatures,
   onSignaturesChange,
-}: VisualFieldPositionerProps) {
+}: PdfFieldPositionerProps) {
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
-  const [selectedSignature, setSelectedSignature] = useState<'secretary' | 'chancellor' | null>(
-    null,
-  )
+  const [selectedSignature, setSelectedSignature] = useState<'secretary' | 'chancellor' | null>(null)
   const [dragging, setDragging] = useState<DraggingState | null>(null)
   const [signatureDragging, setSignatureDragging] = useState<SignatureDraggingState | null>(null)
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
-  const [originalImageSize, setOriginalImageSize] = useState({ width: 0, height: 0 })
+  const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 })
+  const [pdfLoaded, setPdfLoaded] = useState(false)
+  const [pdfPreview, setPdfPreview] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
-  // Calculate scale factor from display to original image dimensions
-  const getScaleFactor = () => {
-    if (imageSize.width === 0 || originalImageSize.width === 0) return 1
-    return originalImageSize.width / imageSize.width
-  }
+  // Scale factor: display pixels to PDF mm
+  // PDF positions are stored in mm (same as jsPDF uses)
+  const getScaleToMm = useCallback(() => {
+    if (displaySize.width === 0 || pdfDimensions.width === 0) return 1
+    return pdfDimensions.width / displaySize.width
+  }, [displaySize.width, pdfDimensions.width])
 
-  // Convert display position to original image position (for saving)
-  const displayToOriginal = (displayX: number, displayY: number) => {
-    const scale = getScaleFactor()
+  // Convert display position (pixels) to PDF position (mm)
+  const displayToMm = useCallback((displayX: number, displayY: number) => {
+    const scale = getScaleToMm()
     return {
-      x: Math.round(displayX * scale),
-      y: Math.round(displayY * scale),
+      x: Math.round(displayX * scale * 10) / 10, // Round to 1 decimal
+      y: Math.round(displayY * scale * 10) / 10,
     }
-  }
+  }, [getScaleToMm])
 
-  // Convert original image position to display position (for rendering)
-  const originalToDisplay = (origX: number, origY: number) => {
-    const scale = getScaleFactor()
-    if (scale === 0) return { x: origX, y: origY }
+  // Convert PDF position (mm) to display position (pixels)
+  const mmToDisplay = useCallback((mmX: number, mmY: number) => {
+    const scale = getScaleToMm()
+    if (scale === 0) return { x: mmX, y: mmY }
     return {
-      x: origX / scale,
-      y: origY / scale,
+      x: mmX / scale,
+      y: mmY / scale,
     }
-  }
+  }, [getScaleToMm])
 
-  // Track if we've already migrated to prevent multiple migrations
-  const [hasMigrated, setHasMigrated] = useState(false)
-
-  // Calculate image display size and original size
+  // Load PDF and render preview
   useEffect(() => {
-    if (imageRef.current) {
-      const updateSize = () => {
-        if (imageRef.current) {
-          setImageSize({
-            width: imageRef.current.offsetWidth,
-            height: imageRef.current.offsetHeight,
-          })
-          // Get original/natural dimensions
-          setOriginalImageSize({
-            width: imageRef.current.naturalWidth,
-            height: imageRef.current.naturalHeight,
-          })
+    if (!pdfUrl) return
+
+    const loadPdf = async () => {
+      try {
+        let arrayBuffer: ArrayBuffer
+
+        if (pdfUrl.startsWith('data:')) {
+          // Data URL - extract base64 and decode
+          const base64 = pdfUrl.split(',')[1]
+          const binaryString = atob(base64)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          arrayBuffer = bytes.buffer
+        } else {
+          // Regular URL - fetch it
+          const response = await fetch(pdfUrl)
+          arrayBuffer = await response.arrayBuffer()
         }
+
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+        const pdf = await loadingTask.promise
+        const page = await pdf.getPage(1)
+        
+        // Render at 2x scale for crisp display
+        const scale = 2
+        const viewport = page.getViewport({ scale })
+        
+        const canvas = document.createElement('canvas')
+        const context = canvas.getContext('2d')
+        
+        if (context) {
+          canvas.width = viewport.width
+          canvas.height = viewport.height
+          
+          await page.render({
+            canvasContext: context,
+            viewport,
+            canvas,
+          }).promise
+          
+          setPdfPreview(canvas.toDataURL('image/png'))
+          setPdfLoaded(true)
+        }
+      } catch (error) {
+        console.error('Error loading PDF for positioning:', error)
+        toast.error('Failed to load PDF template')
       }
-      // Wait for image to load to get natural dimensions
-      if (imageRef.current.complete) {
-        updateSize()
-      } else {
-        imageRef.current.onload = updateSize
-      }
-      window.addEventListener('resize', updateSize)
-      return () => window.removeEventListener('resize', updateSize)
     }
-  }, [templateImage])
 
-  // Auto-migrate old display coordinates to original coordinates
-  // This runs once when we detect that positions are in display coords (small values for large images)
+    loadPdf()
+  }, [pdfUrl])
+
+  // Update display size when image loads or window resizes
   useEffect(() => {
-    if (hasMigrated || originalImageSize.width === 0 || imageSize.width === 0) return
-    if (fields.length === 0) return
+    if (!imageRef.current) return
 
-    // Detect if positions seem to be in display coordinates
-    // If original image is much larger than any field position, they're likely in display coords
-    const maxFieldX = Math.max(...fields.map((f) => f.x))
-    const maxFieldY = Math.max(...fields.map((f) => f.y))
-    
-    // If max positions are less than display width (typically ~700px) and original is much larger (2000px+)
-    // then we need to migrate
-    const needsMigration = originalImageSize.width > 1000 && 
-                          maxFieldX < imageSize.width * 1.5 && 
-                          maxFieldX < originalImageSize.width * 0.5
-
-    if (needsMigration) {
-      console.log('[VisualFieldPositioner] Migrating field positions from display to original coordinates')
-      console.log('  Original image:', originalImageSize.width, 'x', originalImageSize.height)
-      console.log('  Display size:', imageSize.width, 'x', imageSize.height)
-      console.log('  Max field position:', maxFieldX, maxFieldY)
-      
-      const scale = originalImageSize.width / imageSize.width
-      console.log('  Scale factor:', scale)
-      
-      // Migrate all fields to original coordinates
-      const migratedFields = fields.map((field) => ({
-        ...field,
-        x: Math.round(field.x * scale),
-        y: Math.round(field.y * scale),
-        width: Math.round((field.width || 200) * scale),
-      }))
-      
-      console.log('  Migrated fields:', migratedFields.map(f => ({ name: f.name, x: f.x, y: f.y, width: f.width })))
-      
-      onFieldsChange(migratedFields)
-      setHasMigrated(true)
-      toast.success('Field positions updated to match template dimensions')
-      
-      // Also migrate signatures if present
-      if (signatures && onSignaturesChange) {
-        const migratedSigs: any = {}
-        if (signatures.secretary) {
-          migratedSigs.secretary = {
-            x: Math.round(signatures.secretary.x * scale),
-            y: Math.round(signatures.secretary.y * scale),
-            width: Math.round(signatures.secretary.width * scale),
-            height: Math.round(signatures.secretary.height * scale),
-          }
-        }
-        if (signatures.chancellor) {
-          migratedSigs.chancellor = {
-            x: Math.round(signatures.chancellor.x * scale),
-            y: Math.round(signatures.chancellor.y * scale),
-            width: Math.round(signatures.chancellor.width * scale),
-            height: Math.round(signatures.chancellor.height * scale),
-          }
-        }
-        if (Object.keys(migratedSigs).length > 0) {
-          onSignaturesChange(migratedSigs)
-          console.log('  Migrated signatures:', migratedSigs)
-        }
+    const updateSize = () => {
+      if (imageRef.current) {
+        setDisplaySize({
+          width: imageRef.current.offsetWidth,
+          height: imageRef.current.offsetHeight,
+        })
       }
+    }
+
+    if (imageRef.current.complete) {
+      updateSize()
     } else {
-      setHasMigrated(true) // Mark as checked even if no migration needed
+      imageRef.current.onload = updateSize
     }
-  }, [fields, signatures, originalImageSize, imageSize, hasMigrated, onFieldsChange, onSignaturesChange])
+
+    window.addEventListener('resize', updateSize)
+    return () => window.removeEventListener('resize', updateSize)
+  }, [pdfPreview])
 
   // Handle field drag start
   const handleFieldMouseDown = (e: React.MouseEvent, field: DynamicField) => {
@@ -182,8 +180,8 @@ export default function VisualFieldPositioner({
     e.stopPropagation()
     setSelectedFieldId(field.id)
     setSelectedSignature(null)
-    // Convert original coordinates to display coordinates for dragging
-    const displayPos = originalToDisplay(field.x, field.y)
+    
+    const displayPos = mmToDisplay(field.x, field.y)
     setDragging({
       fieldId: field.id,
       startX: e.clientX,
@@ -203,8 +201,8 @@ export default function VisualFieldPositioner({
     e.stopPropagation()
     setSelectedSignature(type)
     setSelectedFieldId(null)
-    // Convert original coordinates to display coordinates for dragging
-    const displayPos = originalToDisplay(currentPos.x, currentPos.y)
+    
+    const displayPos = mmToDisplay(currentPos.x, currentPos.y)
     setSignatureDragging({
       type,
       startX: e.clientX,
@@ -214,22 +212,20 @@ export default function VisualFieldPositioner({
     })
   }
 
-  // Handle mouse move
+  // Handle mouse move for dragging
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (dragging && containerRef.current) {
         const deltaX = e.clientX - dragging.startX
         const deltaY = e.clientY - dragging.startY
 
-        // Calculate new display position
-        const newDisplayX = Math.max(0, Math.min(imageSize.width - 50, dragging.initialX + deltaX))
-        const newDisplayY = Math.max(0, Math.min(imageSize.height - 20, dragging.initialY + deltaY))
+        const newDisplayX = Math.max(0, Math.min(displaySize.width - 50, dragging.initialX + deltaX))
+        const newDisplayY = Math.max(0, Math.min(displaySize.height - 20, dragging.initialY + deltaY))
 
-        // Convert to original image coordinates for storage
-        const origPos = displayToOriginal(newDisplayX, newDisplayY)
+        const mmPos = displayToMm(newDisplayX, newDisplayY)
 
         const updatedFields = fields.map((f) =>
-          f.id === dragging.fieldId ? { ...f, x: origPos.x, y: origPos.y } : f,
+          f.id === dragging.fieldId ? { ...f, x: mmPos.x, y: mmPos.y } : f,
         )
         onFieldsChange(updatedFields)
       }
@@ -238,29 +234,17 @@ export default function VisualFieldPositioner({
         const deltaX = e.clientX - signatureDragging.startX
         const deltaY = e.clientY - signatureDragging.startY
 
-        // Calculate new display position
-        const newDisplayX = Math.max(
-          0,
-          Math.min(imageSize.width - 100, signatureDragging.initialX + deltaX),
-        )
-        const newDisplayY = Math.max(
-          0,
-          Math.min(imageSize.height - 50, signatureDragging.initialY + deltaY),
-        )
+        const newDisplayX = Math.max(0, Math.min(displaySize.width - 100, signatureDragging.initialX + deltaX))
+        const newDisplayY = Math.max(0, Math.min(displaySize.height - 50, signatureDragging.initialY + deltaY))
 
-        // Convert to original image coordinates for storage
-        const origPos = displayToOriginal(newDisplayX, newDisplayY)
-        const scale = getScaleFactor()
+        const mmPos = displayToMm(newDisplayX, newDisplayY)
 
         const updatedSignatures = {
           ...signatures,
           [signatureDragging.type]: {
-            ...(signatures?.[signatureDragging.type] || { width: 120, height: 40 }),
-            x: origPos.x,
-            y: origPos.y,
-            // Also scale width/height if they're in display coordinates
-            width: Math.round((signatures?.[signatureDragging.type]?.width || 120) * (scale > 1 ? 1 : scale)),
-            height: Math.round((signatures?.[signatureDragging.type]?.height || 40) * (scale > 1 ? 1 : scale)),
+            ...(signatures?.[signatureDragging.type] || { width: 40, height: 15 }),
+            x: mmPos.x,
+            y: mmPos.y,
           },
         }
         onSignaturesChange(updatedSignatures)
@@ -286,16 +270,7 @@ export default function VisualFieldPositioner({
         document.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  }, [
-    dragging,
-    signatureDragging,
-    fields,
-    signatures,
-    imageSize,
-    originalImageSize,
-    onFieldsChange,
-    onSignaturesChange,
-  ])
+  }, [dragging, signatureDragging, fields, signatures, displaySize, onFieldsChange, onSignaturesChange, displayToMm])
 
   const handleDeleteField = (fieldId: string) => {
     onFieldsChange(fields.filter((f) => f.id !== fieldId))
@@ -305,13 +280,27 @@ export default function VisualFieldPositioner({
 
   const selectedField = fields.find((f) => f.id === selectedFieldId)
 
+  if (!pdfLoaded) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading PDF template...</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
         <h3 className="text-lg font-semibold">Visual Field Positioning</h3>
         <p className="text-sm text-gray-600 mt-1">
-          Drag and drop fields and signatures to position them on the certificate template
+          Drag fields to position them on the PDF template. Positions are in millimeters.
         </p>
+        <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded">
+          PDF Size: {pdfDimensions.width.toFixed(1)}mm × {pdfDimensions.height.toFixed(1)}mm
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -322,21 +311,22 @@ export default function VisualFieldPositioner({
               className="relative bg-gray-100 rounded-lg border-2 border-gray-300 overflow-auto"
               style={{ maxHeight: '600px' }}
             >
-              <img
-                ref={imageRef}
-                src={templateImage}
-                alt="Certificate Template"
-                className="w-full h-auto"
-                draggable={false}
-              />
+              {pdfPreview && (
+                <img
+                  ref={imageRef}
+                  src={pdfPreview}
+                  alt="PDF Template"
+                  className="w-full h-auto"
+                  draggable={false}
+                />
+              )}
 
               {/* Render draggable fields */}
               {fields.map((field) => {
                 const isSelected = selectedFieldId === field.id
-                // Convert original coordinates to display coordinates for rendering
-                const displayPos = originalToDisplay(field.x, field.y)
-                const scale = getScaleFactor()
-                const displayWidth = scale > 0 ? (field.width || 200) / scale : (field.width || 200)
+                const displayPos = mmToDisplay(field.x, field.y)
+                const displayWidth = (field.width || 50) / getScaleToMm()
+                
                 return (
                   <div
                     key={field.id}
@@ -349,70 +339,70 @@ export default function VisualFieldPositioner({
                       left: `${displayPos.x}px`,
                       top: `${displayPos.y}px`,
                       width: `${displayWidth}px`,
-                      minHeight: '30px',
+                      minHeight: '24px',
                     }}
                     onMouseDown={(e) => handleFieldMouseDown(e, field)}
                   >
                     <div className="px-2 py-1 text-xs font-semibold truncate">{field.label}</div>
-                    <div className="absolute -top-6 left-0 bg-gray-800 text-white px-2 py-0.5 rounded text-xs opacity-0 group-hover:opacity-100 whitespace-nowrap">
-                      x: {field.x}, y: {field.y}
-                    </div>
+                    {isSelected && (
+                      <div className="absolute -top-6 left-0 bg-gray-800 text-white px-2 py-0.5 rounded text-xs whitespace-nowrap">
+                        {field.x.toFixed(1)}mm, {field.y.toFixed(1)}mm
+                      </div>
+                    )}
                   </div>
                 )
               })}
 
               {/* Render draggable signatures */}
               {signatures?.secretary && (() => {
-                const displayPos = originalToDisplay(signatures.secretary.x, signatures.secretary.y)
-                const scale = getScaleFactor()
-                const displayWidth = scale > 0 ? signatures.secretary.width / scale : signatures.secretary.width
-                const displayHeight = scale > 0 ? signatures.secretary.height / scale : signatures.secretary.height
+                const displayPos = mmToDisplay(signatures.secretary.x, signatures.secretary.y)
+                const displayWidth = (signatures.secretary.width || 40) / getScaleToMm()
+                const displayHeight = (signatures.secretary.height || 15) / getScaleToMm()
+                
                 return (
-                <div
-                  className={`absolute cursor-move border-2 transition-all ${
-                    selectedSignature === 'secretary'
-                      ? 'border-green-600 bg-green-100 z-20 shadow-lg'
-                      : 'border-green-400 bg-green-50 hover:border-green-600 z-10'
-                  } bg-opacity-60 hover:bg-opacity-80 flex items-center justify-center`}
-                  style={{
-                    left: `${displayPos.x}px`,
-                    top: `${displayPos.y}px`,
-                    width: `${displayWidth}px`,
-                    height: `${displayHeight}px`,
-                  }}
-                  onMouseDown={(e) =>
-                    handleSignatureMouseDown(e, 'secretary', signatures.secretary!)
-                  }
-                >
-                  <span className="text-xs font-semibold text-gray-700">Secretary</span>
-                </div>
-              )})()}
+                  <div
+                    className={`absolute cursor-move border-2 transition-all ${
+                      selectedSignature === 'secretary'
+                        ? 'border-green-600 bg-green-100 z-20 shadow-lg'
+                        : 'border-green-400 bg-green-50 hover:border-green-600 z-10'
+                    } bg-opacity-60 flex items-center justify-center`}
+                    style={{
+                      left: `${displayPos.x}px`,
+                      top: `${displayPos.y}px`,
+                      width: `${displayWidth}px`,
+                      height: `${displayHeight}px`,
+                    }}
+                    onMouseDown={(e) => handleSignatureMouseDown(e, 'secretary', signatures.secretary!)}
+                  >
+                    <span className="text-xs font-semibold text-gray-700">Secretary</span>
+                  </div>
+                )
+              })()}
 
               {signatures?.chancellor && (() => {
-                const displayPos = originalToDisplay(signatures.chancellor.x, signatures.chancellor.y)
-                const scale = getScaleFactor()
-                const displayWidth = scale > 0 ? signatures.chancellor.width / scale : signatures.chancellor.width
-                const displayHeight = scale > 0 ? signatures.chancellor.height / scale : signatures.chancellor.height
+                const displayPos = mmToDisplay(signatures.chancellor.x, signatures.chancellor.y)
+                const displayWidth = (signatures.chancellor.width || 40) / getScaleToMm()
+                const displayHeight = (signatures.chancellor.height || 15) / getScaleToMm()
+                
                 return (
-                <div
-                  className={`absolute cursor-move border-2 transition-all ${
-                    selectedSignature === 'chancellor'
-                      ? 'border-purple-600 bg-purple-100 z-20 shadow-lg'
-                      : 'border-purple-400 bg-purple-50 hover:border-purple-600 z-10'
-                  } bg-opacity-60 hover:bg-opacity-80 flex items-center justify-center`}
-                  style={{
-                    left: `${displayPos.x}px`,
-                    top: `${displayPos.y}px`,
-                    width: `${displayWidth}px`,
-                    height: `${displayHeight}px`,
-                  }}
-                  onMouseDown={(e) =>
-                    handleSignatureMouseDown(e, 'chancellor', signatures.chancellor!)
-                  }
-                >
-                  <span className="text-xs font-semibold text-gray-700">Chancellor</span>
-                </div>
-              )})()}
+                  <div
+                    className={`absolute cursor-move border-2 transition-all ${
+                      selectedSignature === 'chancellor'
+                        ? 'border-purple-600 bg-purple-100 z-20 shadow-lg'
+                        : 'border-purple-400 bg-purple-50 hover:border-purple-600 z-10'
+                    } bg-opacity-60 flex items-center justify-center`}
+                    style={{
+                      left: `${displayPos.x}px`,
+                      top: `${displayPos.y}px`,
+                      width: `${displayWidth}px`,
+                      height: `${displayHeight}px`,
+                    }}
+                    onMouseDown={(e) => handleSignatureMouseDown(e, 'chancellor', signatures.chancellor!)}
+                  >
+                    <span className="text-xs font-semibold text-gray-700">Chancellor</span>
+                  </div>
+                )
+              })()}
             </div>
 
             <div className="mt-4 flex items-center gap-4 text-xs text-gray-600">
@@ -458,14 +448,15 @@ export default function VisualFieldPositioner({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs font-medium text-gray-700">X Position</label>
+                      <label className="text-xs font-medium text-gray-700">X (mm)</label>
                       <input
                         type="number"
+                        step="0.1"
                         value={selectedField.x}
                         onChange={(e) => {
                           const updatedFields = fields.map((f) =>
                             f.id === selectedField.id
-                              ? { ...f, x: parseInt(e.target.value) || 0 }
+                              ? { ...f, x: parseFloat(e.target.value) || 0 }
                               : f,
                           )
                           onFieldsChange(updatedFields)
@@ -474,14 +465,15 @@ export default function VisualFieldPositioner({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-700">Y Position</label>
+                      <label className="text-xs font-medium text-gray-700">Y (mm)</label>
                       <input
                         type="number"
+                        step="0.1"
                         value={selectedField.y}
                         onChange={(e) => {
                           const updatedFields = fields.map((f) =>
                             f.id === selectedField.id
-                              ? { ...f, y: parseInt(e.target.value) || 0 }
+                              ? { ...f, y: parseFloat(e.target.value) || 0 }
                               : f,
                           )
                           onFieldsChange(updatedFields)
@@ -491,14 +483,15 @@ export default function VisualFieldPositioner({
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-700">Width (px)</label>
+                    <label className="text-xs font-medium text-gray-700">Width (mm)</label>
                     <input
                       type="number"
-                      value={selectedField.width}
+                      step="1"
+                      value={selectedField.width || 50}
                       onChange={(e) => {
                         const updatedFields = fields.map((f) =>
                           f.id === selectedField.id
-                            ? { ...f, width: parseInt(e.target.value) || 100 }
+                            ? { ...f, width: parseInt(e.target.value) || 50 }
                             : f,
                         )
                         onFieldsChange(updatedFields)
@@ -507,10 +500,10 @@ export default function VisualFieldPositioner({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-700">Font Size</label>
+                    <label className="text-xs font-medium text-gray-700">Font Size (pt)</label>
                     <input
                       type="number"
-                      value={selectedField.fontSize}
+                      value={selectedField.fontSize || 12}
                       onChange={(e) => {
                         const updatedFields = fields.map((f) =>
                           f.id === selectedField.id
@@ -525,7 +518,7 @@ export default function VisualFieldPositioner({
                   <div>
                     <label className="text-xs font-medium text-gray-700">Font Family</label>
                     <select
-                      value={selectedField.fontFamily}
+                      value={selectedField.fontFamily || 'helvetica'}
                       onChange={(e) => {
                         const updatedFields = fields.map((f) =>
                           f.id === selectedField.id ? { ...f, fontFamily: e.target.value } : f,
@@ -534,20 +527,16 @@ export default function VisualFieldPositioner({
                       }}
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                     >
-                      <option value="Arial">Arial</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Times New Roman">Times New Roman</option>
-                      <option value="Courier New">Courier New</option>
-                      <option value="Verdana">Verdana</option>
-                      <option value="Trebuchet MS">Trebuchet MS</option>
-                      <option value="League Spartan">League Spartan</option>
+                      <option value="helvetica">Helvetica</option>
+                      <option value="times">Times New Roman</option>
+                      <option value="courier">Courier</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-700">Text Color</label>
                     <input
                       type="color"
-                      value={selectedField.fontColor}
+                      value={selectedField.fontColor || '#000000'}
                       onChange={(e) => {
                         const updatedFields = fields.map((f) =>
                           f.id === selectedField.id ? { ...f, fontColor: e.target.value } : f,
@@ -560,7 +549,7 @@ export default function VisualFieldPositioner({
                   <div>
                     <label className="text-xs font-medium text-gray-700">Text Align</label>
                     <select
-                      value={selectedField.textAlign}
+                      value={selectedField.textAlign || 'left'}
                       onChange={(e) => {
                         const updatedFields = fields.map((f) =>
                           f.id === selectedField.id
@@ -580,7 +569,7 @@ export default function VisualFieldPositioner({
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedField.isBold}
+                        checked={selectedField.isBold || false}
                         onChange={(e) => {
                           const updatedFields = fields.map((f) =>
                             f.id === selectedField.id ? { ...f, isBold: e.target.checked } : f,
@@ -594,7 +583,7 @@ export default function VisualFieldPositioner({
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedField.isItalic}
+                        checked={selectedField.isItalic || false}
                         onChange={(e) => {
                           const updatedFields = fields.map((f) =>
                             f.id === selectedField.id ? { ...f, isItalic: e.target.checked } : f,
@@ -618,9 +607,10 @@ export default function VisualFieldPositioner({
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs font-medium text-gray-700">X Position</label>
+                      <label className="text-xs font-medium text-gray-700">X (mm)</label>
                       <input
                         type="number"
+                        step="0.1"
                         value={signatures?.[selectedSignature]?.x || 0}
                         onChange={(e) => {
                           if (onSignaturesChange && signatures) {
@@ -628,7 +618,7 @@ export default function VisualFieldPositioner({
                               ...signatures,
                               [selectedSignature]: {
                                 ...signatures[selectedSignature]!,
-                                x: parseInt(e.target.value) || 0,
+                                x: parseFloat(e.target.value) || 0,
                               },
                             }
                             onSignaturesChange(updated)
@@ -638,9 +628,10 @@ export default function VisualFieldPositioner({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-700">Y Position</label>
+                      <label className="text-xs font-medium text-gray-700">Y (mm)</label>
                       <input
                         type="number"
+                        step="0.1"
                         value={signatures?.[selectedSignature]?.y || 0}
                         onChange={(e) => {
                           if (onSignaturesChange && signatures) {
@@ -648,7 +639,7 @@ export default function VisualFieldPositioner({
                               ...signatures,
                               [selectedSignature]: {
                                 ...signatures[selectedSignature]!,
-                                y: parseInt(e.target.value) || 0,
+                                y: parseFloat(e.target.value) || 0,
                               },
                             }
                             onSignaturesChange(updated)
@@ -660,17 +651,18 @@ export default function VisualFieldPositioner({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs font-medium text-gray-700">Width (px)</label>
+                      <label className="text-xs font-medium text-gray-700">Width (mm)</label>
                       <input
                         type="number"
-                        value={signatures?.[selectedSignature]?.width || 120}
+                        step="1"
+                        value={signatures?.[selectedSignature]?.width || 40}
                         onChange={(e) => {
                           if (onSignaturesChange && signatures) {
                             const updated = {
                               ...signatures,
                               [selectedSignature]: {
                                 ...signatures[selectedSignature]!,
-                                width: parseInt(e.target.value) || 100,
+                                width: parseInt(e.target.value) || 40,
                               },
                             }
                             onSignaturesChange(updated)
@@ -680,17 +672,18 @@ export default function VisualFieldPositioner({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-700">Height (px)</label>
+                      <label className="text-xs font-medium text-gray-700">Height (mm)</label>
                       <input
                         type="number"
-                        value={signatures?.[selectedSignature]?.height || 40}
+                        step="1"
+                        value={signatures?.[selectedSignature]?.height || 15}
                         onChange={(e) => {
                           if (onSignaturesChange && signatures) {
                             const updated = {
                               ...signatures,
                               [selectedSignature]: {
                                 ...signatures[selectedSignature]!,
-                                height: parseInt(e.target.value) || 30,
+                                height: parseInt(e.target.value) || 15,
                               },
                             }
                             onSignaturesChange(updated)
@@ -713,13 +706,73 @@ export default function VisualFieldPositioner({
             <div className="text-xs text-gray-600 space-y-1 bg-blue-50 p-3 rounded border border-blue-200">
               <p className="font-semibold text-blue-900">💡 Tips:</p>
               <ul className="list-disc list-inside space-y-1">
+                <li>All positions are in millimeters (mm)</li>
                 <li>Drag fields to reposition them</li>
                 <li>Click to select and edit properties</li>
                 <li>Use number inputs for precise positioning</li>
-                <li>Orange boxes are dynamic fields</li>
-                <li>Green/Purple boxes are signature areas</li>
+                <li>PDF templates provide exact positioning</li>
               </ul>
             </div>
+
+            {/* Add Fields Section */}
+            <Card>
+              <CardHeader>
+                <h4 className="text-sm font-semibold text-gray-900">Add Dynamic Fields</h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Click a field to add it to the certificate
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {PRESET_FIELDS.map((preset) => {
+                  const isAdded = fields.some((f) => f.name === preset.name)
+                  return (
+                    <button
+                      key={preset.name}
+                      onClick={() => {
+                        if (isAdded) {
+                          toast.error(`${preset.label} is already added`)
+                          return
+                        }
+                        // Add new field at center of PDF
+                        const newField: DynamicField = {
+                          id: `field-${Date.now()}`,
+                          name: preset.name,
+                          label: preset.label,
+                          type: preset.name.includes('date') ? 'date' : 'text',
+                          x: pdfDimensions.width / 2 - 30, // Center horizontally
+                          y: 50 + fields.length * 15, // Stack vertically
+                          width: 60,
+                          height: 10,
+                          fontSize: preset.fontSize,
+                          fontColor: preset.fontColor,
+                          fontFamily: 'helvetica',
+                          textAlign: 'center',
+                          isBold: preset.name === 'student_name',
+                          isItalic: false,
+                          isRequired: true,
+                        }
+                        onFieldsChange([...fields, newField])
+                        setSelectedFieldId(newField.id)
+                        toast.success(`${preset.label} added`)
+                      }}
+                      disabled={isAdded}
+                      className={`w-full px-3 py-2 text-left text-sm rounded border transition-colors flex items-center justify-between ${
+                        isAdded
+                          ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-white border-gray-300 hover:bg-orange-50 hover:border-orange-300 cursor-pointer'
+                      }`}
+                    >
+                      <span>{preset.label}</span>
+                      {isAdded ? (
+                        <span className="text-xs text-green-600">✓ Added</span>
+                      ) : (
+                        <PlusIcon className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                  )
+                })}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </CardContent>

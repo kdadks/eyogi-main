@@ -71,7 +71,7 @@ export async function generateAndUploadCertificatePDF(
     const { data, error } = await supabaseAdmin.storage
       .from('certificates')
       .upload(filePath, file, {
-        cacheControl: '3600',
+        cacheControl: '0', // No caching to ensure regenerated certificates are fetched fresh
         upsert: true, // Allow overwriting if certificate is regenerated
       })
 
@@ -79,12 +79,14 @@ export async function generateAndUploadCertificatePDF(
       throw new Error(`PDF upload failed: ${error.message}`)
     }
 
-    // Get public URL
+    // Get public URL with cache-busting timestamp
     const { data: publicUrlData } = supabaseAdmin.storage
       .from('certificates')
       .getPublicUrl(data.path)
 
-    return publicUrlData.publicUrl
+    // Add cache-busting parameter to force fresh fetch after regeneration
+    const urlWithCacheBust = `${publicUrlData.publicUrl}?t=${Date.now()}`
+    return urlWithCacheBust
   } catch (error) {
     console.error('Error generating/uploading certificate PDF:', error)
     throw error
@@ -124,10 +126,10 @@ export async function downloadCertificatePDF(
     const certificateData: CertificateData = {
       studentName:
         certificate.certificate_data?.student_name || certificate.student?.full_name || 'Student',
-      studentId: certificate.student_id,
+      studentId: certificate.student?.student_id || certificate.student_id, // Use human-readable student_id from profile
       courseName:
         certificate.certificate_data?.course_title || certificate.course?.title || 'Course',
-      courseId: certificate.course_id,
+      courseId: certificate.course?.course_number || certificate.course_id, // Use course_number instead of UUID
       gurukulName: 'eYogi Gurukul',
       completionDate:
         certificate.certificate_data?.completion_date ||
@@ -607,9 +609,9 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
 
     const certificateData: CertificateData = {
       studentName: enrollment.profiles?.full_name || 'Student',
-      studentId: enrollment.student_id,
+      studentId: enrollment.profiles?.student_id || enrollment.student_id, // Use human-readable student_id from profile
       courseName: enrollment.courses?.title || 'Course',
-      courseId: enrollment.course_id,
+      courseId: enrollment.courses?.course_number || enrollment.course_id, // Use course_number instead of UUID
       gurukulName: 'eYogi Gurukul',
       completionDate: enrollment.completed_at || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
@@ -811,9 +813,9 @@ export async function issueCertificateWithTemplate(
   try {
     const certificateData: CertificateData = {
       studentName: enrichedEnrollment.profiles?.full_name || 'Student',
-      studentId: enrichedEnrollment.student_id,
+      studentId: enrichedEnrollment.profiles?.student_id || enrichedEnrollment.student_id, // Use human-readable student_id from profile
       courseName: enrichedEnrollment.courses?.title || 'Course',
-      courseId: enrichedEnrollment.course_id,
+      courseId: enrichedEnrollment.courses?.course_number || enrichedEnrollment.course_id, // Use course_number instead of UUID
       gurukulName: 'eYogi Gurukul',
       completionDate: enrichedEnrollment.completed_at || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
@@ -1156,10 +1158,10 @@ export async function regenerateCertificate(certificateId: string): Promise<Cert
 
     const certificateData: CertificateData = {
       studentName: decryptedStudentName,
-      studentId: certificate.student_id,
-      courseName: certificate.course?.title || 'Course',
-      courseId: certificate.course_id,
-      gurukulName: certificate.course?.gurukul?.name || 'eYogi Gurukul',
+      studentId: certificate.student?.student_id || certificate.student_id, // Use human-readable student_id from profile, fallback to UUID
+      courseName: certificate.courses?.title || 'Course',
+      courseId: certificate.courses?.course_number || certificate.course_id, // Use course_number instead of UUID
+      gurukulName: certificate.courses?.gurukul?.name || 'eYogi Gurukul',
       completionDate: certificate.completion_date || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
       verificationCode: certificate.verification_code || '',

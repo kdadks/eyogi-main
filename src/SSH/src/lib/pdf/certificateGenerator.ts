@@ -126,9 +126,39 @@ export class CertificateGenerator {
   }
   async generateCertificate(data: CertificateData, template?: CertificateTemplate): Promise<Blob> {
     try {
-      // Check if this is an image-based template
+      console.log('=== Certificate Generation Started ===')
+      console.log('Template ID:', template?.id)
+      console.log('Template Name:', template?.name)
+      console.log('Template type check:', {
+        hasTemplateData: !!template?.template_data,
+        templateType: template?.template_data?.template_type,
+        hasTemplatePdf: !!template?.template_data?.template_pdf,
+        templatePdfLength: template?.template_data?.template_pdf?.length || 0,
+        hasTemplateImage: !!template?.template_data?.template_image,
+      })
+      
+      // Check if this is a PDF-based template (new approach - preferred)
+      if (template?.template_data?.template_pdf || template?.template_data?.template_type === 'pdf') {
+        console.log('Generating PDF-based certificate using PDF template')
+        console.log('Template data:', {
+          hasPdfTemplate: !!template.template_data.template_pdf,
+          pdfDimensions: template.template_data.pdf_dimensions,
+          dynamicFieldsCount: template.template_data.dynamic_fields?.length || 0,
+          dynamicFields: template.template_data.dynamic_fields?.map(f => f.name) || [],
+        })
+        console.log('Certificate data:', data)
+        return await this.generatePdfBasedCertificate(data, template)
+      }
+      
+      // Check if this is an image-based template (legacy approach)
       if (template?.template_data?.template_image) {
         console.log('Generating image-based certificate using template image')
+        console.log('Template data:', {
+          hasTemplateImage: !!template.template_data.template_image,
+          dynamicFieldsCount: template.template_data.dynamic_fields?.length || 0,
+          dynamicFields: template.template_data.dynamic_fields?.map(f => f.name) || [],
+        })
+        console.log('Certificate data:', data)
         return await this.generateImageBasedCertificate(data, template)
       }
 
@@ -154,6 +184,229 @@ export class CertificateGenerator {
     }
   }
 
+  /**
+   * Generate certificate from PDF template
+   * Field positions are in mm - directly usable in jsPDF
+   */
+  private async generatePdfBasedCertificate(
+    data: CertificateData,
+    template: CertificateTemplate,
+  ): Promise<Blob> {
+    try {
+      const pdfTemplateUrl = template.template_data?.template_pdf
+      if (!pdfTemplateUrl) {
+        throw new Error('PDF template URL not found')
+      }
+
+      // Load the PDF template
+      let arrayBuffer: ArrayBuffer
+      if (pdfTemplateUrl.startsWith('data:')) {
+        // Data URL - extract base64 and decode
+        const base64 = pdfTemplateUrl.split(',')[1]
+        const binaryString = atob(base64)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        arrayBuffer = bytes.buffer
+      } else {
+        // Regular URL - fetch it
+        const response = await fetch(pdfTemplateUrl)
+        arrayBuffer = await response.arrayBuffer()
+      }
+
+      // Load PDF with PDF.js
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+      const pdfDoc = await loadingTask.promise
+      
+      // Get first page
+      const page = await pdfDoc.getPage(1)
+      const viewport = page.getViewport({ scale: 1 })
+      
+      // Get dimensions in mm (PDF points to mm: 1 point = 0.352778 mm)
+      const widthMm = viewport.width * 0.352778
+      const heightMm = viewport.height * 0.352778
+      
+      console.log('PDF template dimensions:', widthMm.toFixed(1), 'x', heightMm.toFixed(1), 'mm')
+      
+      // Render PDF page to canvas at high resolution for embedding
+      const scale = 3 // High resolution for quality
+      const scaledViewport = page.getViewport({ scale })
+      
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+      
+      if (!context) {
+        throw new Error('Failed to get canvas context')
+      }
+      
+      canvas.width = scaledViewport.width
+      canvas.height = scaledViewport.height
+      
+      await page.render({
+        canvasContext: context,
+        viewport: scaledViewport,
+        canvas,
+      }).promise
+      
+      // Convert canvas to image and compress
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+      
+      // Determine orientation and create jsPDF
+      const orientation = widthMm > heightMm ? 'landscape' : 'portrait'
+      this.pdf = new jsPDF({
+        orientation,
+        unit: 'mm',
+        format: [widthMm, heightMm],
+        compress: true,
+      })
+      
+      // Add PDF as background image
+      this.pdf.addImage(imageDataUrl, 'JPEG', 0, 0, widthMm, heightMm)
+      
+      // Get dynamic fields from template
+      const dynamicFields = template.template_data?.dynamic_fields || []
+      console.log('Dynamic fields count:', dynamicFields.length)
+
+      if (dynamicFields.length > 0) {
+        console.log('Rendering dynamic fields on PDF template...')
+
+        // Map certificate data to field values
+        const fieldValues: Record<string, string> = {
+          student_name: data.studentName,
+          student_id: data.studentId,
+          course_name: data.courseName,
+          course_id: data.courseId,
+          gurukul_name: data.gurukulName,
+          completion_date: new Date(data.completionDate).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          certificate_number: data.certificateNumber,
+          verification_code: data.verificationCode,
+        }
+        console.log('Field values:', fieldValues)
+
+        // Render each dynamic field - positions are already in mm!
+        for (const field of dynamicFields) {
+          const value = fieldValues[field.name] || ''
+          console.log(`Field "${field.name}": value="${value}", position=(${field.x}mm, ${field.y}mm)`)
+          if (!value) continue
+
+          // Field positions are directly in mm - no conversion needed!
+          const xPos = field.x
+          const fieldWidth = field.width || 50
+          
+          // Font size conversion: the visual editor shows font size in pixels
+          // but jsPDF uses points. We need to scale appropriately.
+          // In the visual editor, font sizes are relative to the preview image
+          // which is scaled from mm. We stored the fontSize as-is, so use it directly.
+          const fontSize = field.fontSize || 12
+
+          // Parse color
+          const color = this.hexToRgb(field.fontColor || '#000000')
+          this.pdf.setTextColor(color.r, color.g, color.b)
+
+          // Set font
+          let pdfFont = 'helvetica'
+          const fontFamily = (field.fontFamily || 'helvetica').toLowerCase()
+          if (fontFamily.includes('times') || fontFamily.includes('serif')) {
+            pdfFont = 'times'
+          } else if (fontFamily.includes('courier') || fontFamily.includes('mono')) {
+            pdfFont = 'courier'
+          }
+
+          const fontStyle =
+            field.isBold && field.isItalic
+              ? 'bolditalic'
+              : field.isBold
+                ? 'bold'
+                : field.isItalic
+                  ? 'italic'
+                  : 'normal'
+          this.pdf.setFont(pdfFont, fontStyle)
+
+          // Set font size
+          this.pdf.setFontSize(fontSize)
+
+          // In jsPDF, text() positions at the baseline of the text
+          // The y coordinate from the editor is the TOP of the text box
+          // We need to add an offset to account for the font ascent
+          // Font ascent is approximately 70-80% of the font size
+          // Font size in points, and 1 point = 0.3528 mm
+          const fontHeightMm = fontSize * 0.3528
+          const baselineOffset = fontHeightMm * 0.75 // Approximate ascent
+          const yPos = field.y + baselineOffset
+
+          console.log(`  Rendering at: (${xPos.toFixed(2)}mm, ${yPos.toFixed(2)}mm), width: ${fieldWidth}mm, fontSize: ${fontSize}pt, baselineOffset: ${baselineOffset.toFixed(2)}mm`)
+
+          // Calculate text position based on alignment
+          let textX = xPos
+          const textWidth = this.pdf.getTextWidth(value)
+
+          if (field.textAlign === 'center') {
+            textX = xPos + (fieldWidth - textWidth) / 2
+          } else if (field.textAlign === 'right') {
+            textX = xPos + fieldWidth - textWidth
+          }
+
+          // Render the text
+          this.pdf.text(value, textX, yPos)
+        }
+      }
+
+      // Render signatures if configured
+      const signaturePositions = template.template_data?.signature_positions
+
+      if (signaturePositions?.secretary) {
+        const pos = signaturePositions.secretary
+        const name = template.template_data?.signatures?.vice_chancellor_name || 'Secretary'
+        const sigData = template.template_data?.signatures?.vice_chancellor_signature_data
+
+        try {
+          if (sigData) {
+            this.pdf.addImage(sigData, 'PNG', pos.x, pos.y, pos.width, pos.height)
+          }
+          // Add name below signature
+          this.pdf.setFont('helvetica', 'bold')
+          this.pdf.setFontSize(10)
+          this.pdf.setTextColor(0, 0, 0)
+          const nameWidth = this.pdf.getTextWidth(name)
+          this.pdf.text(name, pos.x + (pos.width - nameWidth) / 2, pos.y + pos.height + 4)
+        } catch (error) {
+          console.warn('Failed to add secretary signature:', error)
+        }
+      }
+
+      if (signaturePositions?.chancellor) {
+        const pos = signaturePositions.chancellor
+        const name = template.template_data?.signatures?.president_name || 'Chancellor'
+        const sigData = template.template_data?.signatures?.president_signature_data
+
+        try {
+          if (sigData) {
+            this.pdf.addImage(sigData, 'PNG', pos.x, pos.y, pos.width, pos.height)
+          }
+          // Add name below signature
+          this.pdf.setFont('helvetica', 'bold')
+          this.pdf.setFontSize(10)
+          this.pdf.setTextColor(0, 0, 0)
+          const nameWidth = this.pdf.getTextWidth(name)
+          this.pdf.text(name, pos.x + (pos.width - nameWidth) / 2, pos.y + pos.height + 4)
+        } catch (error) {
+          console.warn('Failed to add chancellor signature:', error)
+        }
+      }
+
+      console.log('PDF certificate generation complete')
+      return this.pdf.output('blob')
+    } catch (error) {
+      console.error('Error generating PDF-based certificate:', error)
+      throw error
+    }
+  }
+
   private async generateImageBasedCertificate(
     data: CertificateData,
     template: CertificateTemplate,
@@ -173,21 +426,50 @@ export class CertificateGenerator {
       // Add the compressed template image as the background
       this.pdf.addImage(compressedImageUrl, 'JPEG', 0, 0, width, height)
 
+      // Load the template image to get actual dimensions for field positioning
+      // We need original dimensions regardless of compression
+      let templateWidth = 700 // Default fallback
+      let templateHeight = 500 // Default fallback
+      
+      try {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        
+        // Important: Set handlers BEFORE setting src to avoid race condition
+        // when image is cached and onload fires immediately
+        const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+          // Add timeout to prevent hanging
+          const timeoutId = setTimeout(() => reject(new Error('Image load timeout')), 5000)
+          
+          img.onload = () => {
+            clearTimeout(timeoutId)
+            console.log('Template image loaded successfully:', img.naturalWidth, 'x', img.naturalHeight)
+            resolve({
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+            })
+          }
+          img.onerror = () => {
+            clearTimeout(timeoutId)
+            console.error('Failed to load template image:', templateImageUrl)
+            reject(new Error('Failed to load template image for dimensions'))
+          }
+          img.src = templateImageUrl // Set src AFTER handlers are attached
+        })
+        templateWidth = dimensions.width
+        templateHeight = dimensions.height
+        console.log('Using template dimensions:', templateWidth, 'x', templateHeight)
+      } catch (error) {
+        console.warn('Could not load template dimensions, using defaults:', error)
+      }
+
       // Get dynamic fields from template
       const dynamicFields = template.template_data?.dynamic_fields || []
+      console.log('Dynamic fields count:', dynamicFields.length)
 
       // If dynamic fields are configured, use them
       if (dynamicFields.length > 0) {
-        // Load the template image to get actual dimensions
-        const img = new Image()
-        img.src = templateImageUrl
-        await new Promise((resolve, reject) => {
-          img.onload = resolve
-          img.onerror = reject
-        })
-
-        const templateWidth = img.naturalWidth
-        const templateHeight = img.naturalHeight
+        console.log('Rendering dynamic fields...')
 
         // Map certificate data to field values
         const fieldValues: Record<string, string> = {
@@ -204,17 +486,54 @@ export class CertificateGenerator {
           certificate_number: data.certificateNumber,
           verification_code: data.verificationCode,
         }
+        console.log('Field values:', fieldValues)
+
+        // Detect if field positions are in display coordinates (legacy data)
+        // Legacy positions are typically < 800px because editors display at ~700px width
+        // Original coordinates should be closer to template dimensions (2000px)
+        const maxFieldX = Math.max(...dynamicFields.map((f) => f.x))
+        const maxFieldY = Math.max(...dynamicFields.map((f) => f.y))
+        const needsScaling = templateWidth > 1000 && maxFieldX < templateWidth * 0.5 && maxFieldX < 800
+        
+        let legacyScaleFactor = 1
+        
+        if (needsScaling) {
+          // Estimate display width from max field position (assume max X was at ~65% of display)
+          const estimatedDisplayWidth = maxFieldX / 0.65
+          // Calculate display height using template aspect ratio (display maintains aspect ratio)
+          const templateAspectRatio = templateHeight / templateWidth
+          const estimatedDisplayHeight = estimatedDisplayWidth * templateAspectRatio
+          
+          // Single scale factor since aspect ratio is maintained
+          legacyScaleFactor = templateWidth / estimatedDisplayWidth
+          
+          console.log(`[LEGACY MIGRATION] Detected display coordinates`)
+          console.log(`  Max field position: (${maxFieldX}, ${maxFieldY})`)
+          console.log(`  Template size: ${templateWidth}x${templateHeight}`)
+          console.log(`  Estimated display size: ${estimatedDisplayWidth.toFixed(0)}x${estimatedDisplayHeight.toFixed(0)}`)
+          console.log(`  Scale factor: ${legacyScaleFactor.toFixed(2)}`)
+        }
 
         // Render each dynamic field
         for (const field of dynamicFields) {
           const value = fieldValues[field.name] || ''
+          
+          // Apply legacy scaling if needed (same factor for X and Y since aspect ratio is preserved)
+          const scaledX = field.x * legacyScaleFactor
+          const scaledY = field.y * legacyScaleFactor
+          const scaledWidth = (field.width || 200) * legacyScaleFactor
+          
+          console.log(`Field "${field.name}": value="${value}", original=(${field.x}, ${field.y}), scaled=(${scaledX.toFixed(0)}, ${scaledY.toFixed(0)})`)
           if (!value) continue
 
           // Convert pixel positions to PDF mm based on actual template dimensions
           // Fields are positioned in pixels on the template image
-          const xPos = (field.x / templateWidth) * width
-          const yPos = (field.y / templateHeight) * height
-          const fieldWidth = (field.width / templateWidth) * width
+          const xPos = (scaledX / templateWidth) * width
+          const yPos = (scaledY / templateHeight) * height
+          const fieldWidthMm = (scaledWidth / templateWidth) * width
+
+          console.log(`  Converted to PDF position: (${xPos.toFixed(2)}mm, ${yPos.toFixed(2)}mm), fieldWidth: ${fieldWidthMm.toFixed(2)}mm`)
+          console.log(`  Template: ${templateWidth}x${templateHeight}, PDF: ${width}x${height}mm`)
 
           // Parse color (hex to RGB) and apply formatting
           const color = this.hexToRgb(field.fontColor || '#000000')
@@ -252,34 +571,13 @@ export class CertificateGenerator {
           const textWidth = this.pdf.getTextWidth(value)
 
           if (field.textAlign === 'center') {
-            textX = xPos + (fieldWidth - textWidth) / 2
+            textX = xPos + (fieldWidthMm - textWidth) / 2
           } else if (field.textAlign === 'right') {
-            textX = xPos + fieldWidth - textWidth
+            textX = xPos + fieldWidthMm - textWidth
           }
 
           // Render the text
           this.pdf.text(value, textX, yPos)
-        }
-      }
-
-      // Get template dimensions (reuse from above if available)
-      let templateWidth = 700 // Default fallback
-      let templateHeight = 500 // Default fallback
-
-      if (dynamicFields.length > 0) {
-        // Already loaded above
-        const img = new Image()
-        img.src = templateImageUrl
-        try {
-          await new Promise((resolve, reject) => {
-            img.onload = resolve
-            img.onerror = reject
-            setTimeout(reject, 1000) // Timeout after 1s
-          })
-          templateWidth = img.naturalWidth
-          templateHeight = img.naturalHeight
-        } catch (error) {
-          console.warn('Could not load template dimensions, using defaults')
         }
       }
 

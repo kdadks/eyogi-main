@@ -64,6 +64,48 @@ export async function uploadTemplateImage(templateId: string, file: File): Promi
 }
 
 /**
+ * Upload template PDF to Supabase storage
+ * Returns a public URL to access the PDF
+ */
+export async function uploadTemplatePdf(templateId: string, file: File): Promise<string> {
+  try {
+    const fileName = `${templateId}-${Date.now()}.pdf`
+    const filePath = `certificate-templates/pdfs/${fileName}`
+
+    console.log('Uploading template PDF:', { filePath, fileName, fileSize: file.size })
+
+    const { data, error } = await supabaseAdmin.storage
+      .from('certificate-templates')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'application/pdf',
+      })
+
+    if (error) {
+      throw new Error(`PDF Upload failed: ${error.message}`)
+    }
+
+    console.log('PDF uploaded successfully:', { path: data.path })
+
+    // Get public URL
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from('certificate-templates')
+      .getPublicUrl(data.path)
+
+    console.log('PDF Public URL generated successfully:', {
+      urlLength: publicUrlData.publicUrl.length,
+      url: publicUrlData.publicUrl,
+    })
+
+    return publicUrlData.publicUrl
+  } catch (error) {
+    console.error('Error uploading template PDF:', error)
+    throw error
+  }
+}
+
+/**
  * Delete template image from storage
  */
 export async function deleteTemplateImage(imageUrl: string): Promise<void> {

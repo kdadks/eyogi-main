@@ -11,10 +11,64 @@ import toast from 'react-hot-toast'
 import {
   XMarkIcon,
   PhotoIcon,
+  DocumentIcon,
   PlusIcon,
   TrashIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline'
+import * as pdfjsLib from 'pdfjs-dist'
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/ssh-app/assets/pdf.worker.min.mjs'
+
+/**
+ * Convert a PDF data URL to a PNG preview image
+ * This is needed because we store the original PDF but display a preview
+ */
+async function convertPdfToPreview(pdfDataUrl: string): Promise<{ preview: string; dimensions: { width: number; height: number } }> {
+  try {
+    // Extract base64 data from data URL
+    const base64 = pdfDataUrl.split(',')[1]
+    const binaryString = atob(base64)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    
+    // Load PDF with PDF.js
+    const pdf = await pdfjsLib.getDocument({ data: bytes.buffer }).promise
+    const page = await pdf.getPage(1)
+    const viewport = page.getViewport({ scale: 1 })
+    
+    // Get dimensions in mm (PDF points are 1/72 inch, 1 inch = 25.4mm)
+    const widthMm = (viewport.width / 72) * 25.4
+    const heightMm = (viewport.height / 72) * 25.4
+    
+    // Create preview image from first page
+    const scale = 2 // Higher scale for better quality preview
+    const scaledViewport = page.getViewport({ scale })
+    const canvas = document.createElement('canvas')
+    canvas.width = scaledViewport.width
+    canvas.height = scaledViewport.height
+    const ctx = canvas.getContext('2d')!
+    
+    await page.render({
+      canvasContext: ctx,
+      viewport: scaledViewport,
+      canvas,
+    }).promise
+    
+    const previewDataUrl = canvas.toDataURL('image/png')
+    
+    return {
+      preview: previewDataUrl,
+      dimensions: { width: widthMm, height: heightMm },
+    }
+  } catch (error) {
+    console.error('Error converting PDF to preview:', error)
+    throw error
+  }
+}
 
 interface CompleteCertificateEditorProps {
   template?: CertificateTemplate
@@ -73,9 +127,17 @@ export default function CompleteCertificateEditor({
 }: CompleteCertificateEditorProps) {
   // Basic state
   const [templateName, setTemplateName] = useState('')
+  const [templateType, setTemplateType] = useState<'image' | 'pdf'>('pdf') // Default to PDF
   const [templateImage, setTemplateImage] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  // PDF template state
+  const [templatePdf, setTemplatePdf] = useState<string | null>(null) // Preview image (PNG)
+  const [originalPdfDataUrl, setOriginalPdfDataUrl] = useState<string | null>(null) // Original PDF data URL for saving
+  const [uploadedPdfFile, setUploadedPdfFile] = useState<File | null>(null)
+  const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadingPdfPreview, setLoadingPdfPreview] = useState(false) // For showing loading state during PDF conversion
+  const [needsPositionConversion, setNeedsPositionConversion] = useState(false) // Track if mm->pixels conversion is needed
 
   // Fields
   const [fields, setFields] = useState<DynamicField[]>([])
@@ -127,6 +189,7 @@ export default function CompleteCertificateEditor({
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
   const secretarySigInputRef = useRef<HTMLInputElement>(null)
   const chancellorSigInputRef = useRef<HTMLInputElement>(null)
 
@@ -135,12 +198,50 @@ export default function CompleteCertificateEditor({
     if (template) {
       setTemplateName(template.name)
 
-      if (template.template_data?.template_image) {
+      // Check for PDF template first
+      if (template.template_data?.template_pdf || template.template_data?.template_type === 'pdf') {
+        setTemplateType('pdf')
+        if (template.template_data?.template_pdf) {
+          const storedPdf = template.template_data.template_pdf
+          // Store the original PDF data URL
+          setOriginalPdfDataUrl(storedPdf)
+          
+          // Check if it's a PDF data URL (needs conversion to PNG preview)
+          if (storedPdf.startsWith('data:application/pdf')) {
+            setLoadingPdfPreview(true)
+            // Convert PDF to PNG preview
+            convertPdfToPreview(storedPdf)
+              .then(({ preview, dimensions }) => {
+                setTemplatePdf(preview)
+                setPdfDimensions(dimensions)
+                console.log('Loaded PDF template, converted to preview')
+              })
+              .catch((err) => {
+                console.error('Failed to convert PDF to preview:', err)
+                toast.error('Failed to load PDF preview')
+              })
+              .finally(() => {
+                setLoadingPdfPreview(false)
+              })
+          } else {
+            // Already a PNG preview (shouldn't happen with new saves, but handle legacy)
+            setTemplatePdf(storedPdf)
+          }
+        }
+        if (template.template_data?.pdf_dimensions) {
+          setPdfDimensions(template.template_data.pdf_dimensions)
+        }
+      } else if (template.template_data?.template_image) {
+        setTemplateType('image')
         setTemplateImage(template.template_data.template_image)
       }
 
       if (template.template_data?.dynamic_fields) {
         setFields(template.template_data.dynamic_fields)
+        // Mark that we need to convert positions from mm to pixels for PDF templates
+        if (template.template_data?.template_type === 'pdf' || template.template_data?.template_pdf) {
+          setNeedsPositionConversion(true)
+        }
       }
 
       // Load signatures
@@ -171,8 +272,14 @@ export default function CompleteCertificateEditor({
     } else {
       // Reset to default state when template is undefined (creating new template)
       setTemplateName('')
+      setTemplateType('pdf')  // Default to PDF for new templates
       setTemplateImage('')
+      setTemplatePdf(null)
+      setOriginalPdfDataUrl(null)
+      setPdfDimensions(null)
+      setUploadedPdfFile(null)
       setFields([])
+      setNeedsPositionConversion(false)
       setSecretarySignature({
         x: 20,
         y: 70,
@@ -189,18 +296,35 @@ export default function CompleteCertificateEditor({
         name: 'Chancellor',
         image: '',
       })
-      setTextMessage('')
+      setTextMessage({
+        x: 50,
+        y: 450,
+        width: 600,
+        height: 40,
+        text: '',
+        fontSize: 35,
+        fontColor: '#000000',
+        fontFamily: 'League Spartan',
+        textAlign: 'center',
+        isBold: false,
+        isItalic: false,
+      })
     }
   }, [template])
 
-  // Update image size
+  // Update image size for both image and PDF templates
   useEffect(() => {
     const updateSize = () => {
       if (imageRef.current) {
-        setImageSize({
-          width: imageRef.current.offsetWidth,
-          height: imageRef.current.offsetHeight,
-        })
+        const newWidth = imageRef.current.offsetWidth
+        const newHeight = imageRef.current.offsetHeight
+        if (newWidth > 0 && newHeight > 0) {
+          setImageSize({
+            width: newWidth,
+            height: newHeight,
+          })
+          console.log('Image size updated:', newWidth, newHeight)
+        }
       }
     }
 
@@ -209,20 +333,82 @@ export default function CompleteCertificateEditor({
       const img = imageRef.current
 
       // If image is already loaded
-      if (img.complete) {
-        updateSize()
+      if (img.complete && img.naturalWidth > 0) {
+        // Use setTimeout to ensure DOM has rendered
+        setTimeout(updateSize, 50)
       }
 
       // Listen for load event
-      img.addEventListener('load', updateSize)
+      const handleLoad = () => {
+        setTimeout(updateSize, 50)
+      }
+      
+      img.addEventListener('load', handleLoad)
       window.addEventListener('resize', updateSize)
 
       return () => {
-        img.removeEventListener('load', updateSize)
+        img.removeEventListener('load', handleLoad)
         window.removeEventListener('resize', updateSize)
       }
     }
-  }, [templateImage])
+  }, [templateImage, templatePdf]) // Also trigger when PDF changes
+
+  // Convert positions from mm to pixels when loading a PDF template
+  // This runs after we know the image size
+  useEffect(() => {
+    if (needsPositionConversion && imageSize.width > 0 && imageSize.height > 0 && pdfDimensions) {
+      // Calculate mm to pixel conversion factor
+      const scaleX = imageSize.width / pdfDimensions.width
+      const scaleY = imageSize.height / pdfDimensions.height
+      
+      console.log('Converting positions from mm to pixels:', {
+        imageSize,
+        pdfDimensions,
+        scaleX,
+        scaleY,
+      })
+
+      // Convert field positions from mm to pixels
+      setFields((prev) =>
+        prev.map((field) => ({
+          ...field,
+          x: field.x * scaleX,
+          y: field.y * scaleY,
+          width: field.width * scaleX,
+        }))
+      )
+
+      // Convert signature positions from mm to pixels
+      setSecretarySignature((prev) => ({
+        ...prev,
+        x: prev.x * scaleX,
+        y: prev.y * scaleY,
+        width: prev.width * scaleX,
+        height: prev.height * scaleY,
+      }))
+
+      setChancellorSignature((prev) => ({
+        ...prev,
+        x: prev.x * scaleX,
+        y: prev.y * scaleY,
+        width: prev.width * scaleX,
+        height: prev.height * scaleY,
+      }))
+
+      // Convert text message position from mm to pixels
+      setTextMessage((prev) => ({
+        ...prev,
+        x: prev.x * scaleX,
+        y: prev.y * scaleY,
+        width: prev.width * scaleX,
+        height: prev.height * scaleY,
+      }))
+
+      // Mark conversion as done
+      setNeedsPositionConversion(false)
+      console.log('Position conversion complete')
+    }
+  }, [needsPositionConversion, imageSize, pdfDimensions])
 
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,6 +431,67 @@ export default function CompleteCertificateEditor({
       setTemplateImage(e.target?.result as string)
     }
     reader.readAsDataURL(file)
+  }
+
+  // Handle PDF file selection
+  const handlePdfSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      toast.error('Please select a PDF file')
+      return
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('PDF size should be less than 20MB')
+      return
+    }
+
+    try {
+      // Read PDF to get dimensions
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const page = await pdf.getPage(1)
+      const viewport = page.getViewport({ scale: 1 })
+      
+      // Get dimensions in mm (PDF points are 1/72 inch, 1 inch = 25.4mm)
+      const widthMm = (viewport.width / 72) * 25.4
+      const heightMm = (viewport.height / 72) * 25.4
+      
+      setPdfDimensions({ width: widthMm, height: heightMm })
+      setUploadedPdfFile(file)
+
+      // Create preview image from first page
+      const scale = 2 // Higher scale for better quality preview
+      const scaledViewport = page.getViewport({ scale })
+      const canvas = document.createElement('canvas')
+      canvas.width = scaledViewport.width
+      canvas.height = scaledViewport.height
+      const ctx = canvas.getContext('2d')!
+      
+      await page.render({
+        canvasContext: ctx,
+        viewport: scaledViewport,
+        // Include canvas for compatibility
+        ...(canvas && { canvas })
+      }).promise
+      
+      const previewDataUrl = canvas.toDataURL('image/png')
+      setTemplatePdf(previewDataUrl)
+      
+      // Also store original PDF as data URL for saving (in case user doesn't re-upload)
+      const pdfReader = new FileReader()
+      pdfReader.onload = () => {
+        setOriginalPdfDataUrl(pdfReader.result as string)
+      }
+      pdfReader.readAsDataURL(file)
+      
+      toast.success(`PDF loaded: ${Math.round(widthMm)}mm × ${Math.round(heightMm)}mm`)
+    } catch (error) {
+      console.error('Error loading PDF:', error)
+      toast.error('Failed to load PDF file')
+    }
   }
 
   // Handle signature image upload
@@ -275,15 +522,20 @@ export default function CompleteCertificateEditor({
 
   // Add preset field
   const addField = (preset: (typeof PRESET_FIELDS)[0]) => {
+    // Calculate reasonable initial position based on image size
+    const baseX = imageSize.width > 0 ? Math.min(50, imageSize.width * 0.1) : 50
+    const baseY = imageSize.height > 0 ? Math.min(50 + fields.length * 50, imageSize.height * 0.3) : 50 + fields.length * 50
+    const fieldWidth = imageSize.width > 0 ? Math.min(200, imageSize.width * 0.4) : 200
+    
     const newField: DynamicField = {
       id: `field-${Date.now()}`,
       name: preset.name,
       label: preset.label,
       type: 'text',
-      x: 100,
-      y: 100,
-      width: 300,
-      height: 40,
+      x: baseX,
+      y: baseY,
+      width: fieldWidth,
+      height: 30,
       fontSize: preset.fontSize,
       fontColor: preset.fontColor,
       fontFamily: 'League Spartan',
@@ -348,6 +600,11 @@ export default function CompleteCertificateEditor({
       if (!dragging || !containerRef.current) return
 
       const containerRect = containerRef.current.getBoundingClientRect()
+      
+      // Use imageSize if available, otherwise use container size as fallback
+      const maxWidth = imageSize.width > 0 ? imageSize.width : containerRect.width
+      const maxHeight = imageSize.height > 0 ? imageSize.height : containerRect.height
+      
       const newX = e.clientX - containerRect.left - dragging.offsetX
       const newY = e.clientY - containerRect.top - dragging.offsetY
 
@@ -357,8 +614,8 @@ export default function CompleteCertificateEditor({
             f.id === dragging.id
               ? {
                   ...f,
-                  x: Math.max(0, Math.min(imageSize.width - f.width, newX)),
-                  y: Math.max(0, Math.min(imageSize.height - 30, newY)),
+                  x: Math.max(0, Math.min(maxWidth - f.width, newX)),
+                  y: Math.max(0, Math.min(maxHeight - 30, newY)),
                 }
               : f,
           ),
@@ -366,20 +623,20 @@ export default function CompleteCertificateEditor({
       } else if (dragging.type === 'secretary') {
         setSecretarySignature((prev) => ({
           ...prev,
-          x: Math.max(0, Math.min(imageSize.width - prev.width, newX)),
-          y: Math.max(0, Math.min(imageSize.height - prev.height, newY)),
+          x: Math.max(0, Math.min(maxWidth - prev.width, newX)),
+          y: Math.max(0, Math.min(maxHeight - prev.height, newY)),
         }))
       } else if (dragging.type === 'chancellor') {
         setChancellorSignature((prev) => ({
           ...prev,
-          x: Math.max(0, Math.min(imageSize.width - prev.width, newX)),
-          y: Math.max(0, Math.min(imageSize.height - prev.height, newY)),
+          x: Math.max(0, Math.min(maxWidth - prev.width, newX)),
+          y: Math.max(0, Math.min(maxHeight - prev.height, newY)),
         }))
       } else if (dragging.type === 'text') {
         setTextMessage((prev) => ({
           ...prev,
-          x: Math.max(0, Math.min(imageSize.width - prev.width, newX)),
-          y: Math.max(0, Math.min(imageSize.height - prev.height, newY)),
+          x: Math.max(0, Math.min(maxWidth - prev.width, newX)),
+          y: Math.max(0, Math.min(maxHeight - prev.height, newY)),
         }))
       }
     }
@@ -419,9 +676,17 @@ export default function CompleteCertificateEditor({
       return
     }
 
-    if (!templateImage) {
-      toast.error('Please upload a certificate template image')
-      return
+    // Validate based on template type
+    if (templateType === 'pdf') {
+      if (!templatePdf) {
+        toast.error('Please upload a PDF certificate template')
+        return
+      }
+    } else {
+      if (!templateImage) {
+        toast.error('Please upload a certificate template image')
+        return
+      }
     }
 
     if (fields.length === 0) {
@@ -432,11 +697,91 @@ export default function CompleteCertificateEditor({
     setLoading(true)
     try {
       let imageUrl = templateImage
+      let pdfDataUrl = originalPdfDataUrl // Use the stored original PDF data URL
 
-      // Upload image if new file selected
-      if (uploadedFile) {
+      // Upload image if new file selected (for image type)
+      if (templateType === 'image' && uploadedFile) {
         const templateId = template?.id || `temp-${Date.now()}`
         imageUrl = await uploadTemplateImage(templateId, uploadedFile)
+      }
+
+      // Handle PDF template - if user uploaded a new PDF file, read it
+      if (templateType === 'pdf' && uploadedPdfFile) {
+        // Convert PDF file to base64 data URL
+        const reader = new FileReader()
+        pdfDataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(uploadedPdfFile)
+        })
+      }
+
+      // For PDF templates, convert pixel positions to mm positions
+      // The preview image displays in pixels, but PDF generation needs mm
+      let processedFields = fields
+      let processedSignatures = {
+        secretary: {
+          x: secretarySignature.x,
+          y: secretarySignature.y,
+          width: secretarySignature.width,
+          height: secretarySignature.height,
+        },
+        chancellor: {
+          x: chancellorSignature.x,
+          y: chancellorSignature.y,
+          width: chancellorSignature.width,
+          height: chancellorSignature.height,
+        },
+      }
+      let processedTextMessage = textMessage
+
+      if (templateType === 'pdf' && pdfDimensions && imageSize.width > 0 && imageSize.height > 0) {
+        // Calculate pixel to mm conversion factor
+        const scaleX = pdfDimensions.width / imageSize.width
+        const scaleY = pdfDimensions.height / imageSize.height
+        
+        console.log('Converting positions from pixels to mm:', {
+          imageSize,
+          pdfDimensions,
+          scaleX,
+          scaleY,
+        })
+
+        // Convert field positions to mm
+        processedFields = fields.map((field) => ({
+          ...field,
+          x: field.x * scaleX,
+          y: field.y * scaleY,
+          width: field.width * scaleX,
+        }))
+
+        // Convert signature positions to mm
+        processedSignatures = {
+          secretary: {
+            x: secretarySignature.x * scaleX,
+            y: secretarySignature.y * scaleY,
+            width: secretarySignature.width * scaleX,
+            height: secretarySignature.height * scaleY,
+          },
+          chancellor: {
+            x: chancellorSignature.x * scaleX,
+            y: chancellorSignature.y * scaleY,
+            width: chancellorSignature.width * scaleX,
+            height: chancellorSignature.height * scaleY,
+          },
+        }
+
+        // Convert text message position to mm
+        processedTextMessage = {
+          ...textMessage,
+          x: textMessage.x * scaleX,
+          y: textMessage.y * scaleY,
+          width: textMessage.width * scaleX,
+          height: textMessage.height * scaleY,
+        }
+        
+        console.log('Converted fields:', processedFields)
+        console.log('Converted signatures:', processedSignatures)
       }
 
       const templateData = {
@@ -444,29 +789,19 @@ export default function CompleteCertificateEditor({
         type: 'student' as const,
         is_active: true,
         template_data: {
-          template_image: imageUrl,
-          dynamic_fields: fields,
+          template_type: templateType,
+          template_image: templateType === 'image' ? (imageUrl || undefined) : undefined,
+          template_pdf: templateType === 'pdf' ? (pdfDataUrl || undefined) : undefined,
+          pdf_dimensions: templateType === 'pdf' && pdfDimensions ? pdfDimensions : undefined,
+          dynamic_fields: processedFields,
           signatures: {
             vice_chancellor_name: secretarySignature.name,
             vice_chancellor_signature_data: secretarySignature.image,
             president_name: chancellorSignature.name,
             president_signature_data: chancellorSignature.image,
           },
-          signature_positions: {
-            secretary: {
-              x: secretarySignature.x,
-              y: secretarySignature.y,
-              width: secretarySignature.width,
-              height: secretarySignature.height,
-            },
-            chancellor: {
-              x: chancellorSignature.x,
-              y: chancellorSignature.y,
-              width: chancellorSignature.width,
-              height: chancellorSignature.height,
-            },
-          },
-          text_message: textMessage,
+          signature_positions: processedSignatures,
+          text_message: processedTextMessage,
         },
       }
 
@@ -527,47 +862,128 @@ export default function CompleteCertificateEditor({
                 </CardContent>
               </Card>
 
-              {/* Upload Template */}
+              {/* Template Type Selection */}
               <Card>
                 <CardHeader>
-                  <h3 className="font-semibold text-sm">2. Upload Template</h3>
+                  <h3 className="font-semibold text-sm">2. Template Type</h3>
                 </CardHeader>
                 <CardContent>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  {!templateImage ? (
+                  <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full border-2 border-dashed rounded-lg p-4 hover:border-orange-500 flex flex-col items-center gap-2"
+                      onClick={() => setTemplateType('pdf')}
+                      className={`p-3 border-2 rounded-lg text-center transition-all ${
+                        templateType === 'pdf'
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
                     >
-                      <PhotoIcon className="w-8 h-8 text-gray-400" />
-                      <span className="text-xs text-gray-600">Upload Image</span>
+                      <DocumentIcon className="w-6 h-6 mx-auto mb-1 text-blue-600" />
+                      <div className="font-medium text-xs text-gray-900">PDF</div>
+                      <div className="text-xs text-green-600">✓ Recommended</div>
                     </button>
-                  ) : (
-                    <div className="space-y-2">
-                      <img src={templateImage} alt="Template" className="w-full rounded border" />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full text-xs"
-                      >
-                        Change
-                      </Button>
-                    </div>
-                  )}
+                    <button
+                      onClick={() => setTemplateType('image')}
+                      className={`p-3 border-2 rounded-lg text-center transition-all ${
+                        templateType === 'image'
+                          ? 'border-orange-500 bg-orange-50 ring-1 ring-orange-200'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <PhotoIcon className="w-6 h-6 mx-auto mb-1 text-orange-600" />
+                      <div className="font-medium text-xs text-gray-900">Image</div>
+                      <div className="text-xs text-gray-500">Legacy</div>
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
+
+              {/* Upload Template - PDF */}
+              {templateType === 'pdf' && (
+                <Card>
+                  <CardHeader>
+                    <h3 className="font-semibold text-sm">3. Upload PDF Template</h3>
+                    {pdfDimensions && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Size: {Math.round(pdfDimensions.width)}mm × {Math.round(pdfDimensions.height)}mm
+                      </p>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <input
+                      ref={pdfInputRef}
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handlePdfSelect}
+                      className="hidden"
+                    />
+                    {!templatePdf ? (
+                      <button
+                        onClick={() => pdfInputRef.current?.click()}
+                        className="w-full border-2 border-dashed rounded-lg p-4 hover:border-blue-500 flex flex-col items-center gap-2"
+                      >
+                        <DocumentIcon className="w-8 h-8 text-gray-400" />
+                        <span className="text-xs text-gray-600">Upload PDF</span>
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <img src={templatePdf} alt="PDF Preview" className="w-full rounded border" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => pdfInputRef.current?.click()}
+                          className="w-full text-xs"
+                        >
+                          Change PDF
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Upload Template - Image */}
+              {templateType === 'image' && (
+                <Card>
+                  <CardHeader>
+                    <h3 className="font-semibold text-sm">3. Upload Image Template</h3>
+                  </CardHeader>
+                  <CardContent>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    {!templateImage ? (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full border-2 border-dashed rounded-lg p-4 hover:border-orange-500 flex flex-col items-center gap-2"
+                      >
+                        <PhotoIcon className="w-8 h-8 text-gray-400" />
+                        <span className="text-xs text-gray-600">Upload Image</span>
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <img src={templateImage} alt="Template" className="w-full rounded border" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full text-xs"
+                        >
+                          Change
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* President Signature */}
               <Card>
                 <CardHeader>
-                  <h3 className="font-semibold text-sm">3. President</h3>
+                  <h3 className="font-semibold text-sm">4. President</h3>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div>
@@ -621,7 +1037,7 @@ export default function CompleteCertificateEditor({
               {/* Chancellor Signature */}
               <Card>
                 <CardHeader>
-                  <h3 className="font-semibold text-sm">4. Chancellor</h3>
+                  <h3 className="font-semibold text-sm">5. Chancellor</h3>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div>
@@ -689,7 +1105,7 @@ export default function CompleteCertificateEditor({
               </Card>
 
               {/* Add Fields */}
-              {templateImage && (
+              {(templateImage || templatePdf) && (
                 <Card>
                   <CardHeader>
                     <h3 className="font-semibold text-sm">6. Add Fields</h3>
@@ -717,7 +1133,7 @@ export default function CompleteCertificateEditor({
 
             {/* Center/Right Panel - Visual Editor */}
             <div className="lg:col-span-3 space-y-4">
-              {templateImage ? (
+              {(templateImage || templatePdf) ? (
                 <>
                   <Card>
                     <CardHeader>
@@ -744,19 +1160,41 @@ export default function CompleteCertificateEditor({
                     <CardContent>
                       <div
                         ref={containerRef}
-                        className="relative bg-gray-50 rounded-lg border-2 overflow-hidden"
+                        className="relative bg-gray-50 rounded-lg border-2 overflow-auto"
                         style={{
                           userSelect: 'none',
                           cursor: dragging ? 'grabbing' : 'default',
+                          maxHeight: '70vh',
                         }}
                       >
-                        <img
-                          ref={imageRef}
-                          src={templateImage}
-                          alt="Certificate"
-                          className="w-full h-auto pointer-events-none"
-                          draggable={false}
-                        />
+                        {/* PDF Template - rendered as image from canvas */}
+                        {templateType === 'pdf' && loadingPdfPreview && (
+                          <div className="flex items-center justify-center py-20 text-gray-500">
+                            <ArrowPathIcon className="w-6 h-6 animate-spin mr-2" />
+                            <span>Loading PDF preview...</span>
+                          </div>
+                        )}
+                        {templateType === 'pdf' && templatePdf && !loadingPdfPreview && (
+                          <img
+                            ref={imageRef}
+                            src={templatePdf}
+                            alt="PDF Certificate Template"
+                            className="w-full h-auto pointer-events-none"
+                            style={{ maxWidth: '100%' }}
+                            draggable={false}
+                          />
+                        )}
+                        {/* Image Template */}
+                        {templateType === 'image' && templateImage && (
+                          <img
+                            ref={imageRef}
+                            src={templateImage}
+                            alt="Certificate"
+                            className="w-full h-auto pointer-events-none"
+                            style={{ maxWidth: '100%' }}
+                            draggable={false}
+                          />
+                        )}
 
                         {/* Fields */}
                         {fields.map((field) => (
@@ -1292,8 +1730,18 @@ export default function CompleteCertificateEditor({
               ) : (
                 <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg border-2 border-dashed">
                   <div className="text-center">
-                    <PhotoIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Upload a template image to start</p>
+                    {templateType === 'pdf' ? (
+                      <>
+                        <DocumentIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600">Upload a PDF template to start</p>
+                        <p className="text-sm text-gray-500 mt-2">After uploading, you can add and position dynamic fields</p>
+                      </>
+                    ) : (
+                      <>
+                        <PhotoIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600">Upload an image template to start</p>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -1308,7 +1756,7 @@ export default function CompleteCertificateEditor({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={loading || !templateName || !templateImage || fields.length === 0}
+            disabled={loading || !templateName || (!templateImage && !templatePdf) || fields.length === 0}
             className="bg-orange-600 hover:bg-orange-700"
           >
             {loading ? 'Saving...' : template ? 'Update' : 'Create'} Template
