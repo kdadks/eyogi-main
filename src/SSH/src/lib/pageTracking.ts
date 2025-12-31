@@ -28,7 +28,7 @@ export interface PageTrackingData {
 // CONSENT MANAGEMENT
 // ============================================
 
-// Check if consent has expired (365 days)
+// Check if consent has expired (730 days = 2 years)
 function isConsentExpired(timestamp: string): boolean {
   if (!timestamp) return true
 
@@ -36,7 +36,7 @@ function isConsentExpired(timestamp: string): boolean {
     const consentDate = new Date(timestamp)
     const now = new Date()
     const daysSinceConsent = (now.getTime() - consentDate.getTime()) / (1000 * 60 * 60 * 24)
-    return daysSinceConsent >= 365
+    return daysSinceConsent >= 730 // 2 years instead of 1 year
   } catch {
     return true
   }
@@ -54,12 +54,19 @@ export function hasAnalyticsConsent(): boolean {
 
     const parsed: TrackingConsent = JSON.parse(consent)
 
-    // Check if consent has expired
-    if (isConsentExpired(parsed.timestamp)) {
-      return false
+    // If consent was given for analytics, keep it valid
+    // by refreshing the timestamp on each check
+    if (parsed.analytics === true) {
+      // Update timestamp to keep consent fresh
+      const updated: TrackingConsent = {
+        ...parsed,
+        timestamp: new Date().toISOString(),
+      }
+      localStorage.setItem(CONSENT_KEY, JSON.stringify(updated))
+      return true
     }
 
-    return parsed.analytics === true
+    return false
   } catch {
     return false
   }
@@ -110,7 +117,7 @@ export function getTrackingConsent(): TrackingConsent {
 
     const parsed = JSON.parse(consent)
 
-    // Check if consent has expired (365 days)
+    // Check if consent has expired (730 days = 2 years)
     if (isConsentExpired(parsed.timestamp)) {
       clearTrackingConsent()
       return {
@@ -142,6 +149,34 @@ export function clearTrackingConsent(): void {
     localStorage.removeItem(SESSION_KEY)
   } catch (error) {
     // Error clearing consent - silent fail
+  }
+}
+
+/**
+ * Force re-enable analytics tracking by updating consent timestamp
+ * Useful when consent was expired and needs to be refreshed
+ */
+export function refreshAnalyticsConsent(): void {
+  // Guard for SSR - localStorage not available on server
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    const consent = localStorage.getItem(CONSENT_KEY)
+    if (consent) {
+      const parsed = JSON.parse(consent)
+      // Force refresh by updating timestamp
+      const refreshed: TrackingConsent = {
+        ...parsed,
+        analytics: true,
+        timestamp: new Date().toISOString(),
+      }
+      localStorage.setItem(CONSENT_KEY, JSON.stringify(refreshed))
+      console.log('[Analytics] Consent refreshed')
+    }
+  } catch (error) {
+    console.error('[Analytics] Error refreshing consent:', error)
   }
 }
 
@@ -200,6 +235,59 @@ export function getBrowser(): string {
 // Cache country in sessionStorage to avoid multiple API calls
 const COUNTRY_CACHE_KEY = 'eyogi_user_country'
 
+// ISO 2-letter to full country name mapping
+const ISO2_TO_COUNTRY_NAME: Record<string, string> = {
+  IE: 'Ireland',
+  GB: 'United Kingdom',
+  US: 'United States',
+  CA: 'Canada',
+  AU: 'Australia',
+  NZ: 'New Zealand',
+  IN: 'India',
+  DE: 'Germany',
+  FR: 'France',
+  ES: 'Spain',
+  IT: 'Italy',
+  NL: 'Netherlands',
+  BE: 'Belgium',
+  CH: 'Switzerland',
+  AT: 'Austria',
+  PL: 'Poland',
+  SE: 'Sweden',
+  NO: 'Norway',
+  DK: 'Denmark',
+  FI: 'Finland',
+  RU: 'Russia',
+  CN: 'China',
+  JP: 'Japan',
+  KR: 'South Korea',
+  BR: 'Brazil',
+  MX: 'Mexico',
+  ZA: 'South Africa',
+  SG: 'Singapore',
+  HK: 'Hong Kong',
+}
+
+/**
+ * Normalize country data to full country name
+ * Handles both ISO 2-letter codes (IE) and full names (Ireland)
+ */
+function normalizeCountry(country: string | undefined): string | undefined {
+  if (!country) return undefined
+
+  const trimmed = country.trim()
+  if (!trimmed) return undefined
+
+  // If it's a 2-letter code, map to full name
+  if (trimmed.length === 2) {
+    const normalized = ISO2_TO_COUNTRY_NAME[trimmed.toUpperCase()]
+    return normalized || trimmed // Return mapped name or original if not in map
+  }
+
+  // If it's already a full name or other format, return as-is
+  return trimmed
+}
+
 export async function getCountry(): Promise<string | undefined> {
   try {
     // Check cache first
@@ -218,43 +306,68 @@ export async function getCountry(): Promise<string | undefined> {
 
       if (response.ok) {
         const data = await response.json()
-        const country = data.country_name || data.country || 'Unknown'
+        const country = normalizeCountry(data.country_name || data.country)
 
-        // Cache the result
-        sessionStorage.setItem(COUNTRY_CACHE_KEY, country)
-        return country
-      }
-    } catch (apiError) {
-      console.warn('ipapi.co failed, trying fallback:', apiError)
-
-      // Fallback to ip-api.com (free, 45 requests/minute)
-      try {
-        const fallbackResponse = await fetch('https://ipapi.co/json/', {
-          method: 'GET',
-          signal: AbortSignal.timeout(5000),
-        })
-
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json()
-          const country = fallbackData.country || 'Unknown'
-          console.log('Country detected (fallback):', country)
-
+        if (country) {
           // Cache the result
           sessionStorage.setItem(COUNTRY_CACHE_KEY, country)
           return country
         }
-      } catch (fallbackError) {
-        console.warn('Fallback API also failed:', fallbackError)
       }
+    } catch (apiError) {
+      console.warn('ipapi.co failed, trying fallback:', apiError)
+    }
+
+    // Fallback to ip-api.com (free, 45 requests/minute) - DIFFERENT API
+    try {
+      const fallbackResponse = await fetch('https://ip-api.com/json/', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      })
+
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json()
+        const country = normalizeCountry(fallbackData.country)
+
+        if (country) {
+          console.log('Country detected (ip-api.com):', country)
+          // Cache the result
+          sessionStorage.setItem(COUNTRY_CACHE_KEY, country)
+          return country
+        }
+      }
+    } catch (fallbackError) {
+      console.warn('ip-api.com also failed:', fallbackError)
+    }
+
+    // Tertiary fallback: try ipinfo.io
+    try {
+      const tertiaryResponse = await fetch('https://ipinfo.io/json/', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      })
+
+      if (tertiaryResponse.ok) {
+        const tertiaryData = await tertiaryResponse.json()
+        const country = normalizeCountry(tertiaryData.country)
+
+        if (country) {
+          console.log('Country detected (ipinfo.io):', country)
+          // Cache the result
+          sessionStorage.setItem(COUNTRY_CACHE_KEY, country)
+          return country
+        }
+      }
+    } catch (tertiaryError) {
+      console.warn('ipinfo.io also failed:', tertiaryError)
     }
   } catch (error) {
     console.error('Error fetching country:', error)
   }
 
-  // If all fails, return Unknown and cache it
-  const unknownCountry = 'Unknown'
-  sessionStorage.setItem(COUNTRY_CACHE_KEY, unknownCountry)
-  return unknownCountry
+  // Don't cache 'Unknown' - return undefined so analytics query filters it out
+  console.warn('Could not determine country from any geolocation service')
+  return undefined
 }
 
 // Parse referrer to extract source information

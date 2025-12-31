@@ -144,14 +144,15 @@ export default function AdminAnalytics() {
     loadAnalytics()
   }, [dateRange])
 
-  // Set up real-time subscription for attendance records
+  // Set up real-time subscription for attendance records and page analytics
   useEffect(() => {
-    let subscription: any = null
+    let attendanceSubscription: any = null
+    let pageAnalyticsSubscription: any = null
 
     const setupSubscription = async () => {
       try {
         // Subscribe to attendance_records changes
-        subscription = supabaseAdmin
+        attendanceSubscription = supabaseAdmin
           .channel('attendance_analytics')
           .on(
             'postgres_changes',
@@ -162,7 +163,26 @@ export default function AdminAnalytics() {
             },
             () => {
               // Reload analytics when attendance records change
-              // Use current dateRange value
+              setLoading(true)
+              setTimeout(() => {
+                loadAnalytics()
+              }, 100)
+            },
+          )
+          .subscribe()
+
+        // Subscribe to page_analytics changes for Site Analytics real-time updates
+        pageAnalyticsSubscription = supabaseAdmin
+          .channel('page_analytics_updates')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'page_analytics',
+            },
+            () => {
+              // Reload analytics when page analytics change
               setLoading(true)
               setTimeout(() => {
                 loadAnalytics()
@@ -178,8 +198,11 @@ export default function AdminAnalytics() {
     setupSubscription()
 
     return () => {
-      if (subscription) {
-        supabaseAdmin.removeChannel(subscription)
+      if (attendanceSubscription) {
+        supabaseAdmin.removeChannel(attendanceSubscription)
+      }
+      if (pageAnalyticsSubscription) {
+        supabaseAdmin.removeChannel(pageAnalyticsSubscription)
       }
     }
   }, [loadAnalytics])

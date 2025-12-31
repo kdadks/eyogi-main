@@ -499,7 +499,10 @@ export async function getStudentAnalytics(
       .select('student_id, status')
       .eq('status', 'completed')
 
-    const { data: certificates } = await supabaseAdmin.from('certificates').select('student_id')
+    const { data: certificates } = await supabaseAdmin
+      .from('certificates')
+      .select('student_id')
+      .eq('is_active', true)
 
     const { data: attendanceRecords } = await supabaseAdmin
       .from('attendance_records')
@@ -799,7 +802,10 @@ export async function getTeacherAnalytics(
       .select('teacher_id, students:batch_students(count)')
       .eq('is_active', true)
 
-    const { data: certificates } = await supabaseAdmin.from('certificates').select('teacher_id')
+    const { data: certificates } = await supabaseAdmin
+      .from('certificates')
+      .select('teacher_id')
+      .eq('is_active', true)
 
     const teacherMetrics = new Map()
 
@@ -1280,7 +1286,10 @@ export async function getGurukulAnalytics(dateRange: DateRange): Promise<Gurukul
       .from('enrollments')
       .select('id, course_id, student_id, status')
 
-    const { data: certificates } = await supabaseAdmin.from('certificates').select('id, course_id')
+    const { data: certificates } = await supabaseAdmin
+      .from('certificates')
+      .select('id, course_id')
+      .eq('is_active', true)
 
     const { data: batchStudents } = await supabaseAdmin
       .from('batch_students')
@@ -1489,10 +1498,10 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
       }))
       .sort((a, b) => b.count - a.count)
 
-    // Location data
+    // Location data - filter out empty/unknown countries
     const locationMap = new Map()
     ;(pageAnalytics || []).forEach((record: any) => {
-      if (record.country) {
+      if (record.country && record.country.trim() && record.country.toLowerCase() !== 'unknown') {
         locationMap.set(record.country, (locationMap.get(record.country) || 0) + 1)
       }
     })
