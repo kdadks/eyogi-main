@@ -242,14 +242,13 @@ export interface CertificateTemplate {
       course_id?: string
       assigned_at?: string
     }
-    template_image?: string // Image-based template URL (legacy)
-    template_pdf?: string // PDF-based template URL
-    template_type?: 'image' | 'pdf' // Type of template (default: 'image' for backward compatibility)
-    pdf_page_count?: number // Number of pages in PDF template
+    template_pdf?: string // PDF-based template (stored as base64 data URL)
     pdf_dimensions?: {
       width: number // Width in mm
       height: number // Height in mm
     }
+    template_type?: 'pdf' // Type of template (always 'pdf')
+    pdf_page_count?: number // Number of pages in PDF template
     dynamic_fields?: DynamicField[] // Dynamic field configuration for templates
     text_message?: {
       x: number

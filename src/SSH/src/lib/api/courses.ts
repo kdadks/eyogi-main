@@ -222,7 +222,7 @@ export async function getEnrolledCount(courseIdOrSlug: string): Promise<number> 
   }
 }
 export async function createCourse(
-  course: Omit<Course, 'id' | 'created_at' | 'updated_at'> & { part?: string },
+  course: Omit<Course, 'id' | 'created_at' | 'updated_at' | 'course_number'> & { part?: string; course_number?: string },
 ): Promise<Course> {
   try {
     const courseId = crypto.randomUUID()

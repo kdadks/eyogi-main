@@ -550,14 +550,13 @@ export default function CertificateManagement() {
                 {templates.map((template) => (
                   <Card key={template.id} className="card-hover overflow-hidden">
                     <CardContent className="p-6">
-                      {/* Template Image Preview */}
-                      {template.template_data?.template_image && (
-                        <div className="mb-4 -mx-6 -mt-6">
-                          <img
-                            src={template.template_data.template_image}
-                            alt={template.name}
-                            className="w-full h-40 object-cover"
-                          />
+                      {/* Template PDF Preview */}
+                      {template.template_data?.template_pdf && (
+                        <div className="mb-4 -mx-6 -mt-6 bg-gray-100 h-40 flex items-center justify-center">
+                          <div className="text-center">
+                            <DocumentTextIcon className="h-12 w-12 text-blue-500 mx-auto" />
+                            <span className="text-xs text-gray-500 mt-1 block">PDF Template</span>
+                          </div>
                         </div>
                       )}
 

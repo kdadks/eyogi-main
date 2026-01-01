@@ -37,7 +37,8 @@ import {
   getTeacherCertificateAssignments,
   CertificateAssignment,
 } from '@/lib/api/certificateAssignments'
-import { getCertificateTemplates, CertificateTemplate } from '@/lib/api/certificateTemplates'
+import { getCertificateTemplates } from '@/lib/api/certificateTemplates'
+import { CertificateTemplate } from '@/types'
 import { getGurukuls } from '@/lib/api/gurukuls'
 import { getUserProfile, getAllStudents } from '@/lib/api/users'
 import {
@@ -152,6 +153,8 @@ interface ProfileWithAddress {
   full_name: string
   student_id?: string
   phone?: string
+  date_of_birth?: string
+  status?: string
   address_line_1?: string
   address_line_2?: string
   city?: string
@@ -419,12 +422,6 @@ export default function TeacherDashboard() {
 
     const generatePreview = async () => {
       if (allTemplates.length > currentTemplateIndex && allTemplates[currentTemplateIndex]) {
-        // Skip preview generation for image-based templates (they already have images)
-        if (allTemplates[currentTemplateIndex].template_data?.template_image) {
-          setTemplatePreviewUrl(null)
-          return
-        }
-
         setLoadingPreview(true)
         try {
           const sampleData = {
@@ -800,11 +797,11 @@ export default function TeacherDashboard() {
         tags: data.tags || [],
         includes_certificate: data.includes_certificate ?? true,
         cover_image_url: coverImageCleared
-          ? null
-          : selectedCoverImage?.file_url || data.cover_image_url || null,
+          ? undefined
+          : selectedCoverImage?.file_url || data.cover_image_url || undefined,
         video_preview_url: videoPreviewCleared
-          ? null
-          : selectedVideoPreview?.file_url || data.video_preview_url || null,
+          ? undefined
+          : selectedVideoPreview?.file_url || data.video_preview_url || undefined,
         meta_title: data.meta_title || undefined,
         meta_description: data.meta_description || undefined,
         featured: data.featured || false,
@@ -996,7 +993,7 @@ export default function TeacherDashboard() {
         (error.message === 'CERTIFICATE_ALREADY_ISSUED' ||
           error.name === 'CertificateAlreadyIssued')
       ) {
-        toast.info('ℹ️ Certificate has already been issued to this student for this course.', {
+        toast.success('ℹ️ Certificate has already been issued to this student for this course.', {
           duration: 4000,
         })
         // Refresh dashboard to update UI
@@ -1195,7 +1192,7 @@ export default function TeacherDashboard() {
       for (let i = 0; i < batchStudents.length; i++) {
         const student = batchStudents[i]
         const studentNum = i + 1
-        const studentName = student.student?.full_name || student.name || 'Unknown Student'
+        const studentName = student.student?.full_name || 'Unknown Student'
 
         try {
           setBatchCertificateProgress((prev) => [
@@ -1359,7 +1356,7 @@ export default function TeacherDashboard() {
     // Batch-centric certificate management
     completedBatches: batches.filter((batch) => batch.status === 'completed').length,
     batchesReadyForCertificates: completedBatchStudents.filter(
-      (student) => !hasCertificate(student.student_id, student.course_id),
+      (student) => student.student_id && student.course_id && !hasCertificate(student.student_id, student.course_id),
     ).length,
     // Calculate revenue from paid enrollments only - handles currency conversion and edge cases
     totalRevenue: enrollments
@@ -2896,7 +2893,7 @@ export default function TeacherDashboard() {
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                   <Button
                                     key={page}
-                                    variant={enrolledStudentsPage === page ? 'default' : 'outline'}
+                                    variant={enrolledStudentsPage === page ? 'primary' : 'outline'}
                                     size="sm"
                                     onClick={() => setEnrolledStudentsPage(page)}
                                     className="min-w-[2.5rem]"
@@ -3098,7 +3095,7 @@ export default function TeacherDashboard() {
                                   <Button
                                     key={page}
                                     variant={
-                                      registeredStudentsPage === page ? 'default' : 'outline'
+                                      registeredStudentsPage === page ? 'primary' : 'outline'
                                     }
                                     size="sm"
                                     onClick={() => setRegisteredStudentsPage(page)}
@@ -4309,7 +4306,7 @@ export default function TeacherDashboard() {
                               const file = media[0]
                               let embedCode = ''
                               if (file.file_type.startsWith('image/')) {
-                                embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                                embedCode = `<img src="${file.file_url}" alt="${file.original_name}" style="max-width: 100%; height: auto;" />`
                               } else if (file.file_type.startsWith('video/')) {
                                 embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
                               }
@@ -4898,7 +4895,7 @@ export default function TeacherDashboard() {
                               const file = media[0]
                               let embedCode = ''
                               if (file.file_type.startsWith('image/')) {
-                                embedCode = `<img src="${file.file_url}" alt="${file.original_filename}" style="max-width: 100%; height: auto;" />`
+                                embedCode = `<img src="${file.file_url}" alt="${file.original_name}" style="max-width: 100%; height: auto;" />`
                               } else if (file.file_type.startsWith('video/')) {
                                 embedCode = `<video controls style="max-width: 100%; height: auto;"><source src="${file.file_url}" type="${file.file_type}" /></video>`
                               }
@@ -6455,24 +6452,15 @@ export default function TeacherDashboard() {
                           Template Type
                         </p>
                         <p className="text-lg font-semibold text-blue-600">
-                          {allTemplates[currentTemplateIndex]?.template_data?.template_image
-                            ? 'Image-based'
-                            : 'Design-based'}
+                          PDF Template
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Certificate Template Preview - Show image if available, otherwise show design preview */}
+                  {/* Certificate Template Preview - Show generated PDF preview */}
                   <div className="bg-white border-4 border-gray-300 rounded-lg p-0 overflow-hidden">
-                    {allTemplates[currentTemplateIndex]?.template_data?.template_image ? (
-                      <img
-                        src={allTemplates[currentTemplateIndex]?.template_data?.template_image}
-                        alt="Template Preview"
-                        className="w-full h-auto rounded-lg"
-                        style={{ minHeight: '600px', objectFit: 'contain' }}
-                      />
-                    ) : loadingPreview ? (
+                    {loadingPreview ? (
                       <div
                         className="w-full bg-gray-50 flex items-center justify-center"
                         style={{ minHeight: '600px' }}
@@ -7487,7 +7475,6 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
         } else {
           loadBatches()
         }
-        loadStats()
       } catch (error) {
         console.error('Error deleting batch:', error)
         toast.error('Failed to delete batch')
@@ -7523,9 +7510,8 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
           setEditingBatch(updatedBatch)
         }
 
-        // Refresh batches list and stats
+        // Refresh batches list
         loadBatches()
-        loadStats()
       } catch (refreshError) {
         console.error('Error refreshing batch data:', refreshError)
         // Silent fail on refresh - don't show error toast
@@ -7677,6 +7663,7 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
         email: student.student?.email || 'No email',
         batch_name: student.batch?.name || batch.name,
         course_title: batch.course?.title || 'No course',
+        course_id: batch.course?.id || null,
       }))
 
       setBatchStudents(studentsWithInfo)
@@ -7774,7 +7761,6 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
       } else {
         loadBatches()
       }
-      loadStats()
       setShowDeleteConfirm(false)
       setBatchToDelete(null)
     } catch (error) {
