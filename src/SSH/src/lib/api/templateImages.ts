@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../supabase'
+import { deleteFromSupabaseStorage } from '../supabase-storage'
 
 // Import the type directly from the component
 interface DynamicField {
@@ -110,14 +111,10 @@ export async function uploadTemplatePdf(templateId: string, file: File): Promise
  */
 export async function deleteTemplateImage(imageUrl: string): Promise<void> {
   try {
-    const url = new URL(imageUrl)
-    const pathParts = url.pathname.split('/')
-    const filePath = pathParts.slice(pathParts.indexOf('certificate-templates')).join('/')
-
-    const { error } = await supabaseAdmin.storage.from('certificate-templates').remove([filePath])
-
-    if (error) {
-      throw new Error(`Delete failed: ${error.message}`)
+    const deleted = await deleteFromSupabaseStorage(imageUrl)
+    if (!deleted) {
+      console.warn('Failed to delete template image from certificate-templates bucket:', imageUrl)
+      // Don't throw, as this is non-critical
     }
   } catch (error) {
     console.error('Error deleting template image:', error)

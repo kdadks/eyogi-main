@@ -6,6 +6,7 @@ import {
   createCertificateTemplate,
   updateCertificateTemplate,
 } from '@/lib/api/certificateTemplates'
+import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import {
   XMarkIcon,
@@ -20,28 +21,40 @@ import * as pdfjsLib from 'pdfjs-dist'
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/ssh-app/assets/pdf.worker.min.mjs'
 
 /**
- * Convert a PDF data URL to a PNG preview image
- * This is needed because we store the original PDF but display a preview
+ * Convert a PDF (data URL or storage URL) to a PNG preview image
+ * This is needed because we display PDF templates as PNG previews
  */
-async function convertPdfToPreview(pdfDataUrl: string): Promise<{ preview: string; dimensions: { width: number; height: number } }> {
+async function convertPdfToPreview(
+  pdfSource: string,
+): Promise<{ preview: string; dimensions: { width: number; height: number } }> {
   try {
-    // Extract base64 data from data URL
-    const base64 = pdfDataUrl.split(',')[1]
-    const binaryString = atob(base64)
-    const bytes = new Uint8Array(binaryString.length)
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i)
+    let arrayBuffer: ArrayBuffer
+
+    // Handle both data URLs and regular URLs
+    if (pdfSource.startsWith('data:application/pdf')) {
+      // Data URL - extract base64 and decode
+      const base64 = pdfSource.split(',')[1]
+      const binaryString = atob(base64)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      arrayBuffer = bytes.buffer
+    } else {
+      // Regular URL - fetch it
+      const response = await fetch(pdfSource)
+      arrayBuffer = await response.arrayBuffer()
     }
-    
+
     // Load PDF with PDF.js
-    const pdf = await pdfjsLib.getDocument({ data: bytes.buffer }).promise
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
     const page = await pdf.getPage(1)
     const viewport = page.getViewport({ scale: 1 })
-    
+
     // Get dimensions in mm (PDF points are 1/72 inch, 1 inch = 25.4mm)
     const widthMm = (viewport.width / 72) * 25.4
     const heightMm = (viewport.height / 72) * 25.4
-    
+
     // Create preview image from first page
     const scale = 2 // Higher scale for better quality preview
     const scaledViewport = page.getViewport({ scale })
@@ -49,15 +62,15 @@ async function convertPdfToPreview(pdfDataUrl: string): Promise<{ preview: strin
     canvas.width = scaledViewport.width
     canvas.height = scaledViewport.height
     const ctx = canvas.getContext('2d')!
-    
+
     await page.render({
       canvasContext: ctx,
       viewport: scaledViewport,
       canvas,
     }).promise
-    
+
     const previewDataUrl = canvas.toDataURL('image/png')
-    
+
     return {
       preview: previewDataUrl,
       dimensions: { width: widthMm, height: heightMm },
@@ -197,7 +210,7 @@ export default function CompleteCertificateEditor({
         const storedPdf = template.template_data.template_pdf
         // Store the original PDF data URL
         setOriginalPdfDataUrl(storedPdf)
-        
+
         // Check if it's a PDF data URL (needs conversion to PNG preview)
         if (storedPdf.startsWith('data:application/pdf')) {
           setLoadingPdfPreview(true)
@@ -328,7 +341,7 @@ export default function CompleteCertificateEditor({
       const handleLoad = () => {
         setTimeout(updateSize, 50)
       }
-      
+
       img.addEventListener('load', handleLoad)
       window.addEventListener('resize', updateSize)
 
@@ -346,7 +359,7 @@ export default function CompleteCertificateEditor({
       // Calculate mm to pixel conversion factor
       const scaleX = imageSize.width / pdfDimensions.width
       const scaleY = imageSize.height / pdfDimensions.height
-      
+
       console.log('Converting positions from mm to pixels:', {
         imageSize,
         pdfDimensions,
@@ -361,7 +374,7 @@ export default function CompleteCertificateEditor({
           x: field.x * scaleX,
           y: field.y * scaleY,
           width: field.width * scaleX,
-        }))
+        })),
       )
 
       // Convert signature positions from mm to pixels
@@ -412,16 +425,18 @@ export default function CompleteCertificateEditor({
     }
 
     try {
+      setLoadingPdfPreview(true)
+
       // Read PDF to get dimensions
       const arrayBuffer = await file.arrayBuffer()
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       const page = await pdf.getPage(1)
       const viewport = page.getViewport({ scale: 1 })
-      
+
       // Get dimensions in mm (PDF points are 1/72 inch, 1 inch = 25.4mm)
       const widthMm = (viewport.width / 72) * 25.4
       const heightMm = (viewport.height / 72) * 25.4
-      
+
       setPdfDimensions({ width: widthMm, height: heightMm })
       setUploadedPdfFile(file)
 
@@ -432,28 +447,27 @@ export default function CompleteCertificateEditor({
       canvas.width = scaledViewport.width
       canvas.height = scaledViewport.height
       const ctx = canvas.getContext('2d')!
-      
+
       await page.render({
         canvasContext: ctx,
         viewport: scaledViewport,
         // Include canvas for compatibility
-        ...(canvas && { canvas })
+        ...(canvas && { canvas }),
       }).promise
-      
+
       const previewDataUrl = canvas.toDataURL('image/png')
       setTemplatePdf(previewDataUrl)
-      
-      // Also store original PDF as data URL for saving (in case user doesn't re-upload)
-      const pdfReader = new FileReader()
-      pdfReader.onload = () => {
-        setOriginalPdfDataUrl(pdfReader.result as string)
-      }
-      pdfReader.readAsDataURL(file)
-      
+
+      // Store original PDF file reference for upload during save
+      // DO NOT convert to data URL - we'll upload to Supabase during save instead
+      setOriginalPdfDataUrl(null) // Clear any previous data URL
+
       toast.success(`PDF loaded: ${Math.round(widthMm)}mm × ${Math.round(heightMm)}mm`)
     } catch (error) {
       console.error('Error loading PDF:', error)
       toast.error('Failed to load PDF file')
+    } finally {
+      setLoadingPdfPreview(false)
     }
   }
 
@@ -487,9 +501,12 @@ export default function CompleteCertificateEditor({
   const addField = (preset: (typeof PRESET_FIELDS)[0]) => {
     // Calculate reasonable initial position based on image size
     const baseX = imageSize.width > 0 ? Math.min(50, imageSize.width * 0.1) : 50
-    const baseY = imageSize.height > 0 ? Math.min(50 + fields.length * 50, imageSize.height * 0.3) : 50 + fields.length * 50
+    const baseY =
+      imageSize.height > 0
+        ? Math.min(50 + fields.length * 50, imageSize.height * 0.3)
+        : 50 + fields.length * 50
     const fieldWidth = imageSize.width > 0 ? Math.min(200, imageSize.width * 0.4) : 200
-    
+
     const newField: DynamicField = {
       id: `field-${Date.now()}`,
       name: preset.name,
@@ -563,11 +580,11 @@ export default function CompleteCertificateEditor({
       if (!dragging || !containerRef.current) return
 
       const containerRect = containerRef.current.getBoundingClientRect()
-      
+
       // Use imageSize if available, otherwise use container size as fallback
       const maxWidth = imageSize.width > 0 ? imageSize.width : containerRect.width
       const maxHeight = imageSize.height > 0 ? imageSize.height : containerRect.height
-      
+
       const newX = e.clientX - containerRect.left - dragging.offsetX
       const newY = e.clientY - containerRect.top - dragging.offsetY
 
@@ -651,17 +668,48 @@ export default function CompleteCertificateEditor({
 
     setLoading(true)
     try {
-      let pdfDataUrl = originalPdfDataUrl // Use the stored original PDF data URL
+      let pdfStorageUrl: string | null = originalPdfDataUrl // Falls back to existing URL if available
 
-      // Handle PDF template - if user uploaded a new PDF file, read it
+      // Handle PDF template - if user uploaded a new PDF file, upload it to Supabase storage
       if (uploadedPdfFile) {
-        // Convert PDF file to base64 data URL
-        const reader = new FileReader()
-        pdfDataUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(uploadedPdfFile)
-        })
+        console.log('Uploading PDF to Supabase storage...')
+
+        // Generate a unique filename for the PDF
+        const timestamp = Date.now()
+        const randomStr = Math.random().toString(36).substring(2, 8)
+        const safeFileName = templateName.replace(/[^a-z0-9_-]/gi, '_').toLowerCase()
+        const pdfFileName = `${safeFileName}_${timestamp}_${randomStr}.pdf`
+        const pdfPath = `templates/${pdfFileName}`
+
+        // Upload to certificate-templates bucket
+        const { data, error: uploadError } = await supabase.storage
+          .from('certificate-templates')
+          .upload(pdfPath, uploadedPdfFile, {
+            cacheControl: '3600',
+            upsert: true,
+          })
+
+        if (uploadError) {
+          console.error('Error uploading PDF to Supabase:', uploadError)
+          throw new Error(`Failed to upload PDF: ${uploadError.message}`)
+        }
+
+        if (!data) {
+          throw new Error('No response from upload')
+        }
+
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('certificate-templates')
+          .getPublicUrl(pdfPath)
+
+        if (!publicUrlData || !publicUrlData.publicUrl) {
+          throw new Error('Failed to get public URL for uploaded PDF')
+        }
+
+        pdfStorageUrl = publicUrlData.publicUrl
+        console.log('PDF uploaded successfully:', pdfStorageUrl)
+        toast.success('PDF uploaded to storage')
       }
 
       // For PDF templates, convert pixel positions to mm positions
@@ -688,7 +736,7 @@ export default function CompleteCertificateEditor({
         // Calculate pixel to mm conversion factor
         const scaleX = pdfDimensions.width / imageSize.width
         const scaleY = pdfDimensions.height / imageSize.height
-        
+
         console.log('Converting positions from pixels to mm:', {
           imageSize,
           pdfDimensions,
@@ -728,18 +776,20 @@ export default function CompleteCertificateEditor({
           width: textMessage.width * scaleX,
           height: textMessage.height * scaleY,
         }
-        
+
         console.log('Converted fields:', processedFields)
         console.log('Converted signatures:', processedSignatures)
       }
 
-      const templateData = {
+      // Only include PDF URL if available (from upload or existing)
+      const templateData: any = {
         name: templateName,
         type: 'student' as const,
         is_active: true,
         template_data: {
           template_type: 'pdf' as const,
-          template_pdf: pdfDataUrl || undefined,
+          // Store the public URL instead of base64 data URL
+          ...(pdfStorageUrl && { template_pdf: pdfStorageUrl }),
           pdf_dimensions: pdfDimensions || undefined,
           dynamic_fields: processedFields,
           signatures: {
@@ -758,7 +808,7 @@ export default function CompleteCertificateEditor({
         savedTemplate = await updateCertificateTemplate(template.id, templateData)
         toast.success('Template updated successfully')
       } else {
-        savedTemplate = await createCertificateTemplate(templateData as any)
+        savedTemplate = await createCertificateTemplate(templateData)
         toast.success('Template created successfully')
       }
 
@@ -766,7 +816,7 @@ export default function CompleteCertificateEditor({
       onClose()
     } catch (error) {
       console.error('Save error:', error)
-      toast.error('Failed to save template')
+      toast.error(error instanceof Error ? error.message : 'Failed to save template')
     } finally {
       setLoading(false)
     }
@@ -816,7 +866,8 @@ export default function CompleteCertificateEditor({
                   <h3 className="font-semibold text-sm">2. Upload PDF Template</h3>
                   {pdfDimensions && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Size: {Math.round(pdfDimensions.width)}mm × {Math.round(pdfDimensions.height)}mm
+                      Size: {Math.round(pdfDimensions.width)}mm × {Math.round(pdfDimensions.height)}
+                      mm
                     </p>
                   )}
                 </CardHeader>
@@ -1593,7 +1644,9 @@ export default function CompleteCertificateEditor({
                   <div className="text-center">
                     <DocumentIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Upload a PDF template to start</p>
-                    <p className="text-sm text-gray-500 mt-2">After uploading, you can add and position dynamic fields</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      After uploading, you can add and position dynamic fields
+                    </p>
                   </div>
                 </div>
               )}

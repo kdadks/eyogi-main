@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../supabase'
 import { CertificateTemplate } from '@/types'
+import { deleteFromSupabaseStorage } from '../supabase-storage'
 export async function getCertificateTemplates(): Promise<CertificateTemplate[]> {
   try {
     const { data, error } = await supabaseAdmin
@@ -51,9 +52,90 @@ export async function updateCertificateTemplate(
   return data
 }
 export async function deleteCertificateTemplate(id: string): Promise<void> {
-  const { error } = await supabaseAdmin.from('certificate_templates').delete().eq('id', id)
-  if (error) {
-    throw new Error(`Failed to delete template: ${error.message}`)
+  try {
+    // First, get the template to retrieve all associated file URLs for cleanup
+    const { data: template, error: fetchError } = await supabaseAdmin
+      .from('certificate_templates')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching template for deletion:', fetchError)
+      throw new Error(`Failed to fetch template: ${fetchError.message}`)
+    }
+
+    if (!template) {
+      throw new Error('Template not found')
+    }
+
+    // Collect all storage file URLs from the template
+    const filesToDelete: string[] = []
+
+    // Check template_data for image URLs
+    if (template.template_data) {
+      const templateData = template.template_data as Record<string, unknown>
+
+      // Extract logo URLs
+      if (templateData.logos) {
+        const logos = templateData.logos as Record<string, unknown>
+        Object.values(logos).forEach((url) => {
+          if (typeof url === 'string' && url && url.startsWith('http')) {
+            filesToDelete.push(url)
+          }
+        })
+      }
+
+      // Extract signature URLs
+      if (templateData.signatures) {
+        const signatures = templateData.signatures as Record<string, unknown>
+        Object.values(signatures).forEach((url) => {
+          if (typeof url === 'string' && url && url.startsWith('http')) {
+            filesToDelete.push(url)
+          }
+        })
+      }
+
+      // Extract background images or other resource URLs
+      if (templateData.background_image && typeof templateData.background_image === 'string') {
+        if (templateData.background_image.startsWith('http')) {
+          filesToDelete.push(templateData.background_image)
+        }
+      }
+
+      // Extract dynamic field images
+      if (templateData.dynamic_fields && Array.isArray(templateData.dynamic_fields)) {
+        ;(templateData.dynamic_fields as Array<Record<string, unknown>>).forEach((field) => {
+          if (field.image_url && typeof field.image_url === 'string') {
+            if (field.image_url.startsWith('http')) {
+              filesToDelete.push(field.image_url)
+            }
+          }
+        })
+      }
+    }
+
+    // Delete all associated files from certificate-templates bucket
+    if (filesToDelete.length > 0) {
+      console.log(`Deleting ${filesToDelete.length} files from certificate-templates bucket`)
+      for (const fileUrl of filesToDelete) {
+        const deleted = await deleteFromSupabaseStorage(fileUrl)
+        if (!deleted) {
+          console.warn('Failed to delete file from storage:', fileUrl)
+        }
+      }
+    }
+
+    // Finally, delete the template from database
+    const { error } = await supabaseAdmin.from('certificate_templates').delete().eq('id', id)
+    if (error) {
+      throw new Error(`Failed to delete template: ${error.message}`)
+    }
+
+    console.log('Successfully deleted certificate template and associated files')
+  } catch (error) {
+    console.error('Error deleting certificate template:', error)
+    throw error
   }
 }
 export async function duplicateCertificateTemplate(id: string): Promise<CertificateTemplate> {

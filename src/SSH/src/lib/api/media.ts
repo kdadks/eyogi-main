@@ -1,6 +1,7 @@
 // Media Management API Functions
 import { supabaseAdmin } from '../supabase'
 import { deleteFromUploadThing, uploadWatermarkedFilesToUploadThing } from '../storage-client'
+import { deleteFromSupabaseStorage, bulkDeleteFromSupabaseStorage } from '../supabase-storage'
 
 export interface MediaFile {
   id: string
@@ -155,12 +156,12 @@ export async function deleteMediaFile(id: string): Promise<void> {
       throw new Error('Media file not found')
     }
 
-    // Delete from Supabase storage first
-    console.log('Deleting file from Supabase storage:', mediaFile.original_name)
-    const storageDeleted = await deleteFromUploadThing(mediaFile.file_url)
+    // Delete from Supabase storage (media bucket) first
+    console.log('Deleting file from media bucket:', mediaFile.original_name)
+    const storageDeleted = await deleteFromSupabaseStorage(mediaFile.file_url)
 
     if (!storageDeleted) {
-      console.warn('Failed to delete from Supabase storage, but continuing with database deletion')
+      console.warn('Failed to delete from media bucket, but continuing with database deletion')
     }
 
     // Then delete from database
@@ -197,16 +198,15 @@ export async function bulkDeleteMediaFiles(ids: string[]): Promise<void> {
     }
 
     // Delete from Supabase storage first (in parallel for better performance)
-    console.log(`Deleting ${mediaFiles.length} files from Supabase storage`)
-    const deletePromises = mediaFiles.map(async (file) => {
-      const deleted = await deleteFromUploadThing(file.file_url)
-      if (!deleted) {
-        console.warn(`Failed to delete ${file.original_name} from Supabase storage`)
-      }
-      return { id: file.id, deleted }
-    })
+    console.log(`Deleting ${mediaFiles.length} files from media bucket`)
+    const fileUrls = mediaFiles.map((f) => f.file_url)
+    const storageResult = await bulkDeleteFromSupabaseStorage(fileUrls)
 
-    await Promise.all(deletePromises)
+    if (storageResult.failed.length > 0) {
+      console.warn(
+        `Failed to delete ${storageResult.failed.length} files from storage, but continuing with database deletion`,
+      )
+    }
 
     // Then delete from database
     const { error } = await supabaseAdmin.from('media_files').delete().in('id', ids)
@@ -216,7 +216,9 @@ export async function bulkDeleteMediaFiles(ids: string[]): Promise<void> {
       throw new Error(`Failed to delete media files: ${error.message}`)
     }
 
-    console.log(`Successfully deleted ${mediaFiles.length} media files`)
+    console.log(
+      `Successfully deleted ${mediaFiles.length} media files (${storageResult.deleted} from storage)`,
+    )
   } catch (error) {
     console.error('Error bulk deleting media files:', error)
     throw new Error('Failed to delete media files')

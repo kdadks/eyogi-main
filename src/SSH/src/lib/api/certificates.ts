@@ -2,6 +2,7 @@ import { supabaseAdmin } from '../supabase'
 import { Certificate, CertificateTemplate } from '@/types'
 import { generateCertificatePDF, CertificateData } from '../pdf/certificateGenerator'
 import { decryptProfileFields, decryptField } from '../encryption'
+import { deleteFromSupabaseStorage, bulkDeleteFromSupabaseStorage } from '../supabase-storage'
 
 /**
  * Send certificate issued email notification to parent
@@ -64,7 +65,7 @@ export async function generateAndUploadCertificatePDF(
 
     // Create a File object from the blob
     const fileName = `${certificateNumber}.pdf`
-    const filePath = `certificates/${fileName}`
+    const filePath = fileName // Just the file name, not with bucket prefix
     const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
 
     // Upload to Supabase storage
@@ -772,13 +773,65 @@ export async function issueCertificateWithTemplate(
       throw error
     }
   } else {
-    // Deactivate existing certificates if forcing re-issue
-    await supabaseAdmin
+    // When forcing re-issue, fetch existing certificates and delete their PDFs from storage
+    const { data: existingCertificates, error: fetchError } = await supabaseAdmin
+      .from('certificates')
+      .select('id, file_url')
+      .eq('student_id', enrichedEnrollment.student_id)
+      .eq('course_id', enrichedEnrollment.course_id)
+      .eq('is_active', true)
+
+    console.log('Force reissue: checking for existing certificates', {
+      student_id: enrichedEnrollment.student_id,
+      course_id: enrichedEnrollment.course_id,
+      existingCount: existingCertificates?.length || 0,
+      fetchError,
+    })
+
+    if (!fetchError && existingCertificates && existingCertificates.length > 0) {
+      // Delete PDFs from storage for all existing active certificates
+      for (const cert of existingCertificates) {
+        console.log('Processing certificate for deletion:', {
+          id: cert.id,
+          has_file_url: !!cert.file_url,
+          file_url: cert.file_url,
+        })
+
+        if (cert.file_url) {
+          try {
+            console.log('Deleting inactive certificate PDF from storage:', cert.id, cert.file_url)
+            const deleted = await deleteFromSupabaseStorage(cert.file_url)
+            console.log(`Delete result for ${cert.id}:`, deleted)
+            if (!deleted) {
+              console.warn(`Failed to delete PDF for certificate ${cert.id}, but continuing`)
+            }
+          } catch (error) {
+            console.warn(`Error deleting certificate PDF for ${cert.id}:`, error)
+            // Continue with deactivation even if PDF deletion fails
+          }
+        } else {
+          console.warn(
+            `Certificate ${cert.id} has no file_url, skipping storage deletion but will deactivate in DB`,
+          )
+        }
+      }
+    } else {
+      console.log('No existing certificates found to delete')
+    }
+
+    // Deactivate existing certificates after deleting their PDFs
+    const { error: deactivateError } = await supabaseAdmin
       .from('certificates')
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('student_id', enrichedEnrollment.student_id)
       .eq('course_id', enrichedEnrollment.course_id)
       .eq('is_active', true)
+
+    if (deactivateError) {
+      console.warn('Error deactivating certificates:', deactivateError)
+    } else {
+      console.log('Successfully deactivated existing certificates')
+    }
   }
 
   // Get the certificate template
@@ -1207,5 +1260,168 @@ export async function regenerateCertificate(certificateId: string): Promise<Cert
   } catch (pdfError) {
     console.error('Error regenerating certificate PDF:', pdfError)
     throw new Error('Failed to regenerate certificate PDF')
+  }
+}
+
+/**
+ * Delete a single certificate and its associated PDF from storage
+ */
+export async function deleteCertificate(certificateId: string): Promise<void> {
+  try {
+    // First, get the certificate to retrieve the file URL for cleanup
+    const { data: certificate, error: fetchError } = await supabaseAdmin
+      .from('certificates')
+      .select('id, file_url, certificate_number')
+      .eq('id', certificateId)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching certificate for deletion:', fetchError)
+      throw new Error(`Failed to fetch certificate: ${fetchError.message}`)
+    }
+
+    if (!certificate) {
+      throw new Error('Certificate not found')
+    }
+
+    // Delete the PDF from certificates bucket if it exists
+    if (certificate.file_url) {
+      console.log(
+        'Deleting certificate PDF from certificates bucket:',
+        certificate.certificate_number,
+      )
+      const deleted = await deleteFromSupabaseStorage(certificate.file_url)
+      if (!deleted) {
+        console.warn(
+          'Failed to delete certificate PDF from storage, but continuing with database deletion',
+        )
+      }
+    }
+
+    // Delete the certificate from database
+    const { error: deleteError } = await supabaseAdmin
+      .from('certificates')
+      .delete()
+      .eq('id', certificateId)
+
+    if (deleteError) {
+      console.error('Error deleting certificate from database:', deleteError)
+      throw new Error(`Failed to delete certificate: ${deleteError.message}`)
+    }
+
+    console.log('Successfully deleted certificate:', certificate.certificate_number)
+  } catch (error) {
+    console.error('Error deleting certificate:', error)
+    throw error
+  }
+}
+
+/**
+ * Bulk delete certificates and their associated PDFs from storage
+ */
+export async function bulkDeleteCertificates(certificateIds: string[]): Promise<void> {
+  try {
+    // First, get all certificates to retrieve file URLs for cleanup
+    const { data: certificates, error: fetchError } = await supabaseAdmin
+      .from('certificates')
+      .select('id, file_url, certificate_number')
+      .in('id', certificateIds)
+
+    if (fetchError) {
+      console.error('Error fetching certificates for bulk deletion:', fetchError)
+      throw new Error(`Failed to fetch certificates: ${fetchError.message}`)
+    }
+
+    if (!certificates || certificates.length === 0) {
+      throw new Error('No certificates found for deletion')
+    }
+
+    // Delete all PDFs from certificates bucket
+    const fileUrls = certificates.filter((cert) => cert.file_url).map((cert) => cert.file_url)
+
+    if (fileUrls.length > 0) {
+      console.log(`Deleting ${fileUrls.length} certificate PDFs from certificates bucket`)
+      const storageResult = await bulkDeleteFromSupabaseStorage(fileUrls)
+      if (storageResult.failed.length > 0) {
+        console.warn(
+          `Failed to delete ${storageResult.failed.length} certificate PDFs from storage, but continuing with database deletion`,
+        )
+      }
+    }
+
+    // Delete all certificates from database
+    const { error: deleteError } = await supabaseAdmin
+      .from('certificates')
+      .delete()
+      .in('id', certificateIds)
+
+    if (deleteError) {
+      console.error('Error bulk deleting certificates:', deleteError)
+      throw new Error(`Failed to delete certificates: ${deleteError.message}`)
+    }
+
+    console.log(`Successfully deleted ${certificates.length} certificates`)
+  } catch (error) {
+    console.error('Error bulk deleting certificates:', error)
+    throw error
+  }
+}
+
+/**
+ * Clean up inactive certificates by deleting their stored files from storage
+ * This ensures only active certificates have PDFs in the storage bucket
+ */
+export async function cleanupInactiveCertificates(): Promise<{
+  count: number
+  deleted: number
+  failed: string[]
+}> {
+  try {
+    // Get all inactive certificates with stored files
+    const { data: inactiveCerts, error: fetchError } = await supabaseAdmin
+      .from('certificates')
+      .select('id, file_url, certificate_number')
+      .eq('is_active', false)
+      .not('file_url', 'is', null)
+
+    if (fetchError) {
+      console.error('Error fetching inactive certificates:', fetchError)
+      throw new Error(`Failed to fetch inactive certificates: ${fetchError.message}`)
+    }
+
+    if (!inactiveCerts || inactiveCerts.length === 0) {
+      console.log('No inactive certificates with stored files found')
+      return { count: 0, deleted: 0, failed: [] }
+    }
+
+    const result = {
+      count: inactiveCerts.length,
+      deleted: 0,
+      failed: [] as string[],
+    }
+
+    console.log(`Found ${inactiveCerts.length} inactive certificates with stored files`)
+
+    // Delete files for all inactive certificates
+    for (const cert of inactiveCerts) {
+      if (cert.file_url) {
+        const deleted = await deleteFromSupabaseStorage(cert.file_url)
+
+        if (deleted) {
+          result.deleted++
+          console.log(`✅ Deleted file for inactive certificate: ${cert.certificate_number}`)
+        } else {
+          result.failed.push(cert.certificate_number)
+          console.log(
+            `❌ Failed to delete file for inactive certificate: ${cert.certificate_number}`,
+          )
+        }
+      }
+    }
+
+    return result
+  } catch (error) {
+    console.error('Error cleaning up inactive certificates:', error)
+    throw error
   }
 }
