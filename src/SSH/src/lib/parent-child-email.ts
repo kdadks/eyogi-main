@@ -514,8 +514,8 @@ function generateParentChildAddedHTML(
               <!-- Next Steps -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
                 <tr>
-                  <td style="padding: 20px; background-color: #e7f3ff; border-left: 4px solid #2196f3;">
-                    <p style="margin: 0; padding: 0 0 15px 0; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: #1976d2;">📋 Next Steps</p>
+                  <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <p style="margin: 0; padding: 0 0 15px 0; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: #2c5f2d;">📋 Next Steps</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; The account needs to be <strong>activated by our Gurukul admin</strong> team</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; You will receive an email notification once the account is activated</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; After activation, your child can enroll in courses through your parent dashboard</p>
@@ -533,9 +533,10 @@ function generateParentChildAddedHTML(
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
-              <p style="margin: 0; padding: 0; font-size: 12px; color: #6c757d; line-height: 18px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
-                &copy; ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>
@@ -616,8 +617,8 @@ function generateChildActivationParentNotificationHTML(
               <!-- What You Can Do Now -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
                 <tr>
-                  <td style="padding: 20px; background-color: #e7f3ff; border-left: 4px solid #2196f3;">
-                    <p style="margin: 0; padding: 0 0 15px 0; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: #1976d2;">🎓 What You Can Do Now</p>
+                  <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <p style="margin: 0; padding: 0 0 15px 0; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: #2c5f2d;">🎓 What You Can Do Now</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; <strong>Enroll in Courses:</strong> Browse available courses and enroll your child</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; <strong>Track Progress:</strong> Monitor your child's learning progress and achievements</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; <strong>View Assignments:</strong> Stay updated on upcoming assignments and deadlines</p>
@@ -652,9 +653,10 @@ function generateChildActivationParentNotificationHTML(
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
-              <p style="margin: 0; padding: 0; font-size: 12px; color: #6c757d; line-height: 18px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
-                &copy; ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>
@@ -749,8 +751,8 @@ function generateParentEnrollmentConfirmationHTML(
               <!-- What Happens Next -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
                 <tr>
-                  <td style="padding: 20px; background-color: #e7f3ff; border-left: 4px solid #2196f3;">
-                    <p style="margin: 0; padding: 0 0 15px 0; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: #1976d2;">📋 What Happens Next?</p>
+                  <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <p style="margin: 0; padding: 0 0 15px 0; font-weight: bold; font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: #2c5f2d;">📋 What Happens Next?</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; Our admin team will review the enrollment request</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; Eligibility and prerequisites will be verified</p>
                     <p style="margin: 0; padding: 0 0 8px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">&bull; You'll receive an email notification with the approval status</p>
@@ -768,9 +770,10 @@ function generateParentEnrollmentConfirmationHTML(
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
-              <p style="margin: 0; padding: 0; font-size: 12px; color: #6c757d; line-height: 18px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
-                &copy; ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>
@@ -847,8 +850,8 @@ function generateAdminEnrollmentNotificationHTML(
               <!-- Enrollment Type Badge -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
                 <tr>
-                  <td style="padding: 12px 20px; background-color: #e7f3ff; border-left: 4px solid #2196f3;">
-                    <p style="margin: 0; padding: 0; font-size: 14px; color: #1976d2; font-weight: 600; font-family: Arial, Helvetica, sans-serif;">
+                  <td style="padding: 12px 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <p style="margin: 0; padding: 0; font-size: 14px; color: #2c5f2d; font-weight: 600; font-family: Arial, Helvetica, sans-serif;">
                       Type: ${enrollmentType}
                     </p>
                   </td>
@@ -914,9 +917,10 @@ function generateAdminEnrollmentNotificationHTML(
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
-              <p style="margin: 0; padding: 0; font-size: 12px; color: #6c757d; line-height: 18px; font-family: Arial, Helvetica, sans-serif; text-align: center;">
-                This is an automated notification. &copy; ${new Date().getFullYear()} eYogi Gurukul. All rights reserved.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>

@@ -178,83 +178,101 @@ export async function sendEnrollmentStatusEmail(
  */
 function generateEnrollmentSubmissionHTML(studentName: string, courseTitle: string): string {
   return `
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
   <title>Enrollment Request Received</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a {font-family: Arial, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
+<body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
     <tr>
-      <td style="padding: 20px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <!-- Header with Logo -->
+      <td align="center" style="padding: 40px 10px;">
+        <!--[if mso]>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+        <tr>
+        <td>
+        <![endif]-->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+          <!-- Logo -->
           <tr>
-            <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" alt="SSH University Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;">
+            <td align="center" style="padding: 30px 20px 20px 20px;">
+              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
             </td>
           </tr>
-          
-          <!-- Main Content -->
+          <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 30px;">
-              <h1 style="margin: 0 0 20px; font-size: 24px; color: #333333; font-weight: bold;">
-                📚 Enrollment Request Received
-              </h1>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Dear <strong>${studentName}</strong>,
-              </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
+            <td style="padding: 20px 40px 40px 40px;">
+              <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">📚 Enrollment Request Received</h2>
+              <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear <strong>${studentName}</strong>,</p>
+              <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
                 Thank you for your interest in enrolling in <strong>${courseTitle}</strong>. We have successfully received your enrollment request.
               </p>
               
               <!-- Status Box -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-                <h2 style="margin: 0 0 10px; font-size: 18px; color: #856404;">⏳ Under Review</h2>
-                <p style="margin: 0; font-size: 15px; color: #856404; line-height: 1.6;">
-                  Your enrollment request is currently being reviewed by our Gurukul team. We will notify you once a decision has been made.
-                </p>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
+                <tr>
+                  <td style="padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107;">
+                    <h3 style="margin: 0; padding: 0 0 10px 0; font-size: 18px; color: #856404; font-weight: bold; font-family: Arial, Helvetica, sans-serif;">⏳ Under Review</h3>
+                    <p style="margin: 0; font-size: 15px; color: #856404; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
+                      Your enrollment request is currently being reviewed by our Gurukul team. We will notify you once a decision has been made.
+                    </p>
+                  </td>
+                </tr>
+              </table>
               
               <!-- What Happens Next -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px;">
-                <h2 style="margin: 0 0 15px; font-size: 18px; color: #333333;">What Happens Next?</h2>
-                <ul style="margin: 0; padding-left: 20px; color: #555555; line-height: 1.8;">
-                  <li>Our team will review your enrollment request</li>
-                  <li>You will receive an email notification with the decision</li>
-                  <li>If approved, you'll get immediate access to the course</li>
-                  <li>If you have questions, feel free to contact our support team</li>
-                </ul>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
+                <tr>
+                  <td style="padding: 15px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <h3 style="margin: 0; padding: 0 0 10px 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif;">What Happens Next?</h3>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Our team will review your enrollment request</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• You will receive an email notification with the decision</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• If approved, you'll get immediate access to the course</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• If you have questions, feel free to contact our support team</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
               
-              <p style="margin: 25px 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Thank you for choosing SSH University for your learning journey.
+              <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                For help, contact us at
+                <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
               </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Best regards,<br>
-                <strong>The SSH University Team</strong>
-              </p>
+              <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; Team eYogi Gurukul</p>
             </td>
           </tr>
-          
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
-                <strong>SSH University</strong><br>
-                Excellence in Education
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #999999;">
-                This is an automated message. Please do not reply to this email.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>
         </table>
+        <!--[if mso]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
@@ -282,112 +300,137 @@ function generateEnrollmentApprovalHTML(
     : 'You can now access the course materials and begin your learning journey.'
 
   return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enrollment Approved</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
-    <tr>
-      <td style="padding: 20px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <!-- Header with Logo -->
-          <tr>
-            <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" alt="SSH University Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;">
-            </td>
-          </tr>
-          
-          <!-- Main Content -->
-          <tr>
-            <td style="padding: 40px 40px 30px;">
-              <h1 style="margin: 0 0 20px; font-size: 24px; color: #333333; font-weight: bold;">
-                🎉 Enrollment Approved!
-              </h1>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Dear <strong>${greeting}</strong>,
-              </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                ${enrollmentMessage}
-              </p>
-              
-              ${
-                courseDescription
-                  ? `
-              <div style="margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px;">
-                <h2 style="margin: 0 0 10px; font-size: 18px; color: #333333;">About This Course</h2>
-                <p style="margin: 0; font-size: 15px; color: #555555; line-height: 1.6;">
-                  ${courseDescription}
-                </p>
-              </div>
-              `
-                  : ''
-              }
-              
-              <!-- Access Button -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 25px 0;">
-                <tr>
-                  <td style="text-align: center;">
-                    <a href="https://eyogigurukul.com/ssh-app" style="display: inline-block; padding: 14px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
-                      ${isParentEmail ? 'View Dashboard' : 'Start Learning Now'}
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Getting Started -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
-                <h2 style="margin: 0 0 15px; font-size: 18px; color: #155724;">${isParentEmail ? 'What Happens Next' : 'Getting Started'}</h2>
-                <ul style="margin: 0; padding-left: 20px; color: #155724; line-height: 1.8;">
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="x-apple-disable-message-reformatting" />
+      <title>Enrollment Approved</title>
+      <!--[if mso]>
+      <style type="text/css">
+        body, table, td, a {font-family: Arial, sans-serif !important;}
+      </style>
+      <![endif]-->
+    </head>
+    <body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+        <tr>
+          <td align="center" style="padding: 40px 10px;">
+            <!--[if mso]>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+            <tr>
+            <td>
+            <![endif]-->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+              <!-- Logo -->
+              <tr>
+                <td align="center" style="padding: 30px 20px 20px 20px;">
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="SSH University Logo" style="display: block; border: 0; max-width: 100%; height: auto;" />
+                </td>
+              </tr>
+              <!-- Content -->
+              <tr>
+                <td style="padding: 20px 40px 40px 40px;">
+                  <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">🎉 Enrollment Approved!</h2>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear <strong>${greeting}</strong>,</p>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    ${enrollmentMessage}
+                  </p>
+                  
                   ${
-                    isParentEmail
-                      ? `<li>${studentName} can access the course from their student dashboard</li>
-                  <li>You can track their progress through your parent dashboard</li>
-                  <li>Course materials and resources are now available</li>
-                  <li>You'll receive progress updates as ${studentName} advances</li>`
-                      : `<li>Access your course from your dashboard</li>
-                  <li>Review the course syllabus and materials</li>
-                  <li>Complete lessons at your own pace</li>
-                  <li>Engage with instructors and fellow students</li>`
+                    courseDescription
+                      ? `
+                  <!-- Course Info Box -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
+                    <tr>
+                      <td style="padding: 15px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                        <p style="margin: 0; padding: 0 0 10px 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">About This Course</p>
+                        <p style="margin: 0; padding: 0; font-size: 15px; color: #333333; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">
+                          ${courseDescription}
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  `
+                      : ''
                   }
-                  <li>Track your progress and earn certificates</li>
-                </ul>
-              </div>
-              
-              <p style="margin: 25px 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                If you have any questions or need assistance, our support team is here to help.
-              </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Happy learning!<br>
-                <strong>The SSH University Team</strong>
-              </p>
+                  
+                  <p style="margin: 0; padding: 15px 0 25px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    ${nextStepsMessage}
+                  </p>
+                  
+                  <!-- Button -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td align="center" style="padding: 20px 0;">
+                        <!--[if mso]>
+                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://eyogigurukul.com/ssh-app" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                          <w:anchorlock/>
+                          <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">${isParentEmail ? 'View Dashboard' : 'Start Learning Now'}</center>
+                        </v:roundrect>
+                        <![endif]-->
+                        <![if !mso]>
+                        <a href="https://eyogigurukul.com/ssh-app" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">${isParentEmail ? 'View Dashboard' : 'Start Learning Now'}</a>
+                        <![endif]>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Getting Started -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
+                    <tr>
+                      <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                        <p style="margin: 0; padding: 0 0 15px 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">${isParentEmail ? 'What Happens Next' : 'Getting Started'}</p>
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                          ${
+                            isParentEmail
+                              ? `<tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; ${studentName} can access the course from their student dashboard</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; You can track their progress through your parent dashboard</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Course materials and resources are now available</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; You'll receive progress updates as ${studentName} advances</td></tr>`
+                              : `<tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Access your course from your dashboard</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Review the course syllabus and materials</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Complete lessons at your own pace</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Engage with instructors and fellow students</td></tr>`
+                          }
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Track your progress and earn certificates</td></tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    If you have any questions or need assistance, our support team is here to help.
+                  </p>
+                  
+                  <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    For help, contact us at
+                    <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
+                  </p>
+                  <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; The SSH University Team</p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+                  <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                    This is an automated message from SSH University.<br />
+                    Please do not reply to this email.
+                  </p>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]>
             </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
-                <strong>SSH University</strong><br>
-                Excellence in Education
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #999999;">
-                This is an automated message. Please do not reply to this email.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+            </tr>
+            </table>
+            <![endif]-->
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `.trim()
 }
 
@@ -406,101 +449,121 @@ function generateEnrollmentRejectionHTML(
     : `Thank you for your interest in <strong>${courseTitle}</strong>. After careful review, we regret to inform you that we are unable to approve your enrollment request at this time.`
 
   return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enrollment Status Update</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
-    <tr>
-      <td style="padding: 20px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <!-- Header with Logo -->
-          <tr>
-            <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" alt="SSH University Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;">
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="x-apple-disable-message-reformatting" />
+      <title>Enrollment Status Update</title>
+      <!--[if mso]>
+      <style type="text/css">
+        body, table, td, a {font-family: Arial, sans-serif !important;}
+      </style>
+      <![endif]-->
+    </head>
+    <body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+        <tr>
+          <td align="center" style="padding: 40px 10px;">
+            <!--[if mso]>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+            <tr>
+            <td>
+            <![endif]-->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+              <!-- Logo -->
+              <tr>
+                <td align="center" style="padding: 30px 20px 20px 20px;">
+                  <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="SSH University Logo" style="display: block; border: 0; max-width: 100%; height: auto;" />
+                </td>
+              </tr>
+              <!-- Content -->
+              <tr>
+                <td style="padding: 20px 40px 40px 40px;">
+                  <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">Enrollment Status Update</h2>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear <strong>${greeting}</strong>,</p>
+                  <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    ${rejectionMessage}
+                  </p>
+                  
+                  <!-- Info Box -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
+                    <tr>
+                      <td style="padding: 20px; background-color: #fff3cd; border-left: 4px solid #f39c12;">
+                        <p style="margin: 0; padding: 0 0 10px 0; font-size: 18px; color: #856404; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">Possible Reasons</p>
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Course prerequisites not met</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Course capacity has been reached</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Administrative requirements pending</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Other eligibility criteria</td></tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Next Steps -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 25px 0;">
+                    <tr>
+                      <td style="padding: 20px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                        <p style="margin: 0; padding: 0 0 15px 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">What You Can Do</p>
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Contact our support team for more information</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Review prerequisite requirements for the course</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Explore alternative courses that match your profile</td></tr>
+                          <tr><td style="padding: 3px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">&#8226; Reapply once you meet the requirements</td></tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Button -->
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                      <td align="center" style="padding: 20px 0;">
+                        <!--[if mso]>
+                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://eyogigurukul.com/ssh-app" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                          <w:anchorlock/>
+                          <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">Browse Other Courses</center>
+                        </v:roundrect>
+                        <![endif]-->
+                        <![if !mso]>
+                        <a href="https://eyogigurukul.com/ssh-app" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">Browse Other Courses</a>
+                        <![endif]>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; padding: 25px 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    We appreciate your interest in SSH University and encourage you to explore our other learning opportunities.
+                  </p>
+                  
+                  <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                    For help, contact us at
+                    <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
+                  </p>
+                  <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; The SSH University Team</p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+                  <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                    This is an automated message from SSH University.<br />
+                    Please do not reply to this email.
+                  </p>
+                </td>
+              </tr>
+            </table>
+            <!--[if mso]>
             </td>
-          </tr>
-          
-          <!-- Main Content -->
-          <tr>
-            <td style="padding: 40px 40px 30px;">
-              <h1 style="margin: 0 0 20px; font-size: 24px; color: #333333; font-weight: bold;">
-                Enrollment Status Update
-              </h1>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Dear <strong>${greeting}</strong>,
-              </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                ${rejectionMessage}
-              </p>
-              
-              <!-- Info Box -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px;">
-                <h2 style="margin: 0 0 10px; font-size: 18px; color: #721c24;">Possible Reasons</h2>
-                <ul style="margin: 0; padding-left: 20px; color: #721c24; line-height: 1.8;">
-                  <li>Course prerequisites not met</li>
-                  <li>Course capacity has been reached</li>
-                  <li>Administrative requirements pending</li>
-                  <li>Other eligibility criteria</li>
-                </ul>
-              </div>
-              
-              <!-- Next Steps -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px;">
-                <h2 style="margin: 0 0 15px; font-size: 18px; color: #333333;">What You Can Do</h2>
-                <ul style="margin: 0; padding-left: 20px; color: #555555; line-height: 1.8;">
-                  <li>Contact our support team for more information</li>
-                  <li>Review prerequisite requirements for the course</li>
-                  <li>Explore alternative courses that match your profile</li>
-                  <li>Reapply once you meet the requirements</li>
-                </ul>
-              </div>
-              
-              <!-- Browse Courses Button -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 25px 0;">
-                <tr>
-                  <td style="text-align: center;">
-                    <a href="https://eyogigurukul.com/ssh-app" style="display: inline-block; padding: 14px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
-                      Browse Other Courses
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              
-              <p style="margin: 25px 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                We appreciate your interest in SSH University and encourage you to explore our other learning opportunities.
-              </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Best regards,<br>
-                <strong>The SSH University Team</strong>
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
-                <strong>SSH University</strong><br>
-                Excellence in Education
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #999999;">
-                This is an automated message. Please do not reply to this email.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+            </tr>
+            </table>
+            <![endif]-->
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `.trim()
 }

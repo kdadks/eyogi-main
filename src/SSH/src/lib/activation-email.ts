@@ -62,87 +62,106 @@ export async function sendActivationEmail(userId: string): Promise<boolean> {
  */
 function generateActivationEmailHTML(userName: string): string {
   return `
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
   <title>Account Activated</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a {font-family: Arial, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
+<body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
     <tr>
-      <td style="padding: 20px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <!-- Header with Logo -->
+      <td align="center" style="padding: 40px 10px;">
+        <!--[if mso]>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+        <tr>
+        <td>
+        <![endif]-->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+          <!-- Logo -->
           <tr>
-            <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" alt="SSH University Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;">
+            <td align="center" style="padding: 30px 20px 20px 20px;">
+              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
             </td>
           </tr>
-          
-          <!-- Main Content -->
+          <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 30px;">
-              <h1 style="margin: 0 0 20px; font-size: 24px; color: #333333; font-weight: bold;">
-                🎉 Your Account Has Been Activated!
-              </h1>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Dear <strong>${userName}</strong>,
+            <td style="padding: 20px 40px 40px 40px;">
+              <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">🎉 Your Account Has Been Activated!</h2>
+              <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear <strong>${userName}</strong>,</p>
+              <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                Great news! Your account has been successfully activated by our administrative team. You can now access all the features and resources available on the eYogi Gurukul platform.
               </p>
               
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Great news! Your account has been successfully activated by our administrative team. You can now access all the features and resources available on the SSH University platform.
-              </p>
-              
-              <!-- Access Button -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 25px 0;">
+              <!-- Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="text-align: center;">
-                    <a href="https://eyogigurukul.com/ssh-app" style="display: inline-block; padding: 14px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
-                      Access Your Dashboard
-                    </a>
+                  <td align="center" style="padding: 20px 0;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://eyogigurukul.com/ssh-app" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                      <w:anchorlock/>
+                      <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">Access Your Dashboard</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <![if !mso]>
+                    <a href="https://eyogigurukul.com/ssh-app" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">Access Your Dashboard</a>
+                    <![endif]>
                   </td>
                 </tr>
               </table>
               
-              <!-- What's Next Section -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px;">
-                <h2 style="margin: 0 0 15px; font-size: 18px; color: #333333;">What's Next?</h2>
-                <ul style="margin: 0; padding-left: 20px; color: #555555; line-height: 1.8;">
-                  <li>Log in to your account using your registered credentials</li>
-                  <li>Complete your profile information if you haven't already</li>
-                  <li>Explore available courses and resources</li>
-                  <li>Connect with fellow students and instructors</li>
-                </ul>
-              </div>
+              <!-- What's Next Box -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
+                <tr>
+                  <td style="padding: 15px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <h3 style="margin: 0; padding: 0 0 10px 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif;">What's Next?</h3>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Log in to your account using your registered credentials</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Complete your profile information if you haven't already</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Explore available courses and resources</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Connect with fellow students and instructors</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
               
-              <!-- Support Information -->
-              <p style="margin: 25px 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                If you need any assistance or have questions, our support team is here to help.
+              <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                If you need any assistance or have questions, our support team is here to help at
+                <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
               </p>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Welcome aboard!<br>
-                <strong>The SSH University Team</strong>
-              </p>
+              <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; Team eYogi Gurukul</p>
             </td>
           </tr>
-          
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
-                <strong>SSH University</strong><br>
-                Excellence in Education
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #999999;">
-                This is an automated message. Please do not reply to this email.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>
         </table>
+        <!--[if mso]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
@@ -156,87 +175,106 @@ function generateActivationEmailHTML(userName: string): string {
  */
 function generateParentNotificationHTML(studentName: string): string {
   return `
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
   <title>Student Account Activated</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a {font-family: Arial, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f4;">
+<body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
     <tr>
-      <td style="padding: 20px 0;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <!-- Header with Logo -->
+      <td align="center" style="padding: 40px 10px;">
+        <!--[if mso]>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+        <tr>
+        <td>
+        <![endif]-->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+          <!-- Logo -->
           <tr>
-            <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" alt="SSH University Logo" style="max-width: 150px; height: auto; display: block; margin: 0 auto;">
+            <td align="center" style="padding: 30px 20px 20px 20px;">
+              <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
             </td>
           </tr>
-          
-          <!-- Main Content -->
+          <!-- Content -->
           <tr>
-            <td style="padding: 40px 40px 30px;">
-              <h1 style="margin: 0 0 20px; font-size: 24px; color: #333333; font-weight: bold;">
-                Student Account Activation Notice
-              </h1>
-              
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Dear Parent/Guardian,
+            <td style="padding: 20px 40px 40px 40px;">
+              <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">Student Account Activation Notice</h2>
+              <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear Parent/Guardian,</p>
+              <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                We are pleased to inform you that <strong>${studentName}</strong>'s account has been successfully activated at eYogi Gurukul. Your child can now access the learning platform and begin their educational journey with us.
               </p>
               
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                We are pleased to inform you that <strong>${studentName}</strong>'s account has been successfully activated at SSH University. Your child can now access the learning platform and begin their educational journey with us.
-              </p>
-              
-              <!-- Information Box -->
-              <div style="margin: 25px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #667eea; border-radius: 4px;">
-                <h2 style="margin: 0 0 15px; font-size: 18px; color: #333333;">What This Means</h2>
-                <ul style="margin: 0; padding-left: 20px; color: #555555; line-height: 1.8;">
-                  <li>Your child can now log in and access course materials</li>
-                  <li>All platform features are now available</li>
-                  <li>You can monitor their progress through the parent portal</li>
-                  <li>Both you and your child will receive updates about their learning journey</li>
-                </ul>
-              </div>
-              
-              <!-- Parent Portal Access -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 25px 0;">
+              <!-- Info Box -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
                 <tr>
-                  <td style="text-align: center;">
-                    <a href="https://eyogigurukul.com/ssh-app" style="display: inline-block; padding: 14px 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
-                      Access Parent Portal
-                    </a>
+                  <td style="padding: 15px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                    <h3 style="margin: 0; padding: 0 0 10px 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif;">What This Means</h3>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Your child can now log in and access course materials</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• All platform features are now available</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• You can monitor their progress through the parent portal</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 4px 0; color: #333333; font-size: 15px; font-family: Arial, Helvetica, sans-serif; line-height: 1.6;">• Both you and your child will receive updates about their learning journey</td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
               
-              <!-- Support Information -->
-              <p style="margin: 25px 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                If you have any questions or concerns, please don't hesitate to contact our support team.
-              </p>
+              <!-- Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 20px 0;">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://eyogigurukul.com/ssh-app" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                      <w:anchorlock/>
+                      <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">Access Parent Portal</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <![if !mso]>
+                    <a href="https://eyogigurukul.com/ssh-app" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">Access Parent Portal</a>
+                    <![endif]>
+                  </td>
+                </tr>
+              </table>
               
-              <p style="margin: 0 0 15px; font-size: 16px; line-height: 1.6; color: #555555;">
-                Thank you for choosing SSH University.<br>
-                <strong>The SSH University Team</strong>
+              <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                If you have any questions or concerns, contact us at
+                <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
               </p>
+              <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; Team eYogi Gurukul</p>
             </td>
           </tr>
-          
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 14px; color: #666666;">
-                <strong>SSH University</strong><br>
-                Excellence in Education
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #999999;">
-                This is an automated notification. Please do not reply to this email.
+            <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                This is an automated notification from eYogi Gurukul.<br />
+                Please do not reply to this email.
               </p>
             </td>
           </tr>
         </table>
+        <!--[if mso]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>

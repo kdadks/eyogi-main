@@ -3,10 +3,11 @@ import { Certificate, CertificateTemplate } from '@/types'
 import { generateCertificatePDF, CertificateData } from '../pdf/certificateGenerator'
 import { decryptProfileFields, decryptField } from '../encryption'
 import { deleteFromSupabaseStorage, bulkDeleteFromSupabaseStorage } from '../supabase-storage'
+import { sendEmailViaAPI } from '../email-service'
 
 /**
  * Send certificate issued email notification to parent
- * This is a wrapper to call the main app's email service
+ * Uses the centralized email service
  */
 async function sendCertificateEmailNotification(
   studentName: string,
@@ -20,27 +21,131 @@ async function sendCertificateEmailNotification(
       return
     }
 
-    // Call the Next.js API endpoint to send the email
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/certificate-issued`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          parentEmail,
-          studentName,
-          courseName,
-          certificateUrl,
-        }),
-      },
-    )
+    const htmlBody = `
+      <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+      <html xmlns="http://www.w3.org/1999/xhtml">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="x-apple-disable-message-reformatting" />
+        <title>Certificate Issued</title>
+        <!--[if mso]>
+        <style type="text/css">
+          body, table, td, a {font-family: Arial, sans-serif !important;}
+        </style>
+        <![endif]-->
+      </head>
+      <body style="background-color: #f5f5f5; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+          <tr>
+            <td align="center" style="padding: 40px 10px;">
+              <!--[if mso]>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600">
+              <tr>
+              <td>
+              <![endif]-->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+                <!-- Logo -->
+                <tr>
+                  <td align="center" style="padding: 30px 20px 20px 20px;">
+                    <img src="https://eyogigurukul.com/ssh-app/Images/SSH_Logo.png" width="180" height="auto" alt="eYogi Gurukul" style="display: block; border: 0; max-width: 100%; height: auto;" />
+                  </td>
+                </tr>
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 20px 40px 40px 40px;">
+                    <h2 style="color: #2c5f2d; margin: 0; padding: 0 0 20px 0; font-size: 24px; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">🎓 Certificate Issued</h2>
+                    <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">Dear Parent/Guardian,</p>
+                    <p style="margin: 0; padding: 0 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                      We are pleased to inform you that <strong>${studentName}</strong> has been issued a certificate for successfully completing the course:
+                    </p>
+                    
+                    <!-- Course Info Box -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0;">
+                      <tr>
+                        <td style="padding: 15px; background-color: #e8f5e9; border-left: 4px solid #2c5f2d;">
+                          <p style="margin: 0; padding: 0; font-size: 18px; color: #2c5f2d; font-weight: bold; font-family: Arial, Helvetica, sans-serif; line-height: 1.4;">${courseName}</p>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="margin: 0; padding: 15px 0 25px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                      You can view and download the certificate using the button below:
+                    </p>
+                    
+                    <!-- Button -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td align="center" style="padding: 20px 0;">
+                          <!--[if mso]>
+                          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${certificateUrl}" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="13%" strokecolor="#2c5f2d" fillcolor="#2c5f2d">
+                            <w:anchorlock/>
+                            <center style="color:#ffffff;font-family:Arial, sans-serif;font-size:16px;font-weight:bold;">View Certificate</center>
+                          </v:roundrect>
+                          <![endif]-->
+                          <![if !mso]>
+                          <a href="${certificateUrl}" target="_blank" style="display: inline-block; background-color: #2c5f2d; color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 16px; font-family: Arial, Helvetica, sans-serif; border: 2px solid #2c5f2d;">View Certificate</a>
+                          <![endif]>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="margin: 0; padding: 25px 0 15px 0; line-height: 21px; color: #333333; font-size: 14px; font-family: Arial, Helvetica, sans-serif;">
+                      If the button doesn't work, copy and paste this link into your browser:
+                    </p>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 12px; background-color: #f8f9fa; word-break: break-all;">
+                          <p style="margin: 0; padding: 0; font-size: 13px; color: #666666; font-family: Arial, Helvetica, sans-serif; line-height: 19px;">
+                            <a href="${certificateUrl}" target="_blank" style="color: #2c5f2d; text-decoration: underline; word-break: break-all;">${certificateUrl}</a>
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="margin: 0; padding: 25px 0 15px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                      This certificate is a testament to ${studentName}'s dedication and hard work. Please feel free to download and share it.
+                    </p>
+                    
+                    <p style="margin: 0; padding: 25px 0 10px 0; line-height: 24px; color: #333333; font-size: 16px; font-family: Arial, Helvetica, sans-serif;">
+                      For help, contact us at
+                      <a href="mailto:office@eyogigurukul.com" style="color: #2c5f2d; text-decoration: underline;">office@eyogigurukul.com</a>
+                    </p>
+                    <p style="margin: 0; padding: 20px 0 0 0; color: #666666; font-size: 14px; font-family: Arial, Helvetica, sans-serif; line-height: 21px;">&mdash; Team eYogi Gurukul</p>
+                  </td>
+                </tr>
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 20px 40px; background-color: #f8f9fa; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0; padding: 0; text-align: center; font-size: 12px; color: #999999; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+                      This is an automated notification from eYogi Gurukul.<br />
+                      Please do not reply to this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              <!--[if mso]>
+              </td>
+              </tr>
+              </table>
+              <![endif]-->
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
 
-    if (!response.ok) {
-      console.error('Failed to send certificate email:', await response.text())
-    } else {
+    const emailSent = await sendEmailViaAPI({
+      to: parentEmail,
+      subject: `Certificate Issued - ${courseName}`,
+      htmlBody,
+    })
+
+    if (emailSent) {
       console.log('Certificate email notification sent successfully to:', parentEmail)
+    } else {
+      console.warn('Failed to send certificate email to:', parentEmail)
     }
   } catch (error) {
     console.error('Error sending certificate email notification:', error)
@@ -124,20 +229,17 @@ export async function downloadCertificatePDF(
 
     // Fallback: Generate PDF on-demand
     console.log('Generating certificate PDF on-demand')
+    const certData = certificate.certificate_data as any
     const certificateData: CertificateData = {
-      studentName:
-        certificate.certificate_data?.student_name || certificate.student?.full_name || 'Student',
+      studentName: certData?.student_name || certificate.student?.full_name || 'Student',
       studentId: certificate.student?.student_id || certificate.student_id, // Use human-readable student_id from profile
-      courseName:
-        certificate.certificate_data?.course_title || certificate.course?.title || 'Course',
+      courseName: certData?.course_title || certificate.course?.title || 'Course',
       courseId: certificate.course?.course_number || certificate.course_id, // Use course_number instead of UUID
       gurukulName: 'eYogi Gurukul',
       completionDate:
-        certificate.certificate_data?.completion_date ||
-        certificate.completion_date ||
-        new Date().toISOString(),
+        certData?.completion_date || certificate.completion_date || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
-      verificationCode: certificate.verification_code,
+      verificationCode: certificate.verification_code || '',
     }
 
     const pdfBlob = await generateCertificatePDF(certificateData, template)
@@ -616,7 +718,7 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
       gurukulName: 'eYogi Gurukul',
       completionDate: enrollment.completed_at || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
-      verificationCode: certificate.verification_code,
+      verificationCode: certificate.verification_code || '',
     }
 
     const pdfUrl = await generateAndUploadCertificatePDF(
@@ -872,7 +974,7 @@ export async function issueCertificateWithTemplate(
       gurukulName: 'eYogi Gurukul',
       completionDate: enrichedEnrollment.completed_at || new Date().toISOString(),
       certificateNumber: certificate.certificate_number,
-      verificationCode: certificate.verification_code,
+      verificationCode: certificate.verification_code || '',
     }
 
     const pdfUrl = await generateAndUploadCertificatePDF(
