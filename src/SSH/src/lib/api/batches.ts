@@ -27,6 +27,7 @@ export async function getBatches(filters?: {
         teacher_id,
         created_by,
         status,
+        certificates_issued,
         is_active,
         start_date,
         end_date,

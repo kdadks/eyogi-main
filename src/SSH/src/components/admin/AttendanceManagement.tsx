@@ -59,11 +59,13 @@ const AttendanceManagement: React.FC = () => {
         teacher_id: profile?.role === 'teacher' ? profile.id : undefined,
         is_active: true,
       })
-      setBatches(batchData)
+      // Filter out batches that are 100% completed
+      const filteredBatches = batchData.filter((batch) => (batch.progress_percentage || 0) < 100)
+      setBatches(filteredBatches)
 
       // Auto-select first batch if available
-      if (batchData.length > 0 && !selectedBatch) {
-        setSelectedBatch(batchData[0])
+      if (filteredBatches.length > 0 && !selectedBatch) {
+        setSelectedBatch(filteredBatches[0])
       }
     } catch (error) {
       console.error('Error fetching batches:', error)
@@ -279,47 +281,6 @@ const AttendanceManagement: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Batch Information & Date Selection */}
-          {selectedBatch && (
-            <div className="mt-4 space-y-4">
-              <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-                <h4 className="text-sm font-semibold text-green-900 mb-2 flex items-center">
-                  <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Batch Selected: {selectedBatch.name}
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <span className="text-gray-600">Status:</span>{' '}
-                    <Badge
-                      variant={
-                        selectedBatch.status === 'active' || selectedBatch.status === 'in_progress'
-                          ? 'success'
-                          : selectedBatch.status === 'completed'
-                            ? 'default'
-                            : 'warning'
-                      }
-                      size="sm"
-                    >
-                      {selectedBatch.status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Students:</span>{' '}
-                    <span className="font-medium text-gray-900">
-                      {selectedBatch.student_count || 0}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Gurukul:</span>{' '}
-                    <span className="font-medium text-gray-900">
-                      {selectedBatch.gurukul?.name || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -362,7 +323,8 @@ const AttendanceManagement: React.FC = () => {
                   onClick={handleMarkAttendance}
                   variant="primary"
                   size="lg"
-                  className="w-full shadow-lg bg-green-600 hover:bg-green-700 text-white py-4"
+                  className="w-full shadow-lg bg-green-600 hover:bg-green-700 text-white py-4 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!selectedBatch.student_count || selectedBatch.student_count === 0}
                 >
                   <span className="bg-white/30 rounded-full w-6 h-6 inline-flex items-center justify-center text-xs font-bold mr-2">
                     3
