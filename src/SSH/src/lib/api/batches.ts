@@ -418,57 +418,139 @@ export async function assignStudentToBatch(
   assignedBy: string,
 ): Promise<BatchStudent> {
   try {
-    const { data, error } = await supabaseAdmin
+    // First check if a record already exists (active or inactive)
+    const { data: existing } = await supabaseAdmin
       .from('batch_students')
-      .insert({
-        id: crypto.randomUUID(),
-        batch_id: batchId,
-        student_id: studentId,
-        assigned_by: assignedBy,
-        assigned_at: new Date().toISOString(),
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select(
-        `
-        *,
-        student:profiles!batch_students_student_id_fkey (
-          id,
-          full_name,
-          email,
-          student_id,
-          role
-        ),
-        batch:batches (
-          id,
-          name,
-          description,
-          status,
-          gurukul:gurukuls (
+      .select('id, is_active')
+      .eq('batch_id', batchId)
+      .eq('student_id', studentId)
+      .maybeSingle()
+
+    let data, error
+
+    if (existing) {
+      // Record exists - if it's inactive, reactivate it
+      if (!existing.is_active) {
+        const result = await supabaseAdmin
+          .from('batch_students')
+          .update({
+            is_active: true,
+            assigned_by: assignedBy,
+            assigned_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id)
+          .select(
+            `
+            *,
+            student:profiles!batch_students_student_id_fkey (
+              id,
+              full_name,
+              email,
+              student_id,
+              role
+            ),
+            batch:batches (
+              id,
+              name,
+              description,
+              status,
+              gurukul:gurukuls (
+                id,
+                name,
+                slug
+              )
+            ),
+            assigned_by_user:profiles!batch_students_assigned_by_fkey (
+              id,
+              full_name,
+              email,
+              role
+            )
+          `,
+          )
+          .single()
+        data = result.data
+        error = result.error
+      } else {
+        // Already active - student is already in the batch
+        throw new Error('Student is already assigned to this batch')
+      }
+    } else {
+      // No existing record - create new one
+      const result = await supabaseAdmin
+        .from('batch_students')
+        .insert({
+          id: crypto.randomUUID(),
+          batch_id: batchId,
+          student_id: studentId,
+          assigned_by: assignedBy,
+          assigned_at: new Date().toISOString(),
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select(
+          `
+          *,
+          student:profiles!batch_students_student_id_fkey (
+            id,
+            full_name,
+            email,
+            student_id,
+            role
+          ),
+          batch:batches (
             id,
             name,
-            slug
+            description,
+            status,
+            gurukul:gurukuls (
+              id,
+              name,
+              slug
+            )
+          ),
+          assigned_by_user:profiles!batch_students_assigned_by_fkey (
+            id,
+            full_name,
+            email,
+            role
           )
-        ),
-        assigned_by_user:profiles!batch_students_assigned_by_fkey (
-          id,
-          full_name,
-          email,
-          role
+        `,
         )
-      `,
-      )
-      .single()
+        .single()
+      data = result.data
+      error = result.error
+    }
 
     if (error) {
-      console.error('Error assigning student to batch:', error)
-      throw new Error('Failed to assign student to batch')
+      const errorMessage = error.message || error.details || 'Unknown database error'
+      const errorCode = error.code || 'UNKNOWN'
+      console.error('Error assigning student to batch:', {
+        message: errorMessage,
+        code: errorCode,
+        hint: error.hint,
+        details: error.details,
+        batchId,
+        studentId,
+        assignedBy,
+      })
+
+      // Provide more specific error messages based on error codes
+      if (errorCode === '23503') {
+        throw new Error('Invalid batch, student, or user reference')
+      } else {
+        throw new Error(`Failed to assign student to batch: ${errorMessage}`)
+      }
     }
 
     return data
   } catch (error) {
-    console.error('Error in assignStudentToBatch:', error)
+    console.error('Error in assignStudentToBatch:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     throw error
   }
 }
@@ -485,11 +567,23 @@ export async function removeStudentFromBatch(batchId: string, studentId: string)
       .eq('student_id', studentId)
 
     if (error) {
-      console.error('Error removing student from batch:', error)
-      throw new Error('Failed to remove student from batch')
+      const errorMessage = error.message || error.details || 'Unknown database error'
+      const errorCode = error.code || 'UNKNOWN'
+      console.error('Error removing student from batch:', {
+        message: errorMessage,
+        code: errorCode,
+        hint: error.hint,
+        details: error.details,
+        batchId,
+        studentId,
+      })
+      throw new Error(`Failed to remove student from batch: ${errorMessage}`)
     }
   } catch (error) {
-    console.error('Error in removeStudentFromBatch:', error)
+    console.error('Error in removeStudentFromBatch:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     throw error
   }
 }

@@ -8019,9 +8019,20 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
         })),
       )
     } catch (error) {
-      console.error('Error toggling student in batch:', error)
+      console.error('Error toggling student in batch:', {
+        error: error instanceof Error ? error.message : String(error),
+        studentId,
+        batchId: batchToEdit.id,
+        shouldAdd,
+      })
+
+      // Extract meaningful error message
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+
       toast.error(
-        shouldAdd ? 'Failed to add student to batch' : 'Failed to remove student from batch',
+        shouldAdd
+          ? `Failed to add student: ${errorMessage}`
+          : `Failed to remove student: ${errorMessage}`,
       )
     }
   }
