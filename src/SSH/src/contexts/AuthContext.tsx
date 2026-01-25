@@ -68,32 +68,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initId = Math.random().toString(36).substring(7)
     currentInitId.current = initId
 
-    // Clear session on page load (browser refresh) for admin pages
-    const activeSession = sessionStorage.getItem('eyogi-admin-session')
+    // Skip full initialization if on public pages (not admin pages)
     const isAdminPage =
       (location.pathname.startsWith('/admin') || location.pathname.includes('/admin')) &&
       !location.pathname.includes('/admin/login')
 
-    if (isAdminPage && !activeSession) {
-      // Browser was refreshed - clear admin session
-      supabase.auth.signOut()
-      setLoading(false)
-      setInitialized(true)
-      return
-    }
-
-    if (isAdminPage) {
-      // Mark admin session as active
-      sessionStorage.setItem('eyogi-admin-session', 'true')
-    }
-
-    // Skip full initialization if on public pages (not admin pages)
     if (!isAdminPage) {
       // Don't initialize Supabase auth on non-admin pages
       setLoading(false)
       setInitialized(true)
       return
     }
+
+    // For admin pages: mark session as active
+    sessionStorage.setItem('eyogi-admin-session', 'true')
 
     // For admin pages: just show login, no checking
     if (initializationRef.current) {
