@@ -2,6 +2,7 @@ import React from 'react'
 import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import { HelpButton, adminDashboardHelpTopics } from '../help'
+import RefreshButton from './RefreshButton'
 
 interface AdminHeaderProps {
   onMenuClick: () => void
@@ -27,6 +28,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
         </div>
         {/* Right side */}
         <div className="flex items-center space-x-4">
+          {/* Refresh Button */}
+          <RefreshButton />
+
           {/* Help Button */}
           <HelpButton
             topics={adminDashboardHelpTopics}

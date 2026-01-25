@@ -20,8 +20,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isMounted = React.useRef(true)
   const location = useLocation()
 
-  // Inactivity timeout: 15 minutes
-  const INACTIVITY_TIMEOUT = 15 * 60 * 1000 // 15 minutes in milliseconds
+  // Inactivity timeout: 30 minutes
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes in milliseconds
   const inactivityTimerRef = React.useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = React.useRef<number>(Date.now())
   // Fetch user profile from database using admin client for admin context
@@ -68,11 +68,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initId = Math.random().toString(36).substring(7)
     currentInitId.current = initId
 
-    // Skip full initialization if on public pages (not admin pages)
+    // Clear session on page load (browser refresh) for admin pages
+    const activeSession = sessionStorage.getItem('eyogi-admin-session')
     const isAdminPage =
       (location.pathname.startsWith('/admin') || location.pathname.includes('/admin')) &&
       !location.pathname.includes('/admin/login')
 
+    if (isAdminPage && !activeSession) {
+      // Browser was refreshed - clear admin session
+      supabase.auth.signOut()
+      setLoading(false)
+      setInitialized(true)
+      return
+    }
+
+    if (isAdminPage) {
+      // Mark admin session as active
+      sessionStorage.setItem('eyogi-admin-session', 'true')
+    }
+
+    // Skip full initialization if on public pages (not admin pages)
     if (!isAdminPage) {
       // Don't initialize Supabase auth on non-admin pages
       setLoading(false)
@@ -135,6 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         setUser(data.user)
         setProfile(userProfile)
+        sessionStorage.setItem('eyogi-admin-session', 'true')
         debugAuth.log('Supabase Auth login successful', { email, role: userProfile.role })
         return { error: null }
       }
@@ -152,16 +168,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear inactivity timer
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current)
+        inactivityTimerRef.current = null
       }
 
       // Sign out from Supabase Auth (for super_admin and business_admin)
       await supabase.auth.signOut()
 
-      // Clear local state
+      // Clear all session data
       setUser(null)
       setProfile(null)
       setLoading(false)
       setInitialized(true)
+      sessionStorage.removeItem('eyogi-admin-session')
 
       debugAuth.log('Signed out successfully')
     } catch (error) {
@@ -170,6 +188,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Still clear local state on error
       setUser(null)
       setProfile(null)
+      sessionStorage.removeItem('eyogi-admin-session')
     }
   }
 
@@ -197,7 +216,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Set new timer
       inactivityTimerRef.current = setTimeout(async () => {
-        console.log('Auto-logout due to inactivity (15 minutes)')
+        console.log('Auto-logout due to inactivity (30 minutes)')
         await signOut()
         // Redirect to home page instead of login page
         window.location.href = '/ssh-app'

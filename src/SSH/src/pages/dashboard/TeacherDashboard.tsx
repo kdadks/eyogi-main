@@ -88,6 +88,7 @@ import {
   GiftIcon,
   StarIcon,
   FireIcon,
+  ArrowPathIcon,
   LightBulbIcon,
   SunIcon,
   MoonIcon,
@@ -104,7 +105,6 @@ import {
   ChevronRightIcon,
   PencilIcon,
   CalendarIcon,
-  ArrowPathIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 const courseSchema = z.object({
@@ -257,6 +257,7 @@ export default function TeacherDashboard() {
     useState<ProfileWithAddress | null>(null)
   const [showNotifications, setShowNotifications] = useState(false)
   const notificationRef = useRef<HTMLDivElement>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Track which data sets have been loaded for lazy loading
   const [loadedDataSets, setLoadedDataSets] = useState({
@@ -592,6 +593,19 @@ export default function TeacherDashboard() {
       case 'certificates':
         await loadCertificatesData()
         break
+    }
+  }
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await loadDashboardData()
+      toast.success('Dashboard refreshed successfully')
+    } catch (error) {
+      toast.error('Failed to refresh dashboard')
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500)
     }
   }
 
@@ -1051,6 +1065,16 @@ export default function TeacherDashboard() {
     try {
       setProcessingStudentIds((prev) => new Set(prev).add(student.student_id))
 
+      // Check if student progress is 100%
+      const studentProgress = student.progress_percentage ?? 0
+      if (studentProgress < 100) {
+        toast.error(
+          `Cannot issue certificate: ${student.name}'s progress is ${studentProgress}%. Student must complete 100% of the course before receiving a certificate. Please update their progress first.`,
+          { duration: 6000 },
+        )
+        return
+      }
+
       // Get the course_id from the student data (includes course_id now)
       const courseId = student.course_id
       if (!courseId) {
@@ -1158,6 +1182,28 @@ export default function TeacherDashboard() {
 
       if (!batchStudents || batchStudents.length === 0) {
         toast.error('No students found in this batch')
+        return
+      }
+
+      // Filter students with 100% progress
+      const studentsWithFullProgress = batchStudents.filter(
+        (s) => (s.progress_percentage ?? 0) >= 100,
+      )
+      const incompleteStudents = batchStudents.filter((s) => (s.progress_percentage ?? 0) < 100)
+
+      if (incompleteStudents.length > 0) {
+        const incompleteList = incompleteStudents
+          .map((s) => `${s.name} (${s.progress_percentage ?? 0}%)`)
+          .join(', ')
+        toast.error(
+          `Cannot issue certificates: ${incompleteStudents.length} student(s) have not completed 100% of the course. Please update their progress first. Incomplete students: ${incompleteList}`,
+          { duration: 8000 },
+        )
+        return
+      }
+
+      if (studentsWithFullProgress.length === 0) {
+        toast.error('No students with 100% progress found in this batch')
         return
       }
 
@@ -1685,6 +1731,27 @@ export default function TeacherDashboard() {
               </motion.p>
             </div>
             <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Refresh Button */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="p-3 bg-white/50 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  title="Refresh dashboard"
+                >
+                  <ArrowPathIcon
+                    className={`h-6 w-6 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+                  />
+                </motion.button>
+              </motion.div>
+
+              {/* Notification Button */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}

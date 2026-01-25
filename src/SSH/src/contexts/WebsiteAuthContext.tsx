@@ -68,7 +68,29 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
   >([])
   const [loading, setLoading] = useState(true)
   const [initialized, setInitialized] = useState(false)
+
+  // Session management
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutes
+  const inactivityTimerRef = React.useRef<NodeJS.Timeout | null>(null)
+  const lastActivityRef = React.useRef<number>(Date.now())
+
   useEffect(() => {
+    // Clear session on page load (browser refresh)
+    // Only preserve session if there's an active session flag
+    const activeSession = sessionStorage.getItem('eyogi-active-session')
+
+    if (!activeSession) {
+      // Browser was refreshed or new tab opened - clear session
+      localStorage.removeItem('website-user-id')
+      localStorage.removeItem('eyogi-ssh-local-session')
+      setLoading(false)
+      setInitialized(true)
+      return
+    }
+
+    // Mark session as active for this page load
+    sessionStorage.setItem('eyogi-active-session', 'true')
+
     // Check for stored session
     const storedUserId = localStorage.getItem('website-user-id')
     if (storedUserId) {
@@ -95,6 +117,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         setUserPermissions([])
         localStorage.removeItem('website-user-id')
         localStorage.removeItem('eyogi-ssh-local-session')
+        sessionStorage.removeItem('eyogi-active-session')
         window.location.href = '/'
       }
     }
@@ -180,6 +203,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
       // Set user session
       setUser(fullUserProfile)
       localStorage.setItem('website-user-id', userData.id)
+      sessionStorage.setItem('eyogi-active-session', 'true')
 
       // Load user permissions from database
       try {
@@ -351,10 +375,76 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
     }
   }
   const signOut = async () => {
+    // Clear inactivity timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current)
+      inactivityTimerRef.current = null
+    }
+
+    // Clear all session data
     setUser(null)
     setUserPermissions([])
     localStorage.removeItem('website-user-id')
+    localStorage.removeItem('eyogi-ssh-local-session')
+    sessionStorage.removeItem('eyogi-active-session')
+
+    // Clear query cache
+    queryCache.clear()
   }
+
+  // Inactivity timeout tracking
+  useEffect(() => {
+    if (!user) {
+      // Clear timer if not logged in
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+        inactivityTimerRef.current = null
+      }
+      return
+    }
+
+    const resetInactivityTimer = () => {
+      lastActivityRef.current = Date.now()
+
+      // Clear existing timer
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+
+      // Set new timer
+      inactivityTimerRef.current = setTimeout(async () => {
+        console.log('Auto-logout due to inactivity (30 minutes)')
+        await signOut()
+        // Redirect to login page
+        window.location.href = '/ssh-app/login'
+      }, INACTIVITY_TIMEOUT)
+    }
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove']
+
+    const handleActivity = () => {
+      resetInactivityTimer()
+    }
+
+    // Add event listeners
+    events.forEach((event) => {
+      document.addEventListener(event, handleActivity, { passive: true })
+    })
+
+    // Initialize timer
+    resetInactivityTimer()
+
+    // Cleanup
+    return () => {
+      events.forEach((event) => {
+        document.removeEventListener(event, handleActivity)
+      })
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+    }
+  }, [user])
+
   const canAccess = (resource: string, action: string): boolean => {
     if (!user) return false
 

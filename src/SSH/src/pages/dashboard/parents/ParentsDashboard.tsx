@@ -25,6 +25,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '../../../utils/sanitize'
 import { User, MapPin, X } from 'lucide-react'
@@ -45,6 +46,7 @@ import { getCourses } from '../../../lib/api/courses'
 import { formatCurrency } from '../../../lib/utils'
 import { getStudentEnrollments, getStudentCourseProgress } from '../../../lib/api/enrollments'
 import { getStudentBatchProgress } from '../../../lib/api/batches'
+import { getChildrenCertificates } from '../../../lib/api/certificates'
 import { updateUserProfile, getUserProfile } from '../../../lib/api/users'
 import type { ChangedByInfo } from '../../../lib/api/auditTrail'
 import {
@@ -213,7 +215,11 @@ export default function ParentsDashboard() {
   const [showConsentModal, setShowConsentModal] = useState(false)
   const [selectedChildForConsent, setSelectedChildForConsent] = useState<Child | null>(null)
   const [childConsents, setChildConsents] = useState<Map<string, StudentConsent>>(new Map())
+  const [childrenCertificates, setChildrenCertificates] = useState<
+    { childId: string; childName: string; certificates: any[] }[]
+  >([])
   const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null)
   const [stats, setStats] = useState<ParentStats>({
     totalChildren: 0,
@@ -227,6 +233,17 @@ export default function ParentsDashboard() {
   })
   const loadParentData = useCallback(async () => {
     try {
+      // Load certificates for all children
+      let totalCertificates = 0
+      if (user?.id) {
+        const childrenCerts = await getChildrenCertificates(user.id)
+        setChildrenCertificates(childrenCerts)
+        totalCertificates = childrenCerts.reduce(
+          (sum, child) => sum + (child.certificates?.length || 0),
+          0,
+        )
+      }
+
       // Calculate real stats from actual children data - with safe property access
       setStats({
         totalChildren: children.length,
@@ -239,10 +256,7 @@ export default function ParentsDashboard() {
             sum + (child.enrolled_courses?.filter((course) => course.progress === 100).length || 0),
           0,
         ),
-        certificatesEarned: children.reduce(
-          (sum, child) => sum + (child.achievements?.length || 0),
-          0,
-        ),
+        certificatesEarned: totalCertificates,
         weeklyProgress:
           children.length > 0
             ? Math.round(
@@ -263,7 +277,7 @@ export default function ParentsDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [children])
+  }, [children, user?.id])
   // Load parent profile from database
   const loadParentProfile = useCallback(async () => {
     if (!user?.id) return
@@ -526,6 +540,20 @@ export default function ParentsDashboard() {
       setCoursesLoading(false)
     }
   }, [])
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await Promise.all([loadParentData(), loadChildren(), loadParentProfile()])
+      toast.success('Dashboard refreshed successfully')
+    } catch (error) {
+      toast.error('Failed to refresh dashboard')
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500)
+    }
+  }
+
   useEffect(() => {
     if (user?.id) {
       loadParentData()
@@ -906,6 +934,27 @@ export default function ParentsDashboard() {
               </motion.p>
             </div>
             <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Refresh Button */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
+              >
+                <motion.button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 text-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Refresh dashboard"
+                >
+                  <ArrowPathIcon
+                    className={`h-4 w-4 sm:h-5 sm:w-5 ${isRefreshing ? 'animate-spin' : ''}`}
+                  />
+                </motion.button>
+              </motion.div>
+
+              {/* Help Button */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -918,6 +967,8 @@ export default function ParentsDashboard() {
                   showKeyboardHint={true}
                 />
               </motion.div>
+
+              {/* Settings Button */}
               <motion.button
                 onClick={() => {
                   setIsProfileModalOpen(true)
@@ -1080,10 +1131,17 @@ export default function ParentsDashboard() {
                   setShowConsentModal(true)
                 }}
                 childConsents={childConsents}
+                childrenCertificates={childrenCertificates}
               />
             )}
             {activeTab === 'enrollments' && <EnrollmentsTab children={children} />}
-            {activeTab === 'progress' && <ProgressTab children={children} stats={stats} />}
+            {activeTab === 'progress' && (
+              <ProgressTab
+                children={children}
+                stats={stats}
+                childrenCertificates={childrenCertificates}
+              />
+            )}
             {activeTab === 'attendance' && (
               <div className="space-y-6">
                 <Card>
@@ -1433,7 +1491,6 @@ function HomeTab({
       description: 'Achievements unlocked',
       delay: 0.3,
       permission: { resource: 'certificates', action: 'read' },
-      comingSoon: true,
     },
     {
       title: 'Learning Hours',
@@ -1445,7 +1502,6 @@ function HomeTab({
       suffix: 'hrs',
       delay: 0.4,
       permission: { resource: 'certificates', action: 'read' },
-      comingSoon: true,
     },
   ]
 
@@ -1479,13 +1535,6 @@ function HomeTab({
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
                 />
-                {stat.comingSoon && (
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full">
-                      Coming Soon
-                    </span>
-                  </div>
-                )}
                 <div className="relative flex-1 flex flex-col">
                   <div className="flex items-start sm:items-center justify-between gap-2 flex-1">
                     <div className="space-y-2 sm:space-y-3 min-w-0">
@@ -1496,9 +1545,7 @@ function HomeTab({
                         initial={{ scale: 0.8 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: stat.delay + 0.2 }}
-                        className={`text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent ${
-                          stat.comingSoon ? 'opacity-50' : ''
-                        }`}
+                        className="text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
                       >
                         {stat.value}
                         {stat.suffix || ''}
@@ -1619,9 +1666,6 @@ function HomeTab({
 
                       {/* Recent Activity or Top Course */}
                       <div className="mt-3 pt-3 border-t border-gray-200 relative">
-                        <span className="absolute top-1 right-0 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                          Coming Soon
-                        </span>
                         {child.recent_activity && child.recent_activity.length > 0 ? (
                           <div className="flex items-start space-x-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
@@ -1635,12 +1679,10 @@ function HomeTab({
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-start space-x-2 opacity-50">
+                          <div className="flex items-start space-x-2">
                             <div className="w-2 h-2 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-gray-500 truncate">
-                                Recent activity tracking coming soon
-                              </p>
+                              <p className="text-xs text-gray-500 truncate">No recent activity</p>
                             </div>
                           </div>
                         )}
@@ -1829,6 +1871,7 @@ function ChildrenTab({
   onDeleteChild,
   onManageConsent,
   childConsents,
+  childrenCertificates,
 }: {
   children: Child[]
   isAccountActive: boolean
@@ -1837,6 +1880,7 @@ function ChildrenTab({
   onDeleteChild: (childId: string) => void
   onManageConsent: (child: Child) => void
   childConsents: Map<string, StudentConsent>
+  childrenCertificates: { childId: string; childName: string; certificates: any[] }[]
 }) {
   return (
     <div className="space-y-6">
@@ -2120,45 +2164,39 @@ function ChildrenTab({
                   </div>
                 </div>
 
-                {/* Recent Activity Preview */}
-                <div className="bg-white/40 rounded-lg p-3 border border-white/20 relative">
-                  <div className="absolute top-2 right-2">
-                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                      Coming Soon
-                    </span>
+                {/* Certificates Earned */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-blue-800">Certificates Earned</h4>
+                    <div className="text-lg">🎓</div>
                   </div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Activity</h4>
-                  {child.recent_activity && child.recent_activity.length > 0 ? (
-                    <div className="space-y-1">
-                      {child.recent_activity.slice(0, 2).map((activity) => (
-                        <div key={activity.id} className="flex items-center space-x-2 text-xs">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
-                          <span className="text-gray-600 truncate flex-1">
-                            {activity.description}
+                  {(() => {
+                    const childCerts = childrenCertificates.find(
+                      (c) => c.childId === child.student_id,
+                    )
+                    const latestCert = childCerts?.certificates?.[0]
+                    return latestCert ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-blue-900 truncate">
+                          {latestCert.course?.title || 'Certificate'}
+                        </p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-blue-700">
+                            {new Date(latestCert.issue_date).toLocaleDateString()}
                           </span>
-                          <span className="text-gray-500 flex-shrink-0">
-                            {new Date(activity.date).toLocaleDateString()}
+                          <span className="text-blue-600 font-medium">
+                            Total: {childCerts.certificates.length}
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="opacity-50">
-                      <div className="flex items-center space-x-2 text-xs">
-                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></div>
-                        <span className="text-gray-500">Activity tracking coming soon</span>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-xs text-blue-700">No certificates yet</p>
+                    )
+                  })()}
                 </div>
 
                 {/* Achievements Preview */}
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-3 border border-yellow-200 relative">
-                  <div className="absolute top-2 right-2">
-                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                      Coming Soon
-                    </span>
-                  </div>
                   {child.achievements && child.achievements.length > 0 ? (
                     <>
                       <div className="flex items-center justify-between">
@@ -2168,14 +2206,12 @@ function ChildrenTab({
                       <p className="text-xs text-yellow-700 mt-1">{child.achievements[0].title}</p>
                     </>
                   ) : (
-                    <div className="opacity-50">
+                    <div>
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium text-yellow-800">Latest Achievement</h4>
                         <div className="text-lg">🏆</div>
                       </div>
-                      <p className="text-xs text-yellow-700 mt-1">
-                        Achievement tracking coming soon
-                      </p>
+                      <p className="text-xs text-yellow-700 mt-1">No achievements yet</p>
                     </div>
                   )}
                 </div>
@@ -2315,7 +2351,15 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
   )
 }
 // Progress Tab Component
-function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStats }) {
+function ProgressTab({
+  children,
+  stats,
+  childrenCertificates,
+}: {
+  children: Child[]
+  stats: ParentStats
+  childrenCertificates: { childId: string; childName: string; certificates: any[] }[]
+}) {
   return (
     <div className="space-y-6">
       <h2 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900">Progress Reports</h2>
@@ -2327,13 +2371,8 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="absolute top-3 right-3">
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Coming Soon
-            </span>
-          </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Progress</h3>
-          <div className="text-center opacity-50">
+          <div className="text-center">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
               {stats.weeklyProgress}%
             </div>
@@ -2346,13 +2385,8 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="absolute top-3 right-3">
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Coming Soon
-            </span>
-          </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Time</h3>
-          <div className="text-center opacity-50">
+          <div className="text-center">
             <div className="text-4xl font-bold text-gray-900 mb-2">{stats.totalLearningHours}</div>
             <p className="text-gray-600">Hours this month</p>
           </div>
@@ -2508,9 +2542,6 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                 <TrophyIcon className="h-5 w-5 mr-2 text-yellow-600" />
                 Recent Achievements
-                <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  Coming Soon
-                </span>
               </h4>
               {child.achievements && child.achievements.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -2540,6 +2571,79 @@ function ProgressTab({ children, stats }: { children: Child[]; stats: ParentStat
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Certificates Section */}
+            <div className="mt-6 pt-6 border-t border-white/20">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <AcademicCapIcon className="h-5 w-5 mr-2 text-purple-600" />
+                Certificates Earned
+              </h4>
+              {(() => {
+                const childCerts = childrenCertificates.find(
+                  (cc) => cc.childId === child.student_id,
+                )
+                const certificates = childCerts?.certificates || []
+
+                return certificates.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {certificates.map((cert: any) => (
+                      <div
+                        key={cert.id}
+                        className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h6 className="font-medium text-purple-900 text-sm mb-1 truncate">
+                              {cert.course?.title ||
+                                cert.certificate_data?.course_title ||
+                                'Certificate'}
+                            </h6>
+                            <p className="text-xs text-purple-700 mb-2">
+                              Issued:{' '}
+                              {new Date(cert.issue_date || cert.created_at).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-600 font-mono">
+                              #{cert.certificate_number}
+                            </p>
+                          </div>
+                          {cert.file_url && (
+                            <a
+                              href={cert.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                              title="Download Certificate"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 bg-gray-50 rounded-lg">
+                    <AcademicCapIcon className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600 text-sm">No certificates earned yet</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Certificates will appear here when {child.full_name} completes courses
+                    </p>
+                  </div>
+                )
+              })()}
             </div>
           </motion.div>
         ))}

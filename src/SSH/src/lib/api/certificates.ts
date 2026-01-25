@@ -749,12 +749,16 @@ export async function issueCertificate(enrollmentId: string): Promise<Certificat
 
     // Send email notification to parent if available, otherwise to student
     const recipientEmail = enrollment.profiles?.parent?.email || enrollment.profiles?.email
-    if (recipientEmail) {
+
+    // Decrypt the recipient email since profiles table stores encrypted emails
+    const decryptedRecipientEmail = recipientEmail ? decryptField(recipientEmail) : null
+
+    if (decryptedRecipientEmail) {
       await sendCertificateEmailNotification(
         enrollment.profiles?.full_name || 'Student',
         enrollment.courses?.title || 'Course',
         pdfUrl,
-        recipientEmail,
+        decryptedRecipientEmail,
       )
     }
 
@@ -834,11 +838,12 @@ export async function issueCertificateWithTemplate(
     parentProfile = parent
   }
 
-  // Decrypt student name before using it
+  // Decrypt student name and parent info before using them
   const decryptedStudentName = decryptField(studentProfile?.full_name) || 'Student'
   const decryptedParentName = parentProfile?.full_name
     ? decryptField(parentProfile.full_name)
     : null
+  const decryptedParentEmail = parentProfile?.email ? decryptField(parentProfile.email) : null
 
   // Combine data in the format expected by the rest of the function
   const enrichedEnrollment = {
@@ -851,6 +856,7 @@ export async function issueCertificateWithTemplate(
         ? {
             ...parentProfile,
             full_name: decryptedParentName,
+            email: decryptedParentEmail, // Use decrypted email for notifications
           }
         : null,
     },
@@ -1007,6 +1013,17 @@ export async function issueCertificateWithTemplate(
     // Send email notification to parent if available, otherwise to student
     const recipientEmail =
       enrichedEnrollment.profiles?.parent?.email || enrichedEnrollment.profiles?.email
+
+    console.log('Certificate email notification check:', {
+      studentId: enrichedEnrollment.student_id,
+      hasParentId: !!studentProfile?.parent_id,
+      parentId: studentProfile?.parent_id,
+      hasParentEmail: !!enrichedEnrollment.profiles?.parent?.email,
+      parentEmail: enrichedEnrollment.profiles?.parent?.email,
+      studentEmail: enrichedEnrollment.profiles?.email,
+      recipientEmail,
+    })
+
     if (recipientEmail) {
       await sendCertificateEmailNotification(
         enrichedEnrollment.profiles?.full_name || 'Student',
@@ -1014,6 +1031,11 @@ export async function issueCertificateWithTemplate(
         pdfUrl,
         recipientEmail,
       )
+    } else {
+      console.warn('No recipient email found for certificate notification', {
+        studentId: enrichedEnrollment.student_id,
+        courseId: enrichedEnrollment.course_id,
+      })
     }
 
     return {

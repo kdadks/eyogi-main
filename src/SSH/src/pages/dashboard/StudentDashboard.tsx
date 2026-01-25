@@ -55,6 +55,7 @@ import {
   ExclamationTriangleIcon,
   DocumentTextIcon,
   ClockIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
@@ -114,6 +115,8 @@ export default function StudentDashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
   const achievementsRef = useRef<HTMLDivElement>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
   // Consent
   const [showConsentModal, setShowConsentModal] = useState(false)
   const [studentConsent, setStudentConsent] = useState<StudentConsent | null>(null)
@@ -436,6 +439,20 @@ export default function StudentDashboard() {
       loadStudentProfile()
     }
   }, [user?.id, loadStudentProfile])
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await loadStudentData()
+      toast.success('Dashboard refreshed successfully')
+    } catch (error) {
+      toast.error('Failed to refresh dashboard')
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500)
+    }
+  }
+
   const handleEnrollment = async (courseId: string) => {
     if (!user?.id) {
       toast.error('Please log in to enroll in courses')
@@ -628,6 +645,27 @@ export default function StudentDashboard() {
                 </motion.p>
               </div>
               <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {/* Refresh Button */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    title="Refresh dashboard"
+                  >
+                    <ArrowPathIcon
+                      className={`h-5 w-5 sm:h-6 sm:w-6 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+                    />
+                  </motion.button>
+                </motion.div>
+
+                {/* Achievements Trophy */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}

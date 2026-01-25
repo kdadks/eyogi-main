@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   XMarkIcon,
   HomeIcon,
@@ -34,6 +34,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const { canAccessResource, canShowInMenu, getUserRole, currentUser, isSuperAdminRole } =
     usePermissions()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const location = useLocation()
+
   const handleSignOut = async () => {
     if (isSigningOut) return // Prevent double-clicks
     setIsSigningOut(true)
@@ -240,9 +242,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
               <NavLink
                 key={item.name}
                 to={item.href}
-                onClick={onClose}
+                onClick={(e) => {
+                  // If clicking the current page link, refresh it
+                  if (location.pathname === item.href) {
+                    e.preventDefault()
+                    window.location.reload()
+                  }
+                  onClose()
+                }}
                 className={({ isActive }) =>
-                  `group flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                  `group flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-pointer ${
                     isActive
                       ? 'bg-blue-50 border-r-2 border-blue-500 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
