@@ -3,12 +3,20 @@ import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import { HelpButton, adminDashboardHelpTopics } from '../help'
 import RefreshButton from './RefreshButton'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 interface AdminHeaderProps {
   onMenuClick: () => void
 }
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   const { fullTitle } = usePageTitle()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleRefresh = () => {
+    // Force re-render by navigating to the same path with a key change
+    navigate(location.pathname + location.search, { replace: true, state: { refresh: Date.now() } })
+  }
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -29,7 +37,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
         {/* Right side */}
         <div className="flex items-center space-x-4">
           {/* Refresh Button */}
-          <RefreshButton />
+          <RefreshButton onRefresh={handleRefresh} />
 
           {/* Help Button */}
           <HelpButton
