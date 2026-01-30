@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Badge } from '../ui/Badge'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   ShieldCheckIcon,
   TrashIcon,
@@ -55,6 +56,7 @@ export default function GDPRDeletionManagement({
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | 'execute' | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const { refreshKey } = useRefresh()
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -75,7 +77,7 @@ export default function GDPRDeletionManagement({
     } finally {
       setLoading(false)
     }
-  }, [activeTab])
+  }, [activeTab, refreshKey])
 
   useEffect(() => {
     loadData()

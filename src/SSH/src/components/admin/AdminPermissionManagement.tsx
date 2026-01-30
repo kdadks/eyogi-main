@@ -3,6 +3,7 @@ import { Button } from '../ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card'
 import { Switch } from '../ui/switch'
 import { Badge } from '../ui/Badge'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   AlertCircle,
   CheckCircle,
@@ -209,10 +210,12 @@ export default function AdminPermissionManagement() {
       setLoading(false)
     }
   }
+  const { refreshKey } = useRefresh()
+
   // Load data on component mount
   useEffect(() => {
     loadPermissions()
-  }, [])
+  }, [refreshKey])
   // Check if user can access this page
   if (!canAccess('permissions', 'view')) {
     return (

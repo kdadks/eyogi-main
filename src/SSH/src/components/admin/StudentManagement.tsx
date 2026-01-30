@@ -21,6 +21,7 @@ import { getCountryName, getStateName } from '@/lib/address-utils'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import StudentBatchAssignmentModal from './StudentBatchAssignmentModal'
 import BulkBatchAssignmentModal from './BulkBatchAssignmentModal'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   UserIcon,
   AcademicCapIcon,
@@ -67,6 +68,7 @@ export default function StudentManagement() {
   )
   const [selectedStudentNameForAudit, setSelectedStudentNameForAudit] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const { refreshKey } = useRefresh()
 
   // Helper function to check if student has certificate for course
   const hasCertificate = (studentId: string, courseId: string): boolean => {
@@ -113,7 +115,7 @@ export default function StudentManagement() {
   })
   useEffect(() => {
     loadData()
-  }, [])
+  }, [refreshKey])
   useEffect(() => {
     const filterStudents = () => {
       let filtered = students

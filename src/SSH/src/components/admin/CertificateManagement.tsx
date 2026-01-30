@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Certificate, Enrollment, CertificateTemplate, Course, Gurukul } from '@/types'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   issueCertificate,
   issueCertificateWithTemplate,
@@ -48,6 +49,7 @@ import {
 } from '@heroicons/react/24/outline'
 export default function CertificateManagement() {
   const { canManageCertificates, canAssignTemplates, profile } = useAuth()
+  const { refreshKey } = useRefresh()
   const { canAccess, hasAnyPermission } = usePermissions()
 
   // Check both role-based and granular permissions
@@ -135,7 +137,7 @@ export default function CertificateManagement() {
     } finally {
       setLoading(false)
     }
-  }, [selectedTemplate])
+  }, [selectedTemplate, refreshKey])
   useEffect(() => {
     loadData()
   }, [loadData])

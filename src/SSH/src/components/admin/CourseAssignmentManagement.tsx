@@ -10,6 +10,7 @@ import { Course, User } from '../../types'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { decryptProfileFields } from '../../lib/encryption'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   PlusIcon,
   XMarkIcon,
@@ -147,7 +148,11 @@ const CourseAssignmentManagement: React.FC = () => {
     message: '',
     onConfirm: () => {},
   })
-  const { assignments, loading, assignTeacherToCourse, removeAssignment } = useCourseAssignments()
+  const { refreshKey } = useRefresh()
+  const { assignments, loading, assignTeacherToCourse, removeAssignment } = useCourseAssignments(
+    undefined,
+    refreshKey,
+  )
   const { currentUser } = usePermissions()
   const filteredAssignments = assignments.filter(
     (assignment) =>

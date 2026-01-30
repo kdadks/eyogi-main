@@ -3,7 +3,7 @@ import { supabaseAdmin } from '../lib/supabase'
 import { CourseAssignment, Course, User } from '../types'
 import toast from 'react-hot-toast'
 import { decryptProfileFields } from '../lib/encryption'
-export function useCourseAssignments(teacherId?: string) {
+export function useCourseAssignments(teacherId?: string, refreshKey?: number) {
   const [assignments, setAssignments] = useState<CourseAssignment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -69,7 +69,7 @@ export function useCourseAssignments(teacherId?: string) {
     } finally {
       setLoading(false)
     }
-  }, [teacherId])
+  }, [teacherId, refreshKey])
   const assignTeacherToCourse = async (
     teacherId: string,
     courseId: string,

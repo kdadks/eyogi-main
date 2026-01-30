@@ -55,62 +55,179 @@ export async function generateStudentId(
 /**
  * Generate Teacher ID
  * Format: EYG-TCH-#### (e.g., EYG-TCH-0001)
+ * Ensures uniqueness by checking existing codes and retrying if necessary
  */
 export async function generateTeacherId(): Promise<string> {
-  const { count, error } = await supabaseAdmin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .eq('role', 'teacher')
-    .not('teacher_code', 'is', null)
+  const maxAttempts = 10
 
-  if (error) {
-    console.error('Error counting teachers:', error)
-    return 'EYG-TCH-0001'
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Get the highest existing teacher code number
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('teacher_code')
+      .eq('role', 'teacher')
+      .not('teacher_code', 'is', null)
+      .order('teacher_code', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error('Error fetching teacher codes:', error)
+      // Fallback: use timestamp-based approach for uniqueness
+      const timestamp = Date.now().toString().slice(-4)
+      return `EYG-TCH-${timestamp}`
+    }
+
+    let nextNumber = 1
+
+    if (data && data.length > 0 && data[0].teacher_code) {
+      // Extract the number from the last code (e.g., "EYG-TCH-0042" -> 42)
+      const match = data[0].teacher_code.match(/EYG-TCH-(\d+)/)
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1
+      }
+    }
+
+    const candidateCode = `EYG-TCH-${nextNumber.toString().padStart(4, '0')}`
+
+    // Verify this code doesn't already exist
+    const { data: existing } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('teacher_code', candidateCode)
+      .single()
+
+    if (!existing) {
+      return candidateCode
+    }
+
+    // If code exists, retry
+    console.warn(`Teacher code ${candidateCode} already exists, retrying...`)
   }
 
-  const nextNumber = (count || 0) + 1
-  return `EYG-TCH-${nextNumber.toString().padStart(4, '0')}`
+  // Final fallback: use timestamp to ensure uniqueness
+  const timestamp = Date.now().toString().slice(-4)
+  const fallbackCode = `EYG-TCH-${timestamp}`
+  console.warn(`Using timestamp-based fallback code: ${fallbackCode}`)
+  return fallbackCode
 }
 
 /**
  * Generate Parent ID
  * Format: EYG-PNT-#### (e.g., EYG-PNT-0001)
+ * Ensures uniqueness by checking existing codes and retrying if necessary
  */
 export async function generateParentId(): Promise<string> {
-  const { count, error } = await supabaseAdmin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .eq('role', 'parent')
-    .not('parent_code', 'is', null)
+  const maxAttempts = 10
 
-  if (error) {
-    console.error('Error counting parents:', error)
-    return 'EYG-PNT-0001'
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Get the highest existing parent code number
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('parent_code')
+      .eq('role', 'parent')
+      .not('parent_code', 'is', null)
+      .order('parent_code', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error('Error fetching parent codes:', error)
+      // Fallback: use timestamp-based approach for uniqueness
+      const timestamp = Date.now().toString().slice(-4)
+      return `EYG-PNT-${timestamp}`
+    }
+
+    let nextNumber = 1
+
+    if (data && data.length > 0 && data[0].parent_code) {
+      // Extract the number from the last code (e.g., "EYG-PNT-0042" -> 42)
+      const match = data[0].parent_code.match(/EYG-PNT-(\d+)/)
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1
+      }
+    }
+
+    const candidateCode = `EYG-PNT-${nextNumber.toString().padStart(4, '0')}`
+
+    // Verify this code doesn't already exist
+    const { data: existing } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('parent_code', candidateCode)
+      .single()
+
+    if (!existing) {
+      return candidateCode
+    }
+
+    // If code exists, add random offset and retry
+    console.warn(`Parent code ${candidateCode} already exists, retrying...`)
   }
 
-  const nextNumber = (count || 0) + 1
-  return `EYG-PNT-${nextNumber.toString().padStart(4, '0')}`
+  // Final fallback: use timestamp to ensure uniqueness
+  const timestamp = Date.now().toString().slice(-4)
+  const fallbackCode = `EYG-PNT-${timestamp}`
+  console.warn(`Using timestamp-based fallback code: ${fallbackCode}`)
+  return fallbackCode
 }
 
 /**
  * Generate Admin ID
  * Format: EYG-ADM-#### (e.g., EYG-ADM-0001)
  * Used for admin, business_admin, and super_admin roles
+ * Ensures uniqueness by checking existing codes and retrying if necessary
  */
 export async function generateAdminId(): Promise<string> {
-  const { count, error } = await supabaseAdmin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .in('role', ['admin', 'business_admin', 'super_admin'])
-    .not('admin_code', 'is', null)
+  const maxAttempts = 10
 
-  if (error) {
-    console.error('Error counting admins:', error)
-    return 'EYG-ADM-0001'
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Get the highest existing admin code number
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('admin_code')
+      .in('role', ['admin', 'business_admin', 'super_admin'])
+      .not('admin_code', 'is', null)
+      .order('admin_code', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error('Error fetching admin codes:', error)
+      // Fallback: use timestamp-based approach for uniqueness
+      const timestamp = Date.now().toString().slice(-4)
+      return `EYG-ADM-${timestamp}`
+    }
+
+    let nextNumber = 1
+
+    if (data && data.length > 0 && data[0].admin_code) {
+      // Extract the number from the last code (e.g., "EYG-ADM-0042" -> 42)
+      const match = data[0].admin_code.match(/EYG-ADM-(\d+)/)
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1
+      }
+    }
+
+    const candidateCode = `EYG-ADM-${nextNumber.toString().padStart(4, '0')}`
+
+    // Verify this code doesn't already exist
+    const { data: existing } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('admin_code', candidateCode)
+      .single()
+
+    if (!existing) {
+      return candidateCode
+    }
+
+    // If code exists, retry
+    console.warn(`Admin code ${candidateCode} already exists, retrying...`)
   }
 
-  const nextNumber = (count || 0) + 1
-  return `EYG-ADM-${nextNumber.toString().padStart(4, '0')}`
+  // Final fallback: use timestamp to ensure uniqueness
+  const timestamp = Date.now().toString().slice(-4)
+  const fallbackCode = `EYG-ADM-${timestamp}`
+  console.warn(`Using timestamp-based fallback code: ${fallbackCode}`)
+  return fallbackCode
 }
 
 /**

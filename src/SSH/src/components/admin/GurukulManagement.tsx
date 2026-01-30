@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import MediaSelector from '../MediaSelector'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   GlobeAltIcon,
   PlusIcon,
@@ -67,9 +68,11 @@ export default function GurukulManagement() {
     message: '',
     onConfirm: () => {},
   })
+  const { refreshKey } = useRefresh()
+
   useEffect(() => {
     loadData()
-  }, [])
+  }, [refreshKey])
   useEffect(() => {
     // Auto-generate slug when name changes
     if (formData.name && !editingGurukul) {

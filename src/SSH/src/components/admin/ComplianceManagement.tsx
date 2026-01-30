@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader } from '../ui/Card'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   PlusIcon,
   PencilIcon,
@@ -56,10 +57,11 @@ export default function ComplianceManagement() {
     is_mandatory: false,
     due_date: '',
   })
+  const { refreshKey } = useRefresh()
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [refreshKey])
 
   const loadData = async () => {
     setLoading(true)

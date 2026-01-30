@@ -3,19 +3,19 @@ import { Bars3Icon, BellIcon } from '@heroicons/react/24/outline'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import { HelpButton, adminDashboardHelpTopics } from '../help'
 import RefreshButton from './RefreshButton'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useRefresh } from '../../contexts/RefreshContext'
+import toast from 'react-hot-toast'
 
 interface AdminHeaderProps {
   onMenuClick: () => void
 }
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   const { fullTitle } = usePageTitle()
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { triggerRefresh } = useRefresh()
 
-  const handleRefresh = () => {
-    // Force re-render by navigating to the same path with a key change
-    navigate(location.pathname + location.search, { replace: true, state: { refresh: Date.now() } })
+  const handleRefresh = async () => {
+    triggerRefresh()
+    toast.success('Page refreshed successfully')
   }
 
   return (

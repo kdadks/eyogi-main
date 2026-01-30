@@ -8,6 +8,7 @@ import { formatDate, toSentenceCase } from '@/lib/utils'
 import { getRoleColor } from '@/lib/auth/authUtils'
 import toast from 'react-hot-toast'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   UserIcon,
   PencilIcon,
@@ -29,6 +30,7 @@ export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const { refreshKey } = useRefresh()
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -42,7 +44,7 @@ export default function UserManagement() {
   })
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [refreshKey])
   const filterUsers = useCallback(() => {
     let filtered = users
     // Filter by search term

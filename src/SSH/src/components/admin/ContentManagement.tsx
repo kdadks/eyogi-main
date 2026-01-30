@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { SafeReactQuill } from '../ui/SafeReactQuill'
 import { toast } from 'sonner'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   EyeIcon,
   PencilIcon,
@@ -86,10 +87,11 @@ export default function ContentManagement() {
     message: '',
     onConfirm: () => {},
   })
+  const { refreshKey } = useRefresh()
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [refreshKey])
 
   const loadData = async () => {
     setLoading(true)

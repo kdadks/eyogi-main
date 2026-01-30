@@ -7,6 +7,7 @@ import { Badge } from '../ui/Badge'
 import { Input } from '../ui/Input'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { toast } from 'sonner'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   Upload,
   Search,
@@ -123,14 +124,16 @@ export default function MediaManagement() {
     }
   }, [])
 
+  const { refreshKey } = useRefresh()
+
   // Effects
   useEffect(() => {
     loadMedia()
-  }, [loadMedia])
+  }, [loadMedia, refreshKey])
 
   useEffect(() => {
     loadStats()
-  }, [loadStats])
+  }, [loadStats, refreshKey])
 
   // Handle file upload (placeholder implementation)
   const handleFileUpload = async (files: File[]) => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HelpButton, adminDashboardHelpTopics } from '../help'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   UsersIcon,
   BookOpenIcon,
@@ -44,6 +45,7 @@ interface ActivityItem {
 }
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate()
+  const { refreshKey } = useRefresh()
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalCourses: 0,
@@ -59,7 +61,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     loadDashboardStats()
     loadRecentActivities()
-  }, [])
+  }, [refreshKey])
   const loadDashboardStats = async () => {
     try {
       // Optimized: Fetch counts only with head: true to avoid fetching actual data

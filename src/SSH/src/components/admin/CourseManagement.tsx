@@ -3,6 +3,7 @@ import { SafeReactQuill } from '../ui/SafeReactQuill'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Course, Gurukul, Syllabus } from '@/types'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   getCourses,
   createCourse,
@@ -283,9 +284,11 @@ export default function CourseManagement() {
     message: '',
     onConfirm: () => {},
   })
+  const { refreshKey } = useRefresh()
+
   useEffect(() => {
     loadData()
-  }, [])
+  }, [refreshKey])
 
   // Validate slug for uniqueness
   useEffect(() => {

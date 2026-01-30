@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import ConsentReport from './ConsentReport'
 import CacheManagement from './CacheManagement'
 import { supabaseAdmin } from '@/lib/supabase'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   ChartBarIcon,
   UserGroupIcon,
@@ -139,10 +140,11 @@ export default function AdminAnalytics() {
       setLoading(false)
     }
   }
+  const { refreshKey } = useRefresh()
 
   useEffect(() => {
     loadAnalytics()
-  }, [dateRange])
+  }, [dateRange, refreshKey])
 
   // Set up real-time subscription for attendance records and page analytics
   useEffect(() => {

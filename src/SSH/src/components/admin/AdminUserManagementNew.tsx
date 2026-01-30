@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   UserPlusIcon,
   MagnifyingGlassIcon,
@@ -47,6 +48,8 @@ const AdminUserManagement: React.FC = () => {
     onConfirm: () => {},
   })
   const { user: currentUser } = useAuth()
+  const { refreshKey } = useRefresh()
+
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
@@ -69,7 +72,7 @@ const AdminUserManagement: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [currentUser?.id])
+  }, [currentUser?.id, refreshKey])
   useEffect(() => {
     loadUsers()
   }, [loadUsers])

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'
 import { Badge } from '../ui/Badge'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   PlusIcon,
   PencilIcon,
@@ -29,6 +30,7 @@ const BatchManagement: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 15
+  const { refreshKey } = useRefresh()
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -85,7 +87,7 @@ const BatchManagement: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [filterGurukul, filterStatus])
+  }, [filterGurukul, filterStatus, refreshKey])
 
   useEffect(() => {
     fetchData()

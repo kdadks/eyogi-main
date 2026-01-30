@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Enrollment } from '@/types'
+import { useRefresh } from '@/contexts/RefreshContext'
 import {
   getAllEnrollments,
   updateEnrollmentStatus,
@@ -30,6 +31,7 @@ export default function EnrollmentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [bulkLoading, setBulkLoading] = useState(false)
+  const { refreshKey } = useRefresh()
   const [selectedStudent, setSelectedStudent] = useState<{
     id: string
     name: string
@@ -39,7 +41,7 @@ export default function EnrollmentManagement() {
 
   useEffect(() => {
     loadEnrollments()
-  }, [])
+  }, [refreshKey])
   const filterEnrollments = React.useCallback(() => {
     let filtered = enrollments
     // Filter by search term

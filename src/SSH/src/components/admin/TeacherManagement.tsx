@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useRefresh } from '../../contexts/RefreshContext'
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -42,10 +43,11 @@ export default function TeacherManagement() {
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'compliant' | 'pending'>('all')
   const [selectedTeachers, setSelectedTeachers] = useState<Set<string>>(new Set())
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const { refreshKey } = useRefresh()
 
   useEffect(() => {
     loadTeachers()
-  }, [])
+  }, [refreshKey])
 
   useEffect(() => {
     applyFilters()
