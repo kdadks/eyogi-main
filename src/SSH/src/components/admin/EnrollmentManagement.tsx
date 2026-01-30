@@ -56,16 +56,16 @@ export default function EnrollmentManagement() {
       filtered = filtered.filter((enrollment) => enrollment.status === statusFilter)
     }
 
-    // Sort: pending first, then alphabetically by student name for approved/rejected
+    // Sort: pending first, then by latest enrollment date
     filtered = filtered.sort((a, b) => {
       // Pending status comes first
       if (a.status === 'pending' && b.status !== 'pending') return -1
       if (a.status !== 'pending' && b.status === 'pending') return 1
 
-      // If both are pending or both are non-pending, sort alphabetically by student name
-      const nameA = a.student?.full_name?.toLowerCase() || ''
-      const nameB = b.student?.full_name?.toLowerCase() || ''
-      return nameA.localeCompare(nameB)
+      // If both have same status priority, sort by enrollment date (latest first)
+      const dateA = new Date(a.enrolled_at || 0).getTime()
+      const dateB = new Date(b.enrolled_at || 0).getTime()
+      return dateB - dateA // Descending order (latest first)
     })
 
     setFilteredEnrollments(filtered)

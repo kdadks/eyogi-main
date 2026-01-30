@@ -20,6 +20,7 @@ import {
   CreditCardIcon,
   ShieldExclamationIcon,
   ClockIcon,
+  DocumentChartBarIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth } from '../../contexts/AuthContextTypes'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -125,6 +126,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       icon: ChartBarIcon,
       permission: { resource: 'analytics', action: 'read' },
       adminOnly: true, // Only admin and super_admin can view analytics
+    },
+    {
+      name: 'Reports',
+      href: '/admin/reports',
+      icon: DocumentChartBarIcon,
+      permission: { resource: 'analytics', action: 'read' },
     },
     {
       name: 'Compliance',
