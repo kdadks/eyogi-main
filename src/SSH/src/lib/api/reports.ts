@@ -247,7 +247,7 @@ export async function generateBatchReport(
 
     // Fetch attendance records for these students
     const { data: attendanceRecords } = await supabaseAdmin
-      .from('attendance')
+      .from('attendance_records')
       .select('student_id, batch_id, status')
       .in('student_id', studentIds)
       .in('batch_id', batchIds)
