@@ -152,10 +152,25 @@ export default function FooterDynamic() {
           ))}
         </div>
         <div className="mt-8 pt-8 border-t border-gray-800">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
               © {currentYear} eYogi Gurukul. All rights reserved.
             </p>
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <span>Powered by IT-Wala</span>
+              <a
+                href="https://it-wala.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/ssh-app/Images/itwala.png"
+                  alt="IT-Wala"
+                  style={{ height: '20px', width: 'auto', maxWidth: '80px', objectFit: 'contain' }}
+                />
+              </a>
+            </div>
             <p className="text-gray-400 text-sm mt-2 md:mt-0">
               Made with ❤️ for preserving ancient wisdom
             </p>
