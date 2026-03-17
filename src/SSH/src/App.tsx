@@ -20,6 +20,7 @@ const CoursesPage = lazy(() => import('./pages/CoursesPage'))
 const GurukulPage = lazy(() => import('./pages/GurukulPage'))
 const GurukulDetailPage = lazy(() => import('./pages/GurukulDetailPage'))
 const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'))
+const QuizAnswerPage = lazy(() => import('./pages/QuizAnswerPage'))
 const LegalPageDisplay = lazy(() => import('./components/legal/LegalPageDisplay'))
 const CertificateViewer = lazy(() => import('./components/certificates/CertificateViewer'))
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
@@ -112,6 +113,7 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/gurukuls" element={<GurukulPage />} />
+            <Route path="/quiz-answer" element={<QuizAnswerPage />} />
             {/* Legal Pages Route */}
             <Route path="/legal/:slug" element={<LegalPageDisplay />} />
             {/* Auth Redirects - Opens modals instead of separate pages */}

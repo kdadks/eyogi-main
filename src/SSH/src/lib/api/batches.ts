@@ -356,7 +356,7 @@ export async function deleteBatch(id: string): Promise<void> {
 
 // Student-Batch Assignment Functions
 
-export async function getBatchStudents(batchId: string): Promise<BatchStudent[]> {
+export async function getBatchStudents(batchId: string): Promise<BatchStudentWithInfo[]> {
   try {
     const { data, error } = await supabaseAdmin
       .from('batch_students')
@@ -379,6 +379,12 @@ export async function getBatchStudents(batchId: string): Promise<BatchStudent[]>
             id,
             name,
             slug
+          ),
+          batch_courses (
+            course:courses (
+              id,
+              title
+            )
           )
         ),
         assigned_by_user:profiles!batch_students_assigned_by_fkey (
@@ -398,11 +404,34 @@ export async function getBatchStudents(batchId: string): Promise<BatchStudent[]>
       return []
     }
 
-    // Decrypt student and assigned_by profiles
-    const decryptedData = (data || []).map((item: any) => ({
-      ...item,
-      student: item.student ? decryptProfileFields(item.student) : null,
-      assigned_by_user: item.assigned_by_user ? decryptProfileFields(item.assigned_by_user) : null,
+    // Decrypt student and assigned_by profiles and add additional fields
+    const decryptedData = await Promise.all((data || []).map(async (item: any) => {
+      const courseId = item.batch?.batch_courses?.[0]?.course?.id
+      let progressPercentage = 0
+
+      if (courseId) {
+        // Get enrollment progress for this student and course
+        const { data: enrollmentData } = await supabaseAdmin
+          .from('enrollments')
+          .select('progress_percentage')
+          .eq('student_id', item.student_id)
+          .eq('course_id', courseId)
+          .single()
+
+        progressPercentage = enrollmentData?.progress_percentage || 0
+      }
+
+      return {
+        ...item,
+        student: item.student ? decryptProfileFields(item.student) : null,
+        assigned_by_user: item.assigned_by_user ? decryptProfileFields(item.assigned_by_user) : null,
+        name: item.student?.full_name || 'Unknown Student',
+        email: item.student?.email || 'No Email',
+        batch_name: item.batch?.name || 'Unknown Batch',
+        course_title: item.batch?.batch_courses?.[0]?.course?.title || 'Unknown Course',
+        course_id: courseId || null,
+        progress_percentage: progressPercentage,
+      }
     }))
 
     return decryptedData

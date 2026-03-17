@@ -2,6 +2,24 @@ import { supabaseAdmin } from '../supabase'
 // This function should be run once to set up the required database tables
 export const setupDatabase = async () => {
   try {
+    // Create quiz_answers table
+    const createQuizAnswersTable = `
+      CREATE TABLE IF NOT EXISTS quiz_answers (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        phone VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `
+    const { error: quizAnswersError } = await supabaseAdmin.rpc('exec_sql', {
+      sql: createQuizAnswersTable,
+    })
+    if (quizAnswersError && !quizAnswersError.message.includes('already exists')) {
+      console.warn('Error creating quiz_answers table:', quizAnswersError)
+    }
+
     // Create certificate_templates table
     const createTemplatesTable = `
       CREATE TABLE IF NOT EXISTS certificate_templates (
@@ -73,6 +91,9 @@ export const setupDatabase = async () => {
     }
     // Create triggers
     const createTriggers = `
+      DROP TRIGGER IF EXISTS update_quiz_answers_updated_at ON quiz_answers;
+      CREATE TRIGGER update_quiz_answers_updated_at BEFORE UPDATE
+      ON quiz_answers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
       DROP TRIGGER IF EXISTS update_certificate_templates_updated_at ON certificate_templates;
       CREATE TRIGGER update_certificate_templates_updated_at BEFORE UPDATE
       ON certificate_templates FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

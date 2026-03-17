@@ -78,7 +78,7 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
 
   // Close mobile menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       const target = event.target as HTMLElement
       const mobileMenu = document.getElementById('mobile-menu-container')
       const menuButton = document.getElementById('mobile-menu-button')
@@ -337,7 +337,7 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                       onClick={() => onOpenAuthModal?.('signup')}
                       className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border-0 px-3 py-1 text-xs"
                     >
-                      Get Started
+                      Register Now
                     </Button>
                   </motion.div>
                 </div>
@@ -527,7 +527,7 @@ export function GlossyHeader({ onOpenAuthModal }: GlossyHeaderProps) {
                           className="block w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation"
                           style={{ minHeight: '44px' }}
                         >
-                          Get Started
+                          Register Now
                         </button>
                       </>
                     )}

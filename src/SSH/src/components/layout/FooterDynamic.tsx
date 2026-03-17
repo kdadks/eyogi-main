@@ -98,9 +98,9 @@ export default function FooterDynamic() {
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
               <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">eY</span>
+                <span className="text-white font-bold text-sm"></span>
               </div>
-              <span className="text-xl font-bold">eYogi Gurukul</span>
+              <span className="text-xl font-bold">SSH University</span>
             </div>
             <p className="text-gray-300 text-sm mb-4">
               Connecting ancient Vedic wisdom with modern learning through comprehensive online

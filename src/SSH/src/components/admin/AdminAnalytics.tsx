@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import ConsentReport from './ConsentReport'
 import CacheManagement from './CacheManagement'
+import QuizAnswersAnalytics from './QuizAnswersAnalytics'
 import { supabaseAdmin } from '@/lib/supabase'
 import { useRefresh } from '@/contexts/RefreshContext'
 import {
@@ -78,6 +79,7 @@ type TabType =
   | 'certificates'
   | 'gurukuls'
   | 'site'
+  | 'quiz-answers'
   | 'consent'
   | 'system'
 
@@ -240,6 +242,7 @@ export default function AdminAnalytics() {
     { id: 'certificates', name: 'Certificates', icon: AcademicCapIcon },
     { id: 'gurukuls', name: 'Gurukuls', icon: BookOpenIcon },
     { id: 'site', name: 'Site Analytics', icon: EyeIcon },
+    { id: 'quiz-answers', name: 'Quiz Answers', icon: DocumentTextIcon },
     { id: 'consent', name: 'Consent', icon: DocumentTextIcon },
     { id: 'system', name: 'System', icon: Cog6ToothIcon },
   ]
@@ -344,6 +347,7 @@ export default function AdminAnalytics() {
       )}
       {activeTab === 'gurukuls' && <GurukulsTab data={gurukulData} formatNumber={formatNumber} />}
       {activeTab === 'site' && <SiteTab data={siteData} formatNumber={formatNumber} />}
+      {activeTab === 'quiz-answers' && <QuizAnswersAnalytics />}
       {activeTab === 'consent' && <ConsentReport />}
       {activeTab === 'system' && <CacheManagement />}
     </div>

@@ -45,16 +45,32 @@ interface PageSettings {
   home_hero_title_highlight?: string
   home_hero_description?: string
   home_hero_image_url?: string
+  home_hero_button_1_text?: string
+  home_hero_button_1_link?: string
+  home_hero_button_2_text?: string
+  home_hero_button_2_link?: string
+  home_hero_image_caption?: string
+  home_hero_image_caption_icon?: string
+  home_hero_image_caption_description?: string
   home_features_title?: string
   home_features_subtitle?: string
   home_features_box_1_title?: string
   home_features_box_1_description?: string
+  home_features_box_1_icon?: string
   home_features_box_2_title?: string
   home_features_box_2_description?: string
+  home_features_box_2_icon?: string
   home_features_box_3_title?: string
   home_features_box_3_description?: string
+  home_features_box_3_icon?: string
   home_features_box_4_title?: string
   home_features_box_4_description?: string
+  home_features_box_4_icon?: string
+  home_gurukuls_title?: string
+  home_gurukuls_subtitle?: string
+  home_gurukuls_selected_ids?: string[]
+  home_testimonials_title?: string
+  home_testimonials_subtitle?: string
   home_testimonials?: Array<{
     name: string
     role: string
@@ -248,7 +264,7 @@ export default function HomePage() {
                 <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row justify-center lg:justify-start">
                   {pageSettings?.home_hero_button_1_text && (
                     <ScrollLink
-                      to={pageSettings?.home_hero_button_1_link}
+                      to={pageSettings?.home_hero_button_1_link || '#'}
                       className="w-full sm:w-auto"
                     >
                       <Button
@@ -262,7 +278,7 @@ export default function HomePage() {
                   )}
                   {pageSettings?.home_hero_button_2_text && (
                     <ScrollLink
-                      to={pageSettings?.home_hero_button_2_link}
+                      to={pageSettings?.home_hero_button_2_link || '#'}
                       className="w-full sm:w-auto"
                     >
                       <Button
@@ -480,7 +496,7 @@ export default function HomePage() {
               {pageSettings?.home_cta_description}
             </p>
             <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row justify-center max-w-sm sm:max-w-none mx-auto px-4">
-              <ScrollLink to={pageSettings?.home_cta_button_1_link} className="w-full sm:w-auto">
+              <ScrollLink to={pageSettings?.home_cta_button_1_link || '#'} className="w-full sm:w-auto">
                 <Button
                   variant="secondary"
                   size="lg"
@@ -489,7 +505,7 @@ export default function HomePage() {
                   {pageSettings?.home_cta_button_1_text}
                 </Button>
               </ScrollLink>
-              <ScrollLink to={pageSettings?.home_cta_button_2_link} className="w-full sm:w-auto">
+              <ScrollLink to={pageSettings?.home_cta_button_2_link || '#'} className="w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="lg"

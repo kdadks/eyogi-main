@@ -3,6 +3,7 @@ import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { useRefresh } from '../../contexts/RefreshContext'
+import { useSupabaseAuth } from '../../contexts/AuthContextTypes'
 import {
   ShieldCheckIcon,
   TrashIcon,
@@ -33,16 +34,16 @@ import type {
 } from '../../types/gdpr'
 
 interface GDPRDeletionManagementProps {
-  adminId: string
   className?: string
 }
 
 type TabType = 'pending' | 'approved' | 'completed' | 'all'
 
 export default function GDPRDeletionManagement({
-  adminId,
   className = '',
 }: GDPRDeletionManagementProps) {
+  const { user } = useSupabaseAuth()
+  const adminId = user?.id || ''
   const [activeTab, setActiveTab] = useState<TabType>('pending')
   const [loading, setLoading] = useState(true)
   const [requests, setRequests] = useState<DeletionRequest[]>([])

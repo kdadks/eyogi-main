@@ -1193,7 +1193,7 @@ export default function TeacherDashboard() {
 
       if (incompleteStudents.length > 0) {
         const incompleteList = incompleteStudents
-          .map((s) => `${s.name} (${s.progress_percentage ?? 0}%)`)
+          .map((s) => `${s.student?.full_name || 'Unknown Student'} (${s.progress_percentage ?? 0}%)`)
           .join(', ')
         toast.error(
           `Cannot issue certificates: ${incompleteStudents.length} student(s) have not completed 100% of the course. Please update their progress first. Incomplete students: ${incompleteList}`,
