@@ -192,6 +192,14 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         }
       }
 
+      // Students bound to a parent cannot log in directly
+      if (userData.role === 'student' && userData.parent_id) {
+        return {
+          error:
+            'This student account is managed by a parent. Please contact your parent or the administrator.',
+        }
+      }
+
       // Invalidate user profile cache to ensure fresh decrypted data
       queryCache.invalidatePattern(`users:profile:${userData.id}`)
 

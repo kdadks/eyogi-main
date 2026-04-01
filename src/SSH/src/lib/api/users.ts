@@ -59,6 +59,68 @@ export async function getAllStudents(): Promise<Profile[]> {
   )
 }
 
+export async function getStudentCount(): Promise<number> {
+  const cacheKey = createCacheKey('users', 'student-count')
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      const { count, error } = await supabaseAdmin
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'student')
+      if (error) {
+        return 0
+      }
+      return count || 0
+    },
+    CACHE_DURATIONS.USER_PROFILE, // 5 minutes
+  )
+}
+
+export async function getAllParents(): Promise<Profile[]> {
+  const cacheKey = createCacheKey('users', 'parents')
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name, email, role, created_at, updated_at')
+        .eq('role', 'parent')
+        .order('full_name', { ascending: true })
+      if (error) {
+        return []
+      }
+      const decrypted = (data || []).map((u) => decryptProfileFields(u))
+      return decrypted as unknown as Profile[]
+    },
+    CACHE_DURATIONS.USER_PROFILE,
+  )
+}
+
+export async function getUnboundStudents(): Promise<Profile[]> {
+  const cacheKey = createCacheKey('users', 'unbound-students')
+
+  return queryCache.get(
+    cacheKey,
+    async () => {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('id, full_name, email, role, student_id, created_at, updated_at')
+        .eq('role', 'student')
+        .is('parent_id', null)
+        .order('full_name', { ascending: true })
+      if (error) {
+        return []
+      }
+      const decrypted = (data || []).map((u) => decryptProfileFields(u))
+      return decrypted as unknown as Profile[]
+    },
+    CACHE_DURATIONS.USER_PROFILE,
+  )
+}
+
 export async function getAllTeachers(): Promise<Profile[]> {
   const cacheKey = createCacheKey('users', 'teachers')
 

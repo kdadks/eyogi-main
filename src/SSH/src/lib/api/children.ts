@@ -390,3 +390,202 @@ export async function deleteChild(childId: string): Promise<void> {
     throw error
   }
 }
+
+// -------------------------------------------------------------------------
+// ADMIN PARENT-STUDENT BINDING
+// -------------------------------------------------------------------------
+
+export interface BoundPair {
+  relationshipId: string
+  parentId: string
+  parentName: string
+  parentEmail: string
+  studentId: string
+  studentName: string
+  studentEmail: string
+  studentStudentId: string | null
+  boundAt: string
+}
+
+/**
+ * Bind an existing student (with no parent) to a parent.
+ * Sets parent_id on the student profile and creates/reactivates
+ * a parent_child_relationships record.
+ */
+export async function bindStudentToParent(
+  parentId: string,
+  studentId: string,
+): Promise<{ error: string | null }> {
+  try {
+    // Verify parent exists
+    const { data: parent, error: parentError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role')
+      .eq('id', parentId)
+      .eq('role', 'parent')
+      .single()
+    if (parentError || !parent) {
+      return { error: 'Parent not found' }
+    }
+
+    // Verify student exists and is unbound
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role, parent_id')
+      .eq('id', studentId)
+      .eq('role', 'student')
+      .single()
+    if (studentError || !student) {
+      return { error: 'Student not found' }
+    }
+    if (student.parent_id) {
+      return { error: 'Student is already bound to a parent' }
+    }
+
+    // Set parent_id on student profile
+    const { error: updateError } = await supabaseAdmin
+      .from('profiles')
+      .update({ parent_id: parentId, updated_at: new Date().toISOString() })
+      .eq('id', studentId)
+    if (updateError) {
+      return { error: 'Failed to update student profile' }
+    }
+
+    // Check if a relationship record already exists (previously deactivated)
+    const { data: existingRel } = await supabaseAdmin
+      .from('parent_child_relationships')
+      .select('id')
+      .eq('parent_id', parentId)
+      .eq('child_id', studentId)
+      .maybeSingle()
+
+    if (existingRel) {
+      // Re-activate
+      await supabaseAdmin
+        .from('parent_child_relationships')
+        .update({ is_active: true })
+        .eq('parent_id', parentId)
+        .eq('child_id', studentId)
+    } else {
+      // Create fresh relationship
+      await supabaseAdmin.from('parent_child_relationships').insert({
+        parent_id: parentId,
+        child_id: studentId,
+        relationship_type: 'parent',
+        is_primary_contact: true,
+        is_active: true,
+        permissions: {
+          view_progress: true,
+          manage_courses: true,
+          view_assignments: true,
+          contact_teachers: true,
+        },
+      })
+    }
+
+    // Invalidate caches
+    const { queryCache } = await import('../cache')
+    queryCache.invalidatePattern(`dashboard:.*:${parentId}`)
+    queryCache.invalidatePattern(`dashboard:.*:${studentId}`)
+    queryCache.invalidatePattern('users:.*')
+
+    // Send notification to admin and parent
+    sendChildAddedNotifications(studentId, parentId).catch(() => {
+      /* non-critical */
+    })
+
+    return { error: null }
+  } catch {
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+/**
+ * Unbind a student from their parent.
+ * Clears parent_id and deactivates the relationship record.
+ */
+export async function unbindStudentFromParent(
+  parentId: string,
+  studentId: string,
+): Promise<{ error: string | null }> {
+  try {
+    // Deactivate relationship record
+    const { error: relError } = await supabaseAdmin
+      .from('parent_child_relationships')
+      .update({ is_active: false })
+      .eq('parent_id', parentId)
+      .eq('child_id', studentId)
+    if (relError) {
+      return { error: 'Failed to deactivate relationship record' }
+    }
+
+    // Clear parent_id on student profile
+    const { error: updateError } = await supabaseAdmin
+      .from('profiles')
+      .update({ parent_id: null, updated_at: new Date().toISOString() })
+      .eq('id', studentId)
+    if (updateError) {
+      return { error: 'Failed to update student profile' }
+    }
+
+    // Invalidate caches
+    const { queryCache } = await import('../cache')
+    queryCache.invalidatePattern(`dashboard:.*:${parentId}`)
+    queryCache.invalidatePattern(`dashboard:.*:${studentId}`)
+    queryCache.invalidatePattern('users:.*')
+
+    return { error: null }
+  } catch {
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+/**
+ * Fetch all active bound parent-student pairs (for the admin binding page).
+ */
+export async function getAdminBoundPairs(): Promise<{
+  data: BoundPair[] | null
+  error: string | null
+}> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('parent_child_relationships')
+      .select(
+        `
+        id,
+        parent_id,
+        child_id,
+        created_at,
+        parent:profiles!parent_id(id, full_name, email),
+        child:profiles!child_id(id, full_name, email, student_id)
+      `,
+      )
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      return { data: null, error: 'Failed to fetch bound pairs' }
+    }
+
+    const { decryptField } = await import('../encryption')
+    const pairs: BoundPair[] = (data || []).map((rel: Record<string, unknown>) => {
+      const parent = rel.parent as Record<string, unknown> | null
+      const child = rel.child as Record<string, unknown> | null
+      return {
+        relationshipId: rel.id as string,
+        parentId: rel.parent_id as string,
+        parentName: decryptField(parent?.full_name as string | null) || 'Unknown',
+        parentEmail: (parent?.email as string) || '',
+        studentId: rel.child_id as string,
+        studentName: decryptField(child?.full_name as string | null) || 'Unknown',
+        studentEmail: (child?.email as string) || '',
+        studentStudentId: (child?.student_id as string | null) || null,
+        boundAt: rel.created_at as string,
+      }
+    })
+
+    return { data: pairs, error: null }
+  } catch {
+    return { data: null, error: 'An unexpected error occurred' }
+  }
+}

@@ -9,6 +9,7 @@ import { Gurukul } from '../types'
 import { getGurukuls } from '../lib/api/gurukuls'
 import { getCourses } from '../lib/api/courses'
 import { getPageSettings, PageSettings } from '../lib/api/pageSettings'
+import { getStudentCount } from '../lib/api/users'
 import { DEFAULT_IMAGES } from '../lib/constants/images'
 import { sanitizeHtml } from '../utils/sanitize'
 import {
@@ -20,6 +21,8 @@ import {
 export default function GurukulPage() {
   const [gurukuls, setGurukuls] = useState<Gurukul[]>([])
   const [totalGurukuls, setTotalGurukuls] = useState(0)
+  const [totalCourses, setTotalCourses] = useState(0)
+  const [totalStudents, setTotalStudents] = useState(0)
   const [courseCounts, setCourseCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null)
@@ -35,9 +38,10 @@ export default function GurukulPage() {
 
   const loadData = async () => {
     try {
-      const [cmsData, allCoursesData] = await Promise.all([
+      const [cmsData, allCoursesData, studentCount] = await Promise.all([
         getPageSettings('gurukuls'),
         getCourses({ limit: 1000 }), // Get all courses to count per gurukul
+        getStudentCount(),
       ])
 
       // Count courses per gurukul
@@ -46,6 +50,8 @@ export default function GurukulPage() {
         counts[course.gurukul_id] = (counts[course.gurukul_id] || 0) + 1
       })
       setCourseCounts(counts)
+      setTotalCourses(allCoursesData.total)
+      setTotalStudents(studentCount)
       setPageSettings(cmsData)
     } catch {
       // Error loading data - silent fail
@@ -184,15 +190,17 @@ export default function GurukulPage() {
                 <div className="flex items-center justify-center space-x-8 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <BookOpenIcon className="h-5 w-5 text-orange-500" />
-                    <span>5 Specialized Gurukuls</span>
+                    <span>
+                      {totalGurukuls} Specialized Gurukul{totalGurukuls !== 1 ? 's' : ''}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <AcademicCapIcon className="h-5 w-5 text-orange-500" />
-                    <span>63+ Courses</span>
+                    <span>{totalCourses}+ Courses</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <UserGroupIcon className="h-5 w-5 text-orange-500" />
-                    <span>1,950+ Students</span>
+                    <span>{totalStudents.toLocaleString()}+ Students</span>
                   </div>
                 </div>
                 {/* Quick Navigation (inside hero) */}

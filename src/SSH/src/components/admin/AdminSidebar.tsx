@@ -21,6 +21,7 @@ import {
   ShieldExclamationIcon,
   ClockIcon,
   DocumentChartBarIcon,
+  LinkIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth } from '../../contexts/AuthContextTypes'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -89,6 +90,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       href: '/admin/gurukuls',
       icon: BuildingLibraryIcon,
       permission: { resource: 'gurukuls', action: 'read' },
+    },
+    {
+      name: 'Parent-Student Binding',
+      href: '/admin/parent-student-binding',
+      icon: LinkIcon,
+      permission: { resource: 'users', action: 'read' },
+      adminOnly: true,
     },
     {
       name: 'Enrollments',

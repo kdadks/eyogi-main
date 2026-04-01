@@ -20,7 +20,9 @@ import {
 } from '@heroicons/react/24/outline'
 
 import { getGurukulsWithStats } from '../lib/api/gurukuls'
+import { getCourses } from '../lib/api/courses'
 import { getPageSettings } from '../lib/api/pageSettings'
+import { getStudentCount } from '../lib/api/users'
 import { Gurukul } from '../types'
 import { sanitizeHtml } from '../utils/sanitize'
 
@@ -90,18 +92,24 @@ export default function HomePage() {
   const [gurukuls, setGurukuls] = useState<
     Array<Gurukul & { courses: number; students: number; image: string }>
   >([])
+  const [totalStudents, setTotalStudents] = useState(0)
+  const [totalCourses, setTotalCourses] = useState(0)
   const [pageSettings, setPageSettings] = useState<PageSettings | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [gurukulData, settingsData] = await Promise.all([
+        const [gurukulData, settingsData, studentCount, coursesData] = await Promise.all([
           getGurukulsWithStats(),
           getPageSettings('home'),
+          getStudentCount(),
+          getCourses({ limit: 1 }),
         ])
         setGurukuls(gurukulData)
         setPageSettings(settingsData)
+        setTotalStudents(studentCount)
+        setTotalCourses(coursesData.total)
       } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
@@ -295,17 +303,13 @@ export default function HomePage() {
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm sm:text-sm font-medium">
-                      {loading
-                        ? '...'
-                        : `${gurukuls.reduce((total, g) => total + g.students, 0)}+ Students`}
+                      {loading ? '...' : `${totalStudents.toLocaleString()}+ Students`}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
                     <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm sm:text-sm font-medium">
-                      {loading
-                        ? '...'
-                        : `${gurukuls.reduce((total, g) => total + g.courses, 0)}+ Courses`}
+                      {loading ? '...' : `${totalCourses}+ Courses`}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 justify-center lg:justify-start">
@@ -496,7 +500,10 @@ export default function HomePage() {
               {pageSettings?.home_cta_description}
             </p>
             <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row justify-center max-w-sm sm:max-w-none mx-auto px-4">
-              <ScrollLink to={pageSettings?.home_cta_button_1_link || '#'} className="w-full sm:w-auto">
+              <ScrollLink
+                to={pageSettings?.home_cta_button_1_link || '#'}
+                className="w-full sm:w-auto"
+              >
                 <Button
                   variant="secondary"
                   size="lg"
@@ -505,7 +512,10 @@ export default function HomePage() {
                   {pageSettings?.home_cta_button_1_text}
                 </Button>
               </ScrollLink>
-              <ScrollLink to={pageSettings?.home_cta_button_2_link || '#'} className="w-full sm:w-auto">
+              <ScrollLink
+                to={pageSettings?.home_cta_button_2_link || '#'}
+                className="w-full sm:w-auto"
+              >
                 <Button
                   variant="outline"
                   size="lg"

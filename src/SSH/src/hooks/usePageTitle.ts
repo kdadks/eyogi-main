@@ -30,6 +30,7 @@ const routeTitles: RouteTitle[] = [
   { path: '/admin/gdpr', title: 'GDPR Deletion Management' },
   { path: '/admin/audit-trail', title: 'Audit Trail' },
   { path: '/admin/reports', title: 'Reports' },
+  { path: '/admin/parent-student-binding', title: 'Parent-Student Binding' },
 ]
 
 export const usePageTitle = () => {
