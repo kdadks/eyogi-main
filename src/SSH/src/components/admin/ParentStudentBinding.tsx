@@ -62,6 +62,10 @@ export default function ParentStudentBinding() {
   const [studentSearch, setStudentSearch] = useState('')
   const [boundSearch, setBoundSearch] = useState('')
 
+  // --- pagination ---
+  const BOUND_PAGE_SIZE = 25
+  const [boundPage, setBoundPage] = useState(1)
+
   // --- action state ---
   const [binding, setBinding] = useState(false)
   const [unbindingId, setUnbindingId] = useState<string | null>(null) // relationshipId
@@ -125,6 +129,13 @@ export default function ParentStudentBinding() {
         (p.studentStudentId || '').toLowerCase().includes(q),
     )
   }, [boundPairs, boundSearch])
+
+  const boundTotalPages = Math.max(1, Math.ceil(filteredBoundPairs.length / BOUND_PAGE_SIZE))
+
+  const pagedBoundPairs = useMemo(() => {
+    const start = (boundPage - 1) * BOUND_PAGE_SIZE
+    return filteredBoundPairs.slice(start, start + BOUND_PAGE_SIZE)
+  }, [filteredBoundPairs, boundPage])
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -467,7 +478,10 @@ export default function ParentStudentBinding() {
                 <Input
                   placeholder="Search parents or students…"
                   value={boundSearch}
-                  onChange={(e) => setBoundSearch(e.target.value)}
+                  onChange={(e) => {
+                    setBoundSearch(e.target.value)
+                    setBoundPage(1)
+                  }}
                   className="pl-9 text-sm"
                 />
               </div>
@@ -498,7 +512,7 @@ export default function ParentStudentBinding() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredBoundPairs.map((pair) => (
+                    {pagedBoundPairs.map((pair) => (
                       <tr key={pair.relationshipId} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-900">{pair.parentName}</p>
@@ -526,6 +540,60 @@ export default function ParentStudentBinding() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {/* Pagination footer */}
+            {!loading && filteredBoundPairs.length > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+                <p className="text-xs text-gray-500">
+                  Showing{' '}
+                  <span className="font-medium">
+                    {(boundPage - 1) * BOUND_PAGE_SIZE + 1}–
+                    {Math.min(boundPage * BOUND_PAGE_SIZE, filteredBoundPairs.length)}
+                  </span>{' '}
+                  of <span className="font-medium">{filteredBoundPairs.length}</span> bindings
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBoundPage(1)}
+                    disabled={boundPage === 1}
+                    className="px-2 py-1 text-xs"
+                  >
+                    «
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBoundPage((p) => Math.max(1, p - 1))}
+                    disabled={boundPage === 1}
+                    className="px-2 py-1 text-xs"
+                  >
+                    ‹
+                  </Button>
+                  <span className="px-3 py-1 text-xs text-gray-700">
+                    Page {boundPage} of {boundTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBoundPage((p) => Math.min(boundTotalPages, p + 1))}
+                    disabled={boundPage === boundTotalPages}
+                    className="px-2 py-1 text-xs"
+                  >
+                    ›
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBoundPage(boundTotalPages)}
+                    disabled={boundPage === boundTotalPages}
+                    className="px-2 py-1 text-xs"
+                  >
+                    »
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

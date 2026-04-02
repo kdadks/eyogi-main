@@ -509,17 +509,15 @@ export async function unbindStudentFromParent(
   studentId: string,
 ): Promise<{ error: string | null }> {
   try {
-    // Deactivate relationship record
-    const { error: relError } = await supabaseAdmin
+    // Deactivate relationship record if it exists (non-critical — student may have
+    // been bound via parent_id only without a relationship row)
+    await supabaseAdmin
       .from('parent_child_relationships')
       .update({ is_active: false })
       .eq('parent_id', parentId)
       .eq('child_id', studentId)
-    if (relError) {
-      return { error: 'Failed to deactivate relationship record' }
-    }
 
-    // Clear parent_id on student profile
+    // Clear parent_id on student profile (this is the source of truth)
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ parent_id: null, updated_at: new Date().toISOString() })
@@ -542,45 +540,71 @@ export async function unbindStudentFromParent(
 
 /**
  * Fetch all active bound parent-student pairs (for the admin binding page).
+ * Uses a two-step query to avoid relying on PostgREST FK join hints which
+ * require registered FK constraints in the Supabase schema cache.
  */
 export async function getAdminBoundPairs(): Promise<{
   data: BoundPair[] | null
   error: string | null
 }> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('parent_child_relationships')
-      .select(
-        `
-        id,
-        parent_id,
-        child_id,
-        created_at,
-        parent:profiles!parent_id(id, full_name, email),
-        child:profiles!child_id(id, full_name, email, student_id)
-      `,
-      )
-      .eq('is_active', true)
+    // Step 1: Get all students who have a parent assigned (profiles.parent_id set)
+    const { data: boundStudents, error: studentsError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, email, student_id, parent_id, created_at')
+      .eq('role', 'student')
+      .not('parent_id', 'is', null)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      return { data: null, error: 'Failed to fetch bound pairs' }
+    if (studentsError) {
+      return { data: null, error: 'Failed to fetch bound students' }
     }
 
+    if (!boundStudents || boundStudents.length === 0) {
+      return { data: [], error: null }
+    }
+
+    // Step 2: Fetch all relevant parent profiles in one query
+    const parentIds = [...new Set(boundStudents.map((s) => s.parent_id as string))]
+    const { data: parents, error: parentsError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', parentIds)
+
+    if (parentsError) {
+      return { data: null, error: 'Failed to fetch parent profiles' }
+    }
+
+    const parentMap = new Map((parents || []).map((p) => [p.id, p]))
+
+    // Step 3: Fetch relationship records to get canonical IDs and bound_at dates
+    const { data: relationships } = await supabaseAdmin
+      .from('parent_child_relationships')
+      .select('id, parent_id, child_id, created_at')
+      .eq('is_active', true)
+      .in(
+        'child_id',
+        boundStudents.map((s) => s.id),
+      )
+
+    const relMap = new Map((relationships || []).map((r) => [`${r.parent_id}:${r.child_id}`, r]))
+
     const { decryptField } = await import('../encryption')
-    const pairs: BoundPair[] = (data || []).map((rel: Record<string, unknown>) => {
-      const parent = rel.parent as Record<string, unknown> | null
-      const child = rel.child as Record<string, unknown> | null
+
+    const pairs: BoundPair[] = boundStudents.map((student) => {
+      const parentId = student.parent_id as string
+      const parent = parentMap.get(parentId)
+      const rel = relMap.get(`${parentId}:${student.id}`)
       return {
-        relationshipId: rel.id as string,
-        parentId: rel.parent_id as string,
+        relationshipId: rel?.id || `${parentId}:${student.id}`,
+        parentId,
         parentName: decryptField(parent?.full_name as string | null) || 'Unknown',
-        parentEmail: (parent?.email as string) || '',
-        studentId: rel.child_id as string,
-        studentName: decryptField(child?.full_name as string | null) || 'Unknown',
-        studentEmail: (child?.email as string) || '',
-        studentStudentId: (child?.student_id as string | null) || null,
-        boundAt: rel.created_at as string,
+        parentEmail: parent?.email || '',
+        studentId: student.id,
+        studentName: decryptField(student.full_name as string | null) || 'Unknown',
+        studentEmail: student.email || '',
+        studentStudentId: (student.student_id as string | null) || null,
+        boundAt: rel?.created_at || student.created_at,
       }
     })
 
