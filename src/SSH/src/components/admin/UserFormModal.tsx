@@ -288,6 +288,18 @@ export default function UserFormModal({
           formData.password = crypto.randomUUID().substring(0, 16)
         }
 
+        // Check if email already exists to give a clear error instead of a DB violation
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', formData.email.toLowerCase())
+          .maybeSingle()
+        if (existingProfile) {
+          toast.error('An account with this email already exists')
+          setLoading(false)
+          return
+        }
+
         // Authentication strategy:
         // - business_admin: Create in Supabase Auth (needs auth for admin login)
         // - super_admin: Created manually in Supabase Auth (not through this form)

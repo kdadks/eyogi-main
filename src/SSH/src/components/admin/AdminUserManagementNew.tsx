@@ -191,7 +191,11 @@ const AdminUserManagement: React.FC = () => {
             }
           }
 
-          // 5. Finally, delete the user profile
+          // 5. Clear parent_id from any profiles still referencing this user
+          // (handles non-student roles or any missed FK references that would block deletion)
+          await supabaseAdmin.from('profiles').update({ parent_id: null }).eq('parent_id', userId)
+
+          // 6. Finally, delete the user profile
           const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
           if (error) {
             console.error('Error deleting user profile:', error)
