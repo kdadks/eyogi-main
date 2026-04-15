@@ -19,37 +19,66 @@ export async function generateStudentId(
   state: string | null,
   city?: string,
 ): Promise<string> {
-  // Use the codes directly from the database - they're already in correct format
   const countryCode = country.toUpperCase()
-  // If state is not available, use first 2 letters of city (uppercase)
   const stateCode = state ? state.toUpperCase() : city ? city.substring(0, 2).toUpperCase() : 'XX'
   const year = new Date().getFullYear()
-
-  // Get the count of existing students with the same location prefix for this year
   const prefix = `${countryCode}${stateCode}${year}`
 
-  const { count, error } = await supabaseAdmin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .eq('role', 'student')
-    .not('student_id', 'is', null)
-    .ilike('student_id', `${prefix}%`)
+  const maxAttempts = 10
 
-  if (error) {
-    console.error('Error counting students:', error)
-    // Fallback: use total student count
-    const { count: totalCount } = await supabaseAdmin
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Fetch all existing student_ids with this prefix to find the MAX sequence number.
+    // Using COUNT was the bug: deletions lowered the count, causing already-used IDs to be
+    // re-generated and hitting the profiles_student_id_key unique constraint.
+    const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('role', 'student')
+      .select('student_id')
       .not('student_id', 'is', null)
+      .ilike('student_id', `${prefix}%`)
 
-    const nextNumber = (totalCount || 0) + 1
-    return `${prefix}${nextNumber.toString().padStart(5, '0')}`
+    let nextNumber = 1
+
+    if (!error && data && data.length > 0) {
+      const numbers = data
+        .map((row) => {
+          const sid = row.student_id
+          if (!sid || sid.length < 5) return 0
+          const num = parseInt(sid.slice(-5), 10)
+          return isNaN(num) ? 0 : num
+        })
+        .filter((n) => n > 0)
+
+      if (numbers.length > 0) {
+        nextNumber = Math.max(...numbers) + 1
+      }
+    } else if (error) {
+      console.error('Error fetching student IDs for generation:', error)
+      // Timestamp-based fallback to avoid blocking registration
+      const ts = Date.now().toString().slice(-5)
+      return `${prefix}${ts}`
+    }
+
+    const candidateId = `${prefix}${nextNumber.toString().padStart(5, '0')}`
+
+    // Verify this ID doesn't already exist before returning it
+    const { data: existing } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('student_id', candidateId)
+      .maybeSingle()
+
+    if (!existing) {
+      return candidateId
+    }
+
+    console.warn(`Student ID ${candidateId} already exists, retrying (attempt ${attempt + 1})…`)
   }
 
-  const nextNumber = (count || 0) + 1
-  return `${prefix}${nextNumber.toString().padStart(5, '0')}`
+  // Final fallback: use timestamp suffix to guarantee uniqueness
+  const ts = Date.now().toString().slice(-5)
+  const fallbackId = `${prefix}${ts}`
+  console.warn(`Using timestamp-based fallback student ID: ${fallbackId}`)
+  return fallbackId
 }
 
 /**
