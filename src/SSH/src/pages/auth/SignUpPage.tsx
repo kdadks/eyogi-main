@@ -107,6 +107,7 @@ const signUpSchema = z
 type SignUpForm = z.infer<typeof signUpSchema>
 export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
+  const [alreadyExistsEmail, setAlreadyExistsEmail] = useState<string | null>(null)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   // Note: This page is no longer used - replaced by AuthRedirect + Modal
@@ -159,6 +160,8 @@ export default function SignUpPage() {
           navigate(
             redirectTo ? `/auth/signin?redirect=${encodeURIComponent(redirectTo)}` : '/auth/signin',
           )
+        } else if (error === 'An account with this email already exists') {
+          setAlreadyExistsEmail(data.email)
         } else {
           toast.error(error)
         }
@@ -409,6 +412,22 @@ export default function SignUpPage() {
                   </label>
                 </div>
               </div>
+
+              {alreadyExistsEmail && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-sm text-blue-800 font-semibold mb-1">
+                    You are already registered
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    An account with <span className="font-semibold">{alreadyExistsEmail}</span>{' '}
+                    already exists. If you have forgotten your password, click the{' '}
+                    <Link to="/auth/signin" className="font-semibold underline hover:text-blue-900">
+                      Forgot Password
+                    </Link>{' '}
+                    link on the sign-in page to reset it.
+                  </p>
+                </div>
+              )}
 
               <Button
                 type="submit"

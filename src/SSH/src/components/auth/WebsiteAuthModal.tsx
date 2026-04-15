@@ -132,12 +132,14 @@ export default function WebsiteAuthModal({
 }: WebsiteAuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot-password'>(initialMode)
   const [loading, setLoading] = useState(false)
+  const [alreadyExistsEmail, setAlreadyExistsEmail] = useState<string | null>(null)
   const { signIn, signUp } = useWebsiteAuth()
   const navigate = useNavigate()
   // Reset mode when modal opens with different initialMode
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode)
+      setAlreadyExistsEmail(null)
     }
   }, [isOpen, initialMode])
   const signInForm = useForm<SignInForm>({
@@ -254,10 +256,15 @@ export default function WebsiteAuthModal({
         city: data.city,
       })
       if (error) {
-        toast.error(error)
+        if (error === 'An account with this email already exists') {
+          setAlreadyExistsEmail(data.email)
+        } else {
+          toast.error(error)
+        }
         return
       }
       toast.success('Account created successfully! You can now sign in.')
+      setAlreadyExistsEmail(null)
       setMode('signin')
       signUpForm.reset()
     } catch (error: unknown) {
@@ -550,6 +557,28 @@ export default function WebsiteAuthModal({
                     <div />
                   )}
                 </div>
+                {alreadyExistsEmail && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 sm:p-4">
+                    <p className="text-xs sm:text-sm text-blue-800 font-medium mb-1">
+                      You are already registered
+                    </p>
+                    <p className="text-xs sm:text-sm text-blue-700">
+                      An account with <span className="font-semibold">{alreadyExistsEmail}</span>{' '}
+                      already exists. If you have forgotten your password, please use the{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAlreadyExistsEmail(null)
+                          setMode('forgot-password')
+                        }}
+                        className="font-semibold underline hover:text-blue-900 cursor-pointer"
+                      >
+                        Forgot Password
+                      </button>{' '}
+                      link to reset it.
+                    </p>
+                  </div>
+                )}
                 <Button
                   type="submit"
                   className="w-full h-11 sm:h-12 mt-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation text-sm sm:text-base"
@@ -562,7 +591,10 @@ export default function WebsiteAuthModal({
                     Already have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => setMode('signin')}
+                      onClick={() => {
+                        setAlreadyExistsEmail(null)
+                        setMode('signin')
+                      }}
                       className="font-semibold text-transparent bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text hover:from-orange-700 hover:to-red-700 hover:bg-orange-50 px-2 py-1 rounded transition-all cursor-pointer touch-manipulation"
                       style={{ minHeight: '32px' }}
                     >
