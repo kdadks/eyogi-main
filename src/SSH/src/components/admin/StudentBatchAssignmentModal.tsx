@@ -198,7 +198,12 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                           )}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Assigned: {new Date(studentBatch.assigned_at).toLocaleDateString()}
+                          Assigned:{' '}
+                          {new Date(studentBatch.assigned_at).toLocaleDateString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })}
                         </div>
                       </div>
                       <Button
@@ -288,7 +293,12 @@ const StudentBatchAssignmentModal: React.FC<StudentBatchAssignmentModalProps> = 
                           )}
                           {batch.start_date && (
                             <span className="text-xs text-gray-500">
-                              Starts: {new Date(batch.start_date).toLocaleDateString()}
+                              Starts:{' '}
+                              {new Date(batch.start_date).toLocaleDateString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                              })}
                             </span>
                           )}
                         </div>

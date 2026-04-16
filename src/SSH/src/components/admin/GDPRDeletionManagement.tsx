@@ -39,9 +39,7 @@ interface GDPRDeletionManagementProps {
 
 type TabType = 'pending' | 'approved' | 'completed' | 'all'
 
-export default function GDPRDeletionManagement({
-  className = '',
-}: GDPRDeletionManagementProps) {
+export default function GDPRDeletionManagement({ className = '' }: GDPRDeletionManagementProps) {
   const { user } = useSupabaseAuth()
   const adminId = user?.id || ''
   const [activeTab, setActiveTab] = useState<TabType>('pending')
@@ -764,7 +762,11 @@ export default function GDPRDeletionManagement({
                     <div className="flex items-center gap-2 mb-2">
                       {getStatusBadge(request.status)}
                       <span className="text-xs text-gray-500">
-                        {new Date(request.requested_at).toLocaleDateString()}
+                        {new Date(request.requested_at).toLocaleDateString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                        })}
                       </span>
                     </div>
                     <p className="text-sm font-medium text-gray-900 mb-1">

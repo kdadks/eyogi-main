@@ -436,7 +436,12 @@ export default function ComplianceManagement() {
                             <p className="text-xs text-gray-600 mt-1">{item.description}</p>
                             {item.due_date && (
                               <p className="text-xs text-gray-500 mt-0.5">
-                                Due: {new Date(item.due_date).toLocaleDateString()}
+                                Due:{' '}
+                                {new Date(item.due_date).toLocaleDateString('en-US', {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  year: 'numeric',
+                                })}
                               </p>
                             )}
                           </div>
@@ -642,14 +647,23 @@ export default function ComplianceManagement() {
                         Due date
                       </label>
                       <p className="text-sm text-gray-900">
-                        {new Date(selectedItem.due_date).toLocaleDateString()}
+                        {new Date(selectedItem.due_date).toLocaleDateString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                        })}
                       </p>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     <div className="text-xs text-gray-500">
-                      Created: {new Date(selectedItem.created_at).toLocaleDateString()}
+                      Created:{' '}
+                      {new Date(selectedItem.created_at).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
                     </div>
                     <div className="flex space-x-2">
                       <button

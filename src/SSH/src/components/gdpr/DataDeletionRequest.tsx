@@ -390,7 +390,11 @@ export default function DataDeletionRequest({
                       <div className="flex items-center gap-2 mb-2">
                         {getStatusBadge(request.status)}
                         <span className="text-xs text-gray-500">
-                          {new Date(request.requested_at).toLocaleDateString()}
+                          {new Date(request.requested_at).toLocaleDateString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })}
                         </span>
                       </div>
                       <p className="text-sm text-gray-700 mb-1">

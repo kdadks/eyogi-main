@@ -35,9 +35,9 @@ interface SimpleProfile {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-IE', {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: '2-digit',
     day: '2-digit',
-    month: 'short',
     year: 'numeric',
   })
 }

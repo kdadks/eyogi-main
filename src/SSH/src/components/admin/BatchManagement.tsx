@@ -153,7 +153,11 @@ const BatchManagement: React.FC = () => {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set'
-    return new Date(dateString).toLocaleDateString()
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+    })
   }
 
   const formatStatus = (status: string) => {

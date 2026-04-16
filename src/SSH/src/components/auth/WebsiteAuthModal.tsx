@@ -41,8 +41,11 @@ const signUpSchema = z
     role: z.enum(['student', 'teacher', 'parent'], { required_error: 'Role is required' }),
     phone: z
       .string()
-      .optional()
-      .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
+      .min(1, 'Phone number is required')
+      .regex(
+        /^\+[1-9]\d{0,3}\s?\d{4,14}$/,
+        'Phone must include country code (e.g., +91 9825412563)',
+      ),
     date_of_birth: z.string().min(1, 'Date of birth is required'),
     country: z.string().min(1, 'Country is required'),
     state: z.string().optional(),
@@ -480,8 +483,13 @@ export default function WebsiteAuthModal({
                     </select>
                   </div>
                   <Input
-                    label="Phone"
+                    label={
+                      <>
+                        Phone Number <span className="text-red-500">*</span>
+                      </>
+                    }
                     type="tel"
+                    placeholder="+91 9825412563"
                     className="h-10 sm:h-11 text-sm"
                     {...signUpForm.register('phone')}
                     error={signUpForm.formState.errors.phone?.message}

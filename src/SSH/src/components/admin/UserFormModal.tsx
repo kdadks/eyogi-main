@@ -243,6 +243,17 @@ export default function UserFormModal({
       return false
     }
 
+    // Phone is required and must include country code
+    if (!formData.phone) {
+      toast.error('Phone number is required')
+      return false
+    }
+    const phoneRegex = /^\+[1-9]\d{0,3}\s?\d{4,14}$/
+    if (!phoneRegex.test(formData.phone)) {
+      toast.error('Phone must include country code (e.g., +91 9825412563)')
+      return false
+    }
+
     // Check if country has states/provinces
     const normalizedCountry = normalizeCountryToISO3(formData.country)
     const hasStates = countryHasStates(normalizedCountry)
@@ -666,14 +677,17 @@ export default function UserFormModal({
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Phone <span className="text-red-500">*</span>
+              </label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
                 className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 ${readOnlyClass}`}
-                placeholder="+353 (123) 4567 890"
+                placeholder="+91 9825412563"
+                required
                 disabled={isReadOnly}
               />
             </div>

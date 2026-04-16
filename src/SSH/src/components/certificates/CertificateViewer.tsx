@@ -159,7 +159,12 @@ export default function CertificateViewer() {
                 {certificateData.course_title}
               </h4>
               <p className="text-gray-600 mb-6">
-                on {new Date(certificateData.completion_date).toLocaleDateString()}
+                on{' '}
+                {new Date(certificateData.completion_date).toLocaleDateString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: 'numeric',
+                })}
               </p>
             </div>
 

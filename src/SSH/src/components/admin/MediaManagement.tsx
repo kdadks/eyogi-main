@@ -758,7 +758,11 @@ function MediaListItem({
       <div className="w-20 text-sm text-gray-500">{formatFileSize(file.file_size)}</div>
 
       <div className="w-32 text-sm text-gray-500">
-        {new Date(file.created_at).toLocaleDateString()}
+        {new Date(file.created_at).toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: 'numeric',
+        })}
       </div>
 
       <div className="w-20 flex space-x-1">
@@ -1029,7 +1033,12 @@ function EditMediaDialog({ media, onClose, onSave }: EditMediaDialogProps) {
                 {formatFileSize(media.file_size)} • {media.file_type}
               </div>
               <div className="text-sm text-gray-500">
-                Uploaded {new Date(media.created_at).toLocaleDateString()}
+                Uploaded{' '}
+                {new Date(media.created_at).toLocaleDateString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: 'numeric',
+                })}
               </div>
             </div>
           </div>

@@ -171,10 +171,21 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
                 <div className="flex items-center text-sm text-gray-500 space-x-4">
                   <span>
                     Published on{' '}
-                    {new Date(page.published_at || page.created_at).toLocaleDateString()}
+                    {new Date(page.published_at || page.created_at).toLocaleDateString('en-US', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      year: 'numeric',
+                    })}
                   </span>
                   {page.updated_at && new Date(page.updated_at) > new Date(page.created_at) && (
-                    <span>Last updated {new Date(page.updated_at).toLocaleDateString()}</span>
+                    <span>
+                      Last updated{' '}
+                      {new Date(page.updated_at).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </span>
                   )}
                 </div>
               </div>
@@ -208,7 +219,12 @@ export default function LegalPageDisplay({ slug: propSlug }: LegalPageProps = {}
                   <p>This page is part of eYogi Gurukul's legal documentation.</p>
                   {page.updated_at && (
                     <p className="mt-1">
-                      Last reviewed: {new Date(page.updated_at).toLocaleDateString()}
+                      Last reviewed:{' '}
+                      {new Date(page.updated_at).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
                     </p>
                   )}
                 </div>

@@ -348,7 +348,13 @@ export default function TeacherDetailView() {
                   <CalendarIcon className="h-4 w-4 flex-shrink-0" />
                   <span className="text-sm">
                     Joined{' '}
-                    {teacher.created_at ? new Date(teacher.created_at).toLocaleDateString() : 'N/A'}
+                    {teacher.created_at
+                      ? new Date(teacher.created_at).toLocaleDateString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                        })
+                      : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -365,7 +371,11 @@ export default function TeacherDetailView() {
                   <div>
                     <label className="text-xs font-medium text-gray-500">Date of Birth</label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {new Date(teacher.date_of_birth).toLocaleDateString()}
+                      {new Date(teacher.date_of_birth).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
                     </p>
                   </div>
                 )}
@@ -379,7 +389,11 @@ export default function TeacherDetailView() {
                   <label className="text-xs font-medium text-gray-500">Last Updated</label>
                   <p className="mt-1 text-sm text-gray-900">
                     {teacher.updated_at
-                      ? new Date(teacher.updated_at).toLocaleDateString()
+                      ? new Date(teacher.updated_at).toLocaleDateString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                        })
                       : 'Not available'}
                   </p>
                 </div>
@@ -490,7 +504,12 @@ export default function TeacherDetailView() {
                               isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
                             }`}
                           >
-                            Due: {new Date(item.due_date).toLocaleDateString()}
+                            Due:{' '}
+                            {new Date(item.due_date).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                             {isOverdue && ' (Overdue)'}
                           </p>
                         )}

@@ -30,8 +30,11 @@ const signUpSchema = z
     role: z.enum(['student', 'teacher', 'parent'], { required_error: 'Role is required' }),
     phone: z
       .string()
-      .optional()
-      .refine((val) => !val || /^\d+$/.test(val), 'Phone number can only contain numbers'),
+      .min(1, 'Phone number is required')
+      .regex(
+        /^\+[1-9]\d{0,3}\s?\d{4,14}$/,
+        'Phone must include country code (e.g., +91 9825412563)',
+      ),
     date_of_birth: z.string().min(1, 'Date of birth is required'),
     country: z.string().min(1, 'Country is required'),
     state: z.string().optional(),
@@ -277,9 +280,13 @@ export default function SignUpPage() {
                     {errors.role && <p className="text-sm text-red-600">{errors.role.message}</p>}
                   </div>
                   <Input
-                    label="Phone Number (Optional)"
+                    label={
+                      <>
+                        Phone Number <span className="text-red-500">*</span>
+                      </>
+                    }
                     type="tel"
-                    placeholder="Your phone number"
+                    placeholder="+91 9825412563"
                     className="h-12 text-base"
                     {...register('phone')}
                     error={errors.phone?.message}

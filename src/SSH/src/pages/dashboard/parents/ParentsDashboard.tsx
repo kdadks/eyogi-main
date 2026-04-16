@@ -1674,7 +1674,10 @@ function HomeTab({
                                 {child.recent_activity[0].description}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {new Date(child.recent_activity[0].date).toLocaleDateString()}
+                                {new Date(child.recent_activity[0].date).toLocaleDateString(
+                                  'en-US',
+                                  { month: '2-digit', day: '2-digit', year: 'numeric' },
+                                )}
                               </p>
                             </div>
                           </div>
@@ -2182,7 +2185,11 @@ function ChildrenTab({
                         </p>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-blue-700">
-                            {new Date(latestCert.issue_date).toLocaleDateString()}
+                            {new Date(latestCert.issue_date).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </span>
                           <span className="text-blue-600 font-medium">
                             Total: {childCerts.certificates.length}
@@ -2329,7 +2336,11 @@ function EnrollmentsTab({ children }: { children: Child[] }) {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Enrolled:</span>
                     <span className="font-medium text-gray-900">
-                      {new Date(enrollment.enrollment_date).toLocaleDateString()}
+                      {new Date(enrollment.enrollment_date).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                 </div>
@@ -2508,7 +2519,12 @@ function ProgressTab({
                         {/* Enrollment Info */}
                         <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-200">
                           <span>
-                            Started: {new Date(course.enrollment_date).toLocaleDateString()}
+                            Started:{' '}
+                            {new Date(course.enrollment_date).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </span>
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -2601,7 +2617,10 @@ function ProgressTab({
                             </h6>
                             <p className="text-xs text-purple-700 mb-2">
                               Issued:{' '}
-                              {new Date(cert.issue_date || cert.created_at).toLocaleDateString()}
+                              {new Date(cert.issue_date || cert.created_at).toLocaleDateString(
+                                'en-US',
+                                { month: '2-digit', day: '2-digit', year: 'numeric' },
+                              )}
                             </p>
                             <p className="text-xs text-gray-600 font-mono">
                               #{cert.certificate_number}
@@ -3054,9 +3073,9 @@ function ProfileTab({
                 <label className="text-sm font-medium text-gray-500">Date of Birth</label>
                 <p className="text-gray-900">
                   {parentProfile?.date_of_birth
-                    ? new Date(parentProfile.date_of_birth).toLocaleDateString('en-GB', {
+                    ? new Date(parentProfile.date_of_birth).toLocaleDateString('en-US', {
+                        month: '2-digit',
                         day: '2-digit',
-                        month: 'short',
                         year: 'numeric',
                       })
                     : 'Not provided'}

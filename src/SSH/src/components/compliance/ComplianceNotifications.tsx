@@ -119,7 +119,7 @@ export default function ComplianceNotifications({
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
     if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`
-    return date.toLocaleDateString()
+    return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
   }
 
   const unreadCount = notifications.filter((n) => !n.read_at).length
@@ -240,7 +240,12 @@ export default function ComplianceNotifications({
                       notification.metadata?.due_date && (
                         <div className="mt-3 p-3 bg-yellow-100 rounded-md">
                           <p className="text-sm font-medium text-yellow-800">
-                            Due: {new Date(notification.metadata.due_date).toLocaleDateString()}
+                            Due:{' '}
+                            {new Date(notification.metadata.due_date).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </p>
                         </div>
                       )}

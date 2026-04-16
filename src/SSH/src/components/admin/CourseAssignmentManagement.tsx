@@ -266,7 +266,11 @@ const CourseAssignmentManagement: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {new Date(assignment.assigned_at).toLocaleDateString()}
+                      {new Date(assignment.assigned_at).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
                     </div>
                   </td>
                   <td className="px-4 py-3">

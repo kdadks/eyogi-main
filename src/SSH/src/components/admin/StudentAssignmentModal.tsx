@@ -182,7 +182,12 @@ const StudentAssignmentModal: React.FC<StudentAssignmentModalProps> = ({
                           </div>
                         )}
                         <div className="text-xs text-gray-500 mt-1">
-                          Assigned: {new Date(batchStudent.assigned_at).toLocaleDateString()}
+                          Assigned:{' '}
+                          {new Date(batchStudent.assigned_at).toLocaleDateString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })}
                         </div>
                       </div>
                       <Button

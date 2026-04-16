@@ -461,7 +461,11 @@ export default function AuditTrailManagement() {
                       <tr key={entry.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {new Date(entry.changed_at).toLocaleDateString()}{' '}
+                            {new Date(entry.changed_at).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}{' '}
                             {new Date(entry.changed_at).toLocaleTimeString()}
                           </div>
                         </td>
@@ -549,7 +553,11 @@ export default function AuditTrailManagement() {
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-1">
                           <ClockIcon className="h-3 w-3" />
-                          {new Date(entry.changed_at).toLocaleDateString()}{' '}
+                          {new Date(entry.changed_at).toLocaleDateString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })}{' '}
                           {new Date(entry.changed_at).toLocaleTimeString()}
                         </div>
                       </div>

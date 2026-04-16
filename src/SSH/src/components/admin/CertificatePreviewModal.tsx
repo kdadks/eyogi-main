@@ -135,7 +135,11 @@ export default function CertificatePreviewModal({
                       Completion Date:
                     </span>
                     <span className="font-medium text-gray-900">
-                      {new Date(certificateData.completionDate).toLocaleDateString()}
+                      {new Date(certificateData.completionDate).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })}
                     </span>
                   </div>
                   <div className="bg-white p-3 rounded border">

@@ -1193,7 +1193,9 @@ export default function TeacherDashboard() {
 
       if (incompleteStudents.length > 0) {
         const incompleteList = incompleteStudents
-          .map((s) => `${s.student?.full_name || 'Unknown Student'} (${s.progress_percentage ?? 0}%)`)
+          .map(
+            (s) => `${s.student?.full_name || 'Unknown Student'} (${s.progress_percentage ?? 0}%)`,
+          )
           .join(', ')
         toast.error(
           `Cannot issue certificates: ${incompleteStudents.length} student(s) have not completed 100% of the course. Please update their progress first. Incomplete students: ${incompleteList}`,
@@ -1845,7 +1847,11 @@ export default function TeacherDashboard() {
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400">
-                                    {notification.timestamp.toLocaleDateString()}{' '}
+                                    {notification.timestamp.toLocaleDateString('en-US', {
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      year: 'numeric',
+                                    })}{' '}
                                     {notification.timestamp.toLocaleTimeString([], {
                                       hour: '2-digit',
                                       minute: '2-digit',
@@ -2697,7 +2703,12 @@ export default function TeacherDashboard() {
                                   Course: {enrollment.course?.title || 'Unknown Course'}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                  Enrolled:{' '}
+                                  {new Date(enrollment.enrolled_at).toLocaleDateString('en-US', {
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    year: 'numeric',
+                                  })}
                                 </p>
                               </div>
                             </div>
@@ -4261,9 +4272,9 @@ export default function TeacherDashboard() {
                         <label className="text-sm font-medium text-gray-500">Date of Birth</label>
                         <p className="text-gray-900">
                           {teacherProfile?.date_of_birth
-                            ? new Date(teacherProfile.date_of_birth).toLocaleDateString('en-GB', {
+                            ? new Date(teacherProfile.date_of_birth).toLocaleDateString('en-US', {
+                                month: '2-digit',
                                 day: '2-digit',
-                                month: 'short',
                                 year: 'numeric',
                               })
                             : 'Not provided'}
@@ -7116,7 +7127,12 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
                             <span className="capitalize text-yellow-600 font-medium">Pending</span>
                           </span>
                           <span>
-                            Requested: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                            Requested:{' '}
+                            {new Date(enrollment.enrolled_at).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </span>
                         </div>
                       </div>
@@ -7156,7 +7172,12 @@ const EnrollmentManagementModal: React.FC<EnrollmentManagementModalProps> = ({
                             </span>
                           </span>
                           <span>
-                            Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                            Enrolled:{' '}
+                            {new Date(enrollment.enrolled_at).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </span>
                         </div>
                       </div>
@@ -8150,7 +8171,11 @@ const BatchManagementContent: React.FC<BatchManagementContentProps> = ({
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Not set'
-    return new Date(dateString).toLocaleDateString()
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+    })
   }
 
   if (loading) {

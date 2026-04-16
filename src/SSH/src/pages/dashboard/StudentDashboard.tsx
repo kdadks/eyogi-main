@@ -770,7 +770,11 @@ export default function StudentDashboard() {
                                       {achievement.description}
                                     </p>
                                     <p className="text-xs text-gray-400">
-                                      {achievement.date.toLocaleDateString()}{' '}
+                                      {achievement.date.toLocaleDateString('en-US', {
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        year: 'numeric',
+                                      })}{' '}
                                       {achievement.date.toLocaleTimeString([], {
                                         hour: '2-digit',
                                         minute: '2-digit',
@@ -1619,7 +1623,13 @@ export default function StudentDashboard() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
-                            <span>{new Date(enrollment.created_at).toLocaleDateString()}</span>
+                            <span>
+                              {new Date(enrollment.created_at).toLocaleDateString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                              })}
+                            </span>
                             {enrollment.course?.duration_weeks && (
                               <>
                                 <span>•</span>
@@ -1700,7 +1710,11 @@ export default function StudentDashboard() {
                         Completed:{' '}
                         {new Date(
                           certificate.issued_at || new Date().toISOString(),
-                        ).toLocaleDateString()}
+                        ).toLocaleDateString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                        })}
                       </p>
                       <div className="space-y-1 sm:space-y-2">
                         <p className="text-xs text-gray-500">Verification Code</p>
@@ -1858,7 +1872,11 @@ export default function StudentDashboard() {
                           <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                           <span className="font-medium">Start Date:</span>
                           <span className="ml-1">
-                            {new Date(batchData.batch.start_date).toLocaleDateString()}
+                            {new Date(batchData.batch.start_date).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </span>
                         </div>
                       )}
@@ -1868,7 +1886,11 @@ export default function StudentDashboard() {
                           <div className="w-2 h-2 bg-red-400 rounded-full mr-2"></div>
                           <span className="font-medium">End Date:</span>
                           <span className="ml-1">
-                            {new Date(batchData.batch.end_date).toLocaleDateString()}
+                            {new Date(batchData.batch.end_date).toLocaleDateString('en-US', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })}
                           </span>
                         </div>
                       )}
@@ -1877,7 +1899,11 @@ export default function StudentDashboard() {
                         <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
                         <span className="font-medium">Joined:</span>
                         <span className="ml-1">
-                          {new Date(batchData.assigned_at).toLocaleDateString()}
+                          {new Date(batchData.assigned_at).toLocaleDateString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })}
                         </span>
                       </div>
                     </div>
@@ -1960,7 +1986,11 @@ export default function StudentDashboard() {
                         <label className="text-sm font-medium text-gray-500">Date of Birth</label>
                         <p className="text-gray-900">
                           {studentProfile?.date_of_birth
-                            ? new Date(studentProfile.date_of_birth).toLocaleDateString()
+                            ? new Date(studentProfile.date_of_birth).toLocaleDateString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                              })
                             : 'Not provided'}
                         </p>
                       </div>

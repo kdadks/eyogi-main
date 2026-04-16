@@ -320,7 +320,12 @@ export default function ComplianceChecklist({
                         <div className="flex items-center space-x-4 text-xs text-gray-500">
                           {item.due_date && (
                             <span className={overdue ? 'text-red-600 font-medium' : ''}>
-                              Due: {new Date(item.due_date).toLocaleDateString()}
+                              Due:{' '}
+                              {new Date(item.due_date).toLocaleDateString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                              })}
                               {daysUntilDue !== null && !overdue && daysUntilDue <= 7 && (
                                 <span className="text-yellow-600 ml-1">
                                   ({daysUntilDue} day{daysUntilDue !== 1 ? 's' : ''} left)
