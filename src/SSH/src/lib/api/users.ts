@@ -3,7 +3,12 @@ import { queryCache, CACHE_DURATIONS, createCacheKey } from '../cache'
 import type { Database } from '../supabase'
 import type { Course } from '../../types'
 import { normalizeCountryToISO3, normalizeStateToISO2 } from '../iso-utils'
-import { generateStudentId } from '../id-generator'
+import {
+  generateStudentId,
+  generateTeacherId,
+  generateParentId,
+  generateAdminId,
+} from '../id-generator'
 import { encryptProfileFields, decryptProfileFields } from '../encryption'
 import { logEncryptedFieldChanges, type ChangedByInfo } from './auditTrail'
 type Profile = Database['public']['Tables']['profiles']['Row'] & {
@@ -147,10 +152,16 @@ export async function updateUserRole(userId: string, newRole: Profile['role']): 
   const updateData: Partial<Profile> = {
     role: newRole,
     updated_at: new Date().toISOString(),
+    // Clear all role-specific codes; the correct one is regenerated below
+    student_id: null,
+    teacher_code: null,
+    parent_code: null,
+    admin_code: null,
   }
-  // If changing to student, assign student ID (requires country and state)
+
+  // Generate the appropriate ID/code for the new role
   if (newRole === 'student') {
-    // Get user's country and state
+    // Get user's country and state (immutable fields stored on the profile)
     const { data: userProfile } = await supabaseAdmin
       .from('profiles')
       .select('country, state')
@@ -162,10 +173,12 @@ export async function updateUserRole(userId: string, newRole: Profile['role']): 
     } else {
       throw new Error('Country and state are required to generate student ID')
     }
-  }
-  // If changing from student, remove student ID
-  if (newRole !== 'student') {
-    updateData.student_id = null
+  } else if (newRole === 'teacher') {
+    updateData.teacher_code = await generateTeacherId()
+  } else if (newRole === 'parent') {
+    updateData.parent_code = await generateParentId()
+  } else if (newRole === 'admin' || newRole === 'business_admin' || newRole === 'super_admin') {
+    updateData.admin_code = await generateAdminId()
   }
   const { data, error } = await supabaseAdmin
     .from('profiles')

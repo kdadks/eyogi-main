@@ -463,8 +463,26 @@ export default function UserFormModal({
           grade: formData.grade || null,
           updated_at: new Date().toISOString(),
         }
-        // Do NOT update: country, state, student_id, parent_id, teacher_id, business_admin_id, age
+        // Do NOT update: country, state, parent_id, age
         // These fields are immutable after user creation
+
+        // Handle role change: clear old role codes and generate the correct new one
+        if (user && formData.role !== user.role) {
+          // Clear all role-specific codes first
+          updateData.student_id = null
+          updateData.teacher_code = null
+          updateData.parent_code = null
+          updateData.admin_code = null
+
+          // Generate the new role's ID/code using the user's existing immutable country/state
+          const newRoleIds = await generateRoleId(
+            formData.role,
+            formData.country || undefined,
+            formData.state || undefined,
+            formData.city || undefined,
+          )
+          Object.assign(updateData, newRoleIds)
+        }
 
         // Add password_hash if password provided
         if (formData.password) {
