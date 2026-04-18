@@ -45,6 +45,8 @@ export interface User {
   age?: number | null
   student_id?: string | null
   teacher_code?: string | null
+  parent_code?: string | null
+  admin_code?: string | null
   parent_id?: string | null
   parent_guardian_name?: string | null
   parent_guardian_email?: string | null
