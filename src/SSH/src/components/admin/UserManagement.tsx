@@ -205,7 +205,7 @@ export default function UserManagement() {
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student ID
+                      User ID / Code
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Joined
@@ -274,7 +274,11 @@ export default function UserManagement() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {user.student_id || '-'}
+                          {user.student_id ||
+                            user.teacher_code ||
+                            user.parent_code ||
+                            user.admin_code ||
+                            '-'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {formatDate(user.created_at)}
