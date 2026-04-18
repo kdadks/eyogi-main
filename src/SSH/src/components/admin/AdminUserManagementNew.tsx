@@ -433,9 +433,13 @@ const AdminUserManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {roleFilter === 'student'
                     ? 'Student ID'
-                    : roleFilter === 'all'
-                      ? 'ID / Role Info'
-                      : 'User ID'}
+                    : roleFilter === 'teacher'
+                      ? 'Teacher Code'
+                      : roleFilter === 'parent'
+                        ? 'Parent Code'
+                        : roleFilter === 'all'
+                          ? 'ID / Code'
+                          : 'User Code'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
@@ -488,7 +492,11 @@ const AdminUserManagement: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.role === 'student' ? user.student_id || '-' : '-'}
+                    {user.student_id ||
+                      user.teacher_code ||
+                      user.parent_code ||
+                      user.admin_code ||
+                      '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.created_at).toLocaleDateString('en-US', {

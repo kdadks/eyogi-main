@@ -99,6 +99,8 @@ export default function UserFormModal({
     emergency_contact_relationship: '',
     avatar_url: '',
     student_id: '',
+    teacher_code: '',
+    parent_code: '',
     parent_id: '',
     address_line_1: '',
     address_line_2: '',
@@ -150,6 +152,8 @@ export default function UserFormModal({
         emergency_contact_relationship: emergencyContact.relationship || '',
         avatar_url: decryptedUser?.avatar_url || '',
         student_id: decryptedUser?.student_id || '',
+        teacher_code: decryptedUser?.teacher_code || '',
+        parent_code: decryptedUser?.parent_code || '',
         parent_id:
           decryptedUser && 'parent_id' in decryptedUser && decryptedUser.parent_id
             ? String(decryptedUser.parent_id)
@@ -178,6 +182,8 @@ export default function UserFormModal({
         emergency_contact_relationship: '',
         avatar_url: '',
         student_id: '',
+        teacher_code: '',
+        parent_code: '',
         parent_id: '',
         address_line_1: '',
         address_line_2: '',
@@ -728,7 +734,7 @@ export default function UserFormModal({
             {formData.role === 'student' && (
               <>
                 {/* Student ID - hidden in create mode, auto-generated */}
-                {mode === 'edit' && (
+                {mode !== 'create' && (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Student ID
@@ -757,21 +763,35 @@ export default function UserFormModal({
                 </div>
               </>
             )}
+            {formData.role === 'teacher' && mode !== 'create' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Teacher Code
+                  <span className="ml-1 text-xs text-gray-500">(Cannot be changed)</span>
+                </label>
+                <input
+                  type="text"
+                  name="teacher_code"
+                  value={formData.teacher_code}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded bg-gray-50 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  disabled
+                />
+              </div>
+            )}
             {formData.role === 'parent' && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Parent ID
-                  {mode === 'edit' && (
+                  Parent Code
+                  {mode !== 'create' && (
                     <span className="ml-1 text-xs text-gray-500">(Cannot be changed)</span>
                   )}
                 </label>
                 <input
                   type="text"
-                  name="parent_id"
-                  value={formData.parent_id}
-                  onChange={handleInputChange}
-                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${mode === 'edit' ? 'bg-gray-100 cursor-not-allowed' : readOnlyClass}`}
-                  disabled={isReadOnly || mode === 'edit'}
+                  name="parent_code"
+                  value={formData.parent_code}
+                  className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${mode !== 'create' ? 'bg-gray-100 cursor-not-allowed' : readOnlyClass}`}
+                  disabled
                 />
               </div>
             )}
