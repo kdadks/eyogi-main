@@ -5,6 +5,7 @@ import { GeistSans } from 'geist/font/sans'
 import React from 'react'
 import { Great_Vibes } from 'next/font/google'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 
 import { Navbar } from '@/Header/Component'
 import { Providers } from '@/providers'
@@ -60,6 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </TransitionRouterProvider>
         </NetworkErrorBoundary>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   )
