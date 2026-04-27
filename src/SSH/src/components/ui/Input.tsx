@@ -6,9 +6,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: React.ReactNode
   error?: string
   helperText?: string
+  rightIcon?: React.ReactNode
 }
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ className, label, error, helperText, id, rightIcon, ...props }, ref) => {
     // Generate ID from label only if label is a string
     const inputId =
       id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
@@ -19,16 +20,24 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={cn(
-            'block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm h-11 sm:h-12 px-3 py-2.5 touch-manipulation',
-            error && 'border-red-300 focus:border-red-500 focus:ring-red-500',
-            className,
+        <div className={cn('relative', rightIcon && 'flex items-center')}>
+          <input
+            ref={ref}
+            id={inputId}
+            className={cn(
+              'block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm h-11 sm:h-12 px-3 py-2.5 touch-manipulation',
+              error && 'border-red-300 focus:border-red-500 focus:ring-red-500',
+              rightIcon && 'pr-10',
+              className,
+            )}
+            {...props}
+          />
+          {rightIcon && (
+            <div className="absolute right-0 inset-y-0 flex items-center pr-3">
+              {rightIcon}
+            </div>
           )}
-          {...props}
-        />
+        </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         {helperText && !error && <p className="text-sm text-gray-500">{helperText}</p>}
       </div>

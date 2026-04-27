@@ -8,6 +8,44 @@ import {
   sendParentEnrollmentConfirmation,
   sendAdminEnrollmentNotification,
 } from '../parent-child-email'
+
+/**
+ * Submit an enrollment request at registration time.
+ * Does NOT require the student account to be active — the account may still be
+ * pending admin approval. Both the registration and enrollment remain independent
+ * async approval processes for the admin.
+ */
+export async function requestEnrollmentAtSignup(
+  courseId: string,
+  studentId: string,
+): Promise<Enrollment> {
+  const { data, error } = await supabaseAdmin
+    .from('enrollments')
+    .insert({
+      id: crypto.randomUUID(),
+      course_id: courseId,
+      student_id: studentId,
+      status: 'pending',
+      enrolled_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error('Failed to submit enrollment request')
+  }
+
+  // Notify admin of the new enrollment (non-blocking)
+  sendAdminEnrollmentNotification(data.id).catch((err) =>
+    console.error('Failed to send admin enrollment notification:', err),
+  )
+
+  queryCache.invalidatePattern('enrollments:.*')
+  return data
+}
+
 export async function enrollInCourse(courseId: string, studentId: string): Promise<Enrollment> {
   try {
     // Check student status - only active students can enroll

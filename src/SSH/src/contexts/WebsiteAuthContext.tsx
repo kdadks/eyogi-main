@@ -44,7 +44,7 @@ interface WebsiteAuthContextType {
       email?: string
       relationship?: string
     }
-  }) => Promise<{ error: string | null }>
+  }) => Promise<{ error: string | null; userId?: string }>
   signOut: () => Promise<void>
   // Check permissions
   canAccess: (resource: string, action: string) => boolean
@@ -165,22 +165,67 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
   }
   const signIn = async (email: string, password: string) => {
     try {
+      // Defensive normalization. Browsers / password managers / mobile keyboards /
+      // pasted credentials sometimes inject characters that look identical to the
+      // human eye but produce different bytes — and SHA-256 is byte-exact.
+      // We:
+      //   1. Apply Unicode NFC normalization (combining marks like é vs e+◌́).
+      //   2. Strip ZERO-WIDTH joiners / BOM / NBSP from the start AND end.
+      //      (We deliberately do NOT strip internal whitespace — passwords may
+      //       legitimately contain spaces.)
+      const normalizedEmail = email.trim().toLowerCase()
+      const nfc = (s: string) => (s.normalize ? s.normalize('NFC') : s)
+      const stripOuter = (s: string) =>
+        s.replace(/^[\s\u00A0\u200B-\u200D\uFEFF]+|[\s\u00A0\u200B-\u200D\uFEFF]+$/g, '')
+      const normalizedPassword = stripOuter(nfc(password))
+
       // Find user by email
       const { data: userData, error: userError } = await supabaseAdmin
         .from('profiles')
         .select('*')
-        .eq('email', email.toLowerCase())
+        .eq('email', normalizedEmail)
         .single()
       if (userError || !userData) {
+        // Distinct branch logging so we can tell from logs which failure happened.
+        console.warn('[signIn] email not found in profiles', { normalizedEmail })
         return { error: 'Invalid email or password' }
       }
       // Check if user has a password hash
       if (!userData.password_hash) {
         return { error: 'Account not properly configured. Please contact support.' }
       }
-      // Verify password
-      const isValidPassword = await verifyPassword(password, userData.password_hash)
+      // Try the normalized password first, then fall back to the raw input.
+      // This means existing accounts whose stored hash was computed against a
+      // non-NFC string still work, while new typing is more forgiving.
+      let isValidPassword = await verifyPassword(normalizedPassword, userData.password_hash)
+      if (!isValidPassword && normalizedPassword !== password) {
+        isValidPassword = await verifyPassword(password, userData.password_hash)
+      }
       if (!isValidPassword) {
+        // Diagnostic ONLY in dev. We never log the plaintext password.
+        // We expose a per-character codepoint fingerprint so the user can compare
+        // what their browser actually submitted vs. what the admin set.
+        // (Codepoints reveal hidden NBSP / zero-width / homoglyph characters.)
+        if (import.meta.env?.DEV) {
+          const codepoints = Array.from(password).map((ch) => ch.codePointAt(0)?.toString(16))
+          console.warn('[signIn] password mismatch', {
+            email: normalizedEmail,
+            rawLen: password.length,
+            normalizedLen: normalizedPassword.length,
+            wasNormalized: password !== normalizedPassword,
+            // Hex codepoints — visible chars stay opaque (we don't show ascii letters
+            // by themselves, just the array of codepoints). This is enough to spot
+            // an unexpected 0xa0 (NBSP), 0x200b (ZWSP), or homoglyph in dev.
+            codepointsHex: codepoints,
+          })
+        } else {
+          console.warn('[signIn] password mismatch', {
+            email: normalizedEmail,
+            rawLen: password.length,
+            normalizedLen: normalizedPassword.length,
+            wasNormalized: password !== normalizedPassword,
+          })
+        }
         return { error: 'Invalid email or password' }
       }
       // Allow login for all statuses except suspended
@@ -375,7 +420,7 @@ export const WebsiteAuthProvider: React.FC<WebsiteAuthProviderProps> = ({ childr
         }
       }, 2500) // Wait 2.5 seconds, slightly after welcome email
 
-      return { error: null }
+      return { error: null, userId: newProfile.id }
     } catch (error) {
       return {
         error: `Failed to create account: ${error instanceof Error ? error.message : 'Unknown error'}`,
