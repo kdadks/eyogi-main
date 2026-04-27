@@ -1288,6 +1288,53 @@ async function updateBatchOverallProgress(batchId: string): Promise<void> {
       } else if (batch.status === 'not_started') {
         updateData.status = 'active'
       }
+    } else if (batch.status === 'completed' && progressPercentage < 100) {
+      // Batch was previously marked completed but progress was reduced back below 100%.
+      // Revert the batch and, if no certificates have been issued yet, also revert
+      // the enrollment statuses so the UI stays consistent.
+      updateData.status = 'in_progress'
+
+      const { data: batchCourseData } = await supabaseAdmin
+        .from('batch_courses')
+        .select('course_id')
+        .eq('batch_id', batchId)
+        .eq('is_active', true)
+        .limit(1)
+        .single()
+
+      if (batchCourseData && batchCourseData.course_id) {
+        // Only revert enrollments if no certificates have been issued for this course yet
+        const { count: certCount } = await supabaseAdmin
+          .from('certificates')
+          .select('id', { count: 'exact', head: true })
+          .eq('course_id', batchCourseData.course_id)
+          .eq('is_active', true)
+
+        if (!certCount || certCount === 0) {
+          // Safe to revert — no certs issued yet
+          const { data: batchStudents } = await supabaseAdmin
+            .from('batch_students')
+            .select('student_id')
+            .eq('batch_id', batchId)
+            .eq('is_active', true)
+
+          if (batchStudents && batchStudents.length > 0) {
+            const studentIds = batchStudents.map((bs) => bs.student_id)
+
+            await supabaseAdmin
+              .from('enrollments')
+              .update({
+                status: 'approved',
+                completed_at: null,
+                progress_percentage: progressPercentage,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('course_id', batchCourseData.course_id)
+              .in('student_id', studentIds)
+              .eq('status', 'completed')
+          }
+        }
+      }
     }
 
     const { error: updateError } = await supabaseAdmin

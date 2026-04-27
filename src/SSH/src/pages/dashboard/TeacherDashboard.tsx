@@ -452,20 +452,22 @@ export default function TeacherDashboard() {
     try {
       queryCache.invalidatePattern('enrollments:.*')
 
-      const [coursesData, enrollmentsData, pendingEnrollmentsData, certificatesData] =
+      const [coursesData, enrollmentsData, pendingEnrollmentsData, certificatesData, batchesData] =
         await Promise.all([
           getTeacherCourses(user!.id),
           getTeacherEnrollments(user!.id),
           getPendingEnrollments(user!.id),
           getCertificatesFromTable({ teacher_id: user!.id, is_active: true }),
+          getBatches({ teacher_id: user!.id, is_active: true }),
         ])
 
       setCourses(coursesData)
       setEnrollments(enrollmentsData)
       setPendingEnrollments(pendingEnrollmentsData)
       setCertificates(certificatesData)
+      setBatches(batchesData)
 
-      setLoadedDataSets((prev) => ({ ...prev, overview: true }))
+      setLoadedDataSets((prev) => ({ ...prev, overview: true, batches: true }))
     } catch (error) {
       console.error('Overview load error:', error)
       toast.error('Failed to load overview data')
@@ -1142,9 +1144,17 @@ export default function TeacherDashboard() {
       // Check for existing certificates before opening modal
       const batchStudents = await getBatchStudents(batchId)
 
-      // Check how many already have certificates
+      // Get batch details to know which course to check certificates for
+      const batchForCert = batches.find((b) => b.id === batchId)
+      const batchCourseId = batchForCert?.course?.id
+
+      // Check how many already have certificates — ONLY for this specific course
       const studentsWithCerts = batchStudents.filter((student) => {
-        return certificates.some((cert) => cert.student_id === student.student_id)
+        return certificates.some(
+          (cert) =>
+            cert.student_id === student.student_id &&
+            (!batchCourseId || cert.course_id === batchCourseId),
+        )
       })
 
       if (studentsWithCerts.length > 0) {
@@ -1445,8 +1455,21 @@ export default function TeacherDashboard() {
   // Calculate stats from real database data
   const stats = {
     totalCourses: courses.length,
-    // Count unique students (not total enrollments)
-    totalStudents: new Set(enrollments.map((e) => e.student_id).filter(Boolean)).size,
+    // Per-course: take max(unique enrollment students, batch student count) then sum.
+    // This ensures students in active batches whose enrollment records point to a
+    // predecessor course UUID are still counted.
+    totalStudents: courses.reduce((total, course) => {
+      const courseEnrollmentIds = new Set(
+        enrollments
+          .filter((e) => e.course_id === course.id)
+          .map((e) => e.student_id)
+          .filter(Boolean),
+      )
+      const courseBatchStudentTotal = batches
+        .filter((b) => (b.course as any)?.id === course.id)
+        .reduce((s, b) => s + (b.student_count || 0), 0)
+      return total + Math.max(courseEnrollmentIds.size, courseBatchStudentTotal)
+    }, 0),
     // Total enrollments for reference
     totalEnrollments: enrollments.length,
     // Total enrolled (approved + completed enrollments)
@@ -1456,10 +1479,26 @@ export default function TeacherDashboard() {
     pendingApprovals: pendingEnrollments.length,
     completedCourses: enrollments.filter((e) => e.status === 'completed').length,
     certificatesIssued: enrollments.filter(
-      (e) => e.status === 'completed' && hasCertificate(e.student_id, e.course_id),
+      (e) =>
+        e.status === 'completed' &&
+        hasCertificate(e.student_id, e.course_id) &&
+        !batches.some(
+          (b) =>
+            (b.course as any)?.id === e.course_id &&
+            b.status !== 'completed' &&
+            b.status !== 'archived',
+        ),
     ).length,
     pendingCertificates: enrollments.filter(
-      (e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id),
+      (e) =>
+        e.status === 'completed' &&
+        !hasCertificate(e.student_id, e.course_id) &&
+        !batches.some(
+          (b) =>
+            (b.course as any)?.id === e.course_id &&
+            b.status !== 'completed' &&
+            b.status !== 'archived',
+        ),
     ).length,
     // Batch-centric certificate management
     completedBatches: batches.filter((batch) => batch.status === 'completed').length,
@@ -2419,13 +2458,31 @@ export default function TeacherDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-6">
                   {courses.map((course) => {
                     const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
-                    // Count unique students enrolled in this course
-                    const uniqueStudentCount = new Set(
+                    // Count unique students from enrollments
+                    const enrolledStudentIds = new Set(
                       courseEnrollments.map((e) => e.student_id).filter(Boolean),
-                    ).size
-                    const pendingCertificates = courseEnrollments.filter(
-                      (e) => e.status === 'completed' && !hasCertificate(e.student_id, e.course_id),
-                    ).length
+                    )
+                    // Count students from batches tied to this course (source of truth when
+                    // students were migrated from a predecessor course and their enrollment
+                    // records still point to the old course UUID)
+                    const courseBatches = batches.filter(
+                      (b) => (b.course as any)?.id === course.id,
+                    )
+                    const batchStudentTotal = courseBatches.reduce(
+                      (sum, b) => sum + (b.student_count || 0),
+                      0,
+                    )
+                    const uniqueStudentCount = Math.max(enrolledStudentIds.size, batchStudentTotal)
+                    const hasActiveBatch = courseBatches.some(
+                      (b) => b.status !== 'completed' && b.status !== 'archived',
+                    )
+                    const pendingCertificates = hasActiveBatch
+                      ? 0
+                      : courseEnrollments.filter(
+                          (e) =>
+                            e.status === 'completed' &&
+                            !hasCertificate(e.student_id, e.course_id),
+                        ).length
                     return (
                       <Card
                         key={course.id}
@@ -2484,11 +2541,17 @@ export default function TeacherDashboard() {
                             <div className="flex items-center gap-1">
                               <TrophyIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
                               <span>
-                                {
-                                  courseEnrollments.filter((e) =>
-                                    hasCertificate(e.student_id, e.course_id),
-                                  ).length
-                                }{' '}
+                                {/* Only count certs backed by a completed enrollment to
+                                    avoid showing erroneously-created certificates */}
+                                {certificates.filter(
+                                  (c) =>
+                                    c.course_id === course.id &&
+                                    courseEnrollments.some(
+                                      (e) =>
+                                        e.student_id === c.student_id &&
+                                        e.status === 'completed',
+                                    ),
+                                ).length}{' '}
                                 certified
                               </span>
                             </div>
@@ -3451,9 +3514,18 @@ export default function TeacherDashboard() {
                         const courseEnrollments = enrollments.filter(
                           (e) => e.course_id === course.id,
                         )
-                        const completedEnrollments = courseEnrollments.filter(
-                          (e) => e.status === 'completed',
+                        // Use batch status as source of truth:
+                        // if any batch for this course is still running, don't treat
+                        // stale 'completed' enrollment records as cert-ready
+                        const courseBatches = batches.filter(
+                          (b) => (b.course as any)?.id === course.id,
                         )
+                        const hasActiveBatch = courseBatches.some(
+                          (b) => b.status !== 'completed' && b.status !== 'archived',
+                        )
+                        const completedEnrollments = hasActiveBatch
+                          ? []
+                          : courseEnrollments.filter((e) => e.status === 'completed')
                         const certificatesNotIssued = completedEnrollments.filter(
                           (e) =>
                             !certificates.some(
@@ -3488,7 +3560,15 @@ export default function TeacherDashboard() {
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Total Enrolled:</span>
                                 <span className="font-medium text-gray-900">
-                                  {courseEnrollments.length}
+                                  {hasActiveBatch
+                                    ? Math.max(
+                                        courseEnrollments.length,
+                                        courseBatches.reduce(
+                                          (s, b) => s + (b.student_count || 0),
+                                          0,
+                                        ),
+                                      )
+                                    : courseEnrollments.length}
                                 </span>
                               </div>
                               <div className="flex justify-between text-sm">
@@ -3505,7 +3585,13 @@ export default function TeacherDashboard() {
                               </div>
                             </div>
 
-                            {certificatesNotIssued.length > 0 ? (
+                            {hasActiveBatch && courseBatches.length > 0 ? (
+                              <div className="text-center py-2">
+                                <span className="text-sm text-blue-600 font-medium">
+                                  Batch in progress — use Batch-Based issuance below
+                                </span>
+                              </div>
+                            ) : certificatesNotIssued.length > 0 ? (
                               <Button
                                 size="sm"
                                 onClick={() => {
@@ -3964,14 +4050,24 @@ export default function TeacherDashboard() {
                   },
                   {
                     title: 'Completion Rate',
-                    value:
-                      enrollments.length > 0
+                    value: (() => {
+                      // Exclude enrollments for courses that still have an active batch —
+                      // those 'completed' records are stale and would inflate the rate
+                      const nonActiveBatchEnrollments = enrollments.filter((e) => {
+                        const cb = batches.filter((b) => (b.course as any)?.id === e.course_id)
+                        return !cb.some(
+                          (b) => b.status !== 'completed' && b.status !== 'archived',
+                        )
+                      })
+                      return nonActiveBatchEnrollments.length > 0
                         ? Math.round(
-                            (enrollments.filter((e) => e.status === 'completed').length /
-                              enrollments.length) *
+                            (nonActiveBatchEnrollments.filter((e) => e.status === 'completed')
+                              .length /
+                              nonActiveBatchEnrollments.length) *
                               100,
                           ) + '%'
-                        : '0%',
+                        : '0%'
+                    })(),
                     icon: CheckCircleIcon,
                     gradient: 'from-green-500 via-emerald-600 to-teal-600',
                     bgGradient: 'from-green-50 via-emerald-100 to-teal-100',
@@ -4073,13 +4169,33 @@ export default function TeacherDashboard() {
                 <div className="grid gap-3 sm:gap-4 lg:gap-8">
                   {courses.map((course, index) => {
                     const courseEnrollments = enrollments.filter((e) => e.course_id === course.id)
+                    const analyticsCourseBatches = batches.filter(
+                      (b) => (b.course as any)?.id === course.id,
+                    )
+                    const hasActiveBatchAnalytics = analyticsCourseBatches.some(
+                      (b) => b.status !== 'completed' && b.status !== 'archived',
+                    )
+                    const analyticsBatchStudentTotal = analyticsCourseBatches.reduce(
+                      (s, b) => s + (b.student_count || 0),
+                      0,
+                    )
+                    const analyticsEnrolled = Math.max(
+                      courseEnrollments.length,
+                      analyticsBatchStudentTotal,
+                    )
+                    const analyticsCompleted = hasActiveBatchAnalytics
+                      ? 0
+                      : courseEnrollments.filter((e) => e.status === 'completed').length
+                    const analyticsCertificates = hasActiveBatchAnalytics
+                      ? 0
+                      : courseEnrollments.filter(
+                          (e) =>
+                            e.status === 'completed' &&
+                            hasCertificate(e.student_id, e.course_id),
+                        ).length
                     const completionRate =
-                      courseEnrollments.length > 0
-                        ? Math.round(
-                            (courseEnrollments.filter((e) => e.status === 'completed').length /
-                              courseEnrollments.length) *
-                              100,
-                          )
+                      !hasActiveBatchAnalytics && analyticsEnrolled > 0
+                        ? Math.round((analyticsCompleted / analyticsEnrolled) * 100)
                         : 0
                     return (
                       <motion.div
@@ -4121,18 +4237,15 @@ export default function TeacherDashboard() {
                             </div>
                             <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-6">
                               {[
-                                { label: 'Enrolled', value: courseEnrollments.length, icon: '👥' },
+                                { label: 'Enrolled', value: analyticsEnrolled, icon: '👥' },
                                 {
                                   label: 'Completed',
-                                  value: courseEnrollments.filter((e) => e.status === 'completed')
-                                    .length,
+                                  value: analyticsCompleted,
                                   icon: '✅',
                                 },
                                 {
                                   label: 'Certificates',
-                                  value: courseEnrollments.filter((e) =>
-                                    hasCertificate(e.student_id, e.course_id),
-                                  ).length,
+                                  value: analyticsCertificates,
                                   icon: '🏆',
                                 },
                               ].map((stat, statIndex) => (
