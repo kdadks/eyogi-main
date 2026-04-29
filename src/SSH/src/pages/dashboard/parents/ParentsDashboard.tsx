@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWebsiteAuth } from '../../../contexts/WebsiteAuthContext'
@@ -26,6 +27,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ArrowPathIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { sanitizeHtml } from '../../../utils/sanitize'
 import { User, MapPin, X } from 'lucide-react'
@@ -55,7 +57,7 @@ import {
   updateChild,
   deleteChild,
 } from '../../../lib/api/children'
-import { getStudentConsent, StudentConsent } from '../../../lib/api/consent'
+import { getStudentConsent, StudentConsent, giveConsent } from '../../../lib/api/consent'
 import type { Database } from '../../../lib/supabase'
 type Profile = Database['public']['Tables']['profiles']['Row']
 // Extended profile interface that includes address fields from database
@@ -195,6 +197,7 @@ interface StatCard {
   comingSoon?: boolean
 }
 export default function ParentsDashboard() {
+  const navigate = useNavigate()
   const { show: showConfirmDialog, Dialog: ConfirmDialogModal } = useConfirmDialog()
   const { user, canAccess } = useWebsiteAuth()
   const [activeTab, setActiveTab] = useState<
@@ -583,6 +586,7 @@ export default function ParentsDashboard() {
     grade: string
     phone?: string
     address: AddressFormData
+    consent_agreed?: boolean
   }) => {
     if (!user?.id) {
       toast.error('User not authenticated')
@@ -614,6 +618,30 @@ export default function ParentsDashboard() {
         },
         changedBy,
       )
+
+      // Record participation consent if parent agreed in the form
+      if (childData.consent_agreed && newChildProfile?.id) {
+        try {
+          let ip_address: string | undefined
+          try {
+            const res = await fetch('https://api.ipify.org?format=json')
+            if (res.ok) {
+              const j = await res.json()
+              ip_address = j.ip
+            }
+          } catch {
+            // best effort only
+          }
+          await giveConsent({
+            student_id: newChildProfile.id,
+            consented_by: user.id,
+            ip_address,
+            user_agent: navigator.userAgent,
+          })
+        } catch (err) {
+          console.error('Failed to record consent for new child:', err)
+        }
+      }
 
       // Reload children data to get the correct student_id and all fields
       await loadChildren()
@@ -1099,6 +1127,7 @@ export default function ParentsDashboard() {
                 coursesLoading={coursesLoading}
                 canAccess={canAccess}
                 isAccountActive={user?.status === 'active'}
+                onViewAllCourses={() => navigate('/courses')}
                 onAddChild={() => {
                   if (user?.status !== 'active') {
                     toast.error(
@@ -1109,6 +1138,11 @@ export default function ParentsDashboard() {
                   setShowAddChildModal(true)
                 }}
                 onCourseEnrollment={handleCourseEnrollment}
+                childConsents={childConsents}
+                onGiveConsent={(child) => {
+                  setSelectedChildForConsent(child)
+                  setShowConsentModal(true)
+                }}
               />
             )}
             {activeTab === 'children' && (
@@ -1450,6 +1484,9 @@ function HomeTab({
   isAccountActive,
   onAddChild,
   onCourseEnrollment,
+  onViewAllCourses,
+  childConsents,
+  onGiveConsent,
 }: {
   stats: ParentStats
   children: Child[]
@@ -1459,7 +1496,31 @@ function HomeTab({
   isAccountActive: boolean
   onAddChild: () => void
   onCourseEnrollment: (course: AvailableCourse) => void
+  onViewAllCourses: () => void
+  childConsents: Map<string, StudentConsent>
+  onGiveConsent: (child: Child) => void
 }) {
+  const [courseSearch, setCourseSearch] = useState('')
+  const filteredCourses = useMemo(() => {
+    const term = courseSearch.trim().toLowerCase()
+    if (!term) return courses
+    return courses.filter((c) =>
+      [c.title, c.subject, c.description, c.instructor, c.difficulty]
+        .filter(Boolean)
+        .some((field) => field!.toString().toLowerCase().includes(term)),
+    )
+  }, [courses, courseSearch])
+  // Identify children that have enrollments but are missing an active
+  // participation consent record. These need a one-click prompt for the parent.
+  const unconsentedChildren = useMemo(() => {
+    return children.filter((child) => {
+      const hasEnrollments =
+        Array.isArray(child.enrolled_courses) && child.enrolled_courses.length > 0
+      if (!hasEnrollments) return false
+      const consent = childConsents.get(child.student_id)
+      return !consent || !consent.consent_given || consent.withdrawn
+    })
+  }, [children, childConsents])
   // Define all possible stats cards
   const allStatCards: StatCard[] = [
     {
@@ -1512,6 +1573,38 @@ function HomeTab({
   })
   return (
     <div className="space-y-6">
+      {/* Consent prompt banner — shown when one or more enrolled children are
+          missing participation consent. Parent can give consent in one click. */}
+      {unconsentedChildren.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 sm:p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm sm:text-base font-semibold text-amber-900">
+                Participation consent required
+              </h3>
+              <p className="text-xs sm:text-sm text-amber-800 mt-0.5">
+                {unconsentedChildren.length === 1
+                  ? `${unconsentedChildren[0].full_name} is enrolled in courses but you haven't recorded participation consent yet.`
+                  : `${unconsentedChildren.length} of your enrolled children are missing participation consent.`}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {unconsentedChildren.map((child) => (
+                  <button
+                    key={child.student_id}
+                    type="button"
+                    onClick={() => onGiveConsent(child)}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-1.5 shadow-sm transition-colors cursor-pointer"
+                  >
+                    Give consent for {child.full_name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid - Only show if there are permitted stats cards */}
       {statCards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
@@ -1742,28 +1835,47 @@ function HomeTab({
           transition={{ duration: 0.6, delay: 0.7 }}
           className="mt-8"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <h3 className="text-xl font-bold text-gray-900 flex items-center">
               <AcademicCapIcon className="h-6 w-6 mr-3 text-blue-600" />
               Available Courses
+              {!coursesLoading && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({filteredCourses.length}
+                  {courseSearch && filteredCourses.length !== courses.length
+                    ? ` of ${courses.length}`
+                    : ''}
+                  )
+                </span>
+              )}
             </h3>
-            <motion.button
-              onClick={() => {
-                window.location.href = '/ssh-app/courses'
-              }}
-              className="text-blue-600 hover:text-blue-800 font-medium flex items-center cursor-pointer"
-              whileHover={{ scale: 1.05 }}
-            >
-              View All Courses
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 sm:flex-initial">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={courseSearch}
+                  onChange={(e) => setCourseSearch(e.target.value)}
+                  placeholder="Search courses..."
+                  className="w-full sm:w-64 pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-              </svg>
-            </motion.button>
+              </div>
+              <motion.button
+                onClick={onViewAllCourses}
+                className="text-blue-600 hover:text-blue-800 font-medium flex items-center cursor-pointer whitespace-nowrap"
+                whileHover={{ scale: 1.05 }}
+              >
+                View All Courses
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </motion.button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {coursesLoading
@@ -1780,7 +1892,15 @@ function HomeTab({
                     </div>
                   </div>
                 ))
-              : courses.slice(0, 6).map((course: AvailableCourse, index: number) => {
+              : filteredCourses.length === 0
+                ? (
+                    <div className="col-span-full text-center py-10 text-gray-500 text-sm">
+                      {courseSearch
+                        ? `No courses match "${courseSearch}".`
+                        : 'No courses available right now.'}
+                    </div>
+                  )
+                : filteredCourses.map((course: AvailableCourse, index: number) => {
                   // Check if all children are enrolled in this course
                   const allChildrenEnrolled =
                     children.length > 0 &&
@@ -1974,7 +2094,7 @@ function ChildrenTab({
                   <DocumentTextIcon className="w-5 h-5" />
                 </motion.button>
               </div>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-4 pr-[148px]">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg sm:rounded-xl lg:rounded-2xl flex items-center justify-center text-white text-sm sm:text-base lg:text-lg font-bold shadow-lg flex-shrink-0">
                   {child.full_name.charAt(0)}
                 </div>
@@ -1991,7 +2111,7 @@ function ChildrenTab({
                     </p>
                   )}
                   {/* Badges: Activation Status & Consent Status */}
-                  <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex items-center flex-wrap gap-2 mt-1.5">
                     {/* Activation Status Badge */}
                     {child.status === 'active' ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">

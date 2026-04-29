@@ -16,6 +16,8 @@ import { requestPasswordReset } from '../../lib/password-reset-utils'
 import { getCourses } from '../../lib/api/courses'
 import { requestEnrollmentAtSignup } from '../../lib/api/enrollments'
 import { createChild } from '../../lib/api/children'
+import { giveConsent } from '../../lib/api/consent'
+import ConsentCheckbox from '../consent/ConsentCheckbox'
 import type { Course } from '../../types'
 
 const signInSchema = z.object({
@@ -166,6 +168,11 @@ export default function WebsiteAuthModal({
   })
   const [childErrors, setChildErrors] = useState<Record<string, string>>({})
   const [childSubmitting, setChildSubmitting] = useState(false)
+  // Participation consent (one-time per signup session). Once true, parent's
+  // agreement is applied to every child added in this signup; for students it
+  // is applied to themselves.
+  const [signupConsent, setSignupConsent] = useState(false)
+  const [signupConsentError, setSignupConsentError] = useState<string | null>(null)
   const { signIn, signUp } = useWebsiteAuth()
   const navigate = useNavigate()
   // Reset mode when modal opens with different initialMode
@@ -181,6 +188,8 @@ export default function WebsiteAuthModal({
       setActiveCourseChildId(null)
       setChildData({ full_name: '', date_of_birth: '', grade: '', country: '', state: '', city: '' })
       setChildErrors({})
+      setSignupConsent(false)
+      setSignupConsentError(null)
     }
   }, [isOpen, initialMode])
   const signInForm = useForm<SignInForm>({
@@ -282,7 +291,37 @@ export default function WebsiteAuthModal({
       setLoading(false)
     }
   }
+  // Record participation consent for the given subject (a created child or
+  // self-enrolling student). Best-effort — never blocks signup flow.
+  const recordConsent = async (subjectId: string, consentedById: string) => {
+    try {
+      let ip_address: string | undefined
+      try {
+        const res = await fetch('https://api.ipify.org?format=json')
+        if (res.ok) {
+          const j = await res.json()
+          ip_address = j.ip
+        }
+      } catch {
+        // best effort only
+      }
+      await giveConsent({
+        student_id: subjectId,
+        consented_by: consentedById,
+        ip_address,
+        user_agent: navigator.userAgent,
+      })
+    } catch (err) {
+      console.error('Failed to record consent:', err)
+    }
+  }
+
   const handleSignUp = async (data: SignUpForm) => {
+    // For self-enrolling students, participation consent is required
+    if (data.role === 'student' && !signupConsent) {
+      setSignupConsentError('Participation consent is required to create your account')
+      return
+    }
     setLoading(true)
     try {
       // Calculate age from date of birth
@@ -331,6 +370,10 @@ export default function WebsiteAuthModal({
         })
         setSignupStep('child')
       } else if (data.role === 'student') {
+        // Record participation consent for self-enrolling student (best effort)
+        if (signupConsent && userId) {
+          recordConsent(userId, userId)
+        }
         setSignupStep('course')
       } else {
         // teacher / other roles: no enrollment step
@@ -362,6 +405,13 @@ export default function WebsiteAuthModal({
     } else if (!countryHasStates(childData.country) && !childData.city) {
       errors.city = 'City is required'
     }
+    // Parent must give participation consent before adding any child
+    if (!signupConsent) {
+      setSignupConsentError('Participation consent is required to add a child')
+      if (Object.keys(errors).length === 0) {
+        return
+      }
+    }
     if (Object.keys(errors).length > 0) {
       setChildErrors(errors)
       return
@@ -381,6 +431,10 @@ export default function WebsiteAuthModal({
         state: childData.state || '',
         city: childData.city || '',
       })
+      // Record participation consent for the newly added child
+      if (signupConsent && signupUserId) {
+        recordConsent(child.id, signupUserId)
+      }
       setAddedChildren((prev) => [...prev, { id: child.id, name: childData.full_name.trim() }])
       // Reset name/dob/grade but keep location for next sibling
       setChildData((prev) => ({ ...prev, full_name: '', date_of_birth: '', grade: '' }))
@@ -800,6 +854,19 @@ export default function WebsiteAuthModal({
                     </p>
                   </div>
                 )}
+                {/* Participation consent — required when self-enrolling as a student */}
+                {signUpForm.watch('role') === 'student' && (
+                  <ConsentCheckbox
+                    checked={signupConsent}
+                    onChange={(v) => {
+                      setSignupConsent(v)
+                      if (v) setSignupConsentError(null)
+                    }}
+                    subjectLabel="yourself"
+                    error={signupConsentError || undefined}
+                    disabled={loading}
+                  />
+                )}
                 <Button
                   type="submit"
                   className="w-full h-11 sm:h-12 mt-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 touch-manipulation text-sm sm:text-base"
@@ -921,6 +988,27 @@ export default function WebsiteAuthModal({
                     error={childErrors.city}
                   />
                 ) : null}
+                {/* Participation consent — required once for all children */}
+                {addedChildren.length === 0 && (
+                  <ConsentCheckbox
+                    checked={signupConsent}
+                    onChange={(v) => {
+                      setSignupConsent(v)
+                      if (v) setSignupConsentError(null)
+                    }}
+                    subjectLabel={
+                      childData.full_name.trim() ? childData.full_name.trim() : 'your child'
+                    }
+                    error={signupConsentError || undefined}
+                    disabled={childSubmitting}
+                  />
+                )}
+                {addedChildren.length > 0 && signupConsent && (
+                  <div className="rounded-md border border-green-200 bg-green-50 p-2 text-xs text-green-800 flex items-center gap-2">
+                    <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />
+                    Participation consent recorded for your children.
+                  </div>
+                )}
                 <div className="flex flex-col gap-2 pt-1">
                   <Button
                     type="button"

@@ -56,6 +56,7 @@ import {
   DocumentTextIcon,
   ClockIcon,
   ArrowPathIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import ChatBotTrigger from '../../components/chat/ChatBotTrigger'
 import ProfileEditModal from '../../components/profile/ProfileEditModal'
@@ -95,6 +96,7 @@ export default function StudentDashboard() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [availableCourses, setAvailableCourses] = useState<Course[]>([])
+  const [recommendedSearch, setRecommendedSearch] = useState('')
 
   const [batchProgress, setBatchProgress] = useState<StudentBatchProgress[]>([])
   const [loading, setLoading] = useState(true)
@@ -1418,14 +1420,46 @@ export default function StudentDashboard() {
               </div>
               {/* Course Suggestions */}
               <div className="space-y-6">
-                <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
-                  Recommended Courses for You 🎯
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {availableCourses
-                    .filter((course) => !enrollments.some((e) => e.course?.id === course.id))
-                    .slice(0, 6)
-                    .map((course) => (
+                {(() => {
+                  const unenrolledCourses = availableCourses.filter(
+                    (course) => !enrollments.some((e) => e.course?.id === course.id),
+                  )
+                  const term = recommendedSearch.trim().toLowerCase()
+                  const filteredRecommended = term
+                    ? unenrolledCourses.filter((course) =>
+                        [course.title, course.description, course.level]
+                          .filter(Boolean)
+                          .some((field) => field!.toString().toLowerCase().includes(term)),
+                      )
+                    : unenrolledCourses
+                  return (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
+                          Recommended Courses for You 🎯
+                          {unenrolledCourses.length > 0 && (
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                              ({filteredRecommended.length}
+                              {term && filteredRecommended.length !== unenrolledCourses.length
+                                ? ` of ${unenrolledCourses.length}`
+                                : ''}
+                              )
+                            </span>
+                          )}
+                        </h3>
+                        <div className="relative w-full sm:w-72">
+                          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={recommendedSearch}
+                            onChange={(e) => setRecommendedSearch(e.target.value)}
+                            placeholder="Search courses..."
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {filteredRecommended.map((course) => (
                       <div
                         key={course.id}
                         className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-3 sm:p-4 border border-white/20 hover:shadow-lg transition-all duration-300 flex flex-col h-full min-h-[200px]"
@@ -1487,18 +1521,25 @@ export default function StudentDashboard() {
                         </div>
                       </div>
                     ))}
-                  {availableCourses.filter(
-                    (course) => !enrollments.some((e) => e.course?.id === course.id),
-                  ).length === 0 && (
-                    <div className="col-span-full text-center py-12">
-                      <BookOpenIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                        No Course Suggestions
-                      </h3>
-                      <p className="text-gray-500">All available courses are already enrolled!</p>
-                    </div>
-                  )}
-                </div>
+                        {filteredRecommended.length === 0 && (
+                          <div className="col-span-full text-center py-12">
+                            <BookOpenIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                              {term ? 'No Matching Courses' : 'No Course Suggestions'}
+                            </h3>
+                            <p className="text-gray-500">
+                              {term
+                                ? `No courses match "${recommendedSearch}".`
+                                : unenrolledCourses.length === 0
+                                  ? 'All available courses are already enrolled!'
+                                  : 'No course suggestions right now.'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             </motion.div>
           )}

@@ -6,6 +6,7 @@ import { getStateName } from '../../lib/address-utils'
 import { normalizeCountryToISO3, getCountryNameFromISO3 } from '../../lib/iso-utils'
 import { supabaseAdmin } from '../../lib/supabase'
 import { countryHasStates } from '../../lib/address-utils'
+import ConsentCheckbox from '../consent/ConsentCheckbox'
 
 interface ChildFormData {
   firstName: string
@@ -14,6 +15,7 @@ interface ChildFormData {
   grade: string
   email?: string
   phone?: string
+  consent_agreed?: boolean
   address: {
     address_line_1: string
     address_line_2?: string
@@ -107,6 +109,7 @@ export default function AddChildModal({
     grade: '',
     email: '',
     phone: '',
+    consent_agreed: false,
     address: {
       address_line_1: '',
       address_line_2: '',
@@ -159,6 +162,7 @@ export default function AddChildModal({
         grade: '',
         email: '',
         phone: '',
+        consent_agreed: false,
         address: {
           address_line_1: parentInfo?.address?.street || '',
           address_line_2: '',
@@ -224,6 +228,11 @@ export default function AddChildModal({
       }
     }
 
+    // Consent required when adding a new child (not on edit)
+    if (!isEditMode && !formData.consent_agreed) {
+      newErrors.consent_agreed = 'Participation consent is required to add a child'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -286,6 +295,8 @@ export default function AddChildModal({
         address: formData.address, // Already in 3-letter ISO code format
         // Only include email in edit mode, let API auto-generate in add mode
         ...(isEditMode && formData.email ? { email: formData.email } : {}),
+        // Pass consent flag through so caller can record consent after creating the child
+        ...(isEditMode ? {} : { consent_agreed: !!formData.consent_agreed }),
       }
       await onAddChild(dataToSubmit)
       // Reset form after successful submission
@@ -296,6 +307,7 @@ export default function AddChildModal({
         grade: '',
         email: '',
         phone: '',
+        consent_agreed: false,
         address: {
           address_line_1: parentInfo?.address?.street || '',
           address_line_2: '',
@@ -529,6 +541,30 @@ export default function AddChildModal({
                 </div>
               </div>
             </div>
+
+            {/* Participation Consent — only required when adding a new child */}
+            {!isEditMode && (
+              <ConsentCheckbox
+                checked={!!formData.consent_agreed}
+                onChange={(v) => {
+                  setFormData((prev) => ({ ...prev, consent_agreed: v }))
+                  if (v && errors.consent_agreed) {
+                    setErrors((prev) => {
+                      const next = { ...prev }
+                      delete next.consent_agreed
+                      return next
+                    })
+                  }
+                }}
+                subjectLabel={
+                  formData.firstName.trim() || formData.lastName.trim()
+                    ? `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim()
+                    : 'your child'
+                }
+                error={errors.consent_agreed}
+                disabled={loading}
+              />
+            )}
 
             {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-6">
