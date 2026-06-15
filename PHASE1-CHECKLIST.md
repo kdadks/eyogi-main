@@ -35,12 +35,11 @@
 
 ### ✅ Authentication Configuration
 - [ ] Verify Email/Password provider enabled in Supabase
-- [ ] Configure Custom SMTP in Supabase Auth settings
-- [ ] Test SMTP connection
+✅ **Email Configuration**: Microsoft Graph API
+- [ ] Verify Microsoft Graph credentials configured in .env.local
 - [ ] Set redirect URLs:
   - [ ] Development: `http://localhost:3000/auth/callback`
-  - [ ] Production: `https://[YOUR-DOMAIN]/auth/callback` (later)
-- [ ] Review and customize email templates (optional)
+  - [x] Production: `https://eyogigurukul.com/auth/callback`
 - [ ] Enable email confirmation requirement
 - [ ] Create database trigger for auto-assign user roles
 - [ ] Test sign-up flow locally
@@ -118,7 +117,7 @@
 |-----------|--------|-------|
 | Email/Password | 🟡 Ready | Verify in Supabase |
 | Custom SMTP | 🟡 Ready | Needs provider details |
-| Redirect URLs | 🟡 Ready | Dev URL set, prod later |
+| SMTP/Email | ✅ Ready | Microsoft Graph API configured |
 | Email templates | 🟡 Optional | Can customize |
 
 ### Storage
@@ -231,61 +230,59 @@
 
 ---
 
-## SMTP Provider Setup (Choose One)
+## Email Configuration: Microsoft Graph API
 
-### Option 1: Gmail
+### Setup Details
+
+✅ **Already Configured for eYogi**:
 ```
-SMTP_HOST: smtp.gmail.com
-SMTP_PORT: 587
-SMTP_USER: your-email@gmail.com
-SMTP_PASSWORD: [Your App Password - not regular password]
-
-Steps:
-1. Go to Google Account → Security
-2. Enable 2-Factor Authentication
-3. Create "App Password" for Gmail
-4. Use that as SMTP_PASSWORD
+MICROSOFT_CLIENT_ID: dac92c5a-d8cc-41d1-af0b-de37ff8b4aa4
+MICROSOFT_CLIENT_SECRET: 5Mh8Q~hUN2HPiRdBbL9x~8zzHkmKCAFlgViyocr.
+MICROSOFT_TENANT_ID: d8a66d38-cef5-4cf2-96f8-2d4c390f8fb6
+FROM_EMAIL: office@eyogigurukul.com
+FROM_NAME: eYogi Gurukul
+REGISTRATION_EMAIL_TO: office@eyogigurukul.com
 ```
 
-### Option 2: SendGrid
-```
-SMTP_HOST: smtp.sendgrid.net
-SMTP_PORT: 587
-SMTP_USER: apikey
-SMTP_PASSWORD: [Your SendGrid API Key]
+### Phase 1 Implementation
 
-Steps:
-1. Create SendGrid account
-2. Verify sender email
-3. Create API key
-4. Use API key as password
-```
+For Phase 1, use Supabase's default email provider. Later in Phase 2:
+- Create custom email backend using Microsoft Graph SDK
+- Implement Next.js API route for transactional emails
+- Use credentials above for authentication
 
-### Option 3: AWS SES
-```
-SMTP_HOST: email-smtp.[region].amazonaws.com
-SMTP_PORT: 587
-SMTP_USER: [SMTP username from AWS]
-SMTP_PASSWORD: [SMTP password from AWS]
+### Phase 2: Microsoft Graph Email Backend
 
-Steps:
-1. Create AWS account
-2. Set up SES in same region
-3. Verify sending address
-4. Create SMTP credentials
-```
+```typescript
+// src/lib/email/microsoft-graph.ts
+import { Client } from "@microsoft/microsoft-graph-client";
 
-### Option 4: Mailgun
-```
-SMTP_HOST: smtp.mailgun.org
-SMTP_PORT: 587
-SMTP_USER: postmaster@[your-domain].mailgun.org
-SMTP_PASSWORD: [SMTP password from Mailgun]
+const graphClient = Client.init({
+  authProvider: async (callback) => {
+    const token = await getMicrosoftGraphToken({
+      clientId: process.env.MICROSOFT_CLIENT_ID!,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+      tenantId: process.env.MICROSOFT_TENANT_ID!,
+    });
+    callback(null, token);
+  },
+});
 
-Steps:
-1. Create Mailgun account
-2. Add domain
-3. Get SMTP credentials
+export async function sendEmail(to: string, subject: string, html: string) {
+  await graphClient.api("/me/sendMail").post({
+    message: {
+      subject,
+      body: { contentType: "HTML", content: html },
+      toRecipients: [{ emailAddress: { address: to } }],
+      from: {
+        emailAddress: {
+          address: process.env.MICROSOFT_FROM_EMAIL!,
+          name: process.env.MICROSOFT_FROM_NAME!,
+        },
+      },
+    },
+  });
+}
 ```
 
 ---
@@ -315,7 +312,7 @@ Steps:
 - ⏭️ Next.js API routes created
 
 ### Production Configuration (Later)
-- ❌ Production domain
+- ✅ Production domain: https://eyogigurukul.com
 - ❌ Production SMTP credentials (if different)
 - ❌ Production database backups
 - ❌ Production SSL certificates

@@ -34,23 +34,21 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:3000/api
 
-# ============================================
-# EMAIL CONFIGURATION (Custom SMTP)
-# ============================================
-# For Supabase Auth emails and transactional emails
+# Production
+PROD_APP_URL=https://eyogigurukul.com
+PROD_API_URL=https://eyogigurukul.com/api
 
-SMTP_HOST=smtp.YOUR-EMAIL-PROVIDER.com
-SMTP_PORT=587
-SMTP_USER=your-email@example.com
-SMTP_PASSWORD=your-app-password-or-token
-SMTP_FROM=noreply@eyogi.com
-SMTP_FROM_NAME=eYogi
+# ============================================
+# EMAIL CONFIGURATION (Microsoft Graph API)
+# ============================================
+# For Supabase Auth emails using Microsoft Graph API
 
-# Note: Common SMTP providers:
-# Gmail: smtp.gmail.com:587 (use App Password)
-# SendGrid: smtp.sendgrid.net:587 (use apikey as password)
-# AWS SES: email-smtp.[region].amazonaws.com:587
-# Mailgun: smtp.mailgun.org:587
+MICROSOFT_CLIENT_ID=dac92c5a-d8cc-41d1-af0b-de37ff8b4aa4
+MICROSOFT_CLIENT_SECRET=5Mh8Q~hUN2HPiRdBbL9x~8zzHkmKCAFlgViyocr.
+MICROSOFT_TENANT_ID=d8a66d38-cef5-4cf2-96f8-2d4c390f8fb6
+MICROSOFT_FROM_EMAIL=office@eyogigurukul.com
+MICROSOFT_FROM_NAME=eYogi Gurukul
+REGISTRATION_EMAIL_TO=office@eyogigurukul.com
 
 # ============================================
 # SUPABASE AUTH CONFIGURATION

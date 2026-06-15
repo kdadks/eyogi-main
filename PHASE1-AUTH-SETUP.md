@@ -12,7 +12,7 @@
 - **Provider**: Supabase Auth
 - **Auth Methods**: Email/Password
 - **Redirect URL (Dev)**: `http://localhost:3000/auth/callback`
-- **Redirect URL (Prod)**: `https://[YOUR-DOMAIN]/auth/callback` *(to be configured later)*
+- **Redirect URL (Prod)**: `https://eyogigurukul.com/auth/callback` ✅
 - **User Roles**: admin, teacher, student, parent, member, public
 
 ---
@@ -41,48 +41,81 @@ Supabase has Email/Password auth enabled by default. Verify:
    - Reset password
    - Confirm password recovery
 
-### Step 3: Set Up Custom SMTP
+### Step 3: Set Up Microsoft Graph API for Email
 
-Since you selected "Custom SMTP: Yes", follow these steps:
+Since you're using Microsoft Graph API for email, follow these steps:
+
+**Option 1: Configure in Supabase Custom SMTP (Not applicable for Graph API)**
+
+Microsoft Graph API requires backend configuration. Instead, you'll handle emails via:
+1. Custom email backend using Microsoft Graph SDK
+2. Next.js API routes to send emails
+
+**Credentials Required** (from .env.local):
+```
+MICROSOFT_CLIENT_ID=dac92c5a-d8cc-41d1-af0b-de37ff8b4aa4
+MICROSOFT_CLIENT_SECRET=5Mh8Q~hUN2HPiRdBbL9x~8zzHkmKCAFlgViyocr.
+MICROSOFT_TENANT_ID=d8a66d38-cef5-4cf2-96f8-2d4c390f8fb6
+MICROSOFT_FROM_EMAIL=office@eyogigurukul.com
+MICROSOFT_FROM_NAME=eYogi Gurukul
+```
+
+**Option 2: Use Supabase's Built-in Email (Recommended for now)**
+
+For Phase 1, Supabase auth can use their default email provider. Later in Phase 2, integrate Microsoft Graph for transactional emails:
 
 1. Go to: **Supabase Dashboard** → **Authentication** → **Email**
-2. Look for "Email provider" section
-3. Select: **Custom SMTP**
-4. Fill in your SMTP credentials:
-   ```
-   SMTP Server: [SMTP_HOST from .env.local]
-   Port: [SMTP_PORT from .env.local]
-   Username: [SMTP_USER from .env.local]
-   Password: [SMTP_PASSWORD from .env.local]
-   Sender Email: [SMTP_FROM from .env.local]
-   Sender Name: [SMTP_FROM_NAME from .env.local]
-   ```
+2. Use default Supabase email provider
+3. Later: Create custom email endpoint using Microsoft Graph API
 
-5. Click "Test" to verify connection works
-6. Save changes
+**Phase 2 Implementation** (Next phase):
+- Create `/api/email/send` endpoint
+- Use @microsoft/microsoft-graph-client SDK
+- Authenticate with Microsoft Graph using credentials above
+- Send emails through Microsoft 365 account
 
-**SMTP Provider Examples**:
-```
-Gmail:
-- Server: smtp.gmail.com
-- Port: 587
-- Username: your-email@gmail.com
-- Password: [Your App Password - NOT regular password]
-- Security: TLS
+**Backend Email Implementation** (for Phase 2):
+```typescript
+// src/lib/email/microsoft-graph.ts
+import { Client } from "@microsoft/microsoft-graph-client";
 
-SendGrid:
-- Server: smtp.sendgrid.net
-- Port: 587
-- Username: apikey
-- Password: [Your SendGrid API Key]
-- Security: TLS
+const graphClient = Client.init({
+  authProvider: async (callback) => {
+    const token = await getMicrosoftGraphToken({
+      clientId: process.env.MICROSOFT_CLIENT_ID!,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+      tenantId: process.env.MICROSOFT_TENANT_ID!,
+    });
+    callback(null, token);
+  },
+});
 
-AWS SES:
-- Server: email-smtp.[region].amazonaws.com
-- Port: 587
-- Username: [SMTP Username from AWS]
-- Password: [SMTP Password from AWS]
-- Security: TLS
+export async function sendEmail({
+  to,
+  subject,
+  htmlBody,
+}: {
+  to: string;
+  subject: string;
+  htmlBody: string;
+}) {
+  const message = {
+    subject: subject,
+    body: {
+      contentType: "HTML",
+      content: htmlBody,
+    },
+    toRecipients: [
+      {
+        emailAddress: {
+          address: to,
+        },
+      },
+    ],
+  };
+
+  return graphClient.api("/me/sendMail").post({ message });
+}
 ```
 
 ---
@@ -95,12 +128,11 @@ AWS SES:
 3. Add: `http://localhost:3000/auth/callback`
 4. Save
 
-### Production URL (When Ready)
-*(You mentioned: "will inform later")*
+### Production URL
+✅ **Domain**: https://eyogigurukul.com
 
-When you have production domain, update:
-1. Add redirect: `https://[your-production-domain]/auth/callback`
-2. If using www: `https://www.[your-production-domain]/auth/callback`
+1. Add redirect: `https://eyogigurukul.com/auth/callback`
+2. If using www subdomain: Add `https://www.eyogigurukul.com/auth/callback` as well
 
 ---
 

@@ -75,12 +75,12 @@ CORS allows your frontend to upload/download files from browser.
 [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://[YOUR-PRODUCTION-DOMAIN]",
-  "https://www.[YOUR-PRODUCTION-DOMAIN]"
+  "https://eyogigurukul.com",
+  "https://www.eyogigurukul.com"
 ]
 ```
 
-**Do this later when you have production domain.**
+✅ **Production domain configured**: https://eyogigurukul.com
 
 ---
 
