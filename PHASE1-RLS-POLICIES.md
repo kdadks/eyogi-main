@@ -20,11 +20,14 @@
 
 ## Implementation Steps
 
-### Step 1: Enable RLS on All Tables
+### Step 1: Set Schema and Enable RLS on All Tables
 
 Run this SQL in **Supabase Dashboard → SQL Editor**:
 
 ```sql
+-- Set search path to gurukul_main schema
+SET search_path = 'gurukul_main';
+
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pages ENABLE ROW LEVEL SECURITY;
@@ -55,7 +58,7 @@ DECLARE
   user_role TEXT;
 BEGIN
   SELECT role INTO user_role
-  FROM public.users
+  FROM gurukul_main.users
   WHERE id = auth.uid()
   LIMIT 1;
   
