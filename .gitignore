@@ -42,6 +42,12 @@ add-*.js
 *debug*
 *-debug.*
 
-# Documentation - Store locally only (except root README.md)
+# Documentation - Store locally only (except root README.md and migration plans)
 *.md
 !README.md
+!MIGRATION_PLAN.md
+!IMPLEMENTATION_QUICK_REFERENCE.md
+!TECHNICAL_IMPLEMENTATION_GUIDE.md
+!README_MIGRATION_PLAN.md
+!ARCHITECTURE_ANALYSIS.md
+!ARCHITECTURE_QUICK_REFERENCE.md
