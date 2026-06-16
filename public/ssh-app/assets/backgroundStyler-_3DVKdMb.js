@@ -1,1 +1,0 @@
-function o(o,r,n){const c={};return"image"===o&&n&&n.trim()?(c.backgroundImage=`url('${n}')`,c.backgroundSize="cover",c.backgroundPosition="center",c.backgroundAttachment="fixed"):"color"===o&&r&&r.trim()&&(c.backgroundColor=r),c}export{o as g};

@@ -1,1 +1,5 @@
-export default !!(typeof window !== 'undefined' && window.document && window.document.createElement)
+'use client'
+
+export const canUseDOM = typeof window !== 'undefined'
+
+export default canUseDOM

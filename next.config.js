@@ -1,4 +1,3 @@
-import { withPayload } from '@payloadcms/next/withPayload'
 import os from 'os'
 import path from 'path'
 
@@ -75,11 +74,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'localhost' },
       // Vercel deployment domains
       { protocol: 'https', hostname: '*.vercel.app' },
-      // UploadThing domains
-      { protocol: 'https', hostname: 'uploadthing.com' },
-      { protocol: 'https', hostname: '*.uploadthing.com' },
-      { protocol: 'https', hostname: 'utfs.io' },
-      { protocol: 'https', hostname: '*.utfs.io' },
     ],
   },
   eslint: {
@@ -148,4 +142,4 @@ const nextConfig = {
   },
 }
 
-export default withPayload(nextConfig)
+export default nextConfig
