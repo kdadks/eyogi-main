@@ -28,10 +28,6 @@ const LINKS = [
     name: 'Donation',
     href: '/donation',
   },
-  {
-    name: 'Privacy Policy',
-    href: '/privacy-policy',
-  },
 ]
 
 const texts = ['INTEGRITY', 'COMMITMENT', 'TRANSPARENCY', 'TRUST', 'SPIRITUALITY', 'GURUKUL']

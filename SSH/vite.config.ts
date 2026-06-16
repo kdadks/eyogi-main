@@ -8,7 +8,7 @@ export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
 
   return {
-    base: '/ssh-app/',
+    base: isDev ? '/' : '/ssh-app/',  // Use '/' for dev, '/ssh-app/' for production sub-path
     plugins: [
       react(),
       // visualizer({
@@ -21,7 +21,7 @@ export default defineConfig(({ command }) => {
     // Development server configuration
     server: {
       host: true,
-      port: 5173,
+      port: 5174,
       hmr: {
         overlay: true,
       },

@@ -6,7 +6,6 @@ import React from 'react'
 import { Great_Vibes } from 'next/font/google'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
-import { Navbar } from '@/Header/Component'
 import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
@@ -16,8 +15,8 @@ import { getServerSideURL } from '@/utilities/getURL'
 import { TransitionRouterProvider } from '@/providers/TransitionRouter'
 import { Toaster } from '@/components/ui/toaster'
 import LenisProv from '@/utilities/Lenis'
-import Footer from '@/Footer/Component'
 import { NetworkErrorBoundary } from '@/components/NetworkErrorBoundary'
+import { LayoutWrapper } from '@/components/LayoutWrapper'
 
 const GreatVibes = Great_Vibes({
   subsets: ['latin'],
@@ -45,11 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <TransitionRouterProvider>
             <LenisProv />
             <Providers>
-              <div className="flex min-h-screen flex-col ">
-                <Navbar />
-                <div className="pt-16 md:pt-32 min-h-screen">{children}</div>
-                <Footer />
-              </div>
+              <LayoutWrapper>{children}</LayoutWrapper>
               <Toaster />
             </Providers>
           </TransitionRouterProvider>

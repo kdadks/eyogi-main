@@ -29,7 +29,8 @@ const links: NavLink[] = [
   },
   {
     name: 'University',
-    href: '/ssh-app/',
+    href: process.env.NEXT_PUBLIC_SSH_URL || 'http://localhost:5174',
+    external: true,
   },
   {
     name: 'Membership',
@@ -50,10 +51,6 @@ const links: NavLink[] = [
   {
     name: 'Donation',
     href: '/donation',
-  },
-  {
-    name: 'Privacy Policy',
-    href: '/privacy-policy',
   },
 ]
 
@@ -77,7 +74,7 @@ const linksDesktop: DesktopNavLink[] = [
   },
   {
     name: 'University',
-    href: '/ssh-app/',
+    href: process.env.NEXT_PUBLIC_SSH_URL || 'http://localhost:5174',
     subLinks: [],
   },
   {
@@ -87,10 +84,6 @@ const linksDesktop: DesktopNavLink[] = [
       {
         name: 'Forms',
         href: '/forms',
-      },
-      {
-        name: 'Privacy Policy',
-        href: '/privacy-policy',
       },
     ],
   },
