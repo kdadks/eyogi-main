@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-supabase-BUk7Iixo.js";var t=e(`https://gwugapcoknxqqluocjzl.supabase.co`,`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3dWdhcGNva254cXFsdW9janpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MjIxOTcsImV4cCI6MjA5NzA5ODE5N30.HRip6rywVDB-OkpvMD2MkaWfOnn3E710j8wcoidiw70`,{db:{schema:`gurukul_main`}});export{t};

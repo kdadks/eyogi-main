@@ -1,10 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
 import { createRouteHandler, createUploadthing } from 'uploadthing/server'
 
-// Create UploadThing instance
 const f = createUploadthing()
 
-// Define the upload router
 const uploadRouter = {
   imageUploader: f({ image: { maxFileSize: '4MB', maxFileCount: 10 } })
     .middleware(async () => {
@@ -18,35 +15,9 @@ const uploadRouter = {
     }),
 }
 
-// Create route handlers
-const handlers = createRouteHandler({
+export const { GET, POST } = createRouteHandler({
   router: uploadRouter,
   config: {
-    // Vercel will automatically load environment variables
-    token: process.env.UPLOADTHING_TOKEN || process.env.UPLOADTHING_SECRET,
+    token: import.meta.env.VITE_UPLOADTHING_TOKEN || import.meta.env.VITE_UPLOADTHING_SECRET,
   },
 })
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Create a proper Request object for UploadThing
-  const protocol = req.headers['x-forwarded-proto'] || 'http'
-  const host = req.headers.host
-  const fullUrl = `${protocol}://${host}${req.url}`
-
-  const request = new Request(fullUrl, {
-    method: req.method || 'GET',
-    headers: req.headers as HeadersInit,
-    body: req.method === 'POST' ? JSON.stringify(req.body) : undefined,
-  })
-
-  const response = await handlers(request)
-
-  // Copy response headers
-  for (const [key, value] of response.headers.entries()) {
-    res.setHeader(key, value)
-  }
-
-  res.status(response.status)
-  const responseText = await response.text()
-  res.send(responseText)
-}

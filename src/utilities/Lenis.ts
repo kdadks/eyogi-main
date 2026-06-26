@@ -1,4 +1,3 @@
-'use client'
 
 import { canUseDOM } from './canUseDOM'
 import { ReactNode } from 'react'

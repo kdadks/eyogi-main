@@ -4,10 +4,9 @@
 // ============================================
 
 import { createClient } from '@supabase/supabase-js'
-import type { NextRequest, NextResponse } from 'next/server'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY!
 
 // Create admin client for server-side operations
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
@@ -65,7 +64,7 @@ export function extractToken(authHeader: string | null): string | null {
 /**
  * Middleware for protecting endpoints
  */
-export async function withAuth(request: NextRequest, minRole?: UserRole) {
+export async function withAuth(request: Request, minRole?: UserRole) {
   try {
     const token = extractToken(request.headers.get('authorization'))
 
@@ -126,10 +125,10 @@ export async function withAuth(request: NextRequest, minRole?: UserRole) {
  * Protected endpoint wrapper
  */
 export async function createProtectedHandler<T>(
-  handler: (request: NextRequest, user: AuthUser) => Promise<T>,
+  handler: (request: Request, user: AuthUser) => Promise<T>,
   minRole?: UserRole,
 ) {
-  return async (request: NextRequest) => {
+  return async (request: Request) => {
     const auth = await withAuth(request, minRole)
 
     if (auth.status !== 200) {

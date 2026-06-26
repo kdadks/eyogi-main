@@ -175,7 +175,7 @@
  *   await sendFormNotificationEmail({
  *     form,
  *     submission,
- *     siteUrl: process.env.NEXT_PUBLIC_SITE_URL!
+ *     siteUrl: process.env.VITE_APP_URL!
  *   });
  *
  *   await sendFormConfirmationEmail(email, name, form.name);
@@ -297,8 +297,8 @@
  * ============================================
  *
  * # Supabase
- * NEXT_PUBLIC_SUPABASE_URL=https://gwugapcoknxqqluocjzl.supabase.co
- * NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+ * VITE_SUPABASE_URL=https://gwugapcoknxqqluocjzl.supabase.co
+ * VITE_SUPABASE_ANON_KEY=eyJhbGc...
  * SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
  *
  * # Email (SMTP)
@@ -310,7 +310,7 @@
  * SMTP_FROM=noreply@eyogigurukul.com
  *
  * # Site
- * NEXT_PUBLIC_SITE_URL=https://eyogigurukul.com
+ * VITE_APP_URL=https://eyogigurukul.com
  */
 
 /**

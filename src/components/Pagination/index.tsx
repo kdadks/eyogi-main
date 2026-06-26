@@ -1,4 +1,3 @@
-'use client'
 import {
   Pagination as PaginationComponent,
   PaginationContent,
@@ -9,7 +8,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import { cn } from '@/utilities/cn'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router-dom'
 import React from 'react'
 
 export const Pagination: React.FC<{
@@ -17,7 +16,7 @@ export const Pagination: React.FC<{
   page: number
   totalPages: number
 }> = (props) => {
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const { className, page, totalPages } = props
   const hasNextPage = page < totalPages
@@ -42,7 +41,7 @@ export const Pagination: React.FC<{
               disabled={!hasPrevPage}
               onClick={() => {
                 if (hasPrevPage) {
-                  router.push(getNewUrl(page - 1))
+                  navigate(getNewUrl(page - 1))
                 }
               }}
             />
@@ -58,7 +57,7 @@ export const Pagination: React.FC<{
             <PaginationItem>
               <PaginationLink
                 onClick={() => {
-                  router.push(getNewUrl(page - 1))
+                  navigate(getNewUrl(page - 1))
                 }}
               >
                 {page - 1}
@@ -70,7 +69,7 @@ export const Pagination: React.FC<{
             <PaginationLink
               isActive
               onClick={() => {
-                router.push(getNewUrl(page))
+                navigate(getNewUrl(page))
               }}
             >
               {page}
@@ -81,7 +80,7 @@ export const Pagination: React.FC<{
             <PaginationItem>
               <PaginationLink
                 onClick={() => {
-                  router.push(getNewUrl(page + 1))
+                  navigate(getNewUrl(page + 1))
                 }}
               >
                 {page + 1}
@@ -100,7 +99,7 @@ export const Pagination: React.FC<{
               disabled={!hasNextPage}
               onClick={() => {
                 if (hasNextPage) {
-                  router.push(getNewUrl(page + 1))
+                  navigate(getNewUrl(page + 1))
                 }
               }}
             />

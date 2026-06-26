@@ -1,5 +1,4 @@
 /* eslint-disable @next/next/no-img-element */
-'use client'
 import { motion, useScroll, useTransform } from 'framer-motion'
 
 export default function SlideInSection() {

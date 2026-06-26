@@ -1,4 +1,3 @@
-'use client'
 
 import type { Theme } from '@/providers/Theme/types'
 

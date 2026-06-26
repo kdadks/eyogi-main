@@ -1,10 +1,10 @@
-'use client'
+
 import { cn } from '@/lib/utils'
 import React, { useState, createContext, useContext } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { IconMenu2, IconX } from '@tabler/icons-react'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 
 interface SidebarContextProps {
   open: boolean
@@ -190,7 +190,7 @@ export const SidebarQuestions = ({
               {category.questions.map((q, idx) => (
                 <Link
                   key={idx}
-                  href={q.slug}
+                  to={q.slug}
                   onClick={() => setOpen(false)}
                   className="block py-1 text-sm text-neutral-600 hover:text-neutral-800 transition truncate"
                 >

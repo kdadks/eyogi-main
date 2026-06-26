@@ -1,4 +1,3 @@
-'use client'
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import ScrollLink from '../ui/ScrollLink'

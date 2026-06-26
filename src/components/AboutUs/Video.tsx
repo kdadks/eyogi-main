@@ -1,4 +1,3 @@
-'use client'
 
 import getYouTubeVideoId from '@/utilities/getYoutubeVideoId'
 import LiteYouTubeEmbed from 'react-lite-youtube-embed'

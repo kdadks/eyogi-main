@@ -1,12 +1,11 @@
+
 // ============================================
 // REUSABLE CMS FRONTEND COMPONENTS
 // Display content from CMS API
 // ============================================
 
-'use client'
-
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 import type { Page, Post, Category } from '@/types/cms'
 
 interface PageCardProps {
@@ -29,7 +28,7 @@ export function PageCard({ page }: PageCardProps) {
         <h3 className="text-xl font-bold text-gray-900 mb-2">{page.title}</h3>
         {page.excerpt && <p className="text-gray-600 text-sm mb-4 line-clamp-3">{page.excerpt}</p>}
         <Link
-          href={`/pages/${page.slug}`}
+          to={`/pages/${page.slug}`}
           className="text-blue-600 hover:text-blue-900 font-medium text-sm"
         >
           Read More →
@@ -71,7 +70,7 @@ export function PostCard({ post, showCategory }: PostCardProps) {
         {post.excerpt && <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>}
         <div className="flex items-center justify-between">
           <Link
-            href={`/blog/${post.slug}`}
+            to={`/blog/${post.slug}`}
             className="text-blue-600 hover:text-blue-900 font-medium text-sm"
           >
             Read Article →

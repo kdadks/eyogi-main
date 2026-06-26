@@ -1,4 +1,3 @@
-'use client'
 
 /**
  * Lexical Rich Text Editor

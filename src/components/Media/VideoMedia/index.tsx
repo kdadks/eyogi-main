@@ -1,4 +1,3 @@
-'use client'
 
 import { cn } from '@/utilities/cn'
 import React, { useEffect, useRef } from 'react'
@@ -33,9 +32,7 @@ export const VideoMedia: React.FC<MediaProps> = (props) => {
         const baseUrl =
           typeof window !== 'undefined'
             ? window.location.origin
-            : process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_URL
-              ? `https://${process.env.VERCEL_URL}`
-              : 'http://localhost:3000'
+            : import.meta.env.VITE_APP_URL || 'http://localhost:3000'
         videoSrc = `${baseUrl}${url}`
       }
       // If URL starts with http (UploadThing URL), use as-is

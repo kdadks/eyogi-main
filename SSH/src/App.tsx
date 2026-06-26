@@ -21,6 +21,9 @@ const GurukulPage = lazy(() => import('./pages/GurukulPage'))
 const GurukulDetailPage = lazy(() => import('./pages/GurukulDetailPage'))
 const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'))
 const QuizAnswerPage = lazy(() => import('./pages/QuizAnswerPage'))
+const MembershipPage = lazy(() => import('./pages/MembershipPage'))
+const HinduismPage = lazy(() => import('./pages/HinduismPage'))
+const FAQPage = lazy(() => import('./pages/FAQPage'))
 const LegalPageDisplay = lazy(() => import('./components/legal/LegalPageDisplay'))
 const CertificateViewer = lazy(() => import('./components/certificates/CertificateViewer'))
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
@@ -59,6 +62,7 @@ const GDPRDeletionManagement = lazy(() => import('./components/admin/GDPRDeletio
 const AuditTrailManagement = lazy(() => import('./components/admin/AuditTrailManagement'))
 const ReportsManagement = lazy(() => import('./components/admin/ReportsManagement'))
 const ParentStudentBinding = lazy(() => import('./components/admin/ParentStudentBinding'))
+const DonationsManagement = lazy(() => import('./components/admin/DonationsManagement'))
 // Loading component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
@@ -114,6 +118,9 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/gurukuls" element={<GurukulPage />} />
+            <Route path="/membership" element={<MembershipPage />} />
+            <Route path="/hinduism" element={<HinduismPage />} />
+            <Route path="/faq" element={<FAQPage />} />
             <Route path="/quiz-answer" element={<QuizAnswerPage />} />
             {/* Legal Pages Route */}
             <Route path="/legal/:slug" element={<LegalPageDisplay />} />
@@ -201,6 +208,7 @@ function App() {
               <Route path="compliance" element={<ComplianceManagement />} />
               <Route path="invoice" element={<InvoiceManagement />} />
               <Route path="payment" element={<PaymentManagement />} />
+              <Route path="donations" element={<DonationsManagement />} />
               <Route path="gdpr" element={<GDPRDeletionManagement />} />
               <Route path="audit-trail" element={<AuditTrailManagement />} />
               <Route path="reports" element={<ReportsManagement />} />

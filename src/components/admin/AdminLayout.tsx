@@ -1,13 +1,10 @@
+
 // ============================================
 // ADMIN DASHBOARD LAYOUT & STRUCTURE
-// Main admin dashboard with navigation
 // ============================================
 
-'use client'
-
 import React, { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link, useLocation } from 'react-router-dom'
 
 export interface AdminMenuItem {
   label: string
@@ -18,11 +15,7 @@ export interface AdminMenuItem {
 }
 
 export const adminMenuItems: AdminMenuItem[] = [
-  {
-    label: 'Dashboard',
-    href: '/admin',
-    icon: '📊',
-  },
+  { label: 'Dashboard', href: '/admin', icon: '📊' },
   {
     label: 'Content',
     href: '#',
@@ -42,21 +35,11 @@ export const adminMenuItems: AdminMenuItem[] = [
       { label: 'Submissions', href: '/admin/forms/submissions', icon: '📮' },
     ],
   },
-  {
-    label: 'Navigation',
-    href: '/admin/menus',
-    icon: '🔗',
-  },
-  {
-    label: 'Settings',
-    href: '/admin/settings',
-    icon: '⚙️',
-  },
-  {
-    label: 'Users',
-    href: '/admin/users',
-    icon: '👥',
-  },
+  { label: 'Memberships', href: '/admin/memberships', icon: '🎫', badge: 'NEW' },
+  { label: 'Navigation', href: '/admin/menus', icon: '🔗' },
+  { label: 'Donations', href: '/admin/donations', icon: '💰' },
+  { label: 'Settings', href: '/admin/settings', icon: '⚙️' },
+  { label: 'Users', href: '/admin/users', icon: '👥' },
 ]
 
 interface AdminLayoutProps {
@@ -67,7 +50,7 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children, title, breadcrumbs }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const pathname = usePathname()
+  const { pathname } = useLocation()
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -85,7 +68,6 @@ export function AdminLayout({ children, title, breadcrumbs }: AdminLayoutProps) 
             {sidebarOpen ? '←' : '→'}
           </button>
         </div>
-
         <nav className="space-y-2 px-2">
           {adminMenuItems.map((item) => (
             <NavItem key={item.href} item={item} isOpen={sidebarOpen} pathname={pathname} />
@@ -105,7 +87,7 @@ export function AdminLayout({ children, title, breadcrumbs }: AdminLayoutProps) 
                     <React.Fragment key={index}>
                       {index > 0 && <span className="text-gray-400">/</span>}
                       {crumb.href ? (
-                        <Link href={crumb.href} className="hover:text-gray-900">
+                        <Link to={crumb.href} className="hover:text-gray-900">
                           {crumb.label}
                         </Link>
                       ) : (
@@ -117,19 +99,19 @@ export function AdminLayout({ children, title, breadcrumbs }: AdminLayoutProps) 
               )}
               {title && <h1 className="text-2xl font-bold text-gray-900">{title}</h1>}
             </div>
-
-            {/* User Menu */}
             <div className="flex items-center space-x-4">
               <button className="text-gray-600 hover:text-gray-900">🔔</button>
               <button className="text-gray-600 hover:text-gray-900">⚙️</button>
-              <button className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700">
+              <Link
+                to="/auth/login"
+                className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700"
+              >
                 Logout
-              </button>
+              </Link>
             </div>
           </div>
         </header>
 
-        {/* Content Area */}
         <div className="flex-1 overflow-auto">
           <div className="p-6">{children}</div>
         </div>
@@ -146,9 +128,32 @@ interface NavItemProps {
 
 function NavItem({ item, isOpen, pathname }: NavItemProps) {
   const [expanded, setExpanded] = useState(false)
-  const isActive = pathname === item.href || pathname.startsWith(item.href)
+  const isActive = pathname === item.href || (item.href !== '#' && pathname.startsWith(item.href))
   const hasChildren = item.children && item.children.length > 0
 
+  // Render as Link if no children
+  if (!hasChildren && item.href !== '#') {
+    return (
+      <Link
+        to={item.href}
+        className={`flex items-center space-x-3 px-3 py-2 rounded text-sm font-medium transition-colors no-underline ${
+          isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'
+        }`}
+      >
+        <span className="text-lg flex-shrink-0">{item.icon}</span>
+        {isOpen && (
+          <>
+            <span className="flex-1 text-left">{item.label}</span>
+            {item.badge && (
+              <span className="bg-red-600 text-white text-xs rounded-full px-2">{item.badge}</span>
+            )}
+          </>
+        )}
+      </Link>
+    )
+  }
+
+  // Render as button if has children or href is #
   return (
     <div>
       <button
@@ -173,14 +178,13 @@ function NavItem({ item, isOpen, pathname }: NavItemProps) {
         )}
       </button>
 
-      {/* Submenu */}
       {hasChildren && isOpen && expanded && (
         <div className="pl-8 space-y-1 mt-1">
           {item.children!.map((child) => (
             <Link
               key={child.href}
-              href={child.href}
-              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm transition-colors ${
+              to={child.href}
+              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm transition-colors no-underline ${
                 pathname === child.href
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'

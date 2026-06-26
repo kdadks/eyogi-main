@@ -1,7 +1,6 @@
-'use client'
 
 import React, { useState } from 'react'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 
 interface Course {
   id: number
@@ -225,7 +224,7 @@ const SSHAppWrapper: React.FC = () => {
                 🟢 Active
               </span>
               <Link
-                href="/"
+                to="/"
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
               >
                 ← Back to Main Site

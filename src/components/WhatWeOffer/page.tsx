@@ -1,5 +1,4 @@
 import { Facebook, Linkedin, Twitter, Youtube } from 'lucide-react'
-import Link from 'next/link'
 import SlideIn from '../SlideIn'
 
 const CARDS = [
@@ -73,30 +72,38 @@ export default function WhatWeOffer() {
             <div className="bg-white p-6 rounded-3xl flex flex-col items-center text-black h-full">
               <h3 className="text-xl sm:text-2xl font-medium mb-4">Our socials</h3>
               <div className="grid grid-flow-row grid-cols-4 lg:grid-cols-1 gap-6 lg:gap-4 justify-between h-full">
-                <Link
+                <a
                   href="http://www.linkedin.com/in/eyogi-gurukul-7a63a91a0"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-red-600 transition-colors duration-300 flex items-center"
                 >
                   <Linkedin className="w-6 h-6 lg:w-8 lg:h-8" />
-                </Link>
-                <Link
+                </a>
+                <a
                   href={'http://www.twitter.com/@eyogigurukul'}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-red-600 transition-colors duration-300 flex items-center"
                 >
                   <Twitter className="w-6 h-6 lg:w-8 lg:h-8" />
-                </Link>
-                <Link
+                </a>
+                <a
                   href={'https://www.facebook.com/allfestivesireland#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-red-600 transition-colors duration-300 flex items-center"
                 >
                   <Facebook className="w-6 h-6 lg:w-8 lg:h-8" />
-                </Link>
-                <Link
+                </a>
+                <a
                   href={'https://www.youtube.com/channel/UCTytB2My0xSvNmtKBRIJnIg?'}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-red-600 transition-colors duration-300 flex items-center"
                 >
                   <Youtube className="w-6 h-6 lg:w-8 lg:h-8" />
-                </Link>
+                </a>
               </div>
             </div>
           </SlideIn>

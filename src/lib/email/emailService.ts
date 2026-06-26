@@ -447,7 +447,7 @@ function generateEnrollmentConfirmationEmailHTML(data: EnrollmentConfirmationEma
 
             <div class="cta-section">
               <p>Ready to get started?</p>
-              <a href="${process.env.NEXT_PUBLIC_SERVER_URL || 'https://eyogigurukul.com'}/dashboard" class="cta-button">
+              <a href="${import.meta.env.VITE_APP_URL || 'https://eyogigurukul.com'}/dashboard" class="cta-button">
                 Go to Dashboard
               </a>
             </div>

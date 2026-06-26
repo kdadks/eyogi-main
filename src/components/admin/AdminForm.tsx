@@ -3,7 +3,6 @@
 // /src/components/admin/AdminForm.tsx
 // ============================================
 
-'use client'
 
 import React, { useState } from 'react'
 import type { Page, Post, CreatePageDTO, CreatePostDTO } from '@/types/cms'

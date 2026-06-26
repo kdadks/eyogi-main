@@ -1,4 +1,3 @@
-'use client'
 
 /**
  * File Uploader Component

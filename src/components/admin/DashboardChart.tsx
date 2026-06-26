@@ -2,7 +2,6 @@
  * Dashboard Chart Component - Client-side Recharts
  */
 
-'use client'
 
 import {
   BarChart,

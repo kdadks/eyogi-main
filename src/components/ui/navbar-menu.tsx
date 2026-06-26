@@ -1,9 +1,6 @@
-'use client'
 import React from 'react'
 import { motion } from 'motion/react'
-import { usePathname } from 'next/navigation'
-import { Link } from 'next-transition-router'
-import Image from 'next/image'
+import { useLocation, Link } from 'react-router-dom'
 
 const transition = {
   type: 'spring',
@@ -29,18 +26,18 @@ export const MenuItem = ({
   external?: boolean
   children?: React.ReactNode
 }) => {
-  const path = usePathname()
+  const { pathname } = useLocation()
 
   return (
     <div onMouseEnter={() => setActive(name)} className="relative">
-      {path === href ? (
+      {pathname === href ? (
         <div className="cursor-pointer">{name}</div>
       ) : external ? (
         <a href={href} target="_blank" rel="noopener noreferrer">
           {name}
         </a>
       ) : (
-        <Link href={href}>{name}</Link>
+        <Link to={href}>{name}</Link>
       )}
       {active !== null && (
         <motion.div
@@ -100,7 +97,7 @@ export const Productname = ({
 }) => {
   return (
     <a href={href} className="flex space-x-2">
-      <Image
+      <img
         src={src}
         width={140}
         height={70}
@@ -122,10 +119,10 @@ interface HoveredLinkProps {
 }
 
 export const HoveredLink = ({ children, href, ...rest }: HoveredLinkProps) => {
-  const path = usePathname()
-  if (path === href) return <div {...rest}>{children}</div>
+  const { pathname } = useLocation()
+  if (pathname === href) return <div {...rest}>{children}</div>
   return (
-    <Link href={href} {...rest}>
+    <Link to={href} {...rest}>
       {children}
     </Link>
   )

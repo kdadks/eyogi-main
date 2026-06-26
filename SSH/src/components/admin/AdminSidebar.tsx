@@ -22,6 +22,7 @@ import {
   ClockIcon,
   DocumentChartBarIcon,
   LinkIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import { useSupabaseAuth } from '../../contexts/AuthContextTypes'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -161,6 +162,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
       icon: CreditCardIcon,
       permission: { resource: 'payment', action: 'read' },
       adminOnly: true, // Only admin and super_admin can manage payments
+    },
+    {
+      name: 'Donations',
+      href: '/admin/donations',
+      icon: CurrencyDollarIcon,
+      permission: { resource: 'donations', action: 'read' },
+      adminOnly: true, // Only admin and super_admin can manage donations
     },
     {
       name: 'Permissions',

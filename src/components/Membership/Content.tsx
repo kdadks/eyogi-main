@@ -1,9 +1,8 @@
-'use client'
 
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { cn } from '@/utilities/cn'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 import { Membership } from '@/payload-types'
 
 type ContentProps = {
@@ -52,7 +51,7 @@ function Content({ memberships }: ContentProps) {
             <div className="flex gap-4">
               <div className="w-full sm:w-fit">
                 <Link
-                  href="/donation"
+                  to="/donation"
                   className="relative inline-flex w-full items-center bg-[#121212] justify-center px-3 lg:px-6 py-2 overflow-hidden font-bold text-white hover:text-white border rounded-xl shadow-2xl group"
                 >
                   <span className="absolute inset-0 w-full h-full transition duration-300 ease-out opacity-0 bg-gradient-to-br from-orange-400 to-red-600 group-hover:opacity-100"></span>

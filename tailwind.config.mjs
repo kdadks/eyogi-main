@@ -24,6 +24,8 @@ export default {
     './src/schemas/**/*.{ts,tsx}',
     './src/search/**/*.{ts,tsx}',
     './src/utilities/**/*.{ts,tsx}',
+    './src/pages/**/*.{ts,tsx}',
+    './src/*.{ts,tsx}',
     // Exclude SSH app as it has its own Tailwind config
     '!./src/SSH/**/*',
   ],
@@ -74,6 +76,7 @@ export default {
         marquee: 'marquee 10s linear infinite',
         marquee2: 'marquee2 10s linear infinite',
         'bounce-upper': 'bounce-upper .6s infinite',
+        ticker: 'ticker 30s linear infinite',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -123,6 +126,7 @@ export default {
         sans: ['var(--font-geist-sans)'],
         vibes: ['var(--font-great-vibes)', 'cursive'],
         anta: ['var(--font-anta)'],
+        cormorant: ['var(--font-cormorant)', 'Georgia', 'serif'],
       },
       keyframes: {
         'bounce-upper': {
@@ -146,6 +150,10 @@ export default {
         moveUp: {
           '0%': { transform: 'translateY(0)', opacity: '0' },
           '100%': { transform: 'translateY(-10px)', opacity: '1' },
+        },
+        ticker: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
         },
         'accordion-down': {
           from: { height: '0' },

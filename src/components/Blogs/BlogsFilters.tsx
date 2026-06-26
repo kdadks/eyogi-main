@@ -1,6 +1,6 @@
-'use client'
+
 import { Input } from '@/components/ui/input'
-import { useRouter, usePathname } from 'next/navigation'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { z } from 'zod'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
@@ -20,8 +20,8 @@ export type CustomSelectProps = {
 }
 
 function BlogsFilters({ data, defaultSearch, defaultCategory }: CustomSelectProps) {
-  const router = useRouter()
-  const pathname = usePathname()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(BlogsFiltersSchema),
@@ -41,7 +41,7 @@ function BlogsFilters({ data, defaultSearch, defaultCategory }: CustomSelectProp
       }
     }
     path += 'page=1' // Reset to first page on filter change
-    router.push(path)
+    navigate(path)
   }
 
   const debouncedValues = useDebounce(values, 500)

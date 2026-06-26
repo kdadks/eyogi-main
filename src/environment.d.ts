@@ -3,7 +3,9 @@ declare global {
     interface ProcessEnv {
       PAYLOAD_SECRET: string
       DATABASE_URI: string
-      NEXT_PUBLIC_SERVER_URL: string
+      VITE_SERVER_URL: string
+      VITE_SUPABASE_URL: string
+      VITE_SUPABASE_ANON_KEY: string
       VERCEL_PROJECT_PRODUCTION_URL: string
     }
   }

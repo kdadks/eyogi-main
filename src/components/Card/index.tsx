@@ -1,8 +1,7 @@
-'use client'
 import { cn } from '@/utilities/cn'
 import type { Post } from '@/payload-types'
 import { Media } from '@/components/Media'
-import { Link } from 'next-transition-router'
+import { Link } from 'react-router-dom'
 import { CameraOff } from 'lucide-react'
 
 export type CardPostData = Pick<
@@ -33,7 +32,7 @@ export const Card: React.FC<{
         'overflow-hidden flex flex-col gap-4 hover:cursor-pointer bg-white rounded-2xl relative group transition-all duration-300 hover:scale-[1.03]',
         className,
       )}
-      href={href}
+      to={href}
     >
       {coverImage && typeof coverImage !== 'string' && (
         <Media

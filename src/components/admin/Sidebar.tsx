@@ -1,13 +1,10 @@
-'use client'
-
 /**
  * Admin Sidebar Navigation
  */
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/utilities/cn'
-import { LayoutDashboard, FileText, Image, Settings, BookOpen, LogOut } from 'lucide-react'
+import { LayoutDashboard, FileText, Image, Settings, BookOpen, LogOut, DollarSign } from 'lucide-react'
 
 const MENU_ITEMS = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,12 +12,13 @@ const MENU_ITEMS = [
   { href: '/admin/pages', icon: FileText, label: 'Pages' },
   { href: '/admin/media', icon: Image, label: 'Media' },
   { href: '/admin/categories', icon: FileText, label: 'Categories' },
+  { href: '/admin/donations', icon: DollarSign, label: 'Donations' },
   { href: '/admin/settings', icon: Settings, label: 'Settings', admin: true },
 ]
 
 export function AdminSidebar() {
-  const pathname = usePathname()
-  const router = useRouter()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
 
   const handleLogout = async () => {
     try {
@@ -30,8 +28,7 @@ export function AdminSidebar() {
 
       if (response.ok) {
         // Redirect to login page
-        router.push('/login')
-        router.refresh()
+        navigate('/login')
       }
     } catch (error) {
       console.error('Logout error:', error)
@@ -49,7 +46,7 @@ export function AdminSidebar() {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                 isActive

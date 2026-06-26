@@ -1,292 +1,236 @@
-'use client'
 
 import { cn } from '@/lib/utils'
-import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { motion, Variants, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
-import Link from 'next/link'
-import { HoveredLink, Menu, MenuItem } from '@/components/ui/navbar-menu'
+import { Link, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { useDonationModal } from '@/contexts/DonationModalContext'
 
-interface NavLink {
-  name: string
-  href: string
-  external?: boolean
-}
+const DESKTOP_LINKS = [
+  { name: 'Home', href: '/' },
+  { name: 'Hinduism', href: '/hinduism' },
+  { name: 'About', href: '/about' },
+  { name: 'FAQ', href: '/faq' },
+  { name: 'University', href: import.meta.env.VITE_SSH_URL || 'http://localhost:5174', external: true },
+  { name: 'Join us', href: '/membership' },
+]
 
-const links: NavLink[] = [
-  {
-    name: 'Home',
-    href: '/',
-  },
-  {
-    name: 'About us',
-    href: '/about',
-  },
-  {
-    name: 'Hinduism',
-    href: '/hinduism',
-  },
+const MOBILE_LINKS = [
+  { name: 'Home', href: '/', external: false },
+  { name: 'About Us', href: '/about', external: false },
+  { name: 'Hinduism', href: '/hinduism', external: false },
   {
     name: 'University',
-    href: process.env.NEXT_PUBLIC_SSH_URL || 'http://localhost:5174',
+    href: import.meta.env.VITE_SSH_URL || 'http://localhost:5174',
     external: true,
   },
-  {
-    name: 'Membership',
-    href: '/membership',
-  },
-  // {
-  //   name: 'Contact',
-  //   href: '/contact',
-  // },
-  {
-    name: 'Forms',
-    href: '/forms',
-  },
-  {
-    name: 'FAQ',
-    href: '/faq',
-  },
-  {
-    name: 'Donation',
-    href: '/donation',
-  },
+  { name: 'Membership', href: '/membership', external: false },
+  { name: 'Forms', href: '/forms', external: false },
+  { name: 'FAQ', href: '/faq', external: false },
+  { name: 'Donation', href: '#', external: false, donate: true },
 ]
-
-interface DesktopNavLink {
-  name: string
-  href: string
-  subLinks: { name: string; href: string }[]
-  external?: boolean
-}
-
-const linksDesktop: DesktopNavLink[] = [
-  {
-    name: 'Home',
-    href: '/',
-    subLinks: [],
-  },
-  {
-    name: 'Hinduism',
-    href: '/hinduism',
-    subLinks: [],
-  },
-  {
-    name: 'University',
-    href: process.env.NEXT_PUBLIC_SSH_URL || 'http://localhost:5174',
-    subLinks: [],
-  },
-  {
-    name: 'About us',
-    href: '/about',
-    subLinks: [
-      {
-        name: 'Forms',
-        href: '/forms',
-      },
-    ],
-  },
-
-  {
-    name: 'FAQ',
-    href: '/faq',
-    subLinks: [],
-  },
-  {
-    name: 'Donation',
-    href: '/donation',
-    subLinks: [
-      {
-        name: 'Membership',
-        href: '/membership',
-      },
-    ],
-  },
-]
-
-const linksVariants: Variants = {
-  close: {
-    scaleY: 0,
-    opacity: 0,
-    display: 'none',
-    transition: {
-      display: {
-        delay: 0.3,
-      },
-    },
-  },
-  open: {
-    display: 'flex',
-    scaleY: 1,
-    opacity: 1,
-  },
-}
-
-const linkVariants: Variants = {
-  close: { opacity: 0, y: 40 },
-  open: { opacity: 1, y: 0 },
-}
 
 export function Navbar() {
-  const path = usePathname()
+  const { pathname } = useLocation()
+  const { openModal } = useDonationModal()
   const [open, setOpen] = useState(false)
-  const [active, setActive] = useState<string | null>(null)
-  const [upperAnimation, setUpperAnimation] = useState({
-    rotate: 0,
-    translateY: 0,
-  })
-  const [middleAnimation, setMiddleAnimation] = useState({
-    width: '1.5rem',
-  })
-  const [lowerAnimation, setLowerAnimation] = useState({
-    rotate: 0,
-    translateY: 0,
-  })
+  const [scrolled, setScrolled] = useState(false)
 
-  const handleOpen = () => {
-    setOpen(!open)
-    if (!open) {
-      setUpperAnimation({ rotate: 45, translateY: 9 })
-      setMiddleAnimation({ width: '0' })
-      setLowerAnimation({ rotate: -45, translateY: -9 })
-    } else {
-      setUpperAnimation({ rotate: 0, translateY: 0 })
-      setMiddleAnimation({ width: '1.5rem' })
-      setLowerAnimation({ rotate: 0, translateY: 0 })
-    }
-  }
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
   return (
     <>
-      <motion.nav
-        initial={{ opacity: 0, y: -50 }}
+      {/* Floating pill nav — always visible from mount */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: 'easeOut' }}
-        className="h-28 flex w-full justify-center z-40 gap-4 px-4 lg:px-12 items-center fixed"
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none"
       >
-        <div className="h-full flex w-full items-center justify-between gap-2 py-2 text-2xl font-medium sm:py-4 ">
-          {path === '/' ? (
-            <div className="flex items-center gap-2 h-full cursor-pointer">
-              <div className="relative aspect-square h-full max-h-16 lg:max-h-24">
-                <Image
-                  src={'/eyogiTextLess.png'}
-                  alt="eYogi Gurukul Logo"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 64px, 96px"
-                  className="border-2 border-white rounded-full object-scale-down"
-                />
-              </div>
-            </div>
-          ) : (
-            <Link href="/" className="flex items-center gap-2 h-full">
-              <div className="relative aspect-square h-full max-h-16 lg:max-h-24">
-                <Image
-                  src={'/eyogiTextLess.png'}
-                  alt="eYogi Gurukul Logo"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 64px, 96px"
-                  className="border-2 border-white rounded-full object-scale-down"
-                />
-              </div>
-            </Link>
+        <div
+          className={cn(
+            'flex items-center justify-between w-full max-w-5xl px-3 py-2 rounded-full transition-all duration-300 pointer-events-auto',
+            scrolled
+              ? 'bg-white shadow-md border border-stone-200/70'
+              : 'bg-stone-950/30 backdrop-blur-xl border border-white/15',
           )}
+        >
+          {/* Logo + brand name */}
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 pl-1">
+            <img
+              src="/eyogiTextLess.png"
+              alt="eYogi Gurukul"
+              className={cn(
+                'w-8 h-8 rounded-full object-cover transition-colors duration-300',
+                scrolled ? 'border border-stone-300' : 'border border-white/25',
+              )}
+            />
+            <span
+              className={cn(
+                'font-vibes text-xl hidden sm:block transition-colors duration-300',
+                scrolled ? 'text-stone-800' : 'text-white/90',
+              )}
+            >
+              eYogi Gurukul
+            </span>
+          </Link>
 
-          <Menu setActive={setActive}>
-            {linksDesktop.map((link) => (
-              <MenuItem
-                key={link.name}
-                setActive={setActive}
-                active={active}
-                href={link.href}
-                name={link.name}
-                external={link.external}
-              >
-                <div className="flex flex-col gap-4 text-lg">
-                  {link.subLinks.map((subLink) => (
-                    <HoveredLink
-                      key={subLink.name}
-                      href={subLink.href}
-                      className={cn(
-                        'relative group text-neutral-700 hover:text-black duration-300 cursor-pointer',
-                        path === subLink.href && 'font-medium',
-                      )}
-                    >
-                      {subLink.name}
-                      <div className="w-full absolute -bottom-[2px] left-0 h-0.5 flex justify-end group-hover:justify-start">
-                        <div
-                          className={cn(
-                            'group-hover:w-full bg-black h-full w-0 transition-all duration-300',
-                            path === subLink.href && 'w-full',
-                          )}
-                        ></div>
-                      </div>
-                    </HoveredLink>
-                  ))}
-                </div>
-              </MenuItem>
-            ))}
-          </Menu>
-          <div className="relative aspect-square h-full max-h-16 lg:max-h-24"></div>
-          <motion.button
-            className="flex flex-col items-center gap-2 lg:hidden bg-white rounded-[8px] justify-center aspect-square p-2"
-            onClick={handleOpen}
-            aria-label="Open navigation menu"
-          >
-            <motion.div className="h-[1px] w-8 bg-black" animate={upperAnimation}></motion.div>
-            <motion.div className="h-[1px] w-6 bg-black" animate={middleAnimation}></motion.div>
-            <motion.div className="h-[1px] w-8 bg-black" animate={lowerAnimation}></motion.div>
-          </motion.button>
+          {/* Desktop nav links — visible on md+ */}
+          <nav className="hidden md:flex items-center gap-0.5">
+            {DESKTOP_LINKS.map(({ name, href, external }) =>
+              external ? (
+                <a
+                  key={name}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    'px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+                    scrolled
+                      ? 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                      : 'text-white hover:text-white hover:bg-white/15',
+                  )}
+                >
+                  {name}
+                </a>
+              ) : (
+                <Link
+                  key={name}
+                  to={href}
+                  className={cn(
+                    'px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+                    pathname === href
+                      ? 'bg-amber-600 text-white'
+                      : scrolled
+                        ? 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                        : 'text-white hover:text-white hover:bg-white/15',
+                  )}
+                >
+                  {name}
+                </Link>
+              )
+            )}
+          </nav>
+
+          {/* Right side: CTA + burger */}
+          <div className="flex items-center gap-2 pr-1">
+            <button
+              onClick={openModal}
+              className={cn(
+                'hidden md:inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+                scrolled
+                  ? 'bg-orange-600 text-white hover:bg-orange-500'
+                  : 'bg-white/12 text-white border border-white/18 hover:bg-white/20',
+              )}
+            >
+              Donate
+            </button>
+
+            {/* Hamburger — mobile only */}
+            <button
+              className={cn(
+                'md:hidden flex flex-col justify-center items-center gap-[5px] w-9 h-9 rounded-full transition-all duration-200 shrink-0',
+                scrolled ? 'bg-stone-100 hover:bg-stone-200' : 'bg-white/10 hover:bg-white/18',
+              )}
+              onClick={() => setOpen((v) => !v)}
+              aria-label="Toggle navigation"
+              aria-expanded={open}
+            >
+              <span
+                className={cn(
+                  'block h-px w-4 transition-all duration-200',
+                  open ? 'rotate-45 translate-y-[5px]' : '',
+                  scrolled ? 'bg-stone-700' : 'bg-white',
+                )}
+              />
+              <span
+                className={cn(
+                  'block h-px w-4 transition-all duration-200',
+                  open ? 'opacity-0' : 'opacity-100',
+                  scrolled ? 'bg-stone-700' : 'bg-white',
+                )}
+              />
+              <span
+                className={cn(
+                  'block h-px w-4 transition-all duration-200',
+                  open ? '-rotate-45 -translate-y-[5px]' : '',
+                  scrolled ? 'bg-stone-700' : 'bg-white',
+                )}
+              />
+            </button>
+          </div>
         </div>
-      </motion.nav>
+      </motion.div>
+
+      {/* Mobile fullscreen menu */}
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed left-0 top-0 z-30 origin-top flex h-screen w-full justify-center bg-white uppercase text-black lg:!hidden"
-            variants={linksVariants}
-            initial="close"
-            animate="open"
-            exit="close"
-            transition={{
-              duration: 0.3,
-              ease: 'easeInOut',
-            }}
+            className="fixed inset-0 z-40 bg-white flex flex-col items-center justify-center md:hidden"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
           >
-            <div className="flex flex-col w-full  max-h-[calc(100vh-128px)] overflow-y-auto overflow-x-hidden items-center  gap-6 mt-24">
-              {links.map((link, index) => (
-                <div className="" key={index}>
-                  <motion.div
-                    variants={linkVariants}
-                    initial="close"
-                    animate="open"
-                    exit="close"
-                    transition={{
-                      delay: 0.2 + index * 0.2,
-                    }}
-                    className={cn(
-                      ' text-2xl uppercase ',
-                      path === link.href && 'font-medium border-b-2 border-black',
-                    )}
-                  >
-                    {link.external ? (
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={handleOpen}
-                      >
-                        {link.name}
-                      </a>
-                    ) : (
-                      <Link href={link.href} onClick={handleOpen}>
-                        {link.name}
-                      </Link>
-                    )}
-                  </motion.div>
-                </div>
-              ))}
+            {/* Brand mark at top */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-3">
+              <img
+                src="/eyogiTextLess.png"
+                alt=""
+                className="w-10 h-10 rounded-full object-cover border border-stone-200"
+              />
+              <span className="font-vibes text-2xl text-stone-800">eYogi Gurukul</span>
             </div>
+
+            <nav className="flex flex-col items-center gap-5">
+              {MOBILE_LINKS.map(({ name, href, external, donate }) =>
+                donate ? (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      openModal()
+                      setOpen(false)
+                    }}
+                    className="text-2xl font-medium text-stone-800 hover:text-orange-600 transition-colors duration-200"
+                  >
+                    {name}
+                  </button>
+                ) : external ? (
+                  <a
+                    key={name}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-2xl text-stone-500 hover:text-orange-600 transition-colors duration-200"
+                    onClick={() => setOpen(false)}
+                  >
+                    {name}
+                  </a>
+                ) : (
+                  <Link
+                    key={name}
+                    to={href}
+                    className={cn(
+                      'text-2xl font-medium transition-colors duration-200',
+                      pathname === href
+                        ? 'text-orange-600'
+                        : 'text-stone-800 hover:text-orange-600',
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    {name}
+                  </Link>
+                ),
+              )}
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>

@@ -6,6 +6,7 @@ import { UTApi } from 'uploadthing/server'
 import sharp from 'sharp'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import membershipRouter from './api/memberships.js'
 
 // Load environment variables from current directory
 config({ path: './.env' })
@@ -513,6 +514,9 @@ app.all('/api/uploadthing', async (req, res) => {
     res.status(500).json({ error: 'Internal server error', details: error.message })
   }
 })
+
+// Register membership routes
+app.use('/api/memberships', membershipRouter)
 
 app.listen(PORT, () => {
   console.log(`UploadThing backend server running on http://localhost:${PORT}`)

@@ -656,7 +656,7 @@ export async function approveEnrollment(enrollmentId: string): Promise<void> {
             : undefined
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/enrollments/confirm`,
+          `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}/api/enrollments/confirm`,
           {
             method: 'POST',
             headers: {

@@ -1,4 +1,3 @@
-'use client'
 
 import { cn } from 'src/utilities/cn'
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox'

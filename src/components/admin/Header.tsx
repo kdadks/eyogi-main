@@ -1,14 +1,10 @@
-'use client'
-
 /**
  * Admin Header
  */
 
-import { useRouter } from 'next/navigation'
 import { Bell, User, ChevronDown } from 'lucide-react'
 
 export function AdminHeader() {
-  const router = useRouter()
 
   return (
     <header className="fixed top-0 right-0 left-0 h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-40">
