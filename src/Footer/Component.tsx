@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom'
 import { useDonationModal } from '../contexts/DonationModalContext'
 
 const LINKS = [
-  { name: 'Forms', href: '/forms' },
   { name: 'Membership', href: '/membership', scroll: true },
   { name: 'Blogs', href: '/hinduism' },
   { name: 'FAQ', href: '/faq' },
