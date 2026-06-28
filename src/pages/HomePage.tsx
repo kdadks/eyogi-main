@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Heart, Target } from 'lucide-react'
 import HomeHero, { HomeHeroData } from '@/components/HomeHero/HomeHero'
 import HomeMarquee from '@/components/HomeMarquee/HomeMarquee'
 import { browserClient } from '@/lib/supabase/browser'
+import { usePageContent } from '@/hooks/usePageContent'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,9 +23,9 @@ interface Course {
   description: string | null
 }
 
-// ─── Section: Mission cards ───────────────────────────────────────────────────
+// ─── Defaults (fallback when CMS has no data) ─────────────────────────────────
 
-const MISSION_CARDS = [
+const DEFAULT_MISSION_CARDS = [
   {
     icon: Target,
     title: 'What We Do',
@@ -48,23 +49,43 @@ const MISSION_CARDS = [
   },
 ]
 
-function MissionSection() {
+const ICON_MAP: Record<string, typeof Target> = { Target, BookOpen, Heart }
+
+const FALLBACK_COURSES = [
+  'Indian Knowledge System', 'Yoga & Meditation', 'Sanskrit', 'Mantra Basics',
+  'Hinduism Basics', 'Stotram Recitation', 'Itihasa', 'Bhagavad Gita',
+  'Upanishads', 'Darshana Shastra', 'Irish Leaving Cert Guide', 'Irish Language',
+]
+
+// ─── Section: Mission cards ───────────────────────────────────────────────────
+
+function MissionSection({ data }: { data?: any }) {
+  const cards = data?.cards?.length
+    ? data.cards.map((c: any) => ({
+        icon: ICON_MAP[c.icon] ?? Target,
+        title: c.title,
+        body: c.body,
+        href: c.href,
+        cta: c.cta,
+      }))
+    : DEFAULT_MISSION_CARDS
+
   return (
     <section className="bg-white py-24 px-6 md:px-12 lg:px-20">
       <div className="max-w-6xl mx-auto">
         <p className="text-xs font-bold tracking-[0.2em] uppercase text-orange-600 mb-4">
-          Our Purpose
+          {data?.eyebrow ?? 'Our Purpose'}
         </p>
         <h2
           className="font-sans font-semibold text-stone-900 leading-tight mb-16"
           style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)' }}
         >
-          Education rooted in tradition,
+          {data?.heading ?? 'Education rooted in tradition,'}
           <br />
           <span className="text-orange-600">built for today.</span>
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
-          {MISSION_CARDS.map(({ icon: Icon, title, body, href, cta }) => (
+          {cards.map(({ icon: Icon, title, body, href, cta }: any) => (
             <Link
               key={title}
               to={href}
@@ -91,32 +112,30 @@ function MissionSection() {
 
 // ─── Section: Story ───────────────────────────────────────────────────────────
 
-function StorySection() {
+function StorySection({ data }: { data?: any }) {
+  const paragraphs: string[] = data?.paragraphs?.length ? data.paragraphs : [
+    'Gurukul (Sanskrit: गुरुकुल) was the primary education system of ancient India — students living near or with the guru, learning in a shared environment. The Gurukul is the earliest education system of humanity, with origins traceable back over 15,000 years. Modern schools are its evolution.',
+    'The “e” in eYogi Gurukul connects ancient Vedic practices of meditation and spirituality to the modern world of science and globalisation. An eYogi practices the inner science of Sanatana Dharma while embracing integration and harmony with all cultures.',
+  ]
+  const quote = data?.quote ?? 'Preserving ancient wisdom, inspiring young minds. Accessible, values-based education for a brighter future.'
+  const attribution = data?.attribution ?? 'eYogi Gurukul — Ireland'
+
   return (
     <section className="bg-stone-50 py-24 px-6 md:px-12 lg:px-20">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
         <div className="flex flex-col gap-6">
           <p className="text-xs font-bold tracking-[0.2em] uppercase text-orange-600">
-            Our Story
+            {data?.eyebrow ?? 'Our Story'}
           </p>
           <h2
             className="font-sans font-semibold text-stone-900 leading-tight"
             style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)' }}
           >
-            What is a Gurukul?
+            {data?.heading ?? 'What is a Gurukul?'}
           </h2>
-          <p className="text-stone-600 leading-relaxed text-base">
-            Gurukul (Sanskrit: गुरुकुल) was the primary education system of ancient India — students
-            living near or with the guru, learning in a shared environment. The Gurukul is the
-            earliest education system of humanity, with origins traceable back over 15,000 years.
-            Modern schools are its evolution.
-          </p>
-          <p className="text-stone-600 leading-relaxed text-base">
-            The &ldquo;e&rdquo; in eYogi Gurukul connects ancient Vedic practices of meditation and
-            spirituality to the modern world of science and globalisation. An eYogi practices the
-            inner science of Sanatana Dharma while embracing integration and harmony with all
-            cultures.
-          </p>
+          {paragraphs.map((p, i) => (
+            <p key={i} className="text-stone-600 leading-relaxed text-base">{p}</p>
+          ))}
           <Link
             to="/about"
             className="flex items-center gap-2 text-orange-600 font-semibold text-sm uppercase tracking-wide w-fit group hover:gap-4 transition-all duration-200"
@@ -138,11 +157,10 @@ function StorySection() {
             className="font-sans text-stone-700 leading-relaxed pt-12 font-medium"
             style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)' }}
           >
-            Preserving ancient wisdom, inspiring young minds. Accessible, values-based education for
-            a brighter future.
+            {quote}
           </p>
           <p className="mt-6 text-xs text-stone-500 tracking-wide uppercase font-semibold">
-            eYogi Gurukul — Ireland
+            {attribution}
           </p>
         </div>
       </div>
@@ -218,14 +236,8 @@ function PostsSection({ posts }: { posts: Post[] }) {
 
 // ─── Section: Courses ─────────────────────────────────────────────────────────
 
-const FALLBACK_COURSES = [
-  'Indian Knowledge System', 'Yoga & Meditation', 'Sanskrit', 'Mantra Basics',
-  'Hinduism Basics', 'Stotram Recitation', 'Itihasa', 'Bhagavad Gita',
-  'Upanishads', 'Darshana Shastra', 'Irish Leaving Cert Guide', 'Irish Language',
-]
-
-function CoursesSection({ courses }: { courses: Course[] }) {
-  const names = courses.length > 0 ? courses.map((c) => c.title) : FALLBACK_COURSES
+function CoursesSection({ courses, data }: { courses: Course[]; data?: any }) {
+  const names = courses.length > 0 ? courses.map((c) => c.title) : (data?.courses ?? FALLBACK_COURSES)
 
   return (
     <section className="bg-stone-900 text-white py-24 px-6 md:px-12 lg:px-20">
@@ -233,13 +245,13 @@ function CoursesSection({ courses }: { courses: Course[] }) {
         <div className="flex items-end justify-between mb-12">
           <div>
             <p className="text-xs font-bold tracking-[0.2em] uppercase text-orange-500 mb-3">
-              Curriculum
+              {data?.eyebrow ?? 'Curriculum'}
             </p>
             <h2
               className="font-sans font-semibold text-white"
               style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.75rem)' }}
             >
-              What We Teach
+              {data?.heading ?? 'What We Teach'}
             </h2>
           </div>
           <Link
@@ -251,7 +263,7 @@ function CoursesSection({ courses }: { courses: Course[] }) {
           </Link>
         </div>
         <div className="flex flex-wrap gap-3">
-          {names.map((name) => (
+          {names.map((name: string) => (
             <span
               key={name}
               className="inline-flex items-center px-5 py-2.5 rounded-lg border-2 border-stone-700 text-stone-300 text-sm font-medium hover:border-orange-600 hover:text-white hover:bg-orange-600/10 transition-all duration-200 cursor-default"
@@ -271,19 +283,13 @@ function CoursesSection({ courses }: { courses: Course[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const [heroData, setHeroData] = useState<HomeHeroData>({})
+  const { content } = usePageContent('home')
   const [posts, setPosts] = useState<Post[]>([])
   const [courses, setCourses] = useState<Course[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
-      const [pageRes, postsRes, coursesRes] = await Promise.allSettled([
-        browserClient
-          .from('pages')
-          .select('content')
-          .eq('slug', 'home')
-          .eq('status', 'published')
-          .single(),
+      const [postsRes, coursesRes] = await Promise.allSettled([
         browserClient
           .from('posts')
           .select('id, title, slug, excerpt, published_at')
@@ -298,35 +304,29 @@ export default function HomePage() {
           .limit(12),
       ])
 
-      if (pageRes.status === 'fulfilled' && pageRes.value.data?.content) {
-        try {
-          const parsed = JSON.parse(pageRes.value.data.content)
-          if (parsed.hero) setHeroData(parsed.hero)
-        } catch {}
-      }
-
       if (postsRes.status === 'fulfilled' && postsRes.value.data) {
         setPosts(postsRes.value.data as Post[])
       }
-
       if (coursesRes.status === 'fulfilled' && coursesRes.value.data) {
         setCourses(coursesRes.value.data as Course[])
       }
     }
-
     fetchData()
   }, [])
 
-  const tickerItems = courses.map((c) => ({ label: c.title }))
+  const heroData: HomeHeroData = content?.hero ?? {}
+  const tickerItems = courses.length > 0
+    ? courses.map((c) => ({ label: c.title }))
+    : (content?.courses?.courses ?? FALLBACK_COURSES).map((name: string) => ({ label: name }))
 
   return (
     <div className="flex flex-col w-full">
       <HomeHero data={heroData} />
       <HomeMarquee items={tickerItems} />
-      <MissionSection />
-      <StorySection />
+      <MissionSection data={content?.mission} />
+      <StorySection data={content?.story} />
       <PostsSection posts={posts} />
-      <CoursesSection courses={courses} />
+      <CoursesSection courses={courses} data={content?.courses} />
     </div>
   )
 }

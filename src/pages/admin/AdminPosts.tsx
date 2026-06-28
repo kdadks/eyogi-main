@@ -1,7 +1,7 @@
 // src/pages/admin/AdminPosts.tsx
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Plus, Eye, Clock, User } from 'lucide-react'
+import { Download, Plus, Eye, Clock, User, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
   AdminLayout, StatCard, Card, CardBody, DataTable,
@@ -103,7 +103,11 @@ export default function AdminPosts() {
     <AdminLayout
       title="Blog Posts"
       breadcrumbs={[{ label: 'Dashboard', href: '/admin' }, { label: 'Blog Posts' }]}
-      onSearch={setSearchTerm}
+      actions={
+        <Button onClick={() => navigate('/admin/posts/new')} icon={<Plus className="w-4 h-4" />}>
+          New Post
+        </Button>
+      }
     >
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <StatCard title="Total Posts" value={stats.total} color="primary" />
@@ -134,29 +138,50 @@ export default function AdminPosts() {
         </CardBody>
       </Card>
 
-      <Card>
-        <DataTable
-          columns={columns}
-          data={filteredPosts}
-          loading={loading}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSort={(key) => { if (sortBy === key) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); else { setSortBy(key); setSortOrder('asc') } }}
-          selectable
-          onSelectAll={(selected) => setSelectedPosts(selected ? new Set(filteredPosts.map((p) => p.id)) : new Set())}
-          onSelectRow={(row, selected) => {
-            const next = new Set(selectedPosts)
-            selected ? next.add(row.id) : next.delete(row.id)
-            setSelectedPosts(next)
-          }}
-          selectedRows={selectedPosts}
-          rowKey="id"
-          pagination={{ total: filteredPosts.length, limit: 10, offset: 0 }}
-          onEdit={(row) => navigate(`/admin/posts/${row.id}/edit`)}
-          onDelete={handleDelete}
-          onView={(row) => navigate(`/admin/posts/${row.id}/edit`)}
-        />
-      </Card>
+      {!loading && posts.length === 0 ? (
+        <Card>
+          <CardBody>
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-stone-800 mb-1">No posts yet</h3>
+                <p className="text-stone-500 text-sm max-w-sm">
+                  Posts you create here appear on the <strong>/hinduism</strong> page. Create your first post to get started.
+                </p>
+              </div>
+              <Button onClick={() => navigate('/admin/posts/new')} icon={<Plus className="w-4 h-4" />}>
+                Create First Post
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      ) : (
+        <Card>
+          <DataTable
+            columns={columns}
+            data={filteredPosts}
+            loading={loading}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSort={(key) => { if (sortBy === key) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); else { setSortBy(key); setSortOrder('asc') } }}
+            selectable
+            onSelectAll={(selected) => setSelectedPosts(selected ? new Set(filteredPosts.map((p) => p.id)) : new Set())}
+            onSelectRow={(row, selected) => {
+              const next = new Set(selectedPosts)
+              selected ? next.add(row.id) : next.delete(row.id)
+              setSelectedPosts(next)
+            }}
+            selectedRows={selectedPosts}
+            rowKey="id"
+            pagination={{ total: filteredPosts.length, limit: 10, offset: 0 }}
+            onEdit={(row) => navigate(`/admin/posts/${row.id}/edit`)}
+            onDelete={handleDelete}
+            onView={(row) => navigate(`/admin/posts/${row.id}/edit`)}
+          />
+        </Card>
+      )}
     </AdminLayout>
   )
 }

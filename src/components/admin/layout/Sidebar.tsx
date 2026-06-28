@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
     href: '#',
     icon: <FileText className="w-5 h-5" />,
     children: [
+      { label: 'CMS', href: '/admin/cms', icon: null, badge: 'NEW' },
       { label: 'Pages', href: '/admin/pages', icon: null },
       { label: 'Posts', href: '/admin/posts', icon: null },
       { label: 'Categories', href: '/admin/categories', icon: null },

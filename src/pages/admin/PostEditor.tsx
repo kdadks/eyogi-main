@@ -1,8 +1,8 @@
 // src/pages/admin/PostEditor.tsx
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Save, ArrowLeft, Image } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Save, ArrowLeft, Image, X } from 'lucide-react'
+import { browserClient } from '@/lib/supabase/browser'
 import { AdminLayout, Button, Input, Select, Textarea } from '@/components/admin'
 import { BlockEditor } from '@/components/admin/blocks/BlockEditor'
 import { MediaPicker } from '@/components/admin/media/MediaPicker'
@@ -26,9 +26,10 @@ export default function PostEditor() {
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [excerpt, setExcerpt] = useState('')
+  const [authorName, setAuthorName] = useState('')
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft')
   const [blocks, setBlocks] = useState<Block[]>([])
-  const [featuredImage, setFeaturedImage] = useState<{ id: string; publicUrl: string } | null>(null)
+  const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(isEdit)
   const [error, setError] = useState<string | null>(null)
@@ -36,30 +37,27 @@ export default function PostEditor() {
 
   useEffect(() => {
     if (!isEdit || !id) return
-    const supabase = createClient()
-    supabase
+    browserClient
       .from('posts')
-      .select('*, media!featured_image_id(id, public_url)')
+      .select('*')
       .eq('id', id)
       .single()
       .then(({ data, error }) => {
         if (error || !data) { setError('Post not found'); return }
-        // Cast to any: Supabase type inference breaks with foreign-table joins
         const row = data as any
         setTitle(row.title)
         setSlug(row.slug)
         setExcerpt(row.excerpt ?? '')
+        setAuthorName(row.author_name ?? '')
         setStatus(row.status ?? 'draft')
         try {
           const parsed = row.content ? JSON.parse(row.content) : []
           setBlocks(Array.isArray(parsed) ? parsed : [])
         } catch {
-          setBlocks([])
+          // Plain text content — wrap in a single text block for editing
+          setBlocks(row.content ? [{ id: '1', type: 'paragraph', content: row.content } as any] : [])
         }
-        const mediaJoin = row.media
-        if (row.featured_image_id && mediaJoin?.public_url) {
-          setFeaturedImage({ id: row.featured_image_id, publicUrl: mediaJoin.public_url })
-        }
+        setFeaturedImageUrl(row.featured_image_url ?? null)
         setLoading(false)
       })
   }, [id, isEdit])
@@ -88,21 +86,21 @@ export default function PostEditor() {
     if (!slug.trim()) { setError('Slug is required'); return }
     setError(null)
     setSaving(true)
-    const supabase = createClient()
 
     const payload = {
       title: title.trim(),
       slug: slug.trim(),
       excerpt: excerpt.trim() || null,
+      author_name: authorName.trim() || null,
       content: JSON.stringify(blocks),
       status,
       published_at: status === 'published' ? new Date().toISOString() : null,
-      featured_image_id: featuredImage?.id ?? null,
+      featured_image_url: featuredImageUrl ?? null,
     }
 
     const { error: saveError } = isEdit && id
-      ? await supabase.from('posts').update(payload).eq('id', id)
-      : await supabase.from('posts').insert(payload)
+      ? await browserClient.from('posts').update(payload).eq('id', id)
+      : await browserClient.from('posts').insert(payload)
 
     setSaving(false)
     if (saveError) { setError(saveError.message); return }
@@ -181,6 +179,12 @@ export default function PostEditor() {
         <div className="w-64 shrink-0 space-y-4">
           <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
             <h3 className="text-sm font-semibold text-slate-700">Publishing</h3>
+            <Input
+              label="Author"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder="Author name"
+            />
             <Select
               label="Status"
               value={status}
@@ -213,28 +217,37 @@ export default function PostEditor() {
 
           <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
             <h3 className="text-sm font-semibold text-slate-700">Featured Image</h3>
-            {featuredImage ? (
+            {featuredImageUrl ? (
               <div className="space-y-2">
-                <img
-                  src={featuredImage.publicUrl}
-                  alt="Featured"
-                  className="w-full aspect-video object-cover rounded-lg border border-slate-200"
-                />
+                <div className="relative group">
+                  <img
+                    src={featuredImageUrl}
+                    alt="Featured"
+                    className="w-full aspect-video object-cover rounded-lg border border-slate-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFeaturedImageUrl(null)}
+                    className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setFeaturedImage(null)}
-                  className="text-xs text-red-500 hover:text-red-700"
+                  onClick={() =>
+                    openMediaPicker((_id, publicUrl) => setFeaturedImageUrl(publicUrl))
+                  }
+                  className="text-xs text-orange-500 hover:text-orange-700"
                 >
-                  Remove
+                  Change image
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() =>
-                  openMediaPicker((mediaId, publicUrl) =>
-                    setFeaturedImage({ id: mediaId, publicUrl }),
-                  )
+                  openMediaPicker((_id, publicUrl) => setFeaturedImageUrl(publicUrl))
                 }
                 className="w-full aspect-video border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:border-orange-300 hover:text-orange-400 transition-colors"
               >

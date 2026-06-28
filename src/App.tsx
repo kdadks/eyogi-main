@@ -22,7 +22,8 @@ const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminPosts = lazy(() => import('./pages/admin/AdminPosts'))
-const AdminPages = lazy(() => import('./pages/admin/AdminPages'))
+const AdminPagesList = lazy(() => import('./pages/admin/AdminPagesList'))
+const AdminPageEditor = lazy(() => import('./pages/admin/AdminPageEditor'))
 const AdminMemberships = lazy(() => import('./pages/admin/AdminMemberships'))
 const AdminDonations = lazy(() => import('./pages/admin/AdminDonations'))
 const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'))
@@ -93,7 +94,8 @@ const router = createBrowserRouter([
   // Admin routes - NOT children of SiteLayout
   { path: '/admin', element: withSuspense(AdminDashboard) },
   { path: '/admin/posts', element: withSuspense(AdminPosts) },
-  { path: '/admin/pages', element: withSuspense(AdminPages) },
+  { path: '/admin/pages', element: withSuspense(AdminPagesList) },
+  { path: '/admin/pages/:slug', element: withSuspense(AdminPageEditor) },
   { path: '/admin/donations', element: withSuspense(AdminDonations) },
   { path: '/admin/memberships', element: withSuspense(AdminMemberships) },
   { path: '/admin/categories', element: withSuspense(AdminCategories) },

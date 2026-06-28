@@ -121,11 +121,9 @@ export default function PostDetailPage() {
 
         setPost(data)
         
-        // Increment view count (schema is already set in browserClient config)
+        // Increment view count — fire-and-forget, never block page load
         if (data?.id) {
-          await browserClient
-            .rpc('increment_post_views', { post_id: data.id })
-            .catch(console.error)
+          browserClient.rpc('increment_post_views', { post_id: data.id }).then(() => {})
         }
       } catch (err) {
         console.error('Error loading post:', err)

@@ -14,16 +14,20 @@ import {
   Calendar,
   History,
 } from 'lucide-react'
-import { AdminLayout } from '@/components/admin/layout/AdminLayout'
-import { Card, CardBody, CardHeader } from '@/components/admin/common/Card'
-import { Button } from '@/components/admin/common/Button'
-import { Input } from '@/components/admin/forms/Input'
-import { Select } from '@/components/admin/forms/Select'
-import { Textarea } from '@/components/admin/forms/Textarea'
+import {
+  AdminLayout,
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  Badge,
+  Modal,
+  RichTextEditor,
+} from '@/components/admin'
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@/components/admin/common/Tabs'
-import { Badge } from '@/components/admin/common/Badge'
-import { Modal } from '@/components/admin/common/Modal'
-import { RichTextEditor } from '@/components/admin/RichTextEditor'
 import { MediaPicker } from '@/components/admin/cms/MediaPicker'
 import { ContentBlockEditor } from '@/components/admin/cms/ContentBlockEditor'
 import { SEOEditor } from '@/components/admin/cms/SEOEditor'
@@ -326,12 +330,13 @@ export default function CMSEditor() {
                     setContent((prev) => ({ ...prev, content_type: e.target.value }))
                   }
                   required
-                >
-                  <option value="page">Page</option>
-                  <option value="section">Section</option>
-                  <option value="component">Component</option>
-                  <option value="block">Block</option>
-                </Select>
+                  options={[
+                    { value: 'page', label: 'Page' },
+                    { value: 'section', label: 'Section' },
+                    { value: 'component', label: 'Component' },
+                    { value: 'block', label: 'Block' },
+                  ]}
+                />
 
                 {content.content_type === 'page' && (
                   <Select
@@ -340,17 +345,18 @@ export default function CMSEditor() {
                     onChange={(e) =>
                       setContent((prev) => ({ ...prev, page_type: e.target.value }))
                     }
-                  >
-                    <option value="home">Home</option>
-                    <option value="about">About</option>
-                    <option value="faq">FAQ</option>
-                    <option value="membership">Membership</option>
-                    <option value="contact">Contact</option>
-                    <option value="donation">Donation</option>
-                    <option value="hinduism">Hinduism</option>
-                    <option value="forms">Forms</option>
-                    <option value="custom">Custom</option>
-                  </Select>
+                    options={[
+                      { value: 'home', label: 'Home' },
+                      { value: 'about', label: 'About' },
+                      { value: 'faq', label: 'FAQ' },
+                      { value: 'membership', label: 'Membership' },
+                      { value: 'contact', label: 'Contact' },
+                      { value: 'donation', label: 'Donation' },
+                      { value: 'hinduism', label: 'Hinduism' },
+                      { value: 'forms', label: 'Forms' },
+                      { value: 'custom', label: 'Custom' },
+                    ]}
+                  />
                 )}
 
                 <Input
@@ -455,13 +461,14 @@ export default function CMSEditor() {
                   onChange={(e) =>
                     setContent((prev) => ({ ...prev, status: e.target.value }))
                   }
-                >
-                  <option value="draft">Draft</option>
-                  <option value="pending_review">Pending Review</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
-                </Select>
+                  options={[
+                    { value: 'draft', label: 'Draft' },
+                    { value: 'pending_review', label: 'Pending Review' },
+                    { value: 'scheduled', label: 'Scheduled' },
+                    { value: 'published', label: 'Published' },
+                    { value: 'archived', label: 'Archived' },
+                  ]}
+                />
 
                 {content.published_at && (
                   <div className="text-sm text-stone-600">
@@ -493,14 +500,12 @@ export default function CMSEditor() {
                   setContent((prev) => ({ ...prev, language_id: e.target.value }))
                 }
                 required
-              >
-                <option value="">Select Language</option>
-                {languages.map((lang) => (
-                  <option key={lang.id} value={lang.id}>
-                    {lang.name} ({lang.code.toUpperCase()})
-                  </option>
-                ))}
-              </Select>
+                placeholder="Select Language"
+                options={languages.map((lang) => ({
+                  value: lang.id,
+                  label: `${lang.name} (${lang.code.toUpperCase()})`,
+                }))}
+              />
             </CardBody>
           </Card>
 

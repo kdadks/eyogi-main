@@ -1,56 +1,57 @@
 import { BookOpen, Users, Award, Zap, ArrowRight } from 'lucide-react'
 import { useMembershipModal } from '@/contexts/MembershipModalContext'
+import { usePageContent } from '@/hooks/usePageContent'
 
-const membershipBenefits = [
-  {
-    icon: BookOpen,
-    title: 'Premium Course Access',
-    description: 'Access to all premium courses and exclusive content',
-  },
-  {
-    icon: Users,
-    title: 'Expert Guidance',
-    description: 'One-on-one mentoring from experienced teachers',
-  },
-  {
-    icon: Award,
-    title: 'Certification',
-    description: 'Earn recognized certificates upon course completion',
-  },
-  {
-    icon: Zap,
-    title: 'Community Support',
-    description: 'Join our exclusive community of learners',
-  },
+const ICON_MAP: Record<string, any> = { BookOpen, Users, Award, Zap }
+
+const DEFAULT_BENEFITS = [
+  { icon: 'BookOpen', title: 'Premium Course Access', description: 'Access to all premium courses and exclusive content' },
+  { icon: 'Users', title: 'Expert Guidance', description: 'One-on-one mentoring from experienced teachers' },
+  { icon: 'Award', title: 'Certification', description: 'Earn recognized certificates upon course completion' },
+  { icon: 'Zap', title: 'Community Support', description: 'Join our exclusive community of learners' },
+]
+
+const DEFAULT_FEATURES = [
+  { title: 'Instant Confirmation', description: 'Get your unique member ID immediately upon successful payment' },
+  { title: 'Secure Payment', description: 'Your payment is processed securely through SumUp' },
+  { title: 'Email Receipt', description: 'Receive a detailed receipt and confirmation email' },
 ]
 
 export default function MembershipPage() {
   const { openModal } = useMembershipModal()
+  const { content } = usePageContent('membership')
+
+  const hero = content?.hero ?? {}
+  const benefits = content?.benefits ?? {}
+  const benefitItems = benefits.items?.length ? benefits.items : DEFAULT_BENEFITS
+  const features: typeof DEFAULT_FEATURES = content?.features?.length ? content.features : DEFAULT_FEATURES
+  const cta = content?.cta ?? {}
+
   return (
     <div>
       {/* Hero Section */}
-      <section 
+      <section
         className="py-32 px-6 md:px-12 lg:px-20 sunrise-hero -mt-20"
         style={{ animation: 'sunriseGradient 12s ease-in-out infinite', paddingTop: '120px' }}
       >
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-xs font-bold tracking-[0.2em] uppercase text-orange-400 mb-4">
-            Premium Benefits
+            {hero.eyebrow ?? 'Premium Benefits'}
           </p>
           <h1
             className="font-sans font-semibold text-white leading-tight mb-6"
             style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)' }}
           >
-            Join eYogi Membership
+            {hero.heading ?? 'Join eYogi Membership'}
           </h1>
           <p className="text-lg text-stone-300 max-w-2xl mx-auto leading-relaxed mb-8">
-            Become part of the eYogi community and get access to exclusive content, resources, and teachings.
+            {hero.subtext ?? 'Become part of the eYogi community and get access to exclusive content, resources, and teachings.'}
           </p>
           <button
             onClick={openModal}
             className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-orange-900/40 transition-all duration-300"
           >
-            Get Started
+            {hero.buttonText ?? 'Get Started'}
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
@@ -64,22 +65,25 @@ export default function MembershipPage() {
               className="font-sans font-semibold text-stone-900 leading-tight mb-4"
               style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
             >
-              Membership Benefits
+              {benefits.heading ?? 'Membership Benefits'}
             </h2>
             <p className="text-lg text-stone-600 max-w-2xl mx-auto">
-              Get access to everything you need for your learning journey
+              {benefits.subheading ?? 'Get access to everything you need for your learning journey'}
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {membershipBenefits.map((benefit) => (
-              <div key={benefit.title} className="p-6 rounded-lg border border-stone-200 hover:border-orange-300 hover:shadow-lg transition-all">
-                <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center mb-4">
-                  <benefit.icon className="w-6 h-6 text-orange-600" />
+            {benefitItems.map((benefit: any) => {
+              const Icon = ICON_MAP[benefit.icon] ?? BookOpen
+              return (
+                <div key={benefit.title} className="p-6 rounded-lg border border-stone-200 hover:border-orange-300 hover:shadow-lg transition-all">
+                  <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center mb-4">
+                    <Icon className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <h3 className="font-semibold text-stone-900 mb-2">{benefit.title}</h3>
+                  <p className="text-sm text-stone-600">{benefit.description}</p>
                 </div>
-                <h3 className="font-semibold text-stone-900 mb-2">{benefit.title}</h3>
-                <p className="text-sm text-stone-600">{benefit.description}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -88,34 +92,20 @@ export default function MembershipPage() {
       <section className="py-24 px-6 md:px-12 lg:px-20 bg-stone-50">
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-3 gap-6 mb-16">
-            <div className="p-6 rounded-lg bg-orange-50 border border-orange-200">
-              <h3 className="font-semibold text-stone-900 mb-2">Instant Confirmation</h3>
-              <p className="text-sm text-stone-600">
-                Get your unique member ID immediately upon successful payment
-              </p>
-            </div>
-            <div className="p-6 rounded-lg bg-orange-50 border border-orange-200">
-              <h3 className="font-semibold text-stone-900 mb-2">Secure Payment</h3>
-              <p className="text-sm text-stone-600">
-                Your payment is processed securely through SumUp
-              </p>
-            </div>
-            <div className="p-6 rounded-lg bg-orange-50 border border-orange-200">
-              <h3 className="font-semibold text-stone-900 mb-2">Email Receipt</h3>
-              <p className="text-sm text-stone-600">
-                Receive a detailed receipt and confirmation email
-              </p>
-            </div>
+            {features.map((f) => (
+              <div key={f.title} className="p-6 rounded-lg bg-orange-50 border border-orange-200">
+                <h3 className="font-semibold text-stone-900 mb-2">{f.title}</h3>
+                <p className="text-sm text-stone-600">{f.description}</p>
+              </div>
+            ))}
           </div>
-
-          {/* CTA Section */}
           <div className="text-center">
-            <p className="text-stone-600 mb-6">Ready to start your journey?</p>
+            <p className="text-stone-600 mb-6">{cta.text ?? 'Ready to start your journey?'}</p>
             <button
               onClick={openModal}
               className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-orange-200 transition-all duration-300"
             >
-              Join Now
+              {cta.buttonText ?? 'Join Now'}
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -124,4 +114,3 @@ export default function MembershipPage() {
     </div>
   )
 }
-

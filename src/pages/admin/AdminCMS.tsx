@@ -19,15 +19,19 @@ import {
   Layers,
   MoreVertical,
 } from 'lucide-react'
-import { AdminLayout } from '@/components/admin/layout/AdminLayout'
-import { Card, CardBody, CardHeader } from '@/components/admin/common/Card'
-import { DataTable } from '@/components/admin/common/DataTable'
-import { Button } from '@/components/admin/common/Button'
-import { Badge } from '@/components/admin/common/Badge'
-import { Select } from '@/components/admin/forms/Select'
-import { Input } from '@/components/admin/forms/Input'
-import { Modal } from '@/components/admin/common/Modal'
-import { StatCard } from '@/components/admin/sections/StatsCard'
+import {
+  AdminLayout,
+  Card,
+  CardBody,
+  CardHeader,
+  DataTable,
+  Button,
+  Badge,
+  Select,
+  Input,
+  Modal,
+  StatCard,
+} from '@/components/admin'
 import { cmsAPI } from '@/lib/cms-api'
 import type { CMSContent, CMSContentFilters, CMSLanguage } from '@/lib/cms-types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -111,12 +115,20 @@ export default function AdminCMS() {
     navigate('/admin/cms/editor/new')
   }
 
-  const handleEdit = (id: string) => {
-    navigate(`/admin/cms/editor/${id}`)
+  const handleEdit = (id: string, row?: CMSContent) => {
+    if (row?.content_type === 'page' && row?.slug) {
+      navigate(`/admin/pages/${row.slug}`)
+    } else {
+      navigate(`/admin/cms/editor/${id}`)
+    }
   }
 
-  const handleView = (id: string) => {
-    navigate(`/admin/cms/preview/${id}`)
+  const handleView = (id: string, row?: CMSContent) => {
+    if (row?.content_type === 'page' && row?.slug) {
+      window.open(`/${row.slug === 'home' ? '' : row.slug}`, '_blank')
+    } else {
+      navigate(`/admin/cms/preview/${id}`)
+    }
   }
 
   const handleDuplicate = async (id: string) => {
@@ -335,7 +347,7 @@ export default function AdminCMS() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => handleView(row.id)}
+            onClick={() => handleView(row.id, row)}
             title="Preview"
           >
             <Eye className="w-4 h-4" />
@@ -343,7 +355,7 @@ export default function AdminCMS() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => handleEdit(row.id)}
+            onClick={() => handleEdit(row.id, row)}
             title="Edit"
           >
             <Edit className="w-4 h-4" />
@@ -402,31 +414,31 @@ export default function AdminCMS() {
         <StatCard
           title="Total Content"
           value={stats.total}
-          icon={FileText}
+          icon={<FileText className="w-6 h-6" />}
           color="primary"
         />
         <StatCard
           title="Published"
           value={stats.published}
-          icon={CheckCircle}
+          icon={<CheckCircle className="w-6 h-6" />}
           color="success"
         />
         <StatCard
           title="Drafts"
           value={stats.drafts}
-          icon={Edit}
+          icon={<Edit className="w-6 h-6" />}
           color="warning"
         />
         <StatCard
           title="Scheduled"
           value={stats.scheduled}
-          icon={Calendar}
+          icon={<Calendar className="w-6 h-6" />}
           color="info"
         />
         <StatCard
           title="Total Views"
           value={stats.total_views}
-          icon={Eye}
+          icon={<Eye className="w-6 h-6" />}
           color="purple"
         />
       </div>
@@ -444,28 +456,28 @@ export default function AdminCMS() {
                   onChange={(e) =>
                     setFilters((prev) => ({ ...prev, search: e.target.value }))
                   }
-                  leftIcon={<Search className="w-4 h-4" />}
+                  prefix={<Search className="w-4 h-4" />}
                 />
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button
                   variant="primary"
                   onClick={handleCreate}
-                  leftIcon={<Plus className="w-4 h-4" />}
+                  icon={<Plus className="w-4 h-4" />}
                 >
                   Create Content
                 </Button>
                 <Button
                   variant="outline"
                   onClick={exportToCSV}
-                  leftIcon={<Download className="w-4 h-4" />}
+                  icon={<Download className="w-4 h-4" />}
                 >
                   Export
                 </Button>
                 <Button
                   variant="outline"
                   onClick={fetchContent}
-                  leftIcon={<RefreshCw className="w-4 h-4" />}
+                  icon={<RefreshCw className="w-4 h-4" />}
                 >
                   Refresh
                 </Button>
@@ -473,7 +485,7 @@ export default function AdminCMS() {
                   <Button
                     variant="danger"
                     onClick={handleBulkDelete}
-                    leftIcon={<Trash2 className="w-4 h-4" />}
+                    icon={<Trash2 className="w-4 h-4" />}
                   >
                     Delete ({selectedItems.size})
                   </Button>
@@ -492,14 +504,15 @@ export default function AdminCMS() {
                     status: e.target.value === 'all' ? undefined : e.target.value,
                   }))
                 }
-              >
-                <option value="all">All Statuses</option>
-                <option value="draft">Draft</option>
-                <option value="pending_review">Pending Review</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </Select>
+                options={[
+                  { value: 'all', label: 'All Statuses' },
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'pending_review', label: 'Pending Review' },
+                  { value: 'scheduled', label: 'Scheduled' },
+                  { value: 'published', label: 'Published' },
+                  { value: 'archived', label: 'Archived' },
+                ]}
+              />
 
               <Select
                 label="Content Type"
@@ -510,13 +523,14 @@ export default function AdminCMS() {
                     content_type: e.target.value === 'all' ? undefined : e.target.value,
                   }))
                 }
-              >
-                <option value="all">All Types</option>
-                <option value="page">Page</option>
-                <option value="section">Section</option>
-                <option value="component">Component</option>
-                <option value="block">Block</option>
-              </Select>
+                options={[
+                  { value: 'all', label: 'All Types' },
+                  { value: 'page', label: 'Page' },
+                  { value: 'section', label: 'Section' },
+                  { value: 'component', label: 'Component' },
+                  { value: 'block', label: 'Block' },
+                ]}
+              />
 
               <Select
                 label="Page Type"
@@ -527,18 +541,19 @@ export default function AdminCMS() {
                     page_type: e.target.value === 'all' ? undefined : e.target.value,
                   }))
                 }
-              >
-                <option value="all">All Pages</option>
-                <option value="home">Home</option>
-                <option value="about">About</option>
-                <option value="faq">FAQ</option>
-                <option value="membership">Membership</option>
-                <option value="contact">Contact</option>
-                <option value="donation">Donation</option>
-                <option value="hinduism">Hinduism</option>
-                <option value="forms">Forms</option>
-                <option value="custom">Custom</option>
-              </Select>
+                options={[
+                  { value: 'all', label: 'All Pages' },
+                  { value: 'home', label: 'Home' },
+                  { value: 'about', label: 'About' },
+                  { value: 'faq', label: 'FAQ' },
+                  { value: 'membership', label: 'Membership' },
+                  { value: 'contact', label: 'Contact' },
+                  { value: 'donation', label: 'Donation' },
+                  { value: 'hinduism', label: 'Hinduism' },
+                  { value: 'forms', label: 'Forms' },
+                  { value: 'custom', label: 'Custom' },
+                ]}
+              />
 
               <Select
                 label="Language"
@@ -549,14 +564,14 @@ export default function AdminCMS() {
                     language_id: e.target.value === 'all' ? undefined : e.target.value,
                   }))
                 }
-              >
-                <option value="all">All Languages</option>
-                {languages.map((lang) => (
-                  <option key={lang.id} value={lang.id}>
-                    {lang.name} ({lang.code.toUpperCase()})
-                  </option>
-                ))}
-              </Select>
+                options={[
+                  { value: 'all', label: 'All Languages' },
+                  ...languages.map((lang) => ({
+                    value: lang.id,
+                    label: `${lang.name} (${lang.code.toUpperCase()})`,
+                  })),
+                ]}
+              />
 
               <Select
                 label="Sort By"
@@ -564,13 +579,14 @@ export default function AdminCMS() {
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, sort_by: e.target.value }))
                 }
-              >
-                <option value="updated_at">Last Updated</option>
-                <option value="created_at">Created Date</option>
-                <option value="title">Title</option>
-                <option value="views">Views</option>
-                <option value="status">Status</option>
-              </Select>
+                options={[
+                  { value: 'updated_at', label: 'Last Updated' },
+                  { value: 'created_at', label: 'Created Date' },
+                  { value: 'title', label: 'Title' },
+                  { value: 'views', label: 'Views' },
+                  { value: 'status', label: 'Status' },
+                ]}
+              />
             </div>
           </div>
         </CardBody>

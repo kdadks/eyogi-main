@@ -9,6 +9,7 @@ interface AdminLayoutProps {
   title?: string
   breadcrumbs?: Array<{ label: string; href?: string }>
   onSearch?: (query: string) => void
+  actions?: React.ReactNode
 }
 
 export function AdminLayout({
@@ -16,6 +17,7 @@ export function AdminLayout({
   title,
   breadcrumbs,
   onSearch,
+  actions,
 }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false)
@@ -45,7 +47,7 @@ export function AdminLayout({
         )}
       >
         {/* Header */}
-        <AdminHeader title={title} breadcrumbs={breadcrumbs} onSearch={onSearch} />
+        <AdminHeader title={title} breadcrumbs={breadcrumbs} onSearch={onSearch} actions={actions} />
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto bg-neutral-100">

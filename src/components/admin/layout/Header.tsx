@@ -7,9 +7,10 @@ interface HeaderProps {
   title?: string
   breadcrumbs?: Array<{ label: string; href?: string }>
   onSearch?: (query: string) => void
+  actions?: React.ReactNode
 }
 
-export function AdminHeader({ title, breadcrumbs, onSearch }: HeaderProps) {
+export function AdminHeader({ title, breadcrumbs, onSearch, actions }: HeaderProps) {
   const [searchQuery, setSearchQuery] = React.useState('')
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,11 +22,14 @@ export function AdminHeader({ title, breadcrumbs, onSearch }: HeaderProps) {
   return (
     <header className="bg-white border-b border-neutral-200 shadow-sm sticky top-0 z-30">
       <div className="flex items-center justify-between px-6 py-4 gap-4">
-        {/* Left side - Title and breadcrumbs */}
+        {/* Left side - Title, breadcrumbs, and page actions */}
         <div className="flex-1 min-w-0">
-          {title && (
-            <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
-          )}
+          <div className="flex items-center gap-4">
+            {title && (
+              <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
+            )}
+            {actions && <div className="flex items-center gap-2">{actions}</div>}
+          </div>
           {breadcrumbs && breadcrumbs.length > 0 && (
             <nav className="flex items-center space-x-2 text-sm text-neutral-600 mt-1">
               {breadcrumbs.map((crumb, index) => (

@@ -21,6 +21,7 @@ export const adminMenuItems: AdminMenuItem[] = [
     href: '#',
     icon: '📝',
     children: [
+      { label: 'CMS', href: '/admin/cms', icon: '🎨', badge: 'NEW' },
       { label: 'Pages', href: '/admin/pages', icon: '📄' },
       { label: 'Posts', href: '/admin/posts', icon: '📰' },
       { label: 'Categories', href: '/admin/categories', icon: '🏷️' },
@@ -46,9 +47,11 @@ interface AdminLayoutProps {
   children: React.ReactNode
   title?: string
   breadcrumbs?: Array<{ label: string; href?: string }>
+  actions?: React.ReactNode
+  onSearch?: (value: string) => void
 }
 
-export function AdminLayout({ children, title, breadcrumbs }: AdminLayoutProps) {
+export function AdminLayout({ children, title, breadcrumbs, actions }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const { pathname } = useLocation()
 
@@ -97,7 +100,10 @@ export function AdminLayout({ children, title, breadcrumbs }: AdminLayoutProps) 
                   ))}
                 </nav>
               )}
-              {title && <h1 className="text-2xl font-bold text-gray-900">{title}</h1>}
+              <div className="flex items-center gap-4">
+                {title && <h1 className="text-2xl font-bold text-gray-900">{title}</h1>}
+                {actions && <div className="flex items-center gap-2">{actions}</div>}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <button className="text-gray-600 hover:text-gray-900">🔔</button>

@@ -1,5 +1,5 @@
 
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { cn } from '@/utilities/cn'
 import {
   ChevronUp,
@@ -69,6 +69,14 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const allSelected = data.length > 0 && selectedRows.size === data.length
   const someSelected = selectedRows.size > 0 && !allSelected
+  const checkboxRef = useRef<HTMLInputElement>(null)
+
+  // Handle indeterminate state properly
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = someSelected
+    }
+  }, [someSelected])
 
   const currentPage = pagination ? Math.floor(pagination.offset / pagination.limit) + 1 : 1
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 1
@@ -120,9 +128,9 @@ export function DataTable<T extends Record<string, any>>({
               {selectable && (
                 <th className="px-6 py-3 text-left">
                   <input
+                    ref={checkboxRef}
                     type="checkbox"
                     checked={allSelected}
-                    indeterminate={someSelected}
                     onChange={handleSelectAll}
                     className="w-4 h-4 cursor-pointer"
                   />
