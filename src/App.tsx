@@ -28,6 +28,12 @@ const AdminDonations = lazy(() => import('./pages/admin/AdminDonations'))
 const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 
+// CMS Admin pages
+const AdminCMS = lazy(() => import('./pages/admin/AdminCMS'))
+const CMSEditor = lazy(() => import('./pages/admin/CMSEditor'))
+const PostEditor = lazy(() => import('./pages/admin/PostEditor'))
+const AdminMedia = lazy(() => import('./pages/admin/AdminMedia'))
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -92,6 +98,14 @@ const router = createBrowserRouter([
   { path: '/admin/memberships', element: withSuspense(AdminMemberships) },
   { path: '/admin/categories', element: withSuspense(AdminCategories) },
   { path: '/admin/settings', element: withSuspense(AdminSettings) },
+  { path: '/admin/posts/new', element: withSuspense(PostEditor) },
+  { path: '/admin/posts/:id/edit', element: withSuspense(PostEditor) },
+  { path: '/admin/media', element: withSuspense(AdminMedia) },
+
+  // CMS Admin routes
+  { path: '/admin/cms', element: withSuspense(AdminCMS) },
+  { path: '/admin/cms/editor/:id', element: withSuspense(CMSEditor) },
+  { path: '/admin/cms/editor', element: withSuspense(CMSEditor) },
   { 
     path: '*', 
     element: (

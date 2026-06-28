@@ -1,5 +1,5 @@
-import { Input } from '@/components/admin/common/Input'
-import { Textarea } from '@/components/admin/common/Textarea'
+import { Input } from '@/components/admin/forms/Input'
+import { Textarea } from '@/components/admin/forms/Textarea'
 import { MediaPicker } from './MediaPicker'
 import { Search, Globe, Image as ImageIcon, Link as LinkIcon } from 'lucide-react'
 

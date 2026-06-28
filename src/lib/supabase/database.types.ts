@@ -104,36 +104,45 @@ export type Database = {
         Row: {
           id: string
           filename: string
+          original_name: string
           mime_type: string | null
           size_bytes: number | null
           storage_path: string
+          public_url: string
           alt_text: string | null
           width: number | null
           height: number | null
+          folder_id: string | null
           uploaded_by: string | null
           created_at: string
         }
         Insert: {
           id?: string
           filename: string
+          original_name: string
           mime_type?: string | null
           size_bytes?: number | null
           storage_path: string
+          public_url: string
           alt_text?: string | null
           width?: number | null
           height?: number | null
+          folder_id?: string | null
           uploaded_by?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           filename?: string
+          original_name?: string
           mime_type?: string | null
           size_bytes?: number | null
           storage_path?: string
+          public_url?: string
           alt_text?: string | null
           width?: number | null
           height?: number | null
+          folder_id?: string | null
           uploaded_by?: string | null
           created_at?: string
         }
@@ -183,6 +192,29 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      media_folders: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          parent_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          parent_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          parent_id?: string | null
+          created_at?: string
         }
       }
     }

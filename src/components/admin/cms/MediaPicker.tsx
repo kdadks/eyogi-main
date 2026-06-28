@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Upload, X, Search, Grid, List, Image as ImageIcon, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/admin/common/Button'
-import { Input } from '@/components/admin/common/Input'
+import { Input } from '@/components/admin/forms/Input'
 import { Modal } from '@/components/admin/common/Modal'
 import { cmsAPI } from '@/lib/cms-api'
 import type { CMSMedia } from '@/lib/cms-types'

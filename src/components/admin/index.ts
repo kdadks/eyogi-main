@@ -51,3 +51,14 @@ export type { TextareaProps } from './forms/Textarea'
 export type { CheckboxProps } from './forms/Checkbox'
 export type { RadioProps } from './forms/Radio'
 export type { DatePickerProps } from './forms/DatePicker'
+
+// Block editor
+export { BlockEditor } from './blocks/BlockEditor'
+
+// Media
+export { MediaLibrary } from './media/MediaLibrary'
+export { MediaPicker } from './media/MediaPicker'
+export { MediaUploader } from './media/MediaUploader'
+
+// Rich Text Editor
+export { RichTextEditor } from './RichTextEditor'
