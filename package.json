@@ -18,8 +18,10 @@
   "dependencies": {
     "@azure/identity": "^4.13.0",
     "@hookform/resolvers": "^3.10.0",
+    "@lexical/list": "^0.46.0",
     "@lexical/react": "^0.45.0",
     "@lexical/rich-text": "^0.45.0",
+    "@lexical/selection": "^0.46.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-checkbox": "^1.0.4",
