@@ -1,6 +1,5 @@
 // src/components/admin/blocks/ColumnsBlock.tsx
 import type { ColumnsBlock, Block } from '@/types/blocks'
-// @ts-ignore — BlockEditor is created in Task 6; this import will resolve then
 import { BlockEditor } from '@/components/admin/blocks/BlockEditor'
 
 interface Props {
