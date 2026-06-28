@@ -39,23 +39,26 @@ export default function PostEditor() {
     const supabase = createClient()
     supabase
       .from('posts')
-      .select('*')
+      .select('*, media!featured_image_id(id, public_url)')
       .eq('id', id)
       .single()
       .then(({ data, error }) => {
         if (error || !data) { setError('Post not found'); return }
-        setTitle(data.title)
-        setSlug(data.slug)
-        setExcerpt(data.excerpt ?? '')
-        setStatus((data as any).status ?? 'draft')
+        // Cast to any: Supabase type inference breaks with foreign-table joins
+        const row = data as any
+        setTitle(row.title)
+        setSlug(row.slug)
+        setExcerpt(row.excerpt ?? '')
+        setStatus(row.status ?? 'draft')
         try {
-          const parsed = data.content ? JSON.parse(data.content) : []
+          const parsed = row.content ? JSON.parse(row.content) : []
           setBlocks(Array.isArray(parsed) ? parsed : [])
         } catch {
           setBlocks([])
         }
-        if ((data as any).featured_image_id) {
-          setFeaturedImage({ id: (data as any).featured_image_id, publicUrl: (data as any).featured_image_url ?? '' })
+        const mediaJoin = row.media
+        if (row.featured_image_id && mediaJoin?.public_url) {
+          setFeaturedImage({ id: row.featured_image_id, publicUrl: mediaJoin.public_url })
         }
         setLoading(false)
       })

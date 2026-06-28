@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import type React from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { browserClient } from '@/lib/supabase/browser'
 import { ArrowLeft, Calendar, User, Clock } from 'lucide-react'
 import { Media } from '@/components/Media'
+import type { Block } from '@/types/blocks'
 
 interface Post {
   id: string
@@ -19,6 +21,71 @@ interface Post {
   views?: number
   featured_image_url?: string
   cover_image?: any
+}
+
+function renderBlock(block: Block, index: number): React.ReactNode {
+  switch (block.type) {
+    case 'heading': {
+      const Tag = `h${block.level}` as 'h1' | 'h2' | 'h3'
+      const sizes: Record<1 | 2 | 3, string> = { 1: 'text-4xl', 2: 'text-3xl', 3: 'text-2xl' }
+      return <Tag key={block.id ?? index} className={`${sizes[block.level]} font-bold my-4`}>{block.text}</Tag>
+    }
+    case 'text':
+      try {
+        const parsed = JSON.parse(block.lexicalState)
+        const text = parsed?.root?.children?.map((p: any) =>
+          p?.children?.map((n: any) => n?.text ?? '').join('')
+        ).join('\n') ?? ''
+        return <div key={block.id ?? index} className="prose prose-stone max-w-none my-4"><p>{text}</p></div>
+      } catch {
+        return null
+      }
+    case 'image':
+      return block.publicUrl ? (
+        <figure key={block.id ?? index} className="my-6">
+          <img src={block.publicUrl} alt={block.alt} className="rounded-lg max-w-full" />
+          {block.caption && <figcaption className="text-sm text-stone-500 mt-2 text-center">{block.caption}</figcaption>}
+        </figure>
+      ) : null
+    case 'video': {
+      const ytId = block.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)?.[1]
+      return ytId ? (
+        <div key={block.id ?? index} className="my-6 aspect-video">
+          <iframe src={`https://www.youtube.com/embed/${ytId}`} className="w-full h-full rounded-lg" allowFullScreen />
+          {block.caption && <p className="text-sm text-stone-500 mt-2 text-center">{block.caption}</p>}
+        </div>
+      ) : null
+    }
+    case 'quote':
+      return (
+        <blockquote key={block.id ?? index} className="border-l-4 border-amber-500 pl-6 my-6 italic text-stone-600">
+          <p>{block.text}</p>
+          {block.attribution && <cite className="text-sm not-italic mt-2 block">— {block.attribution}</cite>}
+        </blockquote>
+      )
+    case 'callout': {
+      const styles: Record<'info' | 'warning' | 'tip', string> = {
+        info: 'bg-blue-50 border-blue-200 text-blue-800',
+        warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+        tip: 'bg-green-50 border-green-200 text-green-800',
+      }
+      return <div key={block.id ?? index} className={`border rounded-lg p-4 my-4 ${styles[block.variant]}`}>{block.text}</div>
+    }
+    case 'divider':
+      return <hr key={block.id ?? index} className="my-8 border-stone-200" />
+    case 'html':
+      // Sanitize: strip script tags before rendering
+      return <div key={block.id ?? index} dangerouslySetInnerHTML={{ __html: block.code.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') }} />
+    case 'columns':
+      return (
+        <div key={block.id ?? index} className="grid grid-cols-2 gap-8 my-6">
+          <div>{block.left.map((b, i) => renderBlock(b, i))}</div>
+          <div>{block.right.map((b, i) => renderBlock(b, i))}</div>
+        </div>
+      )
+    default:
+      return null
+  }
 }
 
 export default function PostDetailPage() {
@@ -165,24 +232,15 @@ export default function PostDetailPage() {
 
       {/* Content Section */}
       <article className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-        <div
-          className="prose prose-lg prose-orange max-w-none
-            prose-headings:text-gray-900 prose-headings:font-bold
-            prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl
-            prose-p:text-gray-700 prose-p:leading-relaxed
-            prose-a:text-orange-600 prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-gray-900 prose-strong:font-semibold
-            prose-blockquote:border-l-4 prose-blockquote:border-orange-500
-            prose-blockquote:bg-orange-50 prose-blockquote:p-4
-            prose-blockquote:italic prose-blockquote:text-gray-700
-            prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1
-            prose-code:rounded prose-code:text-sm prose-code:text-gray-800
-            prose-pre:bg-gray-900 prose-pre:text-gray-100
-            prose-img:rounded-lg prose-img:shadow-lg
-            prose-ul:list-disc prose-ol:list-decimal
-            prose-li:text-gray-700"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+        {(() => {
+          try {
+            const blocks: Block[] = JSON.parse(post.content ?? '[]')
+            return Array.isArray(blocks) ? blocks.map((b, i) => renderBlock(b, i)) : null
+          } catch {
+            // Legacy plain-text content fallback
+            return <div className="prose prose-stone max-w-none">{post.content}</div>
+          }
+        })()}
       </article>
 
       {/* Footer CTA */}

@@ -97,22 +97,6 @@ function InitPlugin({ value }: { value?: string }) {
   return null
 }
 
-const editorConfig = {
-  namespace: 'RichTextEditor',
-  nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode],
-  theme: {
-    heading: { h2: 'text-2xl font-bold mb-2', h3: 'text-xl font-semibold mb-2' },
-    text: { bold: 'font-bold', italic: 'italic', underline: 'underline' },
-    list: {
-      ul: 'list-disc list-inside mb-2',
-      ol: 'list-decimal list-inside mb-2',
-      listitem: 'ml-4',
-    },
-    paragraph: 'mb-2',
-  },
-  onError: (error: Error) => console.error('Lexical error:', error),
-}
-
 interface RichTextEditorProps {
   value?: string
   onChange?: (content: string) => void
@@ -120,6 +104,22 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const editorConfig = {
+    namespace: 'RichTextEditor',
+    nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode],
+    theme: {
+      heading: { h2: 'text-2xl font-bold mb-2', h3: 'text-xl font-semibold mb-2' },
+      text: { bold: 'font-bold', italic: 'italic', underline: 'underline' },
+      list: {
+        ul: 'list-disc list-inside mb-2',
+        ol: 'list-decimal list-inside mb-2',
+        listitem: 'ml-4',
+      },
+      paragraph: 'mb-2',
+    },
+    onError: (error: Error) => console.error('Lexical error:', error),
+  }
+
   const handleChange = useCallback(
     (editorState: EditorState) => {
       onChange?.(JSON.stringify(editorState.toJSON()))

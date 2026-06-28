@@ -49,6 +49,8 @@ export type Database = {
           slug: string
           excerpt: string | null
           content: string | null
+          status: 'draft' | 'published' | 'archived'
+          featured_image_id: string | null
           published_at: string | null
           created_by: string | null
           created_at: string
@@ -60,6 +62,8 @@ export type Database = {
           slug: string
           excerpt?: string | null
           content?: string | null
+          status?: 'draft' | 'published' | 'archived'
+          featured_image_id?: string | null
           published_at?: string | null
           created_by?: string | null
           created_at?: string
@@ -71,6 +75,8 @@ export type Database = {
           slug?: string
           excerpt?: string | null
           content?: string | null
+          status?: 'draft' | 'published' | 'archived'
+          featured_image_id?: string | null
           published_at?: string | null
           created_by?: string | null
           created_at?: string

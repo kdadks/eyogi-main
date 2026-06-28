@@ -11,6 +11,7 @@ import {
   X,
   ChevronDown,
   LogOut,
+  Image,
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -34,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Categories', href: '/admin/categories', icon: null },
     ],
   },
+  { label: 'Media', href: '/admin/media', icon: <Image className="w-5 h-5" /> },
   { label: 'Memberships', href: '/admin/memberships', icon: <Users className="w-5 h-5" />, badge: 'NEW' },
   { label: 'Donations', href: '/admin/donations', icon: <BarChart3 className="w-5 h-5" /> },
   { label: 'Settings', href: '/admin/settings', icon: <Settings className="w-5 h-5" />, admin: true },
