@@ -1,7 +1,6 @@
 import { lazy, Suspense, Component, ReactNode } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import SiteLayout from './components/SiteLayout'
-import { AdminLayout } from './components/admin/AdminLayout'
 import { DonationModalProvider } from './contexts/DonationModalContext'
 import { MembershipModalProvider } from './contexts/MembershipModalContext'
 import { SiteSettingsProvider } from './contexts/SiteSettingsContext'
@@ -11,6 +10,7 @@ import DonationModal from './components/DonationModal/DonationModal'
 // Website pages
 const HomePage = lazy(() => import('./pages/HomePage'))
 const HinduismPage = lazy(() => import('./pages/HinduismPage'))
+const PostDetailPage = lazy(() => import('./pages/PostDetailPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const FAQPage = lazy(() => import('./pages/FAQPage'))
 const MembershipPage = lazy(() => import('./pages/MembershipPage'))
@@ -36,17 +36,7 @@ function PageLoader() {
   )
 }
 
-function withSuspense(Component: React.ComponentType, layoutType: 'default' | 'admin' = 'default', props?: any) {
-  if (layoutType === 'admin') {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <AdminLayout {...props}>
-          <Component />
-        </AdminLayout>
-      </Suspense>
-    )
-  }
-  
+function withSuspense(Component: React.ComponentType) {
   return (
     <Suspense fallback={<PageLoader />}>
       <Component />
@@ -83,6 +73,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: withSuspense(HomePage) },
       { path: '/hinduism', element: withSuspense(HinduismPage) },
+      { path: '/hinduism/:slug', element: withSuspense(PostDetailPage) },
       { path: '/about', element: withSuspense(AboutPage) },
       { path: '/faq', element: withSuspense(FAQPage) },
       { path: '/membership', element: withSuspense(MembershipPage) },
@@ -94,34 +85,13 @@ const router = createBrowserRouter([
   { path: '/auth/login', element: withSuspense(LoginPage) },
   
   // Admin routes - NOT children of SiteLayout
-  { 
-    path: '/admin', 
-    element: withSuspense(AdminDashboard, 'admin', { title: 'Dashboard', breadcrumbs: [{ label: 'Dashboard' }] }) 
-  },
-  { 
-    path: '/admin/posts', 
-    element: withSuspense(AdminPosts, 'admin', { title: 'Posts', breadcrumbs: [{ label: 'Dashboard', href: '/admin' }, { label: 'Posts' }] }) 
-  },
-  { 
-    path: '/admin/pages', 
-    element: withSuspense(AdminPages, 'admin', { title: 'Pages', breadcrumbs: [{ label: 'Dashboard', href: '/admin' }, { label: 'Pages' }] }) 
-  },
-  { 
-    path: '/admin/donations', 
-    element: withSuspense(AdminDonations, 'admin', { title: 'Donations', breadcrumbs: [{ label: 'Dashboard', href: '/admin' }, { label: 'Donations' }] }) 
-  },
-  { 
-    path: '/admin/memberships', 
-    element: withSuspense(AdminMemberships, 'admin', { title: 'Memberships', breadcrumbs: [{ label: 'Dashboard', href: '/admin' }, { label: 'Memberships' }] }) 
-  },
-  { 
-    path: '/admin/categories', 
-    element: withSuspense(AdminCategories, 'admin', { title: 'Categories', breadcrumbs: [{ label: 'Dashboard', href: '/admin' }, { label: 'Categories' }] }) 
-  },
-  { 
-    path: '/admin/settings', 
-    element: withSuspense(AdminSettings, 'admin', { title: 'Settings', breadcrumbs: [{ label: 'Dashboard', href: '/admin' }, { label: 'Settings' }] }) 
-  },
+  { path: '/admin', element: withSuspense(AdminDashboard) },
+  { path: '/admin/posts', element: withSuspense(AdminPosts) },
+  { path: '/admin/pages', element: withSuspense(AdminPages) },
+  { path: '/admin/donations', element: withSuspense(AdminDonations) },
+  { path: '/admin/memberships', element: withSuspense(AdminMemberships) },
+  { path: '/admin/categories', element: withSuspense(AdminCategories) },
+  { path: '/admin/settings', element: withSuspense(AdminSettings) },
   { 
     path: '*', 
     element: (

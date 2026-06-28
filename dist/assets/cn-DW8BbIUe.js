@@ -1,1 +1,0 @@
-import{nt as e,tt as t}from"./vendor-ui-BhtJQuv_.js";function n(...n){return t(e(n))}export{n as t};
