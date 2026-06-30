@@ -151,6 +151,7 @@ export const handler = async (event) => {
     tokenExpiry.setHours(tokenExpiry.getHours() + 24)
 
     const { data: member, error: memberError } = await supabase
+      .schema('gurukul_main')
       .from('members')
       .insert({
         first_name: firstName.trim(),
@@ -179,16 +180,19 @@ export const handler = async (event) => {
     }
 
     if (checkoutId && amount) {
-      await supabase.from('member_payments').insert({
-        member_id: member.id,
-        amount,
-        currency: 'EUR',
-        payment_type: membershipType === 'annual' ? 'annual_membership' : 'monthly_membership',
-        status: 'completed',
-        payment_date: new Date().toISOString(),
-        payment_method: 'sumup',
-        transaction_id: checkoutId,
-      })
+      await supabase
+        .schema('gurukul_main')
+        .from('member_payments')
+        .insert({
+          member_id: member.id,
+          amount,
+          currency: 'EUR',
+          payment_type: membershipType === 'annual' ? 'annual_membership' : 'monthly_membership',
+          status: 'completed',
+          payment_date: new Date().toISOString(),
+          payment_method: 'sumup',
+          transaction_id: checkoutId,
+        })
     }
 
     return json(200, {
