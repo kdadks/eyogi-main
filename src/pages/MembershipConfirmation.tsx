@@ -18,6 +18,7 @@ export default function MembershipConfirmation() {
   const [isRetrying, setIsRetrying] = useState(false)
   const [checkoutStatus, setCheckoutStatus] = useState<string>('')
   const [checkoutUrl, setCheckoutUrl] = useState<string>('')
+  const [testModeForced, setTestModeForced] = useState(false)
   const hasCalledRef = useRef(false)
   const timeoutRef = useRef<NodeJS.Timeout>()
 
@@ -125,7 +126,7 @@ export default function MembershipConfirmation() {
             registrationData,
             amount,
             membershipType,
-            isDevMode, // Include dev mode flag
+            isDevMode: isDevMode || testModeForced, // Include dev mode flag, or if forced
           }),
           signal: abortController.signal,
         })
@@ -277,6 +278,18 @@ export default function MembershipConfirmation() {
                     className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
                   >
                     Back to Payment
+                  </button>
+                )}
+                {checkoutStatus === 'PENDING' && (
+                  <button
+                    onClick={() => {
+                      setTestModeForced(true)
+                      setTimeout(() => completeRegistration(), 100)
+                    }}
+                    disabled={isRetrying}
+                    className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors font-medium text-sm"
+                  >
+                    🧪 Test Payment (Skip Verification)
                   </button>
                 )}
                 <button
