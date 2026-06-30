@@ -40,16 +40,17 @@ export default function PaymentModal({
     pollIntervalRef.current = setInterval(() => {
       try {
         if (windowRef.current && windowRef.current.closed) {
-          console.log('✅ Payment window closed - payment likely completed')
+          console.log('✅ Payment window closed - checking payment status')
           clearInterval(pollIntervalRef.current!)
           setPaymentWindowOpen(false)
           setPaymentCompleted(true)
-          toast.success('Payment completed! Confirming registration...')
-
-          // Auto-redirect after short delay
+          
+          // Don't show success toast yet - backend will verify payment
+          // Redirect after short delay to let user see confirmation
           setTimeout(() => {
+            console.log('📍 Redirecting to confirmation to verify payment')
             onPaymentComplete()
-          }, 2000)
+          }, 1500)
         }
       } catch (err) {
         console.error('Error polling payment window:', err)
@@ -148,11 +149,11 @@ export default function PaymentModal({
                   onClick={handleContinueManually}
                   className="w-full bg-stone-200 hover:bg-stone-300 text-stone-900 font-semibold py-3 rounded-lg transition-colors"
                 >
-                  Already Completed? Continue
+                  Payment Window Closed?
                 </button>
 
                 <p className="text-xs text-center text-stone-500">
-                  If the payment window closes, this page will automatically continue.
+                  If you've closed the payment window, click above. Otherwise, this page will update automatically.
                 </p>
               </>
             )}
@@ -163,15 +164,15 @@ export default function PaymentModal({
               <CheckCircle size={64} className="text-green-600" />
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-green-600 mb-2">Payment Completed!</p>
-              <p className="text-stone-600 mb-4">Confirming your membership registration...</p>
+              <p className="text-lg font-semibold text-green-600 mb-2">Verifying Payment...</p>
+              <p className="text-stone-600 mb-4">Please wait while we verify your payment with SumUp</p>
             </div>
             <button
               disabled
               className="w-full bg-green-600 text-white font-semibold py-3 rounded-lg opacity-75 cursor-not-allowed"
             >
               <Loader2 className="inline animate-spin mr-2" size={20} />
-              Confirming...
+              Verifying...
             </button>
           </>
         )}

@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { Zap, AlertCircle, Loader2, CheckCircle } from 'lucide-react'
 import { calculateSavings, formatCurrency, SUBSCRIPTION_PRICES } from '@/lib/memberships/membershipUtils'
-import PaymentModal from './PaymentModal'
 
 interface FormData {
   firstName: string
@@ -40,13 +39,6 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [agreeToTerms, setAgreeToTerms] = useState(false)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [paymentData, setPaymentData] = useState<{
-    checkoutUrl: string
-    registrationId: string
-    amount: number
-    currency: string
-  } | null>(null)
 
   const savings = calculateSavings()
   const annualSavingsPercent = savings.savingsPercent
@@ -150,14 +142,10 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
         })
       )
 
-      // Show payment modal instead of popup/redirect
-      setPaymentData({
-        checkoutUrl: data.checkout_url,
-        registrationId: data.registration_id,
-        amount: data.amount,
-        currency: data.currency,
-      })
-      setShowPaymentModal(true)
+      // Redirect to SumUp checkout URL (same window)
+      console.log('🔗 Redirecting to SumUp checkout:', data.checkout_url)
+      toast.success('Redirecting to secure payment...')
+      window.location.href = data.checkout_url
       setLoading(false)
     } catch (err) {
       console.error('Checkout error:', err)
@@ -389,32 +377,6 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
       <p className="text-xs text-stone-500 text-center">
         Your payment will be processed securely by SumUp. No payment information is stored on our servers.
       </p>
-
-      {/* Payment Modal */}
-      {paymentData && (
-        <PaymentModal
-          isOpen={showPaymentModal}
-          checkoutUrl={paymentData.checkoutUrl}
-          registrationId={paymentData.registrationId}
-          amount={paymentData.amount}
-          currency={paymentData.currency}
-          onClose={() => {
-            setShowPaymentModal(false)
-            setPaymentData(null)
-          }}
-          onPaymentComplete={() => {
-            // Redirect to confirmation with registration_id from sessionStorage
-            const checkoutData = sessionStorage.getItem('membershipCheckout')
-            if (checkoutData) {
-              const { registrationId } = JSON.parse(checkoutData)
-              console.log('📍 Payment modal redirecting to confirmation with registration_id:', registrationId)
-              window.location.href = `/membership/confirmation?registration_id=${registrationId}`
-            } else {
-              window.location.href = '/membership/confirmation'
-            }
-          }}
-        />
-      )}
     </form>
   )
 }

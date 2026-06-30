@@ -16,6 +16,8 @@ export default function MembershipConfirmation() {
   const [message, setMessage] = useState('Processing your registration...')
   const [memberData, setMemberData] = useState<any>(null)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [checkoutStatus, setCheckoutStatus] = useState<string>('')
+  const [checkoutUrl, setCheckoutUrl] = useState<string>('')
   const hasCalledRef = useRef(false)
   const timeoutRef = useRef<NodeJS.Timeout>()
 
@@ -82,6 +84,11 @@ export default function MembershipConfirmation() {
       }
 
       const checkout = JSON.parse(checkoutData)
+      
+      // Store checkout URL in case we need to redirect back to payment
+      if (checkout.checkout_url) {
+        setCheckoutUrl(checkout.checkout_url)
+      }
       
       // Prefer the checkout ID captured before redirect; URL params can contain references.
       const checkoutIdFromStorage = checkout.checkout_id || checkout.checkoutId
@@ -150,6 +157,7 @@ export default function MembershipConfirmation() {
               : data.error || 'Failed to complete registration'
 
           setStatus('error')
+          setCheckoutStatus(data.checkoutStatus || '')
           setMessage(detailedMessage)
           toast.error(detailedMessage)
           console.error('Registration error:', data)
@@ -263,6 +271,14 @@ export default function MembershipConfirmation() {
                 >
                   {isRetrying ? 'Processing...' : 'Complete Registration'}
                 </button>
+                {checkoutStatus === 'PENDING' && checkoutUrl && (
+                  <button
+                    onClick={() => (window.location.href = checkoutUrl)}
+                    className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                  >
+                    Back to Payment
+                  </button>
+                )}
                 <button
                   onClick={() => navigate('/membership')}
                   className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
