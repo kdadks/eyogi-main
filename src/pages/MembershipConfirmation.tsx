@@ -99,7 +99,13 @@ export default function MembershipConfirmation() {
           signal: abortController.signal,
         })
 
-        const data = await response.json()
+        const rawBody = await response.text()
+        let data: any = {}
+        try {
+          data = rawBody ? JSON.parse(rawBody) : {}
+        } catch {
+          data = { error: rawBody || `HTTP ${response.status}` }
+        }
 
         if (!response.ok) {
           const statusDetails = [
@@ -121,7 +127,7 @@ export default function MembershipConfirmation() {
 
           setStatus('error')
           setMessage(detailedMessage)
-          toast.error('Registration failed')
+          toast.error(detailedMessage)
           console.error('Registration error:', data)
           return
         }
@@ -148,8 +154,10 @@ export default function MembershipConfirmation() {
     } catch (error) {
       console.error('Registration completion error:', error)
       setStatus('error')
-      setMessage('An error occurred while completing your registration')
-      toast.error('Registration failed')
+      const errorMessage =
+        error instanceof Error ? error.message : 'An error occurred while completing your registration'
+      setMessage(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
