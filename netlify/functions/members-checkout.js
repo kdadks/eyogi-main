@@ -263,7 +263,7 @@ export const handler = async (event) => {
       checkoutUrl: checkout.checkout_url,
     })
 
-    const checkoutUrl = checkout?.id ? `https://checkout.sumup.com/pay/c-${checkout.id}` : (checkout?.hosted_checkout_url || checkout?.hostedCheckoutUrl)
+    const checkoutUrl = checkout?.hosted_checkout_url
 
     if (!checkoutUrl) {
       return json(500, { error: 'SumUp checkout created but no checkout URL returned' })
