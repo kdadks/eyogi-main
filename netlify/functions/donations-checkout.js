@@ -48,6 +48,18 @@ async function createSumUpCheckout(apiKey, checkoutData) {
     locale: 'en-IE',
   }
 
+  // Validate return_url is not empty
+  if (!requestBody.return_url || !requestBody.return_url.startsWith('http')) {
+    throw new Error(`Invalid return_url: "${requestBody.return_url}"`)
+  }
+
+  console.log('📡 [SUMUP-API] Creating checkout request:', {
+    checkout_reference: requestBody.checkout_reference,
+    amount: requestBody.amount,
+    currency: requestBody.currency,
+    return_url: requestBody.return_url,
+  })
+
   const response = await fetch('https://api.sumup.com/v0.1/checkouts', {
     method: 'POST',
     headers: {
@@ -59,6 +71,11 @@ async function createSumUpCheckout(apiKey, checkoutData) {
 
   if (!response.ok) {
     const error = await response.text()
+    console.error('❌ [SUMUP-API] Error response:', {
+      status: response.status,
+      error,
+      requestBody: requestBody,
+    })
     throw new Error(`SumUp API error (${response.status}): ${error}`)
   }
 
@@ -161,6 +178,19 @@ export const handler = async (event) => {
 
     const baseUrl =
       process.env.VITE_APP_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || (host ? `https://${host}` : '')
+    
+    if (!baseUrl) {
+      console.error('❌ [DONATIONS-CHECKOUT] baseUrl is empty! host:', host, 'env vars:', {
+        VITE_APP_URL: process.env.VITE_APP_URL,
+        URL: process.env.URL,
+        DEPLOY_PRIME_URL: process.env.DEPLOY_PRIME_URL,
+      })
+      return json(500, {
+        error: 'Server configuration error: cannot determine application URL',
+        hint: 'Please ensure VITE_APP_URL or similar environment variables are set',
+      })
+    }
+
     const returnUrl = `${baseUrl}/donation/success?donation_id=${effectiveDonationId}`
 
     if (!apiKey || !merchantCode) {
