@@ -165,7 +165,7 @@ export const handler = async (event) => {
       const mockCheckoutId = `MOCK_${Date.now()}`
       const mockReturnUrl = `${baseUrl}/membership/confirmation?registration_id=${checkoutReference}&checkout_id=${mockCheckoutId}&dev_mode=true`
 
-      return json(200, {
+      const devCheckoutData = {
         registration_id: checkoutReference,
         registration_data: {
           firstName,
@@ -185,7 +185,25 @@ export const handler = async (event) => {
         membershipType,
         checkout_url: mockReturnUrl,
         dev_mode: true,
-      })
+      }
+
+      // Store in database even for dev mode
+      try {
+        await supabase
+          .schema('gurukul_main')
+          .from('checkout_sessions')
+          .upsert({
+            registration_id: checkoutReference,
+            checkout_type: 'membership',
+            checkout_data: devCheckoutData,
+            sumup_checkout_id: mockCheckoutId,
+            sumup_status: 'pending',
+          }, { onConflict: 'registration_id' })
+      } catch (dbError) {
+        console.warn('Could not store dev checkout in database:', dbError)
+      }
+
+      return json(200, devCheckoutData)
     }
 
     const returnUrl = `${baseUrl}/membership/confirmation?registration_id=${checkoutReference}`
@@ -208,7 +226,7 @@ export const handler = async (event) => {
       return json(500, { error: 'SumUp checkout created but no checkout URL returned' })
     }
 
-    return json(200, {
+    const checkoutResponseData = {
       registration_id: checkoutReference,
       registration_data: {
         firstName,
@@ -227,7 +245,26 @@ export const handler = async (event) => {
       currency: 'EUR',
       membershipType,
       checkout_url: checkoutUrl,
-    })
+    }
+
+    // Store checkout data in database for later retrieval
+    try {
+      await supabase
+        .schema('gurukul_main')
+        .from('checkout_sessions')
+        .upsert({
+          registration_id: checkoutReference,
+          checkout_type: 'membership',
+          checkout_data: checkoutResponseData,
+          sumup_checkout_id: checkout.id,
+          sumup_status: 'pending',
+        }, { onConflict: 'registration_id' })
+    } catch (dbError) {
+      console.warn('Could not store checkout in database:', dbError)
+      // Don't fail the request if DB storage fails - session storage will still work
+    }
+
+    return json(200, checkoutResponseData)
   } catch (error) {
     return json(500, {
       error: 'Failed to create checkout',

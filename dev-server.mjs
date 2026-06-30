@@ -288,8 +288,7 @@ app.post('/api/members/checkout', async (req, res) => {
       
       const devCheckoutId = `dev_${registrationId}`
       
-      console.log(`✅ [CHECKOUT] Returning dev mode checkout response`)
-      return res.status(200).json({
+      const devResponseData = {
         success: true,
         checkout_url: `${returnUrl}&checkout_id=${devCheckoutId}&dev_mode=true`,
         checkout_id: devCheckoutId,
@@ -299,7 +298,31 @@ app.post('/api/members/checkout', async (req, res) => {
         currency: 'EUR',
         membershipType,
         dev_mode: true,
-      })
+      }
+      
+      // Store in Supabase for dev mode too
+      const { error: dbError } = await supabase
+        .schema('gurukul_main')
+        .from('checkout_sessions')
+        .upsert({
+          registration_id: registrationId,
+          checkout_type: 'membership',
+          checkout_data: devResponseData,
+          sumup_checkout_id: devCheckoutId,
+          sumup_status: 'pending',
+        }, { onConflict: 'registration_id' })
+      
+      if (dbError) {
+        console.warn(`⚠️  [CHECKOUT] Could not store in checkout_sessions: ${dbError.message}`)
+      } else {
+        console.log(`✅ [CHECKOUT] Stored dev mode checkout in Supabase`)
+      }
+      
+      // Also cache in-memory
+      checkoutCache.set(registrationId, devResponseData)
+      
+      console.log(`✅ [CHECKOUT] Returning dev mode checkout response`)
+      return res.status(200).json(devResponseData)
     }
 
     // Production Mode: Create actual SumUp checkout
@@ -369,9 +392,8 @@ app.post('/api/members/checkout', async (req, res) => {
     // This allows us to verify payment when user returns from SumUp
     const finalReturnUrl = `${appBaseUrl}/membership/confirmation?registration_id=${registrationId}&checkout_id=${checkout.id}`
     
-    // Cache the checkout data for later retrieval (if user manually clicks back from SumUp)
-    const responseData = {
-      success: true,
+    // Store checkout data persistently in Supabase
+    const checkoutSessionData = {
       checkout_url: checkoutUrl,
       checkout_id: checkout.id,
       registration_id: registrationId,
@@ -381,8 +403,28 @@ app.post('/api/members/checkout', async (req, res) => {
       membershipType,
       dev_mode: false,
     }
-    checkoutCache.set(registrationId, responseData)
-    console.log(`✅ [CHECKOUT] Cached checkout data for registration_id: ${registrationId}`)
+    
+    const { error: dbError } = await supabase
+      .schema('gurukul_main')
+      .from('checkout_sessions')
+      .upsert({
+        registration_id: registrationId,
+        checkout_type: 'membership',
+        checkout_data: checkoutSessionData,
+        sumup_checkout_id: checkout.id,
+        sumup_status: 'pending',
+      }, { onConflict: 'registration_id' })
+    
+    if (dbError) {
+      console.warn(`⚠️  [CHECKOUT] Could not store in checkout_sessions table: ${dbError.message}`)
+      console.warn('⚠️  [CHECKOUT] Falling back to in-memory cache')
+      checkoutCache.set(registrationId, checkoutSessionData)
+    } else {
+      console.log(`✅ [CHECKOUT] Stored checkout data in Supabase for registration_id: ${registrationId}`)
+    }
+    
+    // Also keep in-memory cache as backup
+    checkoutCache.set(registrationId, checkoutSessionData)
     
     // Auto-clear cache entry after 2 hours
     setTimeout(() => {
@@ -390,7 +432,7 @@ app.post('/api/members/checkout', async (req, res) => {
       console.log(`🧹 [CHECKOUT] Cleaned up cache for registration_id: ${registrationId}`)
     }, 2 * 60 * 60 * 1000)
     
-    return res.status(200).json(responseData)
+    return res.status(200).json(checkoutSessionData)
   } catch (error) {
     console.error('\n❌ [CHECKOUT] Membership checkout error:')
     console.error('❌ [CHECKOUT] Error type:', error?.constructor?.name || 'Unknown')
@@ -792,10 +834,31 @@ app.post('/api/members/register-with-payment', async (req, res) => {
 
 // GET /api/members/checkout-status/:registrationId
 // Retrieves cached checkout data (used when sessionStorage is empty after manual redirect from SumUp)
-app.get('/api/members/checkout-status/:registrationId', (req, res) => {
+app.get('/api/members/checkout-status/:registrationId', async (req, res) => {
   const { registrationId } = req.params
   console.log(`\n📨 GET /api/members/checkout-status/${registrationId}`)
   
+  // Try to retrieve from Supabase first (persistent storage)
+  try {
+    const { data, error } = await supabase
+      .schema('gurukul_main')
+      .from('checkout_sessions')
+      .select('checkout_data')
+      .eq('registration_id', registrationId)
+      .single()
+    
+    if (!error && data) {
+      console.log(`✅ [CHECKOUT-STATUS] Retrieved from Supabase for registration_id: ${registrationId}`)
+      return res.status(200).json({
+        success: true,
+        checkout: data.checkout_data,
+      })
+    }
+  } catch (err) {
+    console.warn(`⚠️  [CHECKOUT-STATUS] Could not query Supabase: ${err}`)
+  }
+  
+  // Fall back to in-memory cache
   const cachedData = checkoutCache.get(registrationId)
   if (!cachedData) {
     console.log(`❌ [CHECKOUT-STATUS] No cached data for registration_id: ${registrationId}`)
@@ -805,7 +868,7 @@ app.get('/api/members/checkout-status/:registrationId', (req, res) => {
     })
   }
   
-  console.log(`✅ [CHECKOUT-STATUS] Retrieved cached checkout data for registration_id: ${registrationId}`)
+  console.log(`✅ [CHECKOUT-STATUS] Retrieved from in-memory cache for registration_id: ${registrationId}`)
   return res.status(200).json({
     success: true,
     checkout: cachedData,
