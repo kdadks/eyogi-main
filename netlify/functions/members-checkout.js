@@ -39,12 +39,7 @@ async function createSumUpCheckout(apiKey, checkoutData) {
     description: checkoutData.description,
     merchant_code: checkoutData.merchant_code,
     return_url: checkoutData.return_url,
-    redirect_url: checkoutData.redirect_url || checkoutData.return_url,
-    success_url: checkoutData.success_url || checkoutData.return_url,
-    cancel_url: checkoutData.cancel_url || checkoutData.return_url,
     customer_email: checkoutData.email,
-    hosted_checkout: checkoutData.hosted_checkout || { enabled: true },
-    locale: 'en-IE',
   }
 
   // Validate return_url is not empty
