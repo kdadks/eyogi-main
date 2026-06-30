@@ -17,6 +17,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'))
 const FAQPage = lazy(() => import('./pages/FAQPage'))
 const MembershipPage = lazy(() => import('./pages/MembershipPage'))
 const MembershipConfirmation = lazy(() => import('./pages/MembershipConfirmation'))
+const PaymentReturn = lazy(() => import('./pages/PaymentReturn'))
 const DonationPage = lazy(() => import('./pages/DonationPage'))
 const DonationSuccessPage = lazy(() => import('./pages/DonationSuccessPage'))
 const FormsPage = lazy(() => import('./pages/FormsPage'))
@@ -106,6 +107,7 @@ const router = createBrowserRouter([
       { path: '/faq', element: withSuspense(FAQPage) },
       { path: '/membership', element: withSuspense(MembershipPage) },
       { path: '/membership/confirmation', element: withSuspense(MembershipConfirmation) },
+      { path: '/payment-return', element: withSuspense(PaymentReturn) },
       { path: '/donation', element: withSuspense(DonationPage) },
       { path: '/donation/success', element: withSuspense(DonationSuccessPage) },
       { path: '/forms', element: withSuspense(FormsPage) },
