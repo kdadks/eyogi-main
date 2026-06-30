@@ -31,11 +31,6 @@
   status = 200
 
 [[redirects]]
-  from = "/api/members/:memberId"
-  to = "/.netlify/functions/members-member?memberId=:memberId"
-  status = 200
-
-[[redirects]]
   from = "/api/members/register"
   to = "/.netlify/functions/members-register"
   status = 200
@@ -54,6 +49,11 @@
   from = "/api/members/checkout-status/*"
   to = "/.netlify/functions/members-checkout-status?registrationId=:splat"
   status = 200
+
+[[redirects]]
+from = "/api/members/:memberId"
+to = "/.netlify/functions/members-member?memberId=:memberId"
+status = 200
 
 [[redirects]]
   from = "/*"

@@ -2,9 +2,9 @@
  /api/donations/checkout-status/* /.netlify/functions/donations-checkout-status?checkoutId=:splat 200
  /api/donations/save /.netlify/functions/donations-save 200
  /api/members /.netlify/functions/members-index 200
- /api/members/:memberId /.netlify/functions/members-member?memberId=:memberId 200
  /api/members/register /.netlify/functions/members-register 200
  /api/members/checkout /.netlify/functions/members-checkout 200
  /api/members/register-with-payment /.netlify/functions/members-register-with-payment 200
  /api/members/checkout-status/* /.netlify/functions/members-checkout-status?registrationId=:splat 200
+ /api/members/:memberId /.netlify/functions/members-member?memberId=:memberId 200
 /*    /index.html   200
