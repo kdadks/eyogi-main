@@ -1,10 +1,59 @@
 [build]
   command = "npm run build"
   publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
   
 [context.uat]
   command = "npm run build"
   publish = "dist"
+
+[[redirects]]
+  from = "/api/donations/checkout"
+  to = "/.netlify/functions/donations-checkout"
+  status = 200
+
+[[redirects]]
+  from = "/api/donations/checkout-status/*"
+  to = "/.netlify/functions/donations-checkout-status?checkoutId=:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/donations/save"
+  to = "/.netlify/functions/donations-save"
+  status = 200
+
+[[redirects]]
+  from = "/api/members"
+  to = "/.netlify/functions/members-index"
+  status = 200
+
+[[redirects]]
+  from = "/api/members/:memberId"
+  to = "/.netlify/functions/members-member?memberId=:memberId"
+  status = 200
+
+[[redirects]]
+  from = "/api/members/register"
+  to = "/.netlify/functions/members-register"
+  status = 200
+
+[[redirects]]
+  from = "/api/members/checkout"
+  to = "/.netlify/functions/members-checkout"
+  status = 200
+
+[[redirects]]
+  from = "/api/members/register-with-payment"
+  to = "/.netlify/functions/members-register-with-payment"
+  status = 200
+
+[[redirects]]
+  from = "/api/members/checkout-status/*"
+  to = "/.netlify/functions/members-checkout-status?registrationId=:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
