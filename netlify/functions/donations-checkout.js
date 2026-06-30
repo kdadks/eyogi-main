@@ -41,6 +41,7 @@ async function createSumUpCheckout(apiKey, checkoutData) {
     merchant_code: checkoutData.merchant_code,
     return_url: checkoutData.return_url,
     customer_email: checkoutData.email,
+    hosted_checkout: { enabled: true },
   }
 
   // Validate return_url is not empty
@@ -74,7 +75,9 @@ async function createSumUpCheckout(apiKey, checkoutData) {
     throw new Error(`SumUp API error (${response.status}): ${error}`)
   }
 
-  return response.json()
+  const responseData = await response.json()
+  console.log('📡 [SUMUP-API] Full response from SumUp:', JSON.stringify(responseData, null, 2))
+  return responseData
 }
 
 export const handler = async (event) => {
@@ -208,12 +211,10 @@ export const handler = async (event) => {
       merchant_code: merchantCode,
       description: 'Donation to eYogi Gurukul',
       return_url: returnUrl,
-      redirect_url: returnUrl,
       email,
-      hosted_checkout: { enabled: true },
     })
 
-    const checkoutUrl = checkout.hosted_checkout_url || checkout.hosted_checkout?.url
+    const checkoutUrl = checkout?.id ? `https://checkout.sumup.com/pay/c-${checkout.id}` : (checkout?.hosted_checkout_url || checkout?.hostedCheckoutUrl)
     if (!checkoutUrl) {
       return json(500, { error: 'SumUp API did not return hosted checkout URL' })
     }
