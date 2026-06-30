@@ -12,25 +12,60 @@ export default function PaymentReturn() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [registrationId, setRegistrationId] = useState<string | null>(null)
   const hasRedirected = useRef(false)
 
-  const registrationId = searchParams.get('registration_id')
+  // Get registration_id from URL or lookup using checkout_id
+  useEffect(() => {
+    const urlRegistrationId = searchParams.get('registration_id')
+    const checkoutId = searchParams.get('checkout_id') || searchParams.get('id') // SumUp might use 'id' or 'checkout_id'
+
+    console.log('🔄 [PAYMENT-RETURN] Page loaded with:', { urlRegistrationId, checkoutId })
+
+    // If we have registration_id in URL, use it directly
+    if (urlRegistrationId) {
+      setRegistrationId(urlRegistrationId)
+      return
+    }
+
+    // If we only have checkout_id, lookup registration_id from database
+    if (checkoutId && !hasRedirected.current) {
+      hasRedirected.current = true
+      console.log('📡 [PAYMENT-RETURN] Looking up registration_id for checkout:', checkoutId)
+
+      fetch(`/api/members/checkout-status/${checkoutId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log('✅ [PAYMENT-RETURN] Got checkout data:', data)
+          if (data.registration_id) {
+            setRegistrationId(data.registration_id)
+          } else if (data.checkout_id) {
+            // Fallback: use checkout_id if registration_id not available
+            console.warn('⚠️ [PAYMENT-RETURN] No registration_id in response, using checkout_id')
+            setRegistrationId(data.checkout_id)
+          }
+        })
+        .catch((err) => {
+          console.error('❌ [PAYMENT-RETURN] Failed to lookup checkout:', err)
+          // Still let user continue - they can provide info manually
+          setRegistrationId(checkoutId)
+        })
+    } else {
+      console.warn('⚠️ [PAYMENT-RETURN] No registration_id or checkout_id found in URL')
+    }
+  }, [searchParams])
 
   useEffect(() => {
-    console.log('🔄 [PAYMENT-RETURN] Page loaded with registration_id:', registrationId)
-    
     if (registrationId && !hasRedirected.current) {
       hasRedirected.current = true
       console.log('✅ [PAYMENT-RETURN] Auto-redirecting to confirmation in 2 seconds...')
-      
+
       const redirectTimer = setTimeout(() => {
         console.log('🚀 [PAYMENT-RETURN] Navigating to confirmation page')
         navigate(`/membership/confirmation?registration_id=${registrationId}`, { replace: true })
       }, 2000)
 
       return () => clearTimeout(redirectTimer)
-    } else if (!registrationId) {
-      console.warn('⚠️ [PAYMENT-RETURN] No registration_id found in URL')
     }
   }, [registrationId, navigate])
 
