@@ -55,6 +55,9 @@ export default function MembershipConfirmation() {
         hasSessionStorage: !!checkoutData,
         registrationIdFromUrl,
       })
+      
+      // If sessionStorage is empty AND we have registration_id, fetch from backend
+      if (!checkoutData && registrationIdFromUrl) {
         try {
           const response = await fetch(`/api/members/checkout-status/${registrationIdFromUrl}`)
           if (response.ok) {
