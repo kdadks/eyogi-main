@@ -197,14 +197,17 @@ export async function POST(request: Request) {
     }
 
     const sumupData = await sumupResponse.json()
+    const checkoutUrl =
+      sumupData.checkout_url || sumupData.hosted_checkout_url || sumupData.hosted_checkout?.url
+
     console.log('✅ SumUp checkout created:', {
       id: sumupData.id,
-      checkout_url: sumupData.checkout_url ? '✓' : '✗',
+      checkout_url: checkoutUrl ? '✓' : '✗',
       full_response: JSON.stringify(sumupData).substring(0, 200),
     })
 
     // Ensure checkout_url exists
-    if (!sumupData.checkout_url) {
+    if (!checkoutUrl) {
       console.error('❌ SumUp checkout missing checkout_url:', sumupData)
       return Response.json(
         {
@@ -233,7 +236,7 @@ export async function POST(request: Request) {
       amount: amount / 100,
       currency: 'EUR',
       membershipType,
-      checkout_url: sumupData.checkout_url,
+      checkout_url: checkoutUrl,
     })
   } catch (error) {
     console.error('❌ Checkout error:', error)

@@ -27,6 +27,10 @@ async function createSumUpCheckout(apiKey, checkoutData) {
     description: checkoutData.description,
     merchant_code: checkoutData.merchant_code,
     return_url: checkoutData.return_url,
+    redirect_url: checkoutData.redirect_url || checkoutData.return_url,
+    customer_email: checkoutData.email,
+    hosted_checkout: checkoutData.hosted_checkout || { enabled: true },
+    locale: 'en-IE',
   }
 
   const response = await fetch('https://api.sumup.com/v0.1/checkouts', {
@@ -166,9 +170,14 @@ export const handler = async (event) => {
       merchant_code: merchantCode,
       description: `${membershipType === 'monthly' ? 'Monthly' : 'Annual'} Membership - ${firstName} ${lastName}`,
       return_url: returnUrl,
+      redirect_url: returnUrl,
+      email,
+      hosted_checkout: { enabled: true },
     })
 
-    if (!checkout?.checkout_url) {
+    const checkoutUrl = checkout?.checkout_url || checkout?.hosted_checkout_url || checkout?.hosted_checkout?.url
+
+    if (!checkoutUrl) {
       return json(500, { error: 'SumUp checkout created but no checkout URL returned' })
     }
 
@@ -190,7 +199,7 @@ export const handler = async (event) => {
       amount,
       currency: 'EUR',
       membershipType,
-      checkout_url: checkout.checkout_url,
+      checkout_url: checkoutUrl,
     })
   } catch (error) {
     return json(500, {
