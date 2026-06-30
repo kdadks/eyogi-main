@@ -102,8 +102,25 @@ export default function MembershipConfirmation() {
         const data = await response.json()
 
         if (!response.ok) {
+          const statusDetails = [
+            data.checkoutStatus ? `Checkout: ${data.checkoutStatus}` : null,
+            Array.isArray(data.transactionStatuses) && data.transactionStatuses.length > 0
+              ? `Transactions: ${data.transactionStatuses
+                  .map((t: any) => `${t.id || 'n/a'}=${t.status || 'unknown'}`)
+                  .join(', ')}`
+              : null,
+            data.checkoutId ? `Checkout ID: ${data.checkoutId}` : null,
+          ]
+            .filter(Boolean)
+            .join(' | ')
+
+          const detailedMessage =
+            statusDetails.length > 0
+              ? `${data.error || 'Failed to complete registration'} (${statusDetails})`
+              : data.error || 'Failed to complete registration'
+
           setStatus('error')
-          setMessage(data.error || 'Failed to complete registration')
+          setMessage(detailedMessage)
           toast.error('Registration failed')
           console.error('Registration error:', data)
           return
