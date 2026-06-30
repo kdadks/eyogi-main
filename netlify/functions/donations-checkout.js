@@ -126,6 +126,8 @@ export const handler = async (event) => {
         'sumup_environment',
         'sumup_api_key_sandbox',
         'sumup_api_key_production',
+        'sumup_merchant_code_sandbox',
+        'sumup_merchant_code_production',
         'sumup_merchant_code',
       ])
 
@@ -140,8 +142,22 @@ export const handler = async (event) => {
 
     const host = event.headers?.host
     const environment = resolveSumupEnvironment(host, settingsMap.sumup_environment)
-    const apiKey = environment === 'production' ? settingsMap.sumup_api_key_production : settingsMap.sumup_api_key_sandbox
-    const merchantCode = settingsMap.sumup_merchant_code
+
+    const sandboxApiKey = process.env.VITE_SUMUP_SANDBOX_KEY || settingsMap.sumup_api_key_sandbox
+    const productionApiKey = process.env.VITE_SUMUP_PRODUCTION_KEY || settingsMap.sumup_api_key_production
+
+    const sandboxMerchantCode =
+      process.env.VITE_SUMUP_SANDBOX_MERCHANT_CODE ||
+      settingsMap.sumup_merchant_code_sandbox ||
+      settingsMap.sumup_merchant_code
+
+    const productionMerchantCode =
+      process.env.VITE_SUMUP_PRODUCTION_MERCHANT_CODE ||
+      settingsMap.sumup_merchant_code_production ||
+      settingsMap.sumup_merchant_code
+
+    const apiKey = environment === 'production' ? productionApiKey : sandboxApiKey
+    const merchantCode = environment === 'production' ? productionMerchantCode : sandboxMerchantCode
 
     const baseUrl =
       process.env.VITE_APP_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || (host ? `https://${host}` : '')
