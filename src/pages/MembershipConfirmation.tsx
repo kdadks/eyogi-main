@@ -15,25 +15,46 @@ export default function MembershipConfirmation() {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
   const [message, setMessage] = useState('Processing your registration...')
   const [memberData, setMemberData] = useState<any>(null)
+  const [isRetrying, setIsRetrying] = useState(false)
   const hasCalledRef = useRef(false)
+  const timeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
-    // Prevent StrictMode from calling the effect twice
-    if (hasCalledRef.current) return
-    hasCalledRef.current = true
-    
-    completeRegistration()
+    // Auto-run once on mount
+    if (!hasCalledRef.current) {
+      hasCalledRef.current = true
+      
+      // Set timeout to show error if still processing after 8 seconds
+      timeoutRef.current = setTimeout(() => {
+        if (status === 'processing') {
+          console.warn('⏱️ [CONFIRMATION] Timeout - still processing after 8 seconds')
+          setStatus('error')
+          setMessage(
+            'The registration is taking longer than expected. If you completed payment on the SumUp page, click "Complete Registration" below to finish.'
+          )
+        }
+      }, 8000)
+      
+      completeRegistration()
+    }
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
   }, [])
 
   const completeRegistration = async () => {
     try {
+      setIsRetrying(true)
+      
       // Get registration data from sessionStorage (was stored before redirect to SumUp)
       let checkoutData = sessionStorage.getItem('membershipCheckout')
       const registrationIdFromUrl = searchParams.get('registration_id')
       
-      // If sessionStorage is empty AND we have registration_id, fetch from backend
-      if (!checkoutData && registrationIdFromUrl) {
-        console.log('📋 [CONFIRMATION] SessionStorage empty, fetching from backend with registration_id:', registrationIdFromUrl)
+      console.log('📋 [CONFIRMATION] Starting registration:', {
+        hasSessionStorage: !!checkoutData,
+        registrationIdFromUrl,
+      })
         try {
           const response = await fetch(`/api/members/checkout-status/${registrationIdFromUrl}`)
           if (response.ok) {
@@ -158,6 +179,8 @@ export default function MembershipConfirmation() {
         error instanceof Error ? error.message : 'An error occurred while completing your registration'
       setMessage(errorMessage)
       toast.error(errorMessage)
+    } finally {
+      setIsRetrying(false)
     }
   }
 
@@ -169,7 +192,21 @@ export default function MembershipConfirmation() {
             <>
               <Loader className="w-16 h-16 text-purple-600 animate-spin mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Processing Registration</h1>
-              <p className="text-gray-600">{message}</p>
+              <p className="text-gray-600 mb-6">{message}</p>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-yellow-900">
+                  ⏳ This usually takes a few seconds. If you closed the SumUp page, click below to continue.
+                </p>
+              </div>
+              
+              <button
+                onClick={() => completeRegistration()}
+                disabled={isRetrying}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+              >
+                {isRetrying ? 'Processing...' : 'Complete Registration'}
+              </button>
             </>
           )}
 
@@ -209,12 +246,25 @@ export default function MembershipConfirmation() {
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Registration Failed</h1>
               <p className="text-gray-600 mb-6">{message}</p>
               
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-900">
+                  💡 If you just completed payment on the SumUp page, click "Complete Registration" below.
+                </p>
+              </div>
+              
               <div className="space-y-3">
                 <button
-                  onClick={() => navigate('/membership')}
-                  className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  onClick={() => completeRegistration()}
+                  disabled={isRetrying}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-medium"
                 >
-                  Try Again
+                  {isRetrying ? 'Processing...' : 'Complete Registration'}
+                </button>
+                <button
+                  onClick={() => navigate('/membership')}
+                  className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Start Over
                 </button>
                 <button
                   onClick={() => navigate('/')}
