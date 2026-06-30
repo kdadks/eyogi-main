@@ -112,7 +112,7 @@ export const handler = async (event) => {
     const supabase = getSupabase()
     const priceKey = membershipType === 'monthly' ? 'membership_monthly_price' : 'membership_annual_price'
     const defaultPrices = {
-      membership_monthly_price: 11.0,
+      membership_monthly_price: 12.0,
       membership_annual_price: 120.0,
     }
 

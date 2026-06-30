@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     // Fetch membership pricing from settings with fallback
     const priceKey = membershipType === 'monthly' ? 'membership_monthly_price' : 'membership_annual_price'
     const defaultPrices = {
-      membership_monthly_price: 11.00,
+      membership_monthly_price: 12.00,
       membership_annual_price: 120.00,
     }
     
