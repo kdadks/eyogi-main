@@ -20,6 +20,17 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceRoleKey)
 }
 
+function resolveSumupEnvironment(hostname, configuredEnvironment) {
+  const host = (hostname || '').toLowerCase()
+  const isProductionHost = host === 'eyogigurukul.com' || host === 'www.eyogigurukul.com'
+
+  if (!isProductionHost && host.endsWith('.netlify.app')) {
+    return 'sandbox'
+  }
+
+  return configuredEnvironment === 'production' ? 'production' : 'sandbox'
+}
+
 async function checkSumUpCheckoutStatus(apiKey, checkoutId) {
   const response = await fetch(`https://api.sumup.com/v0.1/checkouts/${checkoutId}`, {
     method: 'GET',
@@ -65,8 +76,12 @@ export const handler = async (event) => {
           settingsMap[setting.key] = setting.value
         })
 
-        const isProduction = settingsMap.sumup_environment === 'production'
-        const apiKey = isProduction ? settingsMap.sumup_api_key_production : settingsMap.sumup_api_key_sandbox
+        const host = event.headers?.host
+        const environment = resolveSumupEnvironment(host, settingsMap.sumup_environment)
+        const apiKey =
+          environment === 'production'
+            ? process.env.VITE_SUMUP_PRODUCTION_KEY || settingsMap.sumup_api_key_production
+            : process.env.VITE_SUMUP_SANDBOX_KEY || settingsMap.sumup_api_key_sandbox
 
         if (apiKey) {
           const checkout = await checkSumUpCheckoutStatus(apiKey, checkoutId)

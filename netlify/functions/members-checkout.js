@@ -163,7 +163,7 @@ export const handler = async (event) => {
 
     if (!apiKey || !merchantCode) {
       const mockCheckoutId = `MOCK_${Date.now()}`
-      const mockReturnUrl = `${baseUrl}/membership/confirmation?checkout_id=${mockCheckoutId}&dev_mode=true`
+      const mockReturnUrl = `${baseUrl}/membership/confirmation?registration_id=${checkoutReference}&checkout_id=${mockCheckoutId}&dev_mode=true`
 
       return json(200, {
         registration_id: checkoutReference,
@@ -188,7 +188,7 @@ export const handler = async (event) => {
       })
     }
 
-    const returnUrl = `${baseUrl}/membership/confirmation?checkout_id=${checkoutReference}`
+    const returnUrl = `${baseUrl}/membership/confirmation?registration_id=${checkoutReference}`
 
     const checkout = await createSumUpCheckout(apiKey, {
       checkout_reference: checkoutReference,

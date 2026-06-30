@@ -59,9 +59,15 @@ export default function MembershipConfirmation() {
 
       const checkout = JSON.parse(checkoutData)
       
-      // Get checkout_id from URL params (SumUp might pass back as 'id' or 'checkout_id')
-      // OR get from fetched data if we retrieved it from backend
-      let checkoutId = searchParams.get('checkout_id') || searchParams.get('id') || searchParams.get('reference') || checkout.checkout_id || checkout.checkoutId
+      // Prefer the checkout ID captured before redirect; URL params can contain references.
+      const checkoutIdFromStorage = checkout.checkout_id || checkout.checkoutId
+      const checkoutIdFromUrl =
+        searchParams.get('id') || searchParams.get('checkout_id') || searchParams.get('reference')
+
+      let checkoutId = checkoutIdFromStorage || checkoutIdFromUrl
+      if (checkoutIdFromUrl && /^c-/i.test(checkoutIdFromUrl)) {
+        checkoutId = checkoutIdFromUrl
+      }
       const isDevMode = searchParams.get('dev_mode') === 'true' || checkout.dev_mode === true
       
       if (!checkoutId) {

@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       console.warn('⚠️  SumUp not fully configured - returning mock checkout for development')
       // Return mock checkout for development/testing
       const mockCheckoutId = `MOCK_${Date.now()}`
-      const mockReturnUrl = `${new URL(request.url).origin}/membership/confirmation?checkout_id=${mockCheckoutId}&dev_mode=true`
+      const mockReturnUrl = `${new URL(request.url).origin}/membership/confirmation?registration_id=${checkoutReference}&checkout_id=${mockCheckoutId}&dev_mode=true`
       
       return Response.json({
         registration_id: `REG_${Date.now()}`,
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     // Create SumUp checkout
     console.log('🔄 Creating SumUp checkout...')
     const checkoutReference = `MEM_${Date.now()}`
-    const returnUrl = `${new URL(request.url).origin}/membership/confirmation?checkout_id=${checkoutReference}`
+    const returnUrl = `${new URL(request.url).origin}/membership/confirmation?registration_id=${checkoutReference}`
 
     const sumupCheckoutPayload = {
       checkout_reference: checkoutReference,
