@@ -13,6 +13,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient()
     supabase
+      .schema('gurukul_main')
       .from('settings')
       .select('value')
       .eq('key', 'whatsapp_phone')

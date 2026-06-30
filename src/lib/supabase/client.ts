@@ -12,7 +12,7 @@ export const createClient = () =>
     import.meta.env.VITE_SUPABASE_ANON_KEY!,
     {
       db: {
-        schema: 'gurukul_main',
+        schema: 'public',
       },
     },
   )

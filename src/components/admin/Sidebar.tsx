@@ -3,8 +3,9 @@
  */
 
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/utilities/cn'
-import { LayoutDashboard, FileText, Image, Settings, BookOpen, LogOut, DollarSign } from 'lucide-react'
+import { LayoutDashboard, FileText, Image, Settings, BookOpen, LogOut, DollarSign, CreditCard } from 'lucide-react'
 
 const MENU_ITEMS = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -14,6 +15,7 @@ const MENU_ITEMS = [
   { href: '/admin/categories', icon: FileText, label: 'Categories' },
   { href: '/admin/donations', icon: DollarSign, label: 'Donations' },
   { href: '/admin/settings', icon: Settings, label: 'Settings', admin: true },
+  { href: '/admin/payment-settings', icon: CreditCard, label: 'Payment Settings', admin: true },
 ]
 
 export function AdminSidebar() {
@@ -22,17 +24,20 @@ export function AdminSidebar() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      })
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
 
-      if (response.ok) {
-        // Redirect to login page
-        navigate('/login')
+      if (error) {
+        console.error('Logout error:', error)
+        toast.error('Error logging out: ' + error.message)
+        return
       }
+
+      // Redirect to home page
+      navigate('/')
     } catch (error) {
       console.error('Logout error:', error)
-      alert('Error logging out')
+      toast.error('Error logging out')
     }
   }
 

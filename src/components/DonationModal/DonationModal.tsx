@@ -9,17 +9,20 @@ import {
 } from '@/components/ui/dialog'
 import { browserClient } from '@/lib/supabase/browser'
 import { useDonationModal } from '@/contexts/DonationModalContext'
-
-interface PaymentSettings {
-  sumup_api_key?: string
-  sumup_merchant_code?: string
-  sumup_enabled?: boolean
-}
+import { getSumUpConfig, validateSumUpConfig } from '@/lib/sumup/config'
 
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250, 500]
 
-export default function DonationModal() {
-  const { isOpen, closeModal } = useDonationModal()
+interface DonationModalProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export default function DonationModal({ open, onOpenChange }: DonationModalProps) {
+  // Use props if provided, otherwise fall back to context
+  const contextModal = useDonationModal()
+  const isOpen = open !== undefined ? open : contextModal.isOpen
+  const closeModal = onOpenChange ? () => onOpenChange(false) : contextModal.closeModal
   const [amount, setAmount] = useState<number>(50)
   const [customAmount, setCustomAmount] = useState<string>('')
   const [firstName, setFirstName] = useState<string>('')
@@ -27,14 +30,24 @@ export default function DonationModal() {
   const [email, setEmail] = useState<string>('')
   const [phone, setPhone] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({})
+  const [sumUpConfigured, setSumUpConfigured] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
 
   useEffect(() => {
     if (isOpen) {
-      fetchPaymentSettings()
+      validateSumUpConfiguration()
     }
   }, [isOpen])
+
+  const validateSumUpConfiguration = () => {
+    try {
+      const config = getSumUpConfig()
+      setSumUpConfigured(true)
+    } catch (err) {
+      console.error('SumUp not configured:', err)
+      setSumUpConfigured(false)
+    }
+  }
 
   const handleCloseModal = () => {
     // Reset form when closing
@@ -45,26 +58,10 @@ export default function DonationModal() {
     setEmail('')
     setPhone('')
     setError('')
-    closeModal()
-  }
-
-  const fetchPaymentSettings = async () => {
-    try {
-      const { data } = await browserClient
-        .from('settings')
-        .select('key, value')
-        .in('key', ['sumup_api_key', 'sumup_merchant_code', 'sumup_enabled'])
-        .eq('category', 'payment')
-
-      if (data) {
-        const settings: PaymentSettings = {}
-        data.forEach((item) => {
-          settings[item.key as keyof PaymentSettings] = item.value
-        })
-        setPaymentSettings(settings)
-      }
-    } catch (err) {
-      console.error('Error fetching payment settings:', err)
+    if (onOpenChange) {
+      onOpenChange(false)
+    } else {
+      closeModal()
     }
   }
 
@@ -130,8 +127,8 @@ export default function DonationModal() {
     setLoading(true)
 
     try {
-      // Check if SumUp is enabled
-      if (!paymentSettings.sumup_enabled) {
+      // Check if SumUp is configured
+      if (!sumUpConfigured) {
         setError('Online payments are temporarily unavailable. Please use bank transfer.')
         setLoading(false)
         return
@@ -166,30 +163,37 @@ export default function DonationModal() {
 
   const initiateSumUpPayment = async (donationId: string, amount: number, email: string) => {
     try {
-      // Call your backend API to create SumUp checkout
-      const response = await fetch('/api/payments/sumup/checkout', {
+      const config = getSumUpConfig()
+
+      // Call backend API to create SumUp checkout
+      const response = await fetch('/api/donations/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount,
-          currency: 'EUR',
-          checkout_reference: donationId,
-          description: 'Donation to eYogi Gurukul',
-          merchant_code: paymentSettings.sumup_merchant_code,
-          return_url: `${window.location.origin}/donation/success`,
+          firstName,
+          lastName,
           email,
+          phone,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create payment')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}`)
       }
 
-      const { checkout_url } = await response.json()
+      const data = await response.json()
+      
+      if (!data.checkout_url) {
+        console.error('❌ No checkout URL in response:', data)
+        throw new Error('Payment gateway error. Please try again.')
+      }
 
       // Redirect to SumUp checkout
-      window.location.href = checkout_url
+      window.location.href = data.checkout_url
     } catch (err) {
+      console.error('❌ Payment initiation error:', err)
       throw new Error('Failed to initialize payment gateway')
     }
   }

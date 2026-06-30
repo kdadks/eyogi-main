@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { browserClient } from '@/lib/supabase/browser'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -9,25 +9,82 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Check if already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session?.user?.user_metadata?.role === 'admin') {
+        navigate('/admin', { replace: true })
+      }
+    }
+
+    checkAuth()
+  }, [navigate])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      const { data, error: authError } = await browserClient.auth.signInWithPassword({
+      const supabase = createClient()
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (authError) {
-        setError(authError.message || 'Login failed')
+        setError(authError.message || 'Invalid email or password')
         return
       }
 
-      if (data?.user) {
-        navigate('/admin')
+      if (!data?.user) {
+        setError('Login failed: No user data returned')
+        return
       }
+
+      // Check if user has admin role from metadata first
+      const metadataRole = data.user.user_metadata?.role
+      if (metadataRole === 'admin') {
+        // User has admin role in metadata, proceed
+        navigate('/admin', { replace: true })
+        return
+      }
+
+      // If not in metadata, check the users table
+      try {
+        console.log('Querying users table for role check, user ID:', data.user.id)
+        const { data: userRecord, error: queryError } = await supabase
+          .schema('public')
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+
+        console.log('Query result:', { userRecord, queryError })
+
+        if (queryError) {
+          console.error('Query error:', queryError)
+        }
+
+        if (userRecord?.role === 'admin') {
+          // User is admin in database, proceed
+          console.log('Admin user confirmed in database')
+          navigate('/admin', { replace: true })
+          return
+        }
+      } catch (dbError) {
+        console.error('Error checking user role in database:', dbError)
+        // Continue to show error below
+      }
+
+      // User is not an admin
+      await supabase.auth.signOut()
+      setError('This account does not have admin privileges')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     } finally {

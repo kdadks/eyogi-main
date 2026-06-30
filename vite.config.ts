@@ -19,6 +19,12 @@ export default defineConfig(({ command }) => {
       port: 3000,
       strictPort: false,
       open: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
+      },
       watch: {
         ignored: ['**/node_modules/**', '**/SSH/**'],
       },

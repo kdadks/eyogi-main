@@ -1,15 +1,9 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "yarn build",
-  "installCommand": "yarn install",
-  "env": {
-    "NEXT_TELEMETRY_DISABLED": "1"
-  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install --legacy-peer-deps",
   "functions": {
-    "src/app/api/**/*.js": {
-      "maxDuration": 60
-    },
-    "src/app/api/[...slug]/route.js": {
+    "api/**/*.ts": {
       "maxDuration": 60
     }
   },
@@ -23,12 +17,8 @@
       "destination": "/ssh-app/index.html"
     },
     {
-      "source": "/admin/:path*",
-      "destination": "/admin/:path*"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

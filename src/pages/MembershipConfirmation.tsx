@@ -1,160 +1,199 @@
 /**
  * Membership Confirmation Page
  * Displayed after successful SumUp payment
+ * Completes the registration by creating member account
  */
 
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-
-interface MembershipData {
-  memberId: string
-  checkoutId: string
-  amount: number
-  currency: string
-  subscriptionType: 'monthly' | 'annual'
-  checkoutUrl: string
-}
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
+import { CheckCircle, XCircle, Loader } from 'lucide-react'
 
 export default function MembershipConfirmation() {
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [membershipData, setMembershipData] = useState<MembershipData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
+  const [message, setMessage] = useState('Processing your registration...')
+  const [memberData, setMemberData] = useState<any>(null)
+  const hasCalledRef = useRef(false)
 
   useEffect(() => {
-    // Simulate payment verification delay
-    const timer = setTimeout(() => {
-      const data = sessionStorage.getItem('membershipCheckout')
-      if (data) {
-        try {
-          setMembershipData(JSON.parse(data))
-          setLoading(false)
-        } catch (err) {
-          setError('Failed to load membership data')
-          setLoading(false)
-        }
-      } else {
-        setError('No membership data found. Please start registration again.')
-        setLoading(false)
-      }
-    }, 2000)
-
-    return () => clearTimeout(timer)
+    // Prevent StrictMode from calling the effect twice
+    if (hasCalledRef.current) return
+    hasCalledRef.current = true
+    
+    completeRegistration()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="py-24 px-6 md:px-12 lg:px-20">
-        <div className="max-w-2xl mx-auto text-center">
-          <Loader2 className="w-12 h-12 text-orange-600 animate-spin mx-auto mb-4" />
-          <p className="text-lg text-stone-600">Verifying your payment...</p>
-        </div>
-      </div>
-    )
-  }
+  const completeRegistration = async () => {
+    try {
+      // Get registration data from sessionStorage (was stored before redirect to SumUp)
+      let checkoutData = sessionStorage.getItem('membershipCheckout')
+      const registrationIdFromUrl = searchParams.get('registration_id')
+      
+      // If sessionStorage is empty AND we have registration_id, fetch from backend
+      if (!checkoutData && registrationIdFromUrl) {
+        console.log('📋 [CONFIRMATION] SessionStorage empty, fetching from backend with registration_id:', registrationIdFromUrl)
+        try {
+          const response = await fetch(`/api/members/checkout-status/${registrationIdFromUrl}`)
+          if (response.ok) {
+            const data = await response.json()
+            checkoutData = JSON.stringify(data.checkout)
+            console.log('✅ [CONFIRMATION] Retrieved checkout data from backend')
+          } else {
+            console.warn('⚠️  [CONFIRMATION] Backend returned status:', response.status)
+          }
+        } catch (err) {
+          console.warn('⚠️  [CONFIRMATION] Could not fetch from backend:', err)
+        }
+      }
+      
+      if (!checkoutData) {
+        // Checkout data not found in session or backend
+        // Show error message with action button
+        setStatus('error')
+        setMessage('We couldn\'t retrieve your registration details. This can happen if you close the payment page or return later. Please try the registration again by clicking below.')
+        toast.error('Registration details not found')
+        return
+      }
 
-  if (error || !membershipData) {
-    return (
-      <div className="py-24 px-6 md:px-12 lg:px-20">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
-            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-stone-900 mb-2">Payment Issue</h2>
-            <p className="text-stone-600 mb-6">{error || 'An error occurred processing your membership'}</p>
-            <button
-              onClick={() => navigate('/membership')}
-              className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-500 transition-colors"
-            >
-              Return to Registration
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+      const checkout = JSON.parse(checkoutData)
+      
+      // Get checkout_id from URL params (SumUp might pass back as 'id' or 'checkout_id')
+      // OR get from fetched data if we retrieved it from backend
+      let checkoutId = searchParams.get('checkout_id') || searchParams.get('id') || searchParams.get('reference') || checkout.checkout_id || checkout.checkoutId
+      const isDevMode = searchParams.get('dev_mode') === 'true' || checkout.dev_mode === true
+      
+      if (!checkoutId) {
+        setStatus('error')
+        setMessage('Payment reference not found. Please try again.')
+        toast.error('Payment reference missing')
+        return
+      }
 
-  const subscriptionText =
-    membershipData.subscriptionType === 'monthly' ? 'Monthly (€11)' : 'Annual (€120)'
+      console.log('📋 [CONFIRMATION] Verifying payment:', checkoutId)
+
+      const { registrationData, amount, membershipType } = checkout
+
+      // Create abort controller to cancel request if component unmounts
+      const abortController = new AbortController()
+
+      try {
+        // Call the payment verification endpoint which also completes registration
+        const response = await fetch('/api/members/register-with-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            checkoutId: checkoutId,
+            registrationData,
+            amount,
+            membershipType,
+            isDevMode, // Include dev mode flag
+          }),
+          signal: abortController.signal,
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          setStatus('error')
+          setMessage(data.error || 'Failed to complete registration')
+          toast.error('Registration failed')
+          console.error('Registration error:', data)
+          return
+        }
+
+        // Success!
+        setStatus('success')
+        setMemberData(data.member)
+        setMessage('Registration completed successfully!')
+        toast.success('Welcome to eYogi!')
+
+        // Clear sessionStorage
+        sessionStorage.removeItem('membershipCheckout')
+
+        // Redirect to login after 5 seconds
+        setTimeout(() => {
+          navigate('/members/login')
+        }, 5000)
+      } catch (error) {
+        // Only show error if not aborted
+        if (error instanceof Error && error.name !== 'AbortError') {
+          throw error
+        }
+      }
+    } catch (error) {
+      console.error('Registration completion error:', error)
+      setStatus('error')
+      setMessage('An error occurred while completing your registration')
+      toast.error('Registration failed')
+    }
+  }
 
   return (
-    <div className="py-24 px-6 md:px-12 lg:px-20">
-      <div className="max-w-2xl mx-auto">
-        {/* Success Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="w-16 h-16 text-green-500" />
-          </div>
-          <h1 className="text-4xl font-bold text-stone-900 mb-2">Payment Successful!</h1>
-          <p className="text-lg text-stone-600">Welcome to eYogi Membership</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+        <div className="text-center">
+          {status === 'processing' && (
+            <>
+              <Loader className="w-16 h-16 text-purple-600 animate-spin mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Processing Registration</h1>
+              <p className="text-gray-600">{message}</p>
+            </>
+          )}
 
-        {/* Member ID Display */}
-        <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-600 rounded-lg p-8 mb-8">
-          <p className="text-sm font-semibold text-orange-600 uppercase tracking-wider mb-2">
-            Your Member ID
-          </p>
-          <p className="text-4xl font-bold text-orange-600 font-mono tracking-wider mb-4">
-            {membershipData.memberId}
-          </p>
-          <p className="text-sm text-stone-600">
-            Save this ID in a safe place. You'll need it to access member-only features.
-          </p>
-        </div>
+          {status === 'success' && memberData && (
+            <>
+              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to eYogi!</h1>
+              <p className="text-gray-600 mb-4">{message}</p>
+              
+              <div className="bg-purple-50 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Member Number:</strong> {memberData.memberNumber}
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Name:</strong> {memberData.firstName} {memberData.lastName}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <strong>Email:</strong> {memberData.email}
+                </p>
+              </div>
 
-        {/* Payment Summary */}
-        <div className="bg-stone-50 rounded-lg border border-stone-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-stone-900 mb-4">Payment Summary</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-stone-600">Subscription Type</span>
-              <span className="font-semibold text-stone-900">{subscriptionText}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-600">Amount Paid</span>
-              <span className="font-semibold text-stone-900">
-                {membershipData.currency} {membershipData.amount.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-600">Transaction ID</span>
-              <span className="font-mono text-sm text-stone-600">{membershipData.checkoutId}</span>
-            </div>
-          </div>
-        </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-900">
+                  📧 Please check your email for instructions to create your password.
+                </p>
+              </div>
 
-        {/* Next Steps */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-stone-900 mb-4">Next Steps</h3>
-          <ol className="space-y-2 text-stone-700 list-decimal list-inside">
-            <li>Check your email for a welcome message and receipt</li>
-            <li>Save your Member ID in a secure location</li>
-            <li>Log in to your account using your email and Member ID</li>
-            <li>Start enjoying member-only benefits</li>
-          </ol>
-        </div>
+              <p className="text-sm text-gray-500">
+                Redirecting to login in 5 seconds...
+              </p>
+            </>
+          )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-3 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-500 transition-colors"
-          >
-            Return to Home
-          </button>
-          <button
-            onClick={() => window.location.href = 'mailto:support@eyogi.com'}
-            className="px-6 py-3 border-2 border-orange-600 text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-colors"
-          >
-            Contact Support
-          </button>
-        </div>
-
-        {/* Legal Notice */}
-        <div className="mt-12 text-center">
-          <p className="text-xs text-stone-500">
-            A confirmation email has been sent to your email address with your Member ID and payment receipt.
-          </p>
+          {status === 'error' && (
+            <>
+              <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Registration Failed</h1>
+              <p className="text-gray-600 mb-6">{message}</p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate('/membership')}
+                  className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Go Home
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

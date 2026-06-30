@@ -7,6 +7,11 @@ declare global {
       VITE_SUPABASE_URL: string
       VITE_SUPABASE_ANON_KEY: string
       VERCEL_PROJECT_PRODUCTION_URL: string
+      VITE_SUMUP_SANDBOX_KEY: string
+      VITE_SUMUP_PRODUCTION_KEY: string
+      VITE_SUMUP_SANDBOX_MERCHANT_CODE: string
+      VITE_SUMUP_PRODUCTION_MERCHANT_CODE: string
+      SUPABASE_SERVICE_ROLE_KEY: string
     }
   }
 }

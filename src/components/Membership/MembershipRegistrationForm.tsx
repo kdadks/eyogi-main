@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react'
+import { toast } from 'react-hot-toast'
 import { Zap, AlertCircle, Loader2, CheckCircle } from 'lucide-react'
 import { calculateSavings, formatCurrency, SUBSCRIPTION_PRICES } from '@/lib/memberships/membershipUtils'
 
@@ -90,7 +91,8 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
     setLoading(true)
 
     try {
-      const response = await fetch('/api/memberships/register', {
+      // Call checkout API to create payment session first
+      const response = await fetch('/api/members/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -102,42 +104,57 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
           city: formData.city.trim() || null,
           state: formData.state.trim() || null,
           postalCode: formData.postalCode.trim() || null,
-          country: formData.country.trim() || null,
-          subscriptionType: selectedPlan,
+          country: formData.country.trim() || 'Ireland',
+          membershipType: selectedPlan,
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Registration failed')
+        toast.error(data.error || 'Failed to create checkout session')
         setLoading(false)
         return
       }
 
-      // Store membership data in session storage for confirmation page
+      // Validate that we have a checkout URL
+      if (!data.checkout_url) {
+        console.error('❌ No checkout URL in response:', data)
+        toast.error('Payment gateway error. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Store registration data for completion after payment
       sessionStorage.setItem(
         'membershipCheckout',
         JSON.stringify({
-          memberId: data.data.memberId,
-          checkoutId: data.data.checkoutId,
-          amount: data.data.amount,
-          currency: data.data.currency,
-          subscriptionType: data.data.subscriptionType,
-          checkoutUrl: data.data.checkoutUrl,
+          registrationId: data.registration_id,
+          registrationData: data.registration_data,
+          checkoutId: data.checkout_id,
+          amount: data.amount,
+          currency: data.currency,
+          membershipType: data.membershipType,
+          dev_mode: data.dev_mode || false,
         })
       )
+
+      // Show success toast
+      toast.success('Redirecting to payment...')
 
       // Call onSuccess callback if provided (e.g., to close modal)
       if (onSuccess) {
         onSuccess()
       }
 
-      // Redirect to SumUp checkout
-      window.location.href = data.data.checkoutUrl
+      // Redirect to SumUp checkout - use URL for validation
+      console.log('🔗 Redirecting to checkout URL:', data.checkout_url)
+      setTimeout(() => {
+        window.location.href = data.checkout_url
+      }, 500)
     } catch (err) {
-      console.error('Registration error:', err)
-      setError('Failed to process registration. Please try again.')
+      console.error('Checkout error:', err)
+      toast.error('Failed to process checkout. Please try again.')
       setLoading(false)
     }
   }

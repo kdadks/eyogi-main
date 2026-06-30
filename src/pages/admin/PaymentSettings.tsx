@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { Save, Key, CreditCard, AlertCircle } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 import {
   AdminLayout,
   Card,
@@ -13,11 +13,6 @@ import {
   Spinner,
 } from '@/components/admin'
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || '',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-)
-
 interface PaymentSetting {
   key: string
   value: string
@@ -26,10 +21,13 @@ interface PaymentSetting {
 
 export default function AdminPaymentSettings() {
   const [settings, setSettings] = useState<Record<string, string>>({
-    sumup_api_key: '',
+    sumup_api_key_sandbox: '',
+    sumup_api_key_production: '',
     sumup_merchant_code: '',
-    sumup_enabled: 'false',
-    donation_min_amount: '5',
+    sumup_environment: 'sandbox',
+    sumup_enabled: 'true',
+    membership_monthly_price: '29',
+    membership_annual_price: '299',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -41,10 +39,12 @@ export default function AdminPaymentSettings() {
 
   const fetchSettings = async () => {
     try {
+      const supabase = createClient()
       const { data, error } = await supabase
+        .schema('gurukul_main')
         .from('settings')
         .select('key, value')
-        .eq('category', 'payment')
+        .in('category', ['payment', 'membership'])
 
       if (error) throw error
 
@@ -68,20 +68,31 @@ export default function AdminPaymentSettings() {
     setMessage(null)
 
     try {
+      const supabase = createClient()
       // Update each setting
-      const updates = Object.entries(settings).map(([key, value]) =>
-        supabase
+      const updates = Object.entries(settings).map(async ([key, value]) => {
+        const category = key.includes('membership') ? 'membership' : 'payment'
+        const isPublic = key.includes('price') || key.includes('min_amount')
+
+        const { data, error } = await supabase
+          .schema('gurukul_main')
           .from('settings')
           .upsert(
             {
               key,
               value,
-              category: 'payment',
-              is_public: key.includes('min_amount') || key.includes('currency'),
+              category,
+              is_public: isPublic,
             },
             { onConflict: 'key' },
-          ),
-      )
+          )
+
+        if (error) {
+          console.error(`Error saving setting ${key}:`, error)
+          throw new Error(`Failed to save ${key}: ${error.message}`)
+        }
+        console.log(`✅ Saved ${key}:`, data)
+      })
 
       await Promise.all(updates)
       showMessage('success', 'Payment settings saved successfully')
@@ -126,9 +137,9 @@ export default function AdminPaymentSettings() {
         { label: 'Payment Settings' },
       ]}
     >
-      <div className="max-w-2xl">
+      <div className="max-w-4xl">
         <p className="text-gray-600 mb-8">
-          Configure SumUp payment gateway integration for donations
+          Configure SumUp payment gateway integration for donations and memberships
         </p>
 
         {/* Success/Error Message */}
@@ -145,6 +156,9 @@ export default function AdminPaymentSettings() {
         <div className="space-y-6">
           {/* Enable SumUp Toggle */}
           <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Payment Gateway Status</h3>
+            </CardHeader>
             <CardBody>
               <label className="flex items-center justify-between cursor-pointer">
                 <div>
@@ -152,7 +166,7 @@ export default function AdminPaymentSettings() {
                     Enable SumUp Payments
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Turn on to accept online donations via SumUp
+                    Turn on to accept online donations and membership payments via SumUp
                   </p>
                 </div>
                 <div className="relative flex-shrink-0">
@@ -171,27 +185,76 @@ export default function AdminPaymentSettings() {
             </CardBody>
           </Card>
 
-          {/* SumUp API Key */}
+          {/* Environment Selection */}
           <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Environment Settings</h3>
+            </CardHeader>
             <CardBody>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    SumUp Environment
+                  </label>
+                  <select
+                    value={settings.sumup_environment}
+                    onChange={(e) => handleChange('sumup_environment', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="sandbox">Sandbox (Testing)</option>
+                    <option value="production">Production (Live)</option>
+                  </select>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {settings.sumup_environment === 'sandbox'
+                      ? '🧪 Using test environment - no real charges will be made'
+                      : '⚠️ Using production environment - real transactions will be processed'}
+                  </p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* API Keys */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">SumUp API Keys</h3>
+            </CardHeader>
+            <CardBody className="space-y-4">
               <Input
                 label={
                   <div className="flex items-center gap-2">
                     <Key className="w-4 h-4" />
-                    <span>SumUp API Key</span>
+                    <span>Sandbox API Key</span>
                   </div>
                 }
                 type="password"
-                value={settings.sumup_api_key}
-                onChange={(e) => handleChange('sumup_api_key', e.target.value)}
-                placeholder="sup_sk_..."
-                hint="Your SumUp API key for processing payments"
+                value={settings.sumup_api_key_sandbox}
+                onChange={(e) => handleChange('sumup_api_key_sandbox', e.target.value)}
+                placeholder="sup_sk_sandbox_..."
+                hint="Your SumUp Sandbox API key for testing"
+              />
+              
+              <Input
+                label={
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-red-500" />
+                    <span className="text-red-600">Production API Key</span>
+                  </div>
+                }
+                type="password"
+                value={settings.sumup_api_key_production}
+                onChange={(e) => handleChange('sumup_api_key_production', e.target.value)}
+                placeholder="sup_sk_live_..."
+                hint="⚠️ Your SumUp Production API key - keep this secret!"
               />
             </CardBody>
           </Card>
 
-          {/* SumUp Merchant Code */}
+          {/* Merchant Code */}
           <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Merchant Details</h3>
+            </CardHeader>
             <CardBody>
               <Input
                 label={
@@ -209,18 +272,42 @@ export default function AdminPaymentSettings() {
             </CardBody>
           </Card>
 
-          {/* Minimum Amount */}
+          {/* Membership Pricing */}
           <Card>
-            <CardBody>
-              <Input
-                label="Minimum Donation Amount (EUR)"
-                type="number"
-                min="1"
-                step="1"
-                value={settings.donation_min_amount}
-                onChange={(e) => handleChange('donation_min_amount', e.target.value)}
-                hint="Minimum amount users can donate online"
-              />
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Membership Pricing</h3>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Monthly Membership Price (EUR)"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={settings.membership_monthly_price}
+                  onChange={(e) => handleChange('membership_monthly_price', e.target.value)}
+                  hint="Price for monthly membership"
+                />
+                
+                <Input
+                  label="Annual Membership Price (EUR)"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={settings.membership_annual_price}
+                  onChange={(e) => handleChange('membership_annual_price', e.target.value)}
+                  hint="Price for annual membership"
+                />
+              </div>
+              
+              {settings.membership_monthly_price && settings.membership_annual_price && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    💰 Annual savings: €{(parseFloat(settings.membership_monthly_price) * 12 - parseFloat(settings.membership_annual_price)).toFixed(2)} 
+                    ({(((parseFloat(settings.membership_monthly_price) * 12 - parseFloat(settings.membership_annual_price)) / (parseFloat(settings.membership_monthly_price) * 12)) * 100).toFixed(0)}%)
+                  </p>
+                </div>
+              )}
             </CardBody>
           </Card>
 

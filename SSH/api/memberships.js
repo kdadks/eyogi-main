@@ -210,7 +210,7 @@ router.post('/register', async (req, res) => {
         },
         body: JSON.stringify({
           checkout_reference: checkoutReference,
-          amount: Math.round(price.amount * 100), // SumUp expects amount in cents
+          amount: price.amount, // Amount in EUR from database
           currency: price.currency,
           pay_to_email: process.env.SUMUP_EMAIL,
           description: `eYogi ${subscriptionType === 'monthly' ? 'Monthly' : 'Annual'} Membership`,

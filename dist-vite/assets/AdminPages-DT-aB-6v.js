@@ -1,1 +1,0 @@
-import{r as e}from"./vendor-motion-BYSPSouG.js";import{t}from"./AdminLayout-CRqxTVzl.js";var n=e();function r(){return(0,n.jsx)(t,{title:`Pages`,breadcrumbs:[{label:`Dashboard`,href:`/admin`},{label:`Pages`}],children:(0,n.jsx)(`p`,{className:`text-gray-600`,children:`Pages management coming soon.`})})}export{r as default};

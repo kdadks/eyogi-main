@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { Plus, Edit2, Trash2, MoveUp, MoveDown, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 import {
@@ -91,7 +92,7 @@ export default function AdminAboutContent() {
       await fetchSections()
       handleCancel()
     } catch (err: any) {
-      alert('Error saving: ' + err.message)
+      toast.error('Error saving: ' + err.message)
     } finally {
       setIsSaving(false)
     }
@@ -106,7 +107,7 @@ export default function AdminAboutContent() {
       if (error) throw error
       await fetchSections()
     } catch (err: any) {
-      alert('Error deleting: ' + err.message)
+      toast.error('Error deleting: ' + err.message)
     }
   }
 
@@ -134,7 +135,7 @@ export default function AdminAboutContent() {
 
       await fetchSections()
     } catch (err: any) {
-      alert('Error reordering: ' + err.message)
+      toast.error('Error reordering: ' + err.message)
     }
   }
 
@@ -148,7 +149,7 @@ export default function AdminAboutContent() {
       if (error) throw error
       await fetchSections()
     } catch (err: any) {
-      alert('Error toggling: ' + err.message)
+      toast.error('Error toggling: ' + err.message)
     }
   }
 

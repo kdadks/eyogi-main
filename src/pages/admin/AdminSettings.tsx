@@ -57,6 +57,7 @@ export default function AdminSettings() {
     try {
       setLoading(true)
       const { data, error } = await supabase
+        .schema('gurukul_main')
         .from('settings')
         .select('key, value')
         .eq('category', 'general')
@@ -89,6 +90,7 @@ export default function AdminSettings() {
     try {
       const updates = Object.entries(settings).map(([key, value]) =>
         supabase
+          .schema('gurukul_main')
           .from('settings')
           .upsert(
             {

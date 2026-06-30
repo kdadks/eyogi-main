@@ -1,6 +1,8 @@
 import { lazy, Suspense, Component, ReactNode } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import SiteLayout from './components/SiteLayout'
+import AdminProtectedRoute from './components/admin/AdminProtectedRoute'
 import { DonationModalProvider } from './contexts/DonationModalContext'
 import { MembershipModalProvider } from './contexts/MembershipModalContext'
 import { SiteSettingsProvider } from './contexts/SiteSettingsContext'
@@ -15,6 +17,8 @@ const AboutPage = lazy(() => import('./pages/AboutPage'))
 const FAQPage = lazy(() => import('./pages/FAQPage'))
 const MembershipPage = lazy(() => import('./pages/MembershipPage'))
 const MembershipConfirmation = lazy(() => import('./pages/MembershipConfirmation'))
+const DonationPage = lazy(() => import('./pages/DonationPage'))
+const DonationSuccessPage = lazy(() => import('./pages/DonationSuccessPage'))
 const FormsPage = lazy(() => import('./pages/FormsPage'))
 const ContactPage = lazy(() => import('./pages/ContactPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
@@ -28,12 +32,19 @@ const AdminMemberships = lazy(() => import('./pages/admin/AdminMemberships'))
 const AdminDonations = lazy(() => import('./pages/admin/AdminDonations'))
 const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
+const AdminPaymentSettings = lazy(() => import('./pages/admin/PaymentSettings'))
 
 // CMS Admin pages
 const AdminCMS = lazy(() => import('./pages/admin/AdminCMS'))
 const CMSEditor = lazy(() => import('./pages/admin/CMSEditor'))
 const PostEditor = lazy(() => import('./pages/admin/PostEditor'))
 const AdminMedia = lazy(() => import('./pages/admin/AdminMedia'))
+
+// Member Portal pages
+const MemberLoginPage = lazy(() => import('./pages/members/MemberLoginPage'))
+const SetPasswordPage = lazy(() => import('./pages/members/SetPasswordPage'))
+const MemberPortalDashboard = lazy(() => import('./pages/members/portal/MemberPortalDashboard'))
+const MemberProtectedRoute = lazy(() => import('./components/members/MemberProtectedRoute'))
 
 function PageLoader() {
   return (
@@ -47,6 +58,16 @@ function withSuspense(Component: React.ComponentType) {
   return (
     <Suspense fallback={<PageLoader />}>
       <Component />
+    </Suspense>
+  )
+}
+
+function withAdminProtection(Component: React.ComponentType) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <AdminProtectedRoute>
+        <Component />
+      </AdminProtectedRoute>
     </Suspense>
   )
 }
@@ -85,29 +106,45 @@ const router = createBrowserRouter([
       { path: '/faq', element: withSuspense(FAQPage) },
       { path: '/membership', element: withSuspense(MembershipPage) },
       { path: '/membership/confirmation', element: withSuspense(MembershipConfirmation) },
+      { path: '/donation', element: withSuspense(DonationPage) },
+      { path: '/donation/success', element: withSuspense(DonationSuccessPage) },
       { path: '/forms', element: withSuspense(FormsPage) },
       { path: '/contact', element: withSuspense(ContactPage) },
     ],
   },
-  { path: '/auth/login', element: withSuspense(LoginPage) },
-  
-  // Admin routes - NOT children of SiteLayout
-  { path: '/admin', element: withSuspense(AdminDashboard) },
-  { path: '/admin/posts', element: withSuspense(AdminPosts) },
-  { path: '/admin/pages', element: withSuspense(AdminPagesList) },
-  { path: '/admin/pages/:slug', element: withSuspense(AdminPageEditor) },
-  { path: '/admin/donations', element: withSuspense(AdminDonations) },
-  { path: '/admin/memberships', element: withSuspense(AdminMemberships) },
-  { path: '/admin/categories', element: withSuspense(AdminCategories) },
-  { path: '/admin/settings', element: withSuspense(AdminSettings) },
-  { path: '/admin/posts/new', element: withSuspense(PostEditor) },
-  { path: '/admin/posts/:id/edit', element: withSuspense(PostEditor) },
-  { path: '/admin/media', element: withSuspense(AdminMedia) },
+  // Admin routes - protected and NOT children of SiteLayout
+  { path: '/admin/login', element: withSuspense(LoginPage) },
+  { path: '/admin', element: withAdminProtection(AdminDashboard) },
+  { path: '/admin/posts', element: withAdminProtection(AdminPosts) },
+  { path: '/admin/pages', element: withAdminProtection(AdminPagesList) },
+  { path: '/admin/pages/:slug', element: withAdminProtection(AdminPageEditor) },
+  { path: '/admin/donations', element: withAdminProtection(AdminDonations) },
+  { path: '/admin/memberships', element: withAdminProtection(AdminMemberships) },
+  { path: '/admin/categories', element: withAdminProtection(AdminCategories) },
+  { path: '/admin/settings', element: withAdminProtection(AdminSettings) },
+  { path: '/admin/payment-settings', element: withAdminProtection(AdminPaymentSettings) },
+  { path: '/admin/posts/new', element: withAdminProtection(PostEditor) },
+  { path: '/admin/posts/:id/edit', element: withAdminProtection(PostEditor) },
+  { path: '/admin/media', element: withAdminProtection(AdminMedia) },
 
   // CMS Admin routes
-  { path: '/admin/cms', element: withSuspense(AdminCMS) },
-  { path: '/admin/cms/editor/:id', element: withSuspense(CMSEditor) },
-  { path: '/admin/cms/editor', element: withSuspense(CMSEditor) },
+  { path: '/admin/cms', element: withAdminProtection(AdminCMS) },
+  { path: '/admin/cms/editor/:id', element: withAdminProtection(CMSEditor) },
+  { path: '/admin/cms/editor', element: withAdminProtection(CMSEditor) },
+  
+  // Member Portal routes
+  { path: '/members/login', element: withSuspense(MemberLoginPage) },
+  { path: '/members/set-password', element: withSuspense(SetPasswordPage) },
+  { 
+    path: '/members/portal', 
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <MemberProtectedRoute>
+          <MemberPortalDashboard />
+        </MemberProtectedRoute>
+      </Suspense>
+    )
+  },
   { 
     path: '*', 
     element: (
@@ -133,6 +170,30 @@ export default function App() {
             <RouterProvider router={router} />
             <MembershipModal />
             <DonationModal />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+                success: {
+                  duration: 3000,
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  duration: 4000,
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
           </MembershipModalProvider>
         </DonationModalProvider>
       </SiteSettingsProvider>

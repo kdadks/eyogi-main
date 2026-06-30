@@ -4,7 +4,8 @@
 // ============================================
 
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { createClient } from '@/lib/supabase/client'
 
 export interface AdminMenuItem {
   label: string
@@ -40,6 +41,7 @@ export const adminMenuItems: AdminMenuItem[] = [
   { label: 'Navigation', href: '/admin/menus', icon: '🔗' },
   { label: 'Donations', href: '/admin/donations', icon: '💰' },
   { label: 'Settings', href: '/admin/settings', icon: '⚙️' },
+  { label: 'Payment Settings', href: '/admin/payment-settings', icon: '💳', badge: 'NEW' },
   { label: 'Users', href: '/admin/users', icon: '👥' },
 ]
 
@@ -54,6 +56,26 @@ interface AdminLayoutProps {
 export function AdminLayout({ children, title, breadcrumbs, actions }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        console.error('Logout error:', error)
+        toast.error('Error logging out: ' + error.message)
+        return
+      }
+
+      // Redirect to home page
+      navigate('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast.error('Error logging out')
+    }
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -108,12 +130,12 @@ export function AdminLayout({ children, title, breadcrumbs, actions }: AdminLayo
             <div className="flex items-center space-x-4">
               <button className="text-gray-600 hover:text-gray-900">🔔</button>
               <button className="text-gray-600 hover:text-gray-900">⚙️</button>
-              <Link
-                to="/auth/login"
+              <button
+                onClick={handleLogout}
                 className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700"
               >
                 Logout
-              </Link>
+              </button>
             </div>
           </div>
         </header>

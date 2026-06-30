@@ -407,14 +407,22 @@ export const formSubmissions = {
 
 export const settings = {
   async get(key: string): Promise<any> {
-    const { data, error } = await supabase.from('settings').select('value').eq('key', key).single()
+    const { data, error } = await supabase
+      .schema('gurukul_main')
+      .from('settings')
+      .select('value')
+      .eq('key', key)
+      .single()
 
     if (error && error.code !== 'PGRST116') throw error
     return data?.value ?? null
   },
 
   async getAll(): Promise<Record<string, any>> {
-    const { data, error } = await supabase.from('settings').select('key, value')
+    const { data, error } = await supabase
+      .schema('gurukul_main')
+      .from('settings')
+      .select('key, value')
 
     if (error) throw error
 
@@ -426,6 +434,7 @@ export const settings = {
 
   async set(key: string, value: any, description?: string): Promise<Setting> {
     const { data, error } = await supabase
+      .schema('gurukul_main')
       .from('settings')
       .upsert({ key, value, description }, { onConflict: 'key' })
       .select()
@@ -436,7 +445,11 @@ export const settings = {
   },
 
   async delete(key: string): Promise<void> {
-    const { error } = await supabase.from('settings').delete().eq('key', key)
+    const { error } = await supabase
+      .schema('gurukul_main')
+      .from('settings')
+      .delete()
+      .eq('key', key)
 
     if (error) throw error
   },

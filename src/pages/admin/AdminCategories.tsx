@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
+import toast from 'react-hot-toast'
 import { createClient } from '@supabase/supabase-js'
 import {
   Plus,
@@ -132,7 +133,7 @@ export default function AdminCategories() {
 
   const handleSave = async () => {
     if (!formData.name || !formData.slug) {
-      alert('Name and slug are required')
+      toast.error('Name and slug are required')
       return
     }
 
@@ -162,8 +163,9 @@ export default function AdminCategories() {
 
       await fetchCategories()
       setIsModalOpen(false)
+      toast.success('Category saved successfully')
     } catch (error: any) {
-      alert('Error saving category: ' + error.message)
+      toast.error('Error saving category: ' + error.message)
     }
   }
 
@@ -175,8 +177,9 @@ export default function AdminCategories() {
 
       if (error) throw error
       await fetchCategories()
+      toast.success('Category deleted successfully')
     } catch (error: any) {
-      alert('Error deleting category: ' + error.message)
+      toast.error('Error deleting category: ' + error.message)
     }
   }
 

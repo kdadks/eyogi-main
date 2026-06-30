@@ -1,1 +1,0 @@
-import{r as e}from"./vendor-motion-BYSPSouG.js";import{t}from"./AdminLayout-CRqxTVzl.js";var n=e();function r(){return(0,n.jsx)(t,{title:`Posts`,breadcrumbs:[{label:`Dashboard`,href:`/admin`},{label:`Posts`}],children:(0,n.jsx)(`p`,{className:`text-gray-600`,children:`Posts management coming soon.`})})}export{r as default};
