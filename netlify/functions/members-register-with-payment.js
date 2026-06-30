@@ -96,7 +96,10 @@ export const handler = async (event) => {
         if (apiKey) {
           const checkout = await checkSumUpCheckoutStatus(apiKey, checkoutId)
           if (!checkout) {
-            return json(400, { error: 'Payment verification failed. Please contact support.' })
+            return json(400, {
+              error: 'Payment verification failed. Could not fetch checkout from SumUp.',
+              checkoutId,
+            })
           }
 
           const isPaid =
@@ -105,7 +108,18 @@ export const handler = async (event) => {
             checkout.transactions.some((transaction) => transaction.status === 'SUCCESSFUL')
 
           if (!isPaid) {
-            return json(400, { error: 'Payment was not completed. Please try again.' })
+            return json(400, {
+              error: 'Payment was not completed. Please try again.',
+              checkoutId,
+              checkoutStatus: checkout.status,
+              transactionStatuses: (checkout.transactions || []).map((transaction) => ({
+                id: transaction.id,
+                status: transaction.status,
+                type: transaction.transaction_type,
+                amount: transaction.amount,
+                currency: transaction.currency,
+              })),
+            })
           }
         }
       }
