@@ -164,7 +164,7 @@ function generateWelcomeEmailHTML(data: MembershipWelcomeEmailData): string {
             <div class="subscription-details">
               <div class="detail-row">
                 <span class="detail-label">Subscription Type</span>
-                <span class="detail-value">${data.subscriptionType === 'monthly' ? 'Monthly (€11)' : 'Annual (€120)'}</span>
+                <span class="detail-value">${data.subscriptionType === 'monthly' ? 'Monthly (€12)' : 'Annual (€120)'}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Valid Until</span>

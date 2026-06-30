@@ -19,7 +19,7 @@ const supabase = createClient(
 
 // Subscription prices
 const SUBSCRIPTION_PRICES = {
-  monthly: { amount: 11.0, currency: 'EUR' },
+  monthly: { amount: 12.0, currency: 'EUR' },
   annual: { amount: 120.0, currency: 'EUR' },
 }
 

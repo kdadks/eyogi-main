@@ -128,7 +128,7 @@ export function formatCurrency(amount: number, currency: string = 'EUR'): string
  */
 export const SUBSCRIPTION_PRICES = {
   monthly: {
-    amount: 11.0,
+    amount: 12.0,
     currency: 'EUR',
     period: 'month',
     description: 'Monthly Membership',

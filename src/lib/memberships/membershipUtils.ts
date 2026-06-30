@@ -68,7 +68,7 @@ export function parseMemberId(memberId: string) {
  */
 export const SUBSCRIPTION_PRICES = {
   monthly: {
-    amount: 11.0,
+    amount: 12.0,
     currency: 'EUR',
     durationMonths: 1,
   },

@@ -295,7 +295,7 @@ export default function AdminMemberships() {
       label: 'Plan',
       render: (value: string) => (
         <Badge variant={value === 'annual' ? 'primary' : 'secondary'}>
-          {value === 'annual' ? 'Annual (€120)' : 'Monthly (€11)'}
+          {value === 'annual' ? 'Annual (€120)' : 'Monthly (€12)'}
         </Badge>
       ),
     },
@@ -379,7 +379,7 @@ export default function AdminMemberships() {
                 onChange={(e) => setFilterSubscription(e.target.value)}
                 options={[
                   { value: 'all', label: 'All Plans' },
-                  { value: 'monthly', label: 'Monthly (€11)' },
+                  { value: 'monthly', label: 'Monthly (€12)' },
                   { value: 'annual', label: 'Annual (€120)' },
                 ]}
               />
@@ -464,7 +464,7 @@ export default function AdminMemberships() {
           <Select
             label="Subscription Plan"
             options={[
-              { value: 'monthly', label: 'Monthly (€11)' },
+              { value: 'monthly', label: 'Monthly (€12)' },
               { value: 'annual', label: 'Annual (€120)' },
             ]}
             required
@@ -520,7 +520,7 @@ export default function AdminMemberships() {
               <div className="flex justify-between items-start gap-4">
                 <span className="text-sm font-semibold text-gray-600">Plan Type</span>
                 <Badge variant={viewMember.subscription_type === 'annual' ? 'primary' : 'secondary'}>
-                  {viewMember.subscription_type === 'annual' ? 'Annual (€120)' : 'Monthly (€11)'}
+                  {viewMember.subscription_type === 'annual' ? 'Annual (€120)' : 'Monthly (€12)'}
                 </Badge>
               </div>
               <div className="flex justify-between items-start gap-4">
