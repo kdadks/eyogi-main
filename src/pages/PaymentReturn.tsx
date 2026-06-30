@@ -15,8 +15,24 @@ export default function PaymentReturn() {
   const [registrationId, setRegistrationId] = useState<string | null>(null)
   const hasRedirected = useRef(false)
 
-  // Get registration_id from URL or lookup using checkout_id
+  // Get registration_id from sessionStorage, URL, or database
   useEffect(() => {
+    // Priority 1: Check sessionStorage (most reliable - set before SumUp redirect)
+    const storedCheckout = sessionStorage.getItem('membershipCheckout')
+    if (storedCheckout) {
+      try {
+        const checkoutData = JSON.parse(storedCheckout)
+        console.log('✅ [PAYMENT-RETURN] Found registration_id in sessionStorage:', checkoutData.registrationId)
+        setRegistrationId(checkoutData.registrationId)
+        // Clear sessionStorage since we've used it
+        sessionStorage.removeItem('membershipCheckout')
+        return
+      } catch (err) {
+        console.error('❌ [PAYMENT-RETURN] Failed to parse stored checkout:', err)
+      }
+    }
+
+    // Priority 2: Check URL parameters (in case SumUp preserves them)
     const urlRegistrationId = searchParams.get('registration_id')
     const checkoutId = searchParams.get('checkout_id') || searchParams.get('id')
 
@@ -26,14 +42,13 @@ export default function PaymentReturn() {
       allParams: Object.fromEntries(searchParams.entries()),
     })
 
-    // If we have registration_id in URL, use it directly (SumUp should preserve it)
     if (urlRegistrationId) {
-      console.log('✅ [PAYMENT-RETURN] Found registration_id in URL, using directly')
+      console.log('✅ [PAYMENT-RETURN] Found registration_id in URL')
       setRegistrationId(urlRegistrationId)
       return
     }
 
-    // If we only have checkout_id, lookup registration_id from database
+    // Priority 3: Lookup registration_id using checkout_id from database
     if (checkoutId && !hasRedirected.current) {
       hasRedirected.current = true
       console.log('📡 [PAYMENT-RETURN] Looking up registration_id for checkout:', checkoutId)
@@ -55,8 +70,8 @@ export default function PaymentReturn() {
           // Still let user continue - they can provide info manually
           setRegistrationId(checkoutId)
         })
-    } else {
-      console.warn('⚠️ [PAYMENT-RETURN] No registration_id or checkout_id found in URL')
+    } else if (!urlRegistrationId && !checkoutId) {
+      console.warn('⚠️ [PAYMENT-RETURN] No registration_id found in sessionStorage, URL, or parameters')
     }
   }, [searchParams])
 

@@ -143,18 +143,86 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
       )
 
       // Show success toast
-      toast.success('Redirecting to payment...')
+      toast.success('Opening payment window...')
 
       // Call onSuccess callback if provided (e.g., to close modal)
       if (onSuccess) {
         onSuccess()
       }
 
-      // Redirect to SumUp checkout - use URL for validation
-      console.log('🔗 Redirecting to checkout URL:', data.checkout_url)
+      // Open SumUp checkout in a popup window instead of redirecting
+      console.log('🔗 Opening checkout in popup:', data.checkout_url)
+      const paymentWindow = window.open(
+        data.checkout_url,
+        'SumUpCheckout',
+        'width=500,height=700,scrollbars=yes,resizable=yes'
+      )
+
+      if (!paymentWindow) {
+        console.error('❌ Failed to open payment window (popup blocked)')
+        toast.error('Please allow popups for payment')
+        setLoading(false)
+        return
+      }
+
+      // Poll to detect when payment is complete
+      const pollInterval = setInterval(() => {
+        try {
+          // Check if popup is closed
+          if (paymentWindow.closed) {
+            console.log('✅ Payment window closed - redirecting to confirmation')
+            clearInterval(pollInterval)
+            setLoading(false)
+
+            // Redirect to membership confirmation with registration_id from sessionStorage
+            const checkoutData = sessionStorage.getItem('membershipCheckout')
+            if (checkoutData) {
+              const { registrationId } = JSON.parse(checkoutData)
+              console.log('📍 Redirecting to confirmation with registration_id:', registrationId)
+              window.location.href = `/membership/confirmation?registration_id=${registrationId}`
+            } else {
+              console.warn('⚠️ No checkout data in sessionStorage')
+              window.location.href = '/membership/confirmation'
+            }
+            return
+          }
+
+          // Try to detect if popup navigated to return_url (payment-return or any non-SumUp URL)
+          try {
+            const popupUrl = paymentWindow.location.href
+            console.log('Popup URL:', popupUrl)
+
+            // If popup is trying to navigate to our site (not blocked by CORS), payment is done
+            if (popupUrl && !popupUrl.includes('sumup') && !popupUrl.includes('about:blank')) {
+              console.log('✅ Payment window redirected - payment likely complete')
+              paymentWindow.close()
+              clearInterval(pollInterval)
+              setLoading(false)
+
+              // Redirect to confirmation
+              const checkoutData = sessionStorage.getItem('membershipCheckout')
+              if (checkoutData) {
+                const { registrationId } = JSON.parse(checkoutData)
+                console.log('📍 Redirecting to confirmation with registration_id:', registrationId)
+                window.location.href = `/membership/confirmation?registration_id=${registrationId}`
+              } else {
+                window.location.href = '/membership/confirmation'
+              }
+              return
+            }
+          } catch (e) {
+            // Cross-origin error is expected - popup is on SumUp domain
+            // This is fine, we'll just wait for the window to close
+          }
+        } catch (err) {
+          console.error('Error in popup poll:', err)
+        }
+      }, 1000)
+
+      // Fallback: if popup doesn't close within 15 minutes, stop polling
       setTimeout(() => {
-        window.location.href = data.checkout_url
-      }, 500)
+        clearInterval(pollInterval)
+      }, 15 * 60 * 1000)
     } catch (err) {
       console.error('Checkout error:', err)
       toast.error('Failed to process checkout. Please try again.')
