@@ -18,12 +18,17 @@ export default function PaymentReturn() {
   // Get registration_id from URL or lookup using checkout_id
   useEffect(() => {
     const urlRegistrationId = searchParams.get('registration_id')
-    const checkoutId = searchParams.get('checkout_id') || searchParams.get('id') // SumUp might use 'id' or 'checkout_id'
+    const checkoutId = searchParams.get('checkout_id') || searchParams.get('id')
 
-    console.log('🔄 [PAYMENT-RETURN] Page loaded with:', { urlRegistrationId, checkoutId })
+    console.log('🔄 [PAYMENT-RETURN] URL params:', {
+      urlRegistrationId,
+      checkoutId,
+      allParams: Object.fromEntries(searchParams.entries()),
+    })
 
-    // If we have registration_id in URL, use it directly
+    // If we have registration_id in URL, use it directly (SumUp should preserve it)
     if (urlRegistrationId) {
+      console.log('✅ [PAYMENT-RETURN] Found registration_id in URL, using directly')
       setRegistrationId(urlRegistrationId)
       return
     }

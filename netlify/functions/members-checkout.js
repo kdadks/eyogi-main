@@ -235,7 +235,7 @@ export const handler = async (event) => {
       return json(200, devCheckoutData)
     }
 
-    const returnUrl = `${baseUrl}/payment-return`
+    const returnUrl = `${baseUrl}/payment-return?registration_id=${checkoutReference}`
 
     console.log('📋 [MEMBERS-CHECKOUT] Creating SumUp checkout:', {
       checkoutReference,
