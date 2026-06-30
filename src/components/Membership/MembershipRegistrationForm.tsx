@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { Zap, AlertCircle, Loader2, CheckCircle } from 'lucide-react'
 import { calculateSavings, formatCurrency, SUBSCRIPTION_PRICES } from '@/lib/memberships/membershipUtils'
+import PaymentModal from './PaymentModal'
 
 interface FormData {
   firstName: string
@@ -39,6 +40,13 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentData, setPaymentData] = useState<{
+    checkoutUrl: string
+    registrationId: string
+    amount: number
+    currency: string
+  } | null>(null)
 
   const savings = calculateSavings()
   const annualSavingsPercent = savings.savingsPercent
@@ -142,90 +150,15 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
         })
       )
 
-      // Show success toast
-      toast.success('Opening payment...')
-
-      // Call onSuccess callback if provided (e.g., to close modal)
-      if (onSuccess) {
-        onSuccess()
-      }
-
-      // Try to open SumUp checkout in a popup window
-      console.log('🔗 Opening checkout (attempting popup):', data.checkout_url)
-      const paymentWindow = window.open(
-        data.checkout_url,
-        'SumUpCheckout',
-        'width=500,height=700,scrollbars=yes,resizable=yes'
-      )
-
-      // If popup is blocked, fall back to redirect
-      if (!paymentWindow) {
-        console.warn('⚠️ Popup blocked - falling back to redirect')
-        setTimeout(() => {
-          window.location.href = data.checkout_url
-        }, 500)
-        return
-      }
-
-      // Popup opened successfully - poll to detect when payment is complete
-      console.log('✅ Popup opened successfully - listening for completion')
-      const pollInterval = setInterval(() => {
-        try {
-          // Check if popup is closed
-          if (paymentWindow.closed) {
-            console.log('✅ Payment popup closed - redirecting to confirmation')
-            clearInterval(pollInterval)
-            setLoading(false)
-
-            // Redirect to membership confirmation with registration_id from sessionStorage
-            const checkoutData = sessionStorage.getItem('membershipCheckout')
-            if (checkoutData) {
-              const { registrationId } = JSON.parse(checkoutData)
-              console.log('📍 Redirecting to confirmation with registration_id:', registrationId)
-              window.location.href = `/membership/confirmation?registration_id=${registrationId}`
-            } else {
-              console.warn('⚠️ No checkout data in sessionStorage')
-              window.location.href = '/membership/confirmation'
-            }
-            return
-          }
-
-          // Try to detect if popup navigated to return_url (payment-return or any non-SumUp URL)
-          try {
-            const popupUrl = paymentWindow.location.href
-            console.log('Popup URL:', popupUrl)
-
-            // If popup is trying to navigate to our site (not blocked by CORS), payment is done
-            if (popupUrl && !popupUrl.includes('sumup') && !popupUrl.includes('about:blank')) {
-              console.log('✅ Payment popup redirected - payment likely complete')
-              paymentWindow.close()
-              clearInterval(pollInterval)
-              setLoading(false)
-
-              // Redirect to confirmation
-              const checkoutData = sessionStorage.getItem('membershipCheckout')
-              if (checkoutData) {
-                const { registrationId } = JSON.parse(checkoutData)
-                console.log('📍 Redirecting to confirmation with registration_id:', registrationId)
-                window.location.href = `/membership/confirmation?registration_id=${registrationId}`
-              } else {
-                window.location.href = '/membership/confirmation'
-              }
-              return
-            }
-          } catch (e) {
-            // Cross-origin error is expected - popup is on SumUp domain
-            // This is fine, we'll just wait for the window to close
-          }
-        } catch (err) {
-          console.error('Error in popup poll:', err)
-        }
-      }, 1000)
-
-      // Fallback: if popup doesn't close within 15 minutes, stop polling
-      setTimeout(() => {
-        clearInterval(pollInterval)
-      }, 15 * 60 * 1000)
+      // Show payment modal instead of popup/redirect
+      setPaymentData({
+        checkoutUrl: data.checkout_url,
+        registrationId: data.registration_id,
+        amount: data.amount,
+        currency: data.currency,
+      })
+      setShowPaymentModal(true)
+      setLoading(false)
     } catch (err) {
       console.error('Checkout error:', err)
       toast.error('Failed to process checkout. Please try again.')
@@ -456,6 +389,32 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
       <p className="text-xs text-stone-500 text-center">
         Your payment will be processed securely by SumUp. No payment information is stored on our servers.
       </p>
+
+      {/* Payment Modal */}
+      {paymentData && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          checkoutUrl={paymentData.checkoutUrl}
+          registrationId={paymentData.registrationId}
+          amount={paymentData.amount}
+          currency={paymentData.currency}
+          onClose={() => {
+            setShowPaymentModal(false)
+            setPaymentData(null)
+          }}
+          onPaymentComplete={() => {
+            // Redirect to confirmation with registration_id from sessionStorage
+            const checkoutData = sessionStorage.getItem('membershipCheckout')
+            if (checkoutData) {
+              const { registrationId } = JSON.parse(checkoutData)
+              console.log('📍 Payment modal redirecting to confirmation with registration_id:', registrationId)
+              window.location.href = `/membership/confirmation?registration_id=${registrationId}`
+            } else {
+              window.location.href = '/membership/confirmation'
+            }
+          }}
+        />
+      )}
     </form>
   )
 }

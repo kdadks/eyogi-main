@@ -1,1 +1,0 @@
-import{Ft as e,It as t}from"./vendor-ui-d7fD69K7.js";function n(...n){return e(t(n))}export{n as t};
