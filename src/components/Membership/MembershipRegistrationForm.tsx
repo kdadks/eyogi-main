@@ -143,34 +143,37 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
       )
 
       // Show success toast
-      toast.success('Opening payment window...')
+      toast.success('Opening payment...')
 
       // Call onSuccess callback if provided (e.g., to close modal)
       if (onSuccess) {
         onSuccess()
       }
 
-      // Open SumUp checkout in a popup window instead of redirecting
-      console.log('🔗 Opening checkout in popup:', data.checkout_url)
+      // Try to open SumUp checkout in a popup window
+      console.log('🔗 Opening checkout (attempting popup):', data.checkout_url)
       const paymentWindow = window.open(
         data.checkout_url,
         'SumUpCheckout',
         'width=500,height=700,scrollbars=yes,resizable=yes'
       )
 
+      // If popup is blocked, fall back to redirect
       if (!paymentWindow) {
-        console.error('❌ Failed to open payment window (popup blocked)')
-        toast.error('Please allow popups for payment')
-        setLoading(false)
+        console.warn('⚠️ Popup blocked - falling back to redirect')
+        setTimeout(() => {
+          window.location.href = data.checkout_url
+        }, 500)
         return
       }
 
-      // Poll to detect when payment is complete
+      // Popup opened successfully - poll to detect when payment is complete
+      console.log('✅ Popup opened successfully - listening for completion')
       const pollInterval = setInterval(() => {
         try {
           // Check if popup is closed
           if (paymentWindow.closed) {
-            console.log('✅ Payment window closed - redirecting to confirmation')
+            console.log('✅ Payment popup closed - redirecting to confirmation')
             clearInterval(pollInterval)
             setLoading(false)
 
@@ -194,7 +197,7 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
 
             // If popup is trying to navigate to our site (not blocked by CORS), payment is done
             if (popupUrl && !popupUrl.includes('sumup') && !popupUrl.includes('about:blank')) {
-              console.log('✅ Payment window redirected - payment likely complete')
+              console.log('✅ Payment popup redirected - payment likely complete')
               paymentWindow.close()
               clearInterval(pollInterval)
               setLoading(false)
