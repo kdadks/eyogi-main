@@ -14,10 +14,7 @@ interface SendEmailOptions {
  */
 export async function sendEmailViaAPI(options: SendEmailOptions): Promise<boolean> {
   try {
-    // Determine API URL based on environment
-    const apiUrl = import.meta.env.DEV
-      ? import.meta.env.VITE_APP_URL || 'http://localhost:3000'
-      : window.location.origin
+    const apiUrl = import.meta.env.VITE_APP_URL || window.location.origin
 
     console.log('📧 Sending email via API:', {
       apiUrl,

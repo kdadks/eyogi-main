@@ -4,7 +4,7 @@
  */
 
 // API Endpoints
-export const PAYLOAD_API_URL = import.meta.env.VITE_PAYLOAD_API_URL || 'http://localhost:3000/api'
+export const PAYLOAD_API_URL = import.meta.env.VITE_PAYLOAD_API_URL || '/api'
 
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''

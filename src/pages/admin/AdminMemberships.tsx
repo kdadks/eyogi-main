@@ -61,7 +61,7 @@ export default function AdminMemberships() {
       setLoading(true)
       
       // Fetch from backend API endpoint (which uses service role, bypassing RLS)
-      const response = await fetch('http://localhost:3001/api/members', {
+      const response = await fetch('/api/members', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ export default function AdminMemberships() {
     if (!editingMember) return
     try {
       // Call backend API to update member
-      const response = await fetch(`http://localhost:3001/api/members/${editingMember.member_id}`, {
+      const response = await fetch(`/api/members/${editingMember.member_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ export default function AdminMemberships() {
     if (!deleteConfirmMember) return
     try {
       // Call backend API to delete member from database
-      const response = await fetch(`http://localhost:3001/api/members/${deleteConfirmMember.member_id}`, {
+      const response = await fetch(`/api/members/${deleteConfirmMember.member_id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

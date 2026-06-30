@@ -9,6 +9,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
       "source": "/ssh-app",
       "destination": "/ssh-app/index.html"
     },

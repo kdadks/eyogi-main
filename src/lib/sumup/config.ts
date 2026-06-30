@@ -14,7 +14,7 @@ export interface SumUpConfig {
 /**
  * Detect if current environment is production or sandbox
  * Production: eyogigurukul.com domain
- * Sandbox: localhost or any *.netlify.app domain
+ * Sandbox: non-production domains (including preview deploys)
  */
 export function isProductionEnvironment(): boolean {
   // Client-side detection
@@ -24,16 +24,16 @@ export function isProductionEnvironment(): boolean {
     if (hostname === 'eyogigurukul.com' || hostname === 'www.eyogigurukul.com') {
       return true
     }
-    // Sandbox domains
-    if (hostname === 'localhost' || hostname.endsWith('.netlify.app')) {
+    // Sandbox and preview domains
+    if (hostname.endsWith('.netlify.app')) {
       return false
     }
   }
 
   // Server-side detection
-  const vercelUrl = process.env.VERCEL_URL
-  if (vercelUrl) {
-    if (vercelUrl.includes('eyogigurukul.com')) {
+  const deployUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || process.env.DEPLOY_URL
+  if (deployUrl) {
+    if (deployUrl.includes('eyogigurukul.com')) {
       return true
     }
     // Netlify preview or other deployment

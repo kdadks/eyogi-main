@@ -20,11 +20,15 @@ console.log('UPLOADTHING_APP_ID:', process.env.UPLOADTHING_APP_ID ? 'Available' 
 
 const app = express()
 const PORT = 3001
+const corsOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
 
 // Enable CORS
 app.use(
   cors({
-    origin: ['http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+    origin: corsOrigins.length > 0 ? corsOrigins : true,
     credentials: true,
   }),
 )
@@ -519,5 +523,5 @@ app.all('/api/uploadthing', async (req, res) => {
 app.use('/api/memberships', membershipRouter)
 
 app.listen(PORT, () => {
-  console.log(`UploadThing backend server running on http://localhost:${PORT}`)
+  console.log(`UploadThing backend server running on port ${PORT}`)
 })

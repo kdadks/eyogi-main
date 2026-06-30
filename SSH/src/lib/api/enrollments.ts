@@ -655,21 +655,19 @@ export async function approveEnrollment(enrollmentId: string): Promise<void> {
             ? (enrollmentData.course as { description?: string }).description
             : undefined
 
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}/api/enrollments/confirm`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              studentEmail,
-              studentFullName,
-              courseName,
-              courseDescription,
-            }),
+        const baseUrl = import.meta.env.VITE_APP_URL || ''
+        const response = await fetch(`${baseUrl}/api/enrollments/confirm`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        )
+          body: JSON.stringify({
+            studentEmail,
+            studentFullName,
+            courseName,
+            courseDescription,
+          }),
+        })
 
         if (!response.ok) {
           console.warn('Failed to send enrollment confirmation email:', {

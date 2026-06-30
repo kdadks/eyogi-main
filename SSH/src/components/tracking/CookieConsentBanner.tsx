@@ -35,10 +35,9 @@ export default function CookieConsentBanner() {
   useEffect(() => {
     if (!isClient) return
 
-    // Skip cookie consent banner in development/localhost
-    const hostname = window.location.hostname
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
-      console.log('[CookieConsent] Skipping banner on localhost')
+    // Skip cookie consent banner in development
+    if (import.meta.env.DEV) {
+      console.log('[CookieConsent] Skipping banner in development mode')
       return
     }
 

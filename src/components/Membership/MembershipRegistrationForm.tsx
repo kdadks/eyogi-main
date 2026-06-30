@@ -109,7 +109,10 @@ export default function MembershipRegistrationForm({ onSuccess }: MembershipRegi
         }),
       })
 
-      const data = await response.json()
+      const contentType = response.headers.get('content-type') || ''
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : { error: `HTTP ${response.status}` }
 
       if (!response.ok) {
         toast.error(data.error || 'Failed to create checkout session')

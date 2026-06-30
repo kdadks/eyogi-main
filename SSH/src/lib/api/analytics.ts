@@ -1471,8 +1471,8 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
 
     ;(pageAnalytics || []).forEach((record: any) => {
       if (record.referrer) {
-        // Filter out localhost referrers
-        if (!isLocalhost(record.referrer)) {
+        // Filter out local development referrers
+        if (!isLocalDevelopmentHost(record.referrer)) {
           referrerMap.set(record.referrer, (referrerMap.get(record.referrer) || 0) + 1)
 
           // Parse source from referrer
@@ -1555,18 +1555,13 @@ export async function getSiteAnalytics(dateRange: DateRange): Promise<SiteAnalyt
   }
 }
 
-// Helper function to check if referrer is from localhost
-function isLocalhost(referrer: string): boolean {
+// Helper function to check if referrer is from a local development host
+function isLocalDevelopmentHost(referrer: string): boolean {
   if (!referrer) return false
   try {
     const url = new URL(referrer)
     const hostname = url.hostname.toLowerCase()
-    return (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname.startsWith('localhost:') ||
-      hostname.startsWith('127.0.0.1:')
-    )
+    return hostname.endsWith('.local') || hostname === '[::1]'
   } catch {
     return false
   }
@@ -1576,8 +1571,8 @@ function isLocalhost(referrer: string): boolean {
 function parseReferrerSource(referrer: string): string {
   if (!referrer) return 'Direct'
 
-  // Don't track localhost referrers
-  if (isLocalhost(referrer)) return null as any
+  // Don't track local development referrers
+  if (isLocalDevelopmentHost(referrer)) return null as any
 
   try {
     const url = new URL(referrer)

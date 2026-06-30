@@ -202,6 +202,13 @@ router.post('/register', async (req, res) => {
 
     // Create SumUp checkout
     try {
+      const appUrl =
+        process.env.VITE_APP_URL ||
+        process.env.URL ||
+        process.env.DEPLOY_PRIME_URL ||
+        process.env.DEPLOY_URL ||
+        'https://eyogigurukul.com'
+
       const sumupResponse = await fetch('https://api.sumup.com/v0.1/checkouts', {
         method: 'POST',
         headers: {
@@ -215,8 +222,8 @@ router.post('/register', async (req, res) => {
           pay_to_email: process.env.SUMUP_EMAIL,
           description: `eYogi ${subscriptionType === 'monthly' ? 'Monthly' : 'Annual'} Membership`,
           return_urls: {
-            success_url: `${process.env.VITE_APP_URL || 'http://localhost:3001'}/membership/confirmation`,
-            failure_url: `${process.env.VITE_APP_URL || 'http://localhost:3001'}/membership?error=payment_failed`,
+            success_url: `${appUrl}/membership/confirmation`,
+            failure_url: `${appUrl}/membership?error=payment_failed`,
           },
         }),
       })

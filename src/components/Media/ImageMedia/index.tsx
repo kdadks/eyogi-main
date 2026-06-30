@@ -42,10 +42,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
       // If URL starts with /api/media (Payload API endpoint), prefix with base URL
       if (url.startsWith('/api/media/')) {
         imageSource = 'PayloadCMS_API_Endpoint'
-        const baseUrl =
-          typeof window !== 'undefined'
-            ? window.location.origin
-            : import.meta.env.VITE_APP_URL || 'http://localhost:3000'
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
         src = `${baseUrl}${url}`
       }
       // If URL starts with http (UploadThing URL), use as-is

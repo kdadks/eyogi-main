@@ -19,7 +19,12 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
 
 // Email service mock for now - will be implemented properly later
 async function sendPasswordCreationEmail(email: string, firstName: string, token: string) {
-  const setPasswordUrl = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/members/set-password?token=${token}`
+  const appUrl =
+    process.env.VITE_APP_URL ||
+    process.env.URL ||
+    process.env.DEPLOY_PRIME_URL ||
+    'https://eyogigurukul.com'
+  const setPasswordUrl = `${appUrl}/members/set-password?token=${token}`
   
   console.log(`
 ========================================

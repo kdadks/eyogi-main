@@ -28,11 +28,7 @@ export const VideoMedia: React.FC<MediaProps> = (props) => {
     if (url) {
       // If URL starts with /api/media (Payload API endpoint)
       if (url.startsWith('/api/media/')) {
-        // For Vercel deployment, PayloadCMS runs on the same domain
-        const baseUrl =
-          typeof window !== 'undefined'
-            ? window.location.origin
-            : import.meta.env.VITE_APP_URL || 'http://localhost:3000'
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
         videoSrc = `${baseUrl}${url}`
       }
       // If URL starts with http (UploadThing URL), use as-is

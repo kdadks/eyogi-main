@@ -1,10 +1,10 @@
 export function getURL(path: string = ''): string {
   const baseURL =
-    process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_ENV === 'production'
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'
+    import.meta.env.VITE_SERVER_URL ||
+    process.env.URL ||
+    process.env.DEPLOY_PRIME_URL ||
+    process.env.DEPLOY_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
 
   return `${baseURL}${path}`
 }

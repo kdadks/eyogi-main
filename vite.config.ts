@@ -4,6 +4,7 @@ import path from 'path'
 
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
+  const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:3001'
 
   return {
     plugins: [react()],
@@ -21,7 +22,7 @@ export default defineConfig(({ command }) => {
       open: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: apiProxyTarget,
           changeOrigin: true,
         },
       },

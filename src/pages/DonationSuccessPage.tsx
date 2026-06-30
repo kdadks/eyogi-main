@@ -70,7 +70,7 @@ export default function DonationSuccessPage() {
           console.log('Payment not in database, checking server cache...')
           try {
             const cacheResponse = await fetch(
-              `http://localhost:3001/api/donations/checkout-status/${checkoutId}`
+              `/api/donations/checkout-status/${checkoutId}`
             )
             if (cacheResponse.ok) {
               const cacheData = await cacheResponse.json()
@@ -80,7 +80,7 @@ export default function DonationSuccessPage() {
                 // Save donation to database
                 try {
                   const saveResponse = await fetch(
-                    'http://localhost:3001/api/donations/save',
+                    '/api/donations/save',
                     {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },

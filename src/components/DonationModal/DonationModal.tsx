@@ -170,6 +170,7 @@ export default function DonationModal({ open, onOpenChange }: DonationModalProps
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          donationId,
           amount,
           firstName,
           lastName,

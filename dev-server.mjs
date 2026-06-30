@@ -42,6 +42,12 @@ async function ensureCheckoutSessionsTable(supabase) {
 
 const app = express()
 const PORT = 3001
+const appBaseUrl =
+  process.env.VITE_APP_URL ||
+  process.env.URL ||
+  process.env.DEPLOY_PRIME_URL ||
+  'https://eyogigurukul.com'
+const internalApiBaseUrl = process.env.INTERNAL_API_BASE_URL || `http://127.0.0.1:${PORT}`
 
 console.log('✅ Express app created')
 
@@ -67,7 +73,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 // Email service mock
 function sendPasswordCreationEmail(email, firstName, token) {
-  const setPasswordUrl = `http://localhost:3002/members/set-password?token=${token}`
+  const setPasswordUrl = `${appBaseUrl}/members/set-password?token=${token}`
   
   console.log(`
 ========================================
@@ -273,7 +279,7 @@ app.post('/api/members/checkout', async (req, res) => {
     }
 
     // Will set return URL - we'll include checkout_id after SumUp creates it
-    let returnUrl = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/membership/confirmation?registration_id=${registrationId}`
+    let returnUrl = `${appBaseUrl}/membership/confirmation?registration_id=${registrationId}`
 
     // Development Mode: If SumUp not configured, bypass payment for testing
     if (!apiKey || !merchantCode) {
@@ -361,7 +367,7 @@ app.post('/api/members/checkout', async (req, res) => {
     
     // Build final return URL with both registration_id and checkout_id
     // This allows us to verify payment when user returns from SumUp
-    const finalReturnUrl = `http://localhost:3000/membership/confirmation?registration_id=${registrationId}&checkout_id=${checkout.id}`
+    const finalReturnUrl = `${appBaseUrl}/membership/confirmation?registration_id=${registrationId}&checkout_id=${checkout.id}`
     
     // Cache the checkout data for later retrieval (if user manually clicks back from SumUp)
     const responseData = {
@@ -586,7 +592,7 @@ app.post('/api/donations/checkout', async (req, res) => {
     console.log(`📝 [DONATION] Created donation ID: ${donationId}`)
 
     // Return URL includes donation_id so success page can find cached data
-    const returnUrl = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/donation/success?donation_id=${donationId}`
+    const returnUrl = `${appBaseUrl}/donation/success?donation_id=${donationId}`
 
     // Cache donation info for later retrieval
     const donationData = {
@@ -757,7 +763,7 @@ app.post('/api/members/register-with-payment', async (req, res) => {
 
     // Continue with member registration
     // This calls the existing member registration logic
-    const registerResponse = await fetch('http://localhost:3001/api/members/register', {
+    const registerResponse = await fetch(`${internalApiBaseUrl}/api/members/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1019,15 +1025,15 @@ app.put('/api/members/:memberId', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`
-✅ API server running on http://localhost:${PORT}
+✅ API server running on port ${PORT}
 Available endpoints:
-  GET    http://localhost:${PORT}/api/members
-  POST   http://localhost:${PORT}/api/members/checkout
-  POST   http://localhost:${PORT}/api/members/register
-  POST   http://localhost:${PORT}/api/members/register-with-payment
-  POST   http://localhost:${PORT}/api/donations/checkout
-  DELETE http://localhost:${PORT}/api/members/:memberId
-  PUT    http://localhost:${PORT}/api/members/:memberId
+  GET    /api/members
+  POST   /api/members/checkout
+  POST   /api/members/register
+  POST   /api/members/register-with-payment
+  POST   /api/donations/checkout
+  DELETE /api/members/:memberId
+  PUT    /api/members/:memberId
   `)
 })
 

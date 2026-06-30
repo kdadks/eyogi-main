@@ -10,7 +10,7 @@ const DESKTOP_LINKS = [
   { name: 'Hinduism', href: '/hinduism' },
   { name: 'About', href: '/about' },
   { name: 'FAQ', href: '/faq' },
-  { name: 'University', href: import.meta.env.VITE_SSH_URL || 'http://localhost:5174', external: true },
+  { name: 'University', href: import.meta.env.VITE_SSH_URL || '/ssh', external: true },
   { name: 'Join us', href: '/membership' },
 ]
 
@@ -20,7 +20,7 @@ const MOBILE_LINKS = [
   { name: 'Hinduism', href: '/hinduism', external: false },
   {
     name: 'University',
-    href: import.meta.env.VITE_SSH_URL || 'http://localhost:5174',
+    href: import.meta.env.VITE_SSH_URL || '/ssh',
     external: true,
   },
   { name: 'Membership', href: '/membership', external: false },

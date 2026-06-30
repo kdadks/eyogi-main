@@ -6,7 +6,9 @@ declare global {
       VITE_SERVER_URL: string
       VITE_SUPABASE_URL: string
       VITE_SUPABASE_ANON_KEY: string
-      VERCEL_PROJECT_PRODUCTION_URL: string
+      URL: string
+      DEPLOY_PRIME_URL: string
+      DEPLOY_URL: string
       VITE_SUMUP_SANDBOX_KEY: string
       VITE_SUMUP_PRODUCTION_KEY: string
       VITE_SUMUP_SANDBOX_MERCHANT_CODE: string
