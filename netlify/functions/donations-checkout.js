@@ -20,6 +20,18 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceRoleKey)
 }
 
+function resolveSumupEnvironment(hostname, configuredEnvironment) {
+  const host = (hostname || '').toLowerCase()
+  const isProductionHost = host === 'eyogigurukul.com' || host === 'www.eyogigurukul.com'
+
+  // Hard safety: UAT and Netlify preview domains must always use sandbox.
+  if (!isProductionHost && host.endsWith('.netlify.app')) {
+    return 'sandbox'
+  }
+
+  return configuredEnvironment === 'production' ? 'production' : 'sandbox'
+}
+
 async function createSumUpCheckout(apiKey, checkoutData) {
   const requestBody = {
     amount: checkoutData.amount,
@@ -126,11 +138,11 @@ export const handler = async (event) => {
       settingsMap[setting.key] = setting.value
     })
 
-    const isProduction = settingsMap.sumup_environment === 'production'
-    const apiKey = isProduction ? settingsMap.sumup_api_key_production : settingsMap.sumup_api_key_sandbox
+    const host = event.headers?.host
+    const environment = resolveSumupEnvironment(host, settingsMap.sumup_environment)
+    const apiKey = environment === 'production' ? settingsMap.sumup_api_key_production : settingsMap.sumup_api_key_sandbox
     const merchantCode = settingsMap.sumup_merchant_code
 
-    const host = event.headers?.host
     const baseUrl =
       process.env.VITE_APP_URL || process.env.URL || process.env.DEPLOY_PRIME_URL || (host ? `https://${host}` : '')
     const returnUrl = `${baseUrl}/donation/success?donation_id=${effectiveDonationId}`
