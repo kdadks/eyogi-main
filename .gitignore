@@ -43,5 +43,4 @@ add-*.js
 *-debug.*
 
 # Documentation - Store locally only (except root README.md)
-*.md
 !README.md

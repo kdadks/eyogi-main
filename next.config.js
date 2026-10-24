@@ -12,23 +12,16 @@ const NEXT_PUBLIC_SERVER_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Aggressive build speed optimizations
-  experimental: {
-    // Enable fastest compilation mode
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-      loaders: {
-        // Skip heavy transformations
-        '.js': ['babel-loader'],
-        '.ts': ['ts-loader'],
-        '.tsx': ['ts-loader'],
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
+  },
+  // Aggressive build speed optimizations
+  experimental: {
     // Speed up builds by reducing work
     webpackBuildWorker: true,
     // Enable parallel builds for faster compilation

@@ -67,7 +67,13 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || 'postgresql://localhost:5432/payload',
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl:
+        process.env.DATABASE_URI &&
+        !process.env.DATABASE_URI.includes('localhost') &&
+        !process.env.DATABASE_URI.includes('127.0.0.1') &&
+        process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
     },
     push: false, // Disable automatic schema push to avoid prompts
   }),
