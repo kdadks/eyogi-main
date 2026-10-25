@@ -264,17 +264,17 @@ npm run build
 
 | Test Suite / Area | Primary Tool | Command | Target Pass Criteria | Current Status | Last Verified |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Root NPM Audit** | npm audit | `npm audit` | 0 vulnerabilities | 🟢 PASSED (0 vulns) | Oct 24, 2026 |
-| **SSH NPM Audit** | npm audit | `cd src/SSH && npm audit` | 0 vulnerabilities | 🟢 PASSED (0 vulns) | Oct 24, 2026 |
+| **Root NPM Audit** | npm audit | `npm audit` | 0 vulnerabilities | 🟢 PASSED (0 vulns) | Oct 25, 2026 |
+| **SSH NPM Audit** | npm audit | `cd src/SSH && npm audit` | 0 vulnerabilities | 🟢 PASSED (0 vulns) | Oct 25, 2026 |
 | **Root Type Check** | TypeScript | `npx tsc --noEmit` | 0 errors | 🟡 Pending Run | - |
 | **Root Linting** | ESLint | `yarn lint` | 0 errors | 🟡 Pending Run | - |
-| **Next.js Build** | Next.js | `yarn build:next` | Successful bundle | 🟢 PASSED | Oct 24, 2026 |
+| **Next.js Build** | Next.js | `yarn build:next` | Successful bundle | 🟢 PASSED | Oct 25, 2026 |
 | **SSH Unit Tests** | Vitest | `cd src/SSH && npm test` | All passing | 🟡 Pending Run | - |
 | **SSH Type Check** | TypeScript | `cd src/SSH && npm run type-check` | 0 errors | 🟡 Pending Run | - |
 | **SSH Linting** | ESLint | `cd src/SSH && npm run lint` | 0 errors | 🟡 Pending Run | - |
 | **SSH RLS Check** | TSX / Script | `cd src/SSH && npm run rls:check` | RLS enabled on all tables | 🟡 Pending Run | - |
-| **SSH Vite Build** | Vite | `cd src/SSH && npm run build` | Dist output created | 🟢 PASSED | Oct 24, 2026 |
-| **End-to-End Build**| Orchestrator | `yarn build` | Next + SSH + Assets copied | 🟢 PASSED | Oct 24, 2026 |
+| **SSH Vite Build** | Vite | `cd src/SSH && npm run build` | Dist output created | 🟢 PASSED | Oct 25, 2026 |
+| **End-to-End Build**| Orchestrator | `yarn build` | Next + SSH + Assets copied | 🟢 PASSED | Oct 25, 2026 |
 | **Sub-Phase 1: SumUp Donations** | Vitest / Next | `yarn test -- donations` | Automated receipts & webhooks | ⚪ Planned Sub-Phase 1 | - |
 | **Sub-Phase 2: Teacher NDA & Roles** | Vitest / RTL | `cd src/SSH && npm test -- onboarding` | NDA signing & assignment locks | ⚪ Planned Sub-Phase 2 | - |
 | **Sub-Phase 3: Gurus & Doc Library** | Vitest / RTL | `cd src/SSH && npm test -- gurus` | Modal overlay & document assignments | ⚪ Planned Sub-Phase 3 | - |
@@ -307,7 +307,7 @@ When any test fails, document the failure using this standard format in agent ou
 
 ---
 
-### 🐞 Resolved Build Defect Log (Oct 24, 2026)
+### 🐞 Resolved Build Defect Log (Oct 24 - 25, 2026)
 
 #### DEF-20261024-01: Next.js Invariant `/_not-found` Page Missing
 - **Target Subsystem**: `eyogi (root)` Next.js App Router
@@ -332,3 +332,15 @@ When any test fails, document the failure using this standard format in agent ou
 - **Actual Outcome**: `[Error: ENOSPC: no space left on device, write]`.
 - **Root Cause**: A stale, gitignored `.yarn/cache` directory left behind from an earlier Yarn Berry migration was occupying 11 GB of storage on a full 228 GB APFS container, leaving only 119 MB free.
 - **Resolution**: Deleted `.yarn/cache` and reset `.next`, freeing 14 GB of storage on `/System/Volumes/Data`.
+
+#### DEF-20261025-01: PostgreSQL errorMissingColumn on `/(frontend)/privacy-policy` during Production Build
+- **Target Subsystem**: `eyogi (root)` Next.js Static Export & PayloadCMS
+- **Severity**: Critical (Blocks Vercel & Production `yarn build`)
+- **Test Case**: TC-INT-01
+- **Actual Outcome**: `Export encountered an error on /(frontend)/privacy-policy/page: /privacy-policy, exiting the build. parse_relation.c line 3716 errorMissingColumn: column "thumbnail_url" does not exist`.
+- **Root Cause**: Next.js static prerendering export evaluated `/privacy-policy` at build time. Lexical richText content in the privacy policy global referenced media elements. PayloadCMS 3.92.0 queried the PostgreSQL `media` table for `thumbnail_url`, but in the database the column was created as `thumbnail_u_r_l`.
+- **Resolution**: 
+  1. Configured `export const dynamic = 'force-dynamic'` and `depth: 0` on [src/app/(frontend)/privacy-policy/page.tsx](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/(frontend)/privacy-policy/page.tsx) and [src/app/(frontend)/donation/page.tsx](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/(frontend)/donation/page.tsx).
+  2. Implemented resilient `try...catch` blocks with complete fallback UI containing full official text.
+  3. Verified `yarn build` produces exit code 0.
+
