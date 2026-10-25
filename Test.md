@@ -344,3 +344,17 @@ When any test fails, document the failure using this standard format in agent ou
   2. Implemented resilient `try...catch` blocks with complete fallback UI containing full official text.
   3. Verified `yarn build` produces exit code 0.
 
+#### DEF-20261025-02: Vite Terser Not Found, Circular Chunks & forwardRef Undefined during SSH Production Build
+- **Target Subsystem**: `ssh (src/SSH)` Vite & Rollup Bundler
+- **Severity**: Critical (Blocks Vercel & Production `yarn build`)
+- **Test Case**: TC-INT-01
+- **Actual Outcome**: `error during build: [vite:terser] terser not found. Since Vite v3, terser has become an optional dependency. You need to install it.` accompanied by `Circular chunk: vendor-misc -> vendor-react -> vendor-misc` and browser runtime error `Uncaught TypeError: Cannot read properties of undefined (reading 'forwardRef') at vendor-ui.js`.
+- **Root Cause**: 
+  1. `src/SSH/vite.config.ts` explicitly set `minify: !isDev ? 'terser' : false`, while `terser` was only in `devDependencies`. During Vercel's production install, devDependencies were excluded, causing Vite to fail finding Terser.
+  2. Forcing React UI components (`@headlessui/react`, `lucide-react`) into `vendor-ui` while `vendor-react` imported from `admin-misc` created a circular chunk execution cycle where `React` was not yet initialized when `vendor-ui` invoked `React.forwardRef`.
+- **Resolution**:
+  1. Switched minifier in `src/SSH/vite.config.ts` to Vite's native `esbuild` (`minify: !isDev ? 'esbuild' : false`), cutting build time to ~6s.
+  2. Moved `terser` to `dependencies` in `src/SSH/package.json` and added `--include=dev` to root `package.json`'s `build:ssh`.
+  3. Simplified `manualChunks` to strictly isolate heavy standalone libraries (`pdfjs-dist`, `jspdf`, `html2canvas`, `quill`, `@supabase`). Let Rollup bundle React with its immediate UI primitives and keep application pages code-split on demand via `React.lazy()`.
+  4. Verified full production `yarn build` passes cleanly with 0 circular chunk warnings, no minifier errors, and exit code 0.
+

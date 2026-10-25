@@ -37,180 +37,31 @@ export default defineConfig(({ command }) => {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            // Core React libraries - MUST be first and keep ALL React code together
-            if (
-              id.includes('node_modules/react') ||
-              id.includes('node_modules/react-dom') ||
-              id.includes('node_modules/scheduler') ||
-              id.includes('node_modules/react-is') ||
-              id.includes('node_modules/prop-types') ||
-              id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/')
-            ) {
-              return 'vendor-react'
-            }
-
-            // Router - also React-related
-            if (
-              id.includes('node_modules/react-router') ||
-              id.includes('node_modules/@remix-run')
-            ) {
-              return 'vendor-react'
-            }
-
-            // Framer Motion - uses React context heavily
-            if (id.includes('node_modules/framer-motion')) {
-              return 'vendor-react'
-            }
-
-            // UI Component libraries
-            if (
-              id.includes('node_modules/@headlessui') ||
-              id.includes('node_modules/@heroicons') ||
-              id.includes('node_modules/lucide-react')
-            ) {
-              return 'vendor-ui'
-            }
-
-            // Rich text editor (large dependency)
-            if (id.includes('node_modules/react-quill') || id.includes('node_modules/quill')) {
-              return 'vendor-editor'
-            }
-
-            // PDF libraries - split into separate chunks
+            // Only isolate heavy, non-React/standalone vendor libraries
             if (id.includes('node_modules/pdfjs-dist')) {
               return 'vendor-pdfjs'
-            }
-            if (id.includes('node_modules/html2canvas')) {
-              return 'vendor-canvas'
             }
             if (id.includes('node_modules/jspdf')) {
               return 'vendor-jspdf'
             }
-
-            // Supabase (database client)
-            if (id.includes('node_modules/@supabase')) {
+            if (id.includes('node_modules/html2canvas')) {
+              return 'vendor-canvas'
+            }
+            if (id.includes('node_modules/quill/') || id.includes('node_modules/quill-delta/')) {
+              return 'vendor-editor'
+            }
+            if (id.includes('node_modules/@supabase/')) {
               return 'vendor-supabase'
             }
 
-            // Form libraries
-            if (
-              id.includes('node_modules/react-hook-form') ||
-              id.includes('node_modules/zod') ||
-              id.includes('node_modules/@hookform')
-            ) {
-              return 'vendor-forms'
-            }
-
-            // Date libraries
-            if (id.includes('node_modules/date-fns') || id.includes('node_modules/dayjs')) {
-              return 'vendor-dates'
-            }
-
-            // Charts and visualization - MUST stay with React due to circular dependencies
-            // Recharts has internal circular dependencies that cause issues when split separately
-            if (
-              id.includes('node_modules/recharts') ||
-              id.includes('node_modules/d3-') ||
-              id.includes('node_modules/victory')
-            ) {
-              return 'vendor-react'
-            }
-
-            // Toast/notifications - also React context based
-            if (id.includes('node_modules/sonner') || id.includes('node_modules/react-hot-toast')) {
-              return 'vendor-react'
-            }
-
-            // Admin dashboard components - more granular splitting
-            if (id.includes('src/components/admin') || id.includes('src/pages/dashboard')) {
-              // Core admin components
-              if (id.includes('AdminDashboard') || id.includes('AdminLayout')) {
-                return 'admin-core'
-              }
-              // User management
-              if (id.includes('UserManagement') || id.includes('PermissionManagement')) {
-                return 'admin-users'
-              }
-              // Content and course management
-              if (id.includes('CourseManagement') || id.includes('ContentManagement')) {
-                return 'admin-content'
-              }
-              // Batch and enrollment management
-              if (id.includes('BatchManagement') || id.includes('EnrollmentManagement')) {
-                return 'admin-batch'
-              }
-              // Teacher and student management
-              if (
-                id.includes('TeacherManagement') ||
-                id.includes('StudentManagement') ||
-                id.includes('TeacherDetail')
-              ) {
-                return 'admin-people'
-              }
-              // Resources (certificates, media)
-              if (id.includes('Certificate') || id.includes('MediaManagement')) {
-                return 'admin-resources'
-              }
-              // Compliance, invoice, payment
-              if (id.includes('Compliance') || id.includes('Invoice') || id.includes('Payment')) {
-                return 'admin-finance'
-              }
-              // Analytics and gurukul
-              if (id.includes('Analytics') || id.includes('GurukulManagement')) {
-                return 'admin-analytics'
-              }
-              // Course assignments
-              if (id.includes('CourseAssignment')) {
-                return 'admin-assignments'
-              }
-              // Catch-all for remaining admin components
-              return 'admin-misc'
-            }
-
-            // Dashboard pages - split by user role
-            if (id.includes('src/pages/dashboard')) {
-              if (id.includes('TeacherDashboard')) {
-                return 'dashboard-teacher'
-              }
-              if (id.includes('StudentDashboard')) {
-                return 'dashboard-student'
-              }
-              if (id.includes('parents/ParentsDashboard')) {
-                return 'dashboard-parent'
-              }
-              if (id.includes('DashboardPage')) {
-                return 'dashboard-main'
-              }
-            }
-
-            // Teacher components (separate from teacher dashboard)
-            if (id.includes('src/components/teacher')) {
-              return 'features-teacher'
-            }
-
-            // Don't separate contexts or hooks - keep with main app code
-            if (id.includes('src/contexts/') || id.includes('src/hooks/')) {
-              return undefined // Let Vite decide, usually bundles with main
-            }
-
-            // Other large node_modules
-            if (id.includes('node_modules')) {
-              return 'vendor-misc'
-            }
+            // All React, UI, icons, and application components are naturally bundled and
+            // code-split via React.lazy() without artificial circular dependency cycles.
+            return undefined
           },
         },
       },
-      chunkSizeWarningLimit: 2000, // Raised to 2MB since gzipped sizes are much smaller and recharts is now in vendor-react
-      minify: !isDev ? 'terser' : false,
-      terserOptions: !isDev
-        ? {
-            compress: {
-              drop_console: false, // Keep console logs for debugging in production
-              drop_debugger: true, // Remove debugger statements
-            },
-          }
-        : undefined,
+      chunkSizeWarningLimit: 2000,
+      minify: !isDev ? 'esbuild' : false,
     },
     define: {
       global: 'globalThis',

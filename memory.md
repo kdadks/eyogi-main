@@ -281,8 +281,15 @@ VITE_MICROSOFT_FROM_EMAIL=noreply@eyogigurukul.com
   - **Resilient Route Generation & Database Schema Drift Fix (`parse_relation.c errorMissingColumn`)**:
   - Resolved production export failure on `/(frontend)/privacy-policy`: in PostgreSQL `media` table, the column was created as `thumbnail_u_r_l`, whereas `@payloadcms/drizzle@3.92.0` queries `thumbnail_url`. During Next.js static prerendering export, PayloadCMS resolved Lexical richText media links at default depth 2, querying `media` and triggering PostgreSQL `errorMissingColumn` (parse_relation.c:3716).
   - Set `export const dynamic = 'force-dynamic'` and `depth: 0` on both [src/app/(frontend)/privacy-policy/page.tsx](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/(frontend)/privacy-policy/page.tsx) and [src/app/(frontend)/donation/page.tsx](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/(frontend)/donation/page.tsx) to decouple build-time static exports from database relational lookups.
-  - Added robust `try...catch` fallback UI on both pages with complete, official content (Privacy Policy, Safety & Child Safeguarding Policy, and Donation/Bank details) guaranteeing 100% uptime and build resilience.
-  - Verified `yarn build` passes cleanly with exit code 0.
+  - **Vite Build & Minification Optimization (`[vite:terser]` & Circular Chunk Remediation)**:
+    - Resolved Vercel build failure where Vite failed with `[vite:terser] terser not found. Since Vite v3, terser has become an optional dependency`:
+      1. Switched `minify` from `'terser'` to Vite's high-performance built-in `'esbuild'` in [src/SSH/vite.config.ts](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/SSH/vite.config.ts), cutting SSH client build time in half (from ~12s down to ~6s).
+      2. Moved `terser` from `devDependencies` to `dependencies` in [src/SSH/package.json](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/SSH/package.json) and added `--include=dev` to `build:ssh` in root [package.json](file:///Users/prashant/Documents/Application%20directory/eyogi-main/package.json).
+    - Eliminated all Rollup circular chunks and chunk-ordering runtime crashes (`Cannot read properties of undefined (reading 'forwardRef')`):
+      1. Identified that artificially separating `@headlessui/react` and `lucide-react` into `vendor-ui` while `vendor-react` imported from `admin-misc` created a circular execution graph where React was not initialized when `vendor-ui` invoked `React.forwardRef`.
+      2. Removed fragile manual chunks for application components and React UI primitives. Application pages and admin modules are already cleanly code-split on demand via `React.lazy()`.
+      3. Restricted `manualChunks` strictly to massive, standalone libraries (`pdfjs-dist`, `jspdf`, `html2canvas`, `quill`, `@supabase`), allowing Rollup to bundle React and its direct component primitives in deterministic evaluation order.
+    - Verified full production `yarn build` passes end-to-end with 0 circular chunk warnings, no minifier errors, and exit code 0.
 
 
 ---
