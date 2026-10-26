@@ -268,13 +268,13 @@ npm run build
 | **SSH NPM Audit** | npm audit | `cd src/SSH && npm audit` | 0 vulnerabilities | 🟢 PASSED (0 vulns) | Oct 25, 2026 |
 | **Root Type Check** | TypeScript | `npx tsc --noEmit` | 0 errors | 🟡 Pending Run | - |
 | **Root Linting** | ESLint | `yarn lint` | 0 errors | 🟡 Pending Run | - |
-| **Next.js Build** | Next.js | `yarn build:next` | Successful bundle | 🟢 PASSED | Oct 25, 2026 |
+| **Next.js Build** | Next.js | `yarn build:next` | Successful bundle | 🟢 PASSED | Oct 26, 2026 |
 | **SSH Unit Tests** | Vitest | `cd src/SSH && npm test` | All passing | 🟡 Pending Run | - |
 | **SSH Type Check** | TypeScript | `cd src/SSH && npm run type-check` | 0 errors | 🟡 Pending Run | - |
 | **SSH Linting** | ESLint | `cd src/SSH && npm run lint` | 0 errors | 🟡 Pending Run | - |
 | **SSH RLS Check** | TSX / Script | `cd src/SSH && npm run rls:check` | RLS enabled on all tables | 🟡 Pending Run | - |
-| **SSH Vite Build** | Vite | `cd src/SSH && npm run build` | Dist output created | 🟢 PASSED | Oct 25, 2026 |
-| **End-to-End Build**| Orchestrator | `yarn build` | Next + SSH + Assets copied | 🟢 PASSED | Oct 25, 2026 |
+| **SSH Vite Build** | Vite | `cd src/SSH && npm run build` | Dist output created | 🟢 PASSED | Oct 26, 2026 |
+| **End-to-End Build**| Orchestrator | `yarn build` | Next + SSH + Assets copied | 🟢 PASSED | Oct 26, 2026 |
 | **Sub-Phase 1: SumUp Donations** | Vitest / Next | `yarn test -- donations` | Automated receipts & webhooks | ⚪ Planned Sub-Phase 1 | - |
 | **Sub-Phase 2: Teacher NDA & Roles** | Vitest / RTL | `cd src/SSH && npm test -- onboarding` | NDA signing & assignment locks | ⚪ Planned Sub-Phase 2 | - |
 | **Sub-Phase 3: Gurus & Doc Library** | Vitest / RTL | `cd src/SSH && npm test -- gurus` | Modal overlay & document assignments | ⚪ Planned Sub-Phase 3 | - |
@@ -357,4 +357,39 @@ When any test fails, document the failure using this standard format in agent ou
   2. Moved `terser` to `dependencies` in `src/SSH/package.json` and added `--include=dev` to root `package.json`'s `build:ssh`.
   3. Simplified `manualChunks` to strictly isolate heavy standalone libraries (`pdfjs-dist`, `jspdf`, `html2canvas`, `quill`, `@supabase`). Let Rollup bundle React with its immediate UI primitives and keep application pages code-split on demand via `React.lazy()`.
   4. Verified full production `yarn build` passes cleanly with 0 circular chunk warnings, no minifier errors, and exit code 0.
+
+#### DEF-20261026-01: Neon PostgreSQL errorMissingColumn "_objectkey" on `/hinduism` and `/about-us`
+- **Target Subsystem**: `eyogi (root)` Next.js & PayloadCMS PostgreSQL Database
+- **Severity**: High (Blocks public page loading on `/hinduism` and `/about`)
+- **Test Case**: TC-INT-01 / Runtime navigation
+- **Actual Outcome**: Visiting `/hinduism` and `/about` displays: `Failed query: select "id", "alt", "_key", "prefix", "_objectkey", ... from "media" where "media"."id" in (...) code: '42703', routine: 'errorMissingColumn'`.
+- **Root Cause**:
+  1. The upgraded `@payloadcms/storage-uploadthing@3.92.0` automatically injects field `_objectKey` (mapped to PostgreSQL column `_objectkey`) via `@payloadcms/plugin-cloud-storage`.
+  2. Because `src/payload.config.ts` has `push: false`, the production Neon database was never migrated to add the `_objectkey` column to the `media` table.
+  3. When querying posts with `depth: 3` on `/hinduism` or querying `about-us` global with `depth: 2`, Payload resolves the media relations and selects `_objectkey`, causing PostgreSQL to abort the query with code 42703.
+- **Resolution**:
+  1. Created [src/utilities/ensureSchema.ts](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/utilities/ensureSchema.ts) with `ensureMediaSchema` executing non-destructive `ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "_objectkey" character varying` and synchronizing `thumbnail_url` / `thumbnail_u_r_l`.
+  2. Registered `onInit: async (payload) => { await ensureMediaSchema(payload) }` in [src/payload.config.ts](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/payload.config.ts) so every instance self-heals database schema drift upon startup.
+  3. Added [src/app/api/migrate-schema/route.ts](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/api/migrate-schema/route.ts) for manual inspection and verification.
+  4. Implemented resilient query retries with `depth: 0` fallback in [src/app/(frontend)/hinduism/page.tsx](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/(frontend)/hinduism/page.tsx) and [src/app/(frontend)/about/page.tsx](file:///Users/prashant/Documents/Application%20directory/eyogi-main/src/app/(frontend)/about/page.tsx).
+  5. Suppressed raw debug error boxes in production environment.
+  6. Verified `yarn build:next` and `yarn build` pass with exit code 0.
+
+#### DEF-20261026-02: FAQ Undefined Question TypeError on `/faq/[slug]` & Hardcoded Redirect
+- **Target Subsystem**: `eyogi (root)` Next.js App Router FAQ route
+- **Severity**: Medium (Crashes `/faq/what-is-eyogi-gurukul` when slug not in DB)
+- **Test Case**: Runtime navigation on `/faq` and `/faq/[slug]`
+- **Actual Outcome**: `TypeError: Cannot read properties of undefined (reading 'question') at Page (src/app/(frontend)/faq/[slug]/page.tsx:33:25)`.
+- **Root Cause**:
+  1. `src/app/(frontend)/faq/page.tsx` was a client component with a hardcoded `redirect('/faq/what-is-eyogi-gurukul')`.
+  2. If that specific FAQ entry did not exist in Neon PostgreSQL, `payload.find` returned `result.docs = []`.
+  3. `page.tsx` accessed `result.docs[0].question` without null check, throwing a fatal TypeError.
+  4. In `src/app/(frontend)/faq/layout.tsx`, `groupByCategory` accessed unpopulated `obj.categories.title` without null safety.
+- **Resolution**:
+  1. Transformed `src/app/(frontend)/faq/page.tsx` into an async server component that dynamically finds the first available FAQ slug in the database and redirects to it, or displays an empty state if no FAQs exist.
+  2. In `src/app/(frontend)/faq/[slug]/page.tsx`, added null guard `const faqDoc = result.docs?.[0]` and rendered a clean "Question not found" view with a link back to `/faq` if the slug is missing.
+  3. In `src/app/(frontend)/faq/layout.tsx`, added null-safe fallback `'General'` in `groupByCategory` and `depth: 1` to `payload.find`.
+  4. Verified `yarn build:next` passes with exit code 0.
+
+
 

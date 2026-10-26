@@ -63,23 +63,43 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   return generateMeta({ doc: post })
 }
 
+import { ensureMediaSchema } from '@/utilities/ensureSchema'
+
 const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
   const { isEnabled: draft } = await draftMode()
 
   const payload = await getPayload({ config: configPromise })
+  await ensureMediaSchema(payload)
 
-  const result = await payload.find({
-    collection: 'posts',
-    draft,
-    limit: 1,
-    overrideAccess: draft,
-    pagination: false,
-    where: {
-      slug: {
-        equals: slug,
+  try {
+    const result = await payload.find({
+      collection: 'posts',
+      draft,
+      limit: 1,
+      overrideAccess: draft,
+      pagination: false,
+      where: {
+        slug: {
+          equals: slug,
+        },
       },
-    },
-  })
-
-  return result.docs?.[0] || null
+    })
+    return result.docs?.[0] || null
+  } catch (err) {
+    console.warn('Initial post query with relations failed, retrying with depth 0:', err)
+    const result = await payload.find({
+      collection: 'posts',
+      draft,
+      limit: 1,
+      overrideAccess: draft,
+      pagination: false,
+      depth: 0,
+      where: {
+        slug: {
+          equals: slug,
+        },
+      },
+    })
+    return result.docs?.[0] || null
+  }
 })

@@ -8,6 +8,8 @@ import React from 'react'
 import BlogsFilters from '@/components/Blogs/BlogsFilters'
 import { Pagination } from '@/components/Pagination'
 
+import { ensureMediaSchema } from '@/utilities/ensureSchema'
+
 // Force this page to be dynamic to support search params
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +30,8 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
     const category = (sp?.category ?? '') as string
     const config = await configPromise
     const payload = await getPayload({ config })
+
+    await ensureMediaSchema(payload)
 
     const categoriesRes = await payload.find({
       collection: 'categories',
@@ -63,21 +67,41 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
       }
     }
 
-    const posts = await payload.find({
-      collection: 'posts',
-      depth: 3,
-      limit,
-      page,
-      select: {
-        title: true,
-        slug: true,
-        description: true,
-        publishedAt: true,
-        coverImage: true,
-        categories: true,
-      },
-      ...(where ? { where } : {}),
-    })
+    let posts
+    try {
+      posts = await payload.find({
+        collection: 'posts',
+        depth: 3,
+        limit,
+        page,
+        select: {
+          title: true,
+          slug: true,
+          description: true,
+          publishedAt: true,
+          coverImage: true,
+          categories: true,
+        },
+        ...(where ? { where } : {}),
+      })
+    } catch (queryErr) {
+      console.warn('Initial posts query with depth 3 failed, retrying with depth 0:', queryErr)
+      posts = await payload.find({
+        collection: 'posts',
+        depth: 0,
+        limit,
+        page,
+        select: {
+          title: true,
+          slug: true,
+          description: true,
+          publishedAt: true,
+          coverImage: true,
+          categories: true,
+        },
+        ...(where ? { where } : {}),
+      })
+    }
 
     // 📊 IMAGE SOURCE ANALYTICS
     console.log('🔍 IMAGE SOURCE ANALYSIS - Page', page)
@@ -227,27 +251,29 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
             <p className="text-base lg:text-lg text-white text-center">
               Sorry, there was an issue loading the content. Please try again later.
             </p>
-            {/* Debug info for production */}
-            <details className="mt-4 text-white text-sm max-w-2xl">
-              <summary className="cursor-pointer">Debug Information</summary>
-              <pre className="mt-2 p-4 bg-gray-800 rounded overflow-auto">
-                {JSON.stringify(
-                  {
-                    error: error instanceof Error ? error.message : String(error),
-                    stack: error instanceof Error ? error.stack : undefined,
-                    env: {
-                      NODE_ENV: process.env.NODE_ENV,
-                      DATABASE_URI: process.env.DATABASE_URI ? 'present' : 'missing',
-                      PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'present' : 'missing',
-                      NETLIFY: process.env.NETLIFY || 'false',
-                      URL: process.env.URL || 'missing',
+            {/* Debug info only in development */}
+            {process.env.NODE_ENV !== 'production' && (
+              <details className="mt-4 text-white text-sm max-w-2xl">
+                <summary className="cursor-pointer">Debug Information</summary>
+                <pre className="mt-2 p-4 bg-gray-800 rounded overflow-auto">
+                  {JSON.stringify(
+                    {
+                      error: error instanceof Error ? error.message : String(error),
+                      stack: error instanceof Error ? error.stack : undefined,
+                      env: {
+                        NODE_ENV: process.env.NODE_ENV,
+                        DATABASE_URI: process.env.DATABASE_URI ? 'present' : 'missing',
+                        PAYLOAD_SECRET: process.env.PAYLOAD_SECRET ? 'present' : 'missing',
+                        NETLIFY: process.env.NETLIFY || 'false',
+                        URL: process.env.URL || 'missing',
+                      },
                     },
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
-            </details>
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            )}
           </div>
         </div>
       </div>

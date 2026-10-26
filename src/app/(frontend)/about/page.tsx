@@ -11,6 +11,10 @@ import { Media } from '@/components/Media'
 import VideoYt from '@/components/AboutUs/Video'
 import RichText from '@/components/RichText'
 
+import { ensureMediaSchema } from '@/utilities/ensureSchema'
+
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'About Us',
 }
@@ -18,10 +22,20 @@ export const metadata: Metadata = {
 export default async function AboutUsPage() {
   try {
     const payload = await getPayload({ config: configPromise })
+    await ensureMediaSchema(payload)
 
-    const result = await payload.findGlobal({
-      slug: 'about-us',
-    })
+    let result
+    try {
+      result = await payload.findGlobal({
+        slug: 'about-us',
+      })
+    } catch (globalErr) {
+      console.warn('Initial about-us findGlobal failed, retrying with depth 0:', globalErr)
+      result = await payload.findGlobal({
+        slug: 'about-us',
+        depth: 0,
+      })
+    }
 
     if (!result) {
       throw new Error('About Us content not found')

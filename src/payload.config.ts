@@ -26,7 +26,12 @@ import { Donation } from './collections/donation/Donation'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+import { ensureMediaSchema } from './utilities/ensureSchema'
+
 export default buildConfig({
+  onInit: async (payload) => {
+    await ensureMediaSchema(payload)
+  },
   admin: {
     components: {
       // The `BeforeLogin` component renders a message that you see while logging into your admin panel.

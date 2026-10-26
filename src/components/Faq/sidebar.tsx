@@ -10,7 +10,7 @@ type SidebarProps = Array<{
 }>
 
 export default function SideBar({ data }: { data: SidebarProps }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   return (
     <Sidebar open={open} setOpen={setOpen}>
       <SidebarBody

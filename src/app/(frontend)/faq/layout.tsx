@@ -3,11 +3,17 @@ import configPromise from '@payload-config'
 import SideBar from '@/components/Faq/sidebar'
 import { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function groupByCategory(questions: any) {
+function groupByCategory(questions: any[]) {
+  if (!Array.isArray(questions)) return []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const grouped = questions.reduce((acc: any, obj: any) => {
-    const categoryTitle = obj.categories.title
+  const grouped = questions.reduce((acc: any[], obj: any) => {
+    const categoryTitle =
+      (typeof obj?.categories === 'object' && obj?.categories?.title) ||
+      (typeof obj?.categories === 'string' && obj.categories) ||
+      'General'
     let categoryGroup = acc.find((group) => group.category === categoryTitle)
 
     if (!categoryGroup) {
@@ -27,30 +33,23 @@ export const metadata: Metadata = {
 }
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-  const payload = await getPayload({ config: configPromise })
+  let docs: any[] = []
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const result = await payload.find({
+      depth: 1,
+      collection: 'Faq',
+      pagination: false,
+    })
+    docs = result?.docs || []
+  } catch (err) {
+    console.error('Error fetching FAQ list in layout:', err)
+  }
 
-  const result = await payload.find({
-    select: {
-      categories: true,
-      question: true,
-      slug: true,
-    },
-    sort: '-categories.title',
-    collection: 'Faq',
-    pagination: false,
-  })
-
-  const data = groupByCategory(result.docs).sort((a, b) => {
-    const nameA = a.category.toUpperCase()
-    const nameB = b.category.toUpperCase()
-    if (nameA < nameB) {
-      return -1
-    }
-    if (nameA > nameB) {
-      return 1
-    }
-
-    return 0
+  const data = groupByCategory(docs).sort((a, b) => {
+    const nameA = String(a?.category || '').toUpperCase()
+    const nameB = String(b?.category || '').toUpperCase()
+    return nameA.localeCompare(nameB)
   })
 
   return (

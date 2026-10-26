@@ -17,21 +17,36 @@ type Args = {
   }>
 }
 
+import { ensureMediaSchema } from '@/utilities/ensureSchema'
+
 export default async function Page({ params: paramsPromise }: Args) {
   const { pageNumber } = await paramsPromise
   const payload = await getPayload({ config: configPromise })
+  await ensureMediaSchema(payload)
 
   const sanitizedPageNumber = Number(pageNumber)
 
   if (!Number.isInteger(sanitizedPageNumber)) notFound()
 
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 12,
-    page: sanitizedPageNumber,
-    overrideAccess: false,
-  })
+  let posts
+  try {
+    posts = await payload.find({
+      collection: 'posts',
+      depth: 1,
+      limit: 12,
+      page: sanitizedPageNumber,
+      overrideAccess: false,
+    })
+  } catch (err) {
+    console.warn('Initial posts query on pageNumber failed, retrying with depth 0:', err)
+    posts = await payload.find({
+      collection: 'posts',
+      depth: 0,
+      limit: 12,
+      page: sanitizedPageNumber,
+      overrideAccess: false,
+    })
+  }
 
   return (
     <div className="pt-24 pb-24">

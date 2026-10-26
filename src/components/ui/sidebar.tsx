@@ -156,6 +156,14 @@ export const SidebarQuestions = ({
 }) => {
   const { open, animate, setOpen } = useSidebar()
 
+  if (!link || link.length === 0) {
+    return (
+      <div className="p-4 text-sm text-neutral-500 italic">
+        {open ? 'No FAQs found' : ''}
+      </div>
+    )
+  }
+
   return (
     <Accordion type="multiple" className={cn('w-full', className)} {...props}>
       {link.map((category, index) => (
@@ -164,7 +172,7 @@ export const SidebarQuestions = ({
             <span
               // use CSS transitions instead of toggling `display` so text fades/slides smoothly
               className={cn(
-                'text-neutral-700 text-sm text-left transition-all duration-150 ease-in-out truncate',
+                'text-neutral-700 text-sm text-left transition-all duration-150 ease-in-out truncate font-medium',
                 animate
                   ? open
                     ? 'opacity-100 w-full '
@@ -190,9 +198,9 @@ export const SidebarQuestions = ({
               {category.questions.map((q, idx) => (
                 <Link
                   key={idx}
-                  href={q.slug}
+                  href={q.slug.startsWith('/') ? q.slug : `/faq/${q.slug}`}
                   onClick={() => setOpen(false)}
-                  className="block py-1 text-sm text-neutral-600 hover:text-neutral-800 transition truncate"
+                  className="block py-1 text-sm text-neutral-600 hover:text-neutral-900 transition truncate"
                 >
                   {q.question}
                 </Link>
