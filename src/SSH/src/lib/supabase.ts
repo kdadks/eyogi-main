@@ -63,23 +63,13 @@ interface CertificateData {
   verification_url?: string
 }
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+if (!supabaseUrl || !supabasePublishableKey) {
+  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY')
 }
 
-/**
- * CRITICAL: To avoid "Multiple GoTrueClient instances" warning:
- *
- * - Only the anon key client initializes auth (with persistSession: true)
- * - The service role client uses MINIMAL auth config to skip GoTrueClient initialization
- * - Both clients share the SAME browser storage key to avoid conflicts
- */
-
-// Primary client - manages user authentication
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true, // CRITICAL: Session must persist for login redirect to work
@@ -99,30 +89,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 })
 
-// Admin client - service role for querying with bypass of RLS
-// Use the anon client if service role is not available
-export const supabaseAdmin = supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        // Minimal auth config - uses same storage as anon client to prevent conflicts
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-        storageKey: 'eyogi-ssh-app-auth', // Same storage key as anon client
-      },
-      global: {
-        headers: {
-          'X-Client-Info': 'eyogi-ssh-admin',
-        },
-      },
-      db: {
-        schema: 'public',
-      },
-      realtime: {
-        timeout: 60000,
-      },
-    })
-  : supabase
+/** @deprecated Use supabase; this alias no longer bypasses RLS. */
+export const supabaseAdmin = supabase
 
 // Database types (generated from Supabase schema)
 export interface Database {

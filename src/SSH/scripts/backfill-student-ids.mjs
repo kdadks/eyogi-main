@@ -17,16 +17,16 @@ import { createClient } from '@supabase/supabase-js'
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-const SERVICE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_SERVICE_ROLE_KEY env vars.')
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+  console.error('Missing VITE_SUPABASE_URL or SUPABASE_SECRET_KEY env vars.')
   console.error('Run from the src/SSH directory: node scripts/backfill-student-ids.mjs')
   process.exit(1)
 }
 
 const isDryRun = process.argv.includes('--dry-run')
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 // ── Student ID Generator (mirrors src/lib/id-generator.ts) ──────────────────
 async function generateStudentId(country, state, city) {

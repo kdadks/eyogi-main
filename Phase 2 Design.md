@@ -78,9 +78,10 @@ Public pages query Supabase directly via server components with Incremental Stat
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
+// Server-only: the Secret key is privileged and bypasses RLS.
 export const supabaseServer = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SECRET_KEY!
 )
 
 // Example: Fetching homepage CMS settings from Supabase

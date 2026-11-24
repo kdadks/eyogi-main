@@ -30,6 +30,7 @@ public/ssh-app/index.html
 
 # Development files
 *.sql
+!src/SSH/migrations/20261124_publishable_secret_rls.sql
 *.backup
 *.log
 *.tmp

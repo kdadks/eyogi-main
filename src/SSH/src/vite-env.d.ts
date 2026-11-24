@@ -1,8 +1,7 @@
 /// <reference types="vite/client" />
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string
-  readonly VITE_SUPABASE_ANON_KEY: string
-  readonly VITE_SUPABASE_SERVICE_ROLE_KEY: string
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY: string
   readonly VITE_UPLOADTHING_APP_ID: string
   readonly UPLOADTHING_SECRET: string
   readonly UPLOADTHING_TOKEN: string

@@ -128,6 +128,30 @@ npm run build
 
 ### Suite B: SSH Portal (`src/SSH`) - Gurukul University LMS
 
+#### TC-SSH-RLS-01: Supabase RLS Migration Script Safety
+- [x] Run `node --test scripts/migrate-supabase-rls.test.mjs` (3 passing; Nov 24, 2026).
+- [ ] Run the migration without `--apply`; verify it reports database state and performs no changes.
+- [ ] Use a reviewed policy JSON that covers every public table; verify incomplete coverage is rejected before SQL execution.
+- [ ] Apply only to a staging database first; verify all public tables have RLS, configured public reads work, and authenticated CRUD respects table ownership/admin predicates.
+- [ ] Verify login, admin CRUD, public pages, email notifications, and authentication workflows before production migration.
+
+#### TC-SSH-RLS-02: Publishable-Key Client and RLS Enforcement
+- [x] Configure the ignored local SSH Vite environment with the Supabase URL, Publishable key, and supplied encryption key.
+- [ ] Restart Vite and verify decryption at runtime.
+- [ ] Confirm the Vercel SSH build receives `VITE_SUPABASE_PUBLISHABLE_KEY` and the browser bundle contains no secret key.
+- [ ] Verify anonymous public reads and quiz submission behavior against the intended policies.
+- [ ] Verify authenticated parent, teacher, and admin CRUD; record and resolve operations denied by RLS.
+- [ ] Run backfill/storage-cleanup CLI in a controlled environment with `SUPABASE_SECRET_KEY`; verify the secret is not included in the Vite bundle.
+
+#### TC-SSH-RLS-03: Admin Policy Migration
+- [x] Confirm the reviewed SQL migration is not hidden by the repository's general `*.sql` ignore rule.
+- [x] Apply `src/SSH/migrations/20261124_publishable_secret_rls.sql` (reported executed by user Nov 24, 2026; live state not independently verified).
+- [x] Rebuild SSH after adding missing `sonner` and `embla-carousel-react` runtime dependencies discovered by Vite.
+- [ ] Verify admin, business_admin, and super_admin CRUD across all 44 public tables.
+- [ ] Verify non-admins cannot assign or change privileged profile roles.
+- [ ] Verify anonymous access is limited to the documented content reads, quiz-answer inserts, and page-analytics inserts.
+- [ ] Verify student, parent, and teacher ownership policies still behave as intended.
+
 #### TC-SSH-01: Student Workflow
 - [ ] **Registration & Auth**: Sign up new student; verify email/password validation.
 - [ ] **Participation Consent**: Verify student participation consent prompt appears and records status upon registration.
@@ -268,13 +292,17 @@ npm run build
 | **SSH NPM Audit** | npm audit | `cd src/SSH && npm audit` | 0 vulnerabilities | 🟢 PASSED (0 vulns) | Oct 25, 2026 |
 | **Root Type Check** | TypeScript | `npx tsc --noEmit` | 0 errors | 🟡 Pending Run | - |
 | **Root Linting** | ESLint | `yarn lint` | 0 errors | 🟡 Pending Run | - |
-| **Next.js Build** | Next.js | `yarn build:next` | Successful bundle | 🟢 PASSED | Oct 26, 2026 |
+| **Next.js Build** | Next.js | `yarn build:next` | Successful bundle | 🔴 BLOCKED (compiled, but `/forms` prerender requires missing `DATABASE_URL`) | Nov 24, 2026 |
+| **SSH Dependency Install** | Yarn Classic | `corepack yarn@1.22.22 install --frozen-lockfile --ignore-scripts` | Lockfile dependencies installed | 🟢 PASSED | Nov 24, 2026 |
 | **SSH Unit Tests** | Vitest | `cd src/SSH && npm test` | All passing | 🟡 Pending Run | - |
-| **SSH Type Check** | TypeScript | `cd src/SSH && npm run type-check` | 0 errors | 🟡 Pending Run | - |
+| **SSH Type Check** | TypeScript | `cd src/SSH && npm run type-check` | 0 errors | 🔴 FAILED (88 diagnostics; none in modified source files) | Nov 24, 2026 |
 | **SSH Linting** | ESLint | `cd src/SSH && npm run lint` | 0 errors | 🟡 Pending Run | - |
 | **SSH RLS Check** | TSX / Script | `cd src/SSH && npm run rls:check` | RLS enabled on all tables | 🟡 Pending Run | - |
-| **SSH Vite Build** | Vite | `cd src/SSH && npm run build` | Dist output created | 🟢 PASSED | Oct 26, 2026 |
-| **End-to-End Build**| Orchestrator | `yarn build` | Next + SSH + Assets copied | 🟢 PASSED | Oct 26, 2026 |
+| **Supabase RLS Migration Plan Tests** | Node.js test runner | `node --test scripts/migrate-supabase-rls.test.mjs` | Policy coverage, grant scoping, and validation pass | 🟢 PASSED (3 tests) | Nov 24, 2026 |
+| **Publishable-Key Client / RLS Workflows** | SSH staging verification | TC-SSH-RLS-02 | No secret in client; intended public/authenticated operations pass | 🟡 Pending Run | - |
+| **Admin RLS Policy Migration** | Supabase staging | TC-SSH-RLS-03 | Admin CRUD passes; role escalation blocked; public access scoped | 🟡 Pending Run | - |
+| **SSH Vite Build** | Vite | `cd src/SSH && npm run build` | Dist output created | 🟢 PASSED | Nov 24, 2026 |
+| **End-to-End Build**| Orchestrator | `yarn build` | Next + SSH + Assets copied | 🟡 BLOCKED (root Next.js prerender requires missing `DATABASE_URL`; asset-copy step not run) | Nov 24, 2026 |
 | **Sub-Phase 1: SumUp Donations** | Vitest / Next | `yarn test -- donations` | Automated receipts & webhooks | ⚪ Planned Sub-Phase 1 | - |
 | **Sub-Phase 2: Teacher NDA & Roles** | Vitest / RTL | `cd src/SSH && npm test -- onboarding` | NDA signing & assignment locks | ⚪ Planned Sub-Phase 2 | - |
 | **Sub-Phase 3: Gurus & Doc Library** | Vitest / RTL | `cd src/SSH && npm test -- gurus` | Modal overlay & document assignments | ⚪ Planned Sub-Phase 3 | - |

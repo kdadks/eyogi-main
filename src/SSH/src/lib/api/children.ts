@@ -30,10 +30,7 @@ async function generateNextStudentId(
   city?: string | null,
 ): Promise<string> {
   try {
-    let client = supabaseAdmin
-    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-      client = supabase
-    }
+    const client = supabase
 
     const year = new Date().getFullYear()
 
@@ -176,10 +173,7 @@ export async function createChild(
     const encryptedProfileData = encryptProfileFields(profileData)
 
     // Insert into database
-    let client = supabaseAdmin
-    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-      client = supabase
-    }
+    const client = supabase
 
     const { data, error } = await client
       .from('profiles')
@@ -226,10 +220,7 @@ export async function createChild(
 export async function getChildrenByParentId(parentId: string): Promise<Profile[]> {
   try {
     // Get children using parent_id field (current approach)
-    let client = supabaseAdmin
-    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-      client = supabase
-    }
+    const client = supabase
 
     const { data: directChildren, error: directError } = await client
       .from('profiles')
@@ -257,10 +248,7 @@ export async function updateChild(
   changedBy?: ChangedByInfo,
 ): Promise<Profile> {
   try {
-    let client = supabaseAdmin
-    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-      client = supabase
-    }
+    const client = supabase
 
     // Fetch current profile data for audit trail comparison
     const { data: currentProfile } = await client
@@ -377,10 +365,7 @@ export async function updateChild(
  */
 export async function deleteChild(childId: string): Promise<void> {
   try {
-    let client = supabaseAdmin
-    if (!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
-      client = supabase
-    }
+    const client = supabase
 
     const { error } = await client.from('profiles').delete().eq('id', childId).eq('role', 'student')
     if (error) {

@@ -368,8 +368,9 @@ Create `src/SSH/.env` file:
 ```bash
 # ===== SUPABASE =====
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+# Server-side maintenance tools only; never expose with a VITE_ prefix.
+SUPABASE_SECRET_KEY=your-supabase-secret-key
 
 # ===== ENCRYPTION =====
 VITE_ENCRYPTION_KEY=your-32-character-encryption-key

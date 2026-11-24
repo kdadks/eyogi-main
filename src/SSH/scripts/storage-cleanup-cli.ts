@@ -24,16 +24,15 @@ import * as path from 'path'
 
 // Load environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseServiceKey =
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseSecretKey) {
   console.error('❌ Missing Supabase environment variables')
-  console.error('   Set VITE_SUPABASE_URL and VITE_SUPABASE_SERVICE_ROLE_KEY')
+  console.error('   Set SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SECRET_KEY')
   process.exit(1)
 }
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey)
 
 const command = process.argv[2] || 'audit'
 const options = {

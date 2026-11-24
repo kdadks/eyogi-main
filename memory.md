@@ -209,8 +209,7 @@ MICROSOFT_FROM_EMAIL=noreply@eyogigurukul.com
 ### Key Environment Variables (`src/SSH/.env`)
 ```bash
 VITE_SUPABASE_URL=https://<project-id>.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon-public-key>
-VITE_SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+VITE_SUPABASE_PUBLISHABLE_KEY=<supabase-publishable-key>
 VITE_ENCRYPTION_KEY=<32-char-encryption-key>
 VITE_OPENAI_API_KEY=<openai-api-key>
 VITE_MICROSOFT_TENANT_ID=<tenant-id>
@@ -244,6 +243,12 @@ VITE_MICROSOFT_FROM_EMAIL=noreply@eyogigurukul.com
 ---
 
 ## 6. Recent Work & State Log
+
+- **Supabase PostgreSQL 17 RLS Migration Draft**: Added [scripts/migrate-supabase-rls.mjs](./scripts/migrate-supabase-rls.mjs), an analyze-first, dry-run-by-default migration. Applying requires `DATABASE_URL`, an explicit `--apply`, and a reviewed JSON policy definition covering every public table. It enables RLS, replaces existing public-table policies with configured authenticated CRUD predicates, revokes direct `anon` grants on public tables/sequences/functions, grants authenticated CRUD and sequence access, and grants public SELECT only for explicitly configured tables. The migration script does not mutate application keys or client code; the subsequent browser client key change is recorded separately below. PostgreSQL `PUBLIC` SELECT is inherited by Supabase anonymous requests, so it cannot simultaneously provide public reads and eliminate anonymous access to those explicitly configured tables.
+- **SSH Supabase Client Key Update**: The browser client now reads `VITE_SUPABASE_PUBLISHABLE_KEY`; the old anon-key and service-role-key client construction has been removed. The legacy `supabaseAdmin` export remains as an alias to the same authenticated client for call-site compatibility and no longer bypasses RLS. As a result, existing operations now depend on the signed-in user's token and table policies; admin CRUD can fail until the missing/restrictive policies are reviewed and migrated. The backfill and storage-cleanup maintenance CLIs now read `SUPABASE_SECRET_KEY` from the process environment; keep it server-only and never expose it through a `VITE_` variable or browser bundle. These maintenance CLIs retain privileged operations.
+- **Publishable/Secret RLS Policy Migration**: Added [src/SSH/migrations/20261124_publishable_secret_rls.sql](./src/SSH/migrations/20261124_publishable_secret_rls.sql). It changes `PUBLIC` policies to `authenticated` except the approved public-read/page-analytics allowlist, preserves anonymous quiz-answer submission, adds authenticated admin CRUD policies for all public tables, limits anonymous table grants to those public operations, and blocks non-admin profile role escalation. The specific migration is exempted from the repository's general `*.sql` ignore rule so it can be reviewed and versioned. The user reports executing it on Nov 24, 2026; this workspace has no database connection to independently verify the live result, so staging access-flow checks remain pending.
+- **SSH and Root Build Results**: The Vite production build succeeded after adding the previously undeclared `sonner` and `embla-carousel-react` runtime dependencies to the SSH manifest and lockfile. The root Next.js build compiled but could not prerender `/forms` because `DATABASE_URL` is unset in this environment; the database adapter reports that its Postgres password must be a string. Complete root and end-to-end packaging builds require the configured database environment.
+- **Local SSH Environment**: Added the local-only `src/SSH/.env.local` with the Supabase URL, Publishable key, and user-provided `VITE_ENCRYPTION_KEY` for Vite development. It is covered by `src/SSH/.gitignore`; no Supabase Secret key is included. `VITE_ENCRYPTION_KEY` is bundled into browser code by Vite, so it cannot be treated as a protected production secret.
 
 - **Participation Consent Feature**: Integrated participation consent flows in child and student registration.
 - **Teacher Dashboard Batch Handling**: Updated batch handling for enrollments and certificate calculations.

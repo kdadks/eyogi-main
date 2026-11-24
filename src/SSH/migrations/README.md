@@ -3,6 +3,18 @@
 ## Overview
 This directory contains SQL migration scripts for the attendance management feature.
 
+## Publishable/Secret RLS Policy Migration
+
+`20261124_publishable_secret_rls.sql` prepares the public-schema policy model for the new API keys:
+
+- Authenticated app admins (`admin`, `business_admin`, `super_admin`) receive RLS-gated CRUD access on public tables.
+- User/teacher/parent policies are retained but moved off the broad `PUBLIC` role.
+- Anonymous reads remain limited to the public content tables; anonymous quiz-answer and page-analytics inserts are preserved.
+- Self-service profile inserts/updates cannot assign or change privileged roles.
+- The Secret key is not an RLS role; its requests bypass RLS and it must remain server-only.
+
+Review and run this migration in Supabase SQL Editor as the database owner, preferably against staging first. It was not applied to the live database from this workspace because no database connection was configured. Verify public pages, quiz submission, page analytics, and CRUD for each app role after applying.
+
 ## Running the Migration
 
 ### Option 1: Using Supabase CLI (Recommended)
